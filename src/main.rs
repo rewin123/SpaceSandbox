@@ -4,8 +4,9 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::Window,
 };
-use engine::resource::*;
+use engine::{resource::*, mesh::*};
 use wgpu::util::DeviceExt;
+use bytemuck::{Pod, Zeroable};
 
 pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     1.0, 0.0, 0.0, 0.0,
@@ -25,11 +26,35 @@ fn generate_matrix(aspect_ratio: f32) -> cgmath::Matrix4<f32> {
     mx_correction * mx_projection * mx_view
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+struct CameraUniform {
+    pos : Vec4,
+    frw : Vec4,
+    up : Vec4
+}
+
+struct Camera {
+    uniform : CameraUniform
+}
+
 async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let mut res_system = FileResourceEngine::default();
     res_system.init(&String::from("./res"));
     let mut gpu = engine::gpu::GPU::from_window(&window).await;
+
+    let mut camera = Camera {
+        uniform : CameraUniform {
+            pos : Vec4::default(),
+            frw : Vec4::default(),
+            up : Vec4::default()
+        }
+    };
+
+    camera.uniform.pos.x = -0.5;
+    camera.uniform.frw.x = 1.0;
+    camera.uniform.up.z = 1.0;
 
     let kitty_data = res_system.get_data_string(&String::from("tomokitty")).unwrap();
     let mesh = engine::wavefront::SimpleWavefrontParser::from_str(&kitty_data).unwrap();
@@ -72,7 +97,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
-                    min_binding_size: wgpu::BufferSize::new(64),
+                    min_binding_size: wgpu::BufferSize::new(48),
                 },
                 count: None,
             }
@@ -83,7 +108,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     let mx_ref: &[f32; 16] = mx_total.as_ref();
     let uniform_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Uniform Buffer"),
-        contents: bytemuck::cast_slice(mx_ref),
+        contents: bytemuck::bytes_of(&camera.uniform),
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
 

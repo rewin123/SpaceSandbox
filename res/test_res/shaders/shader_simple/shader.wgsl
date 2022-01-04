@@ -4,7 +4,9 @@ struct VertexOutput {
 };
 
 struct Locals {
-    transform: mat4x4<f32>;
+    pos: vec3<f32>;
+    frw: vec3<f32>;
+    up: vec3<f32>;
 };
 [[group(0), binding(0)]]
 var<uniform> r_locals: Locals;
@@ -18,7 +20,9 @@ fn vs_main(
     var out: VertexOutput;
     out.tex_coord = tex_coord;
     var scale: f32 = 0.05;
-    out.position = r_locals.transform * (position * vec4<f32>(scale, scale, scale, 1.0));
+    var local_pos : vec4<f32> = position * vec4<f32>(scale, scale, scale, 1.0);
+    local_pos.x = local_pos.x + r_locals.pos.x;
+    out.position = local_pos;
     return out;
 }
 

@@ -33,7 +33,7 @@ impl SimpleWavefrontParser {
                     let words = line.split(" ").collect::<Vec<&str>>();
                     match words.get(0) {
                         Some(&"o") => {
-                            println!("New object {}", words.get(1).unwrap());
+                            // println!("New object {}", words.get(1).unwrap());
                             // index_shift = mesh.verts.len();
                         }
                         Some(&"v") => {

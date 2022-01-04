@@ -3,6 +3,27 @@ use wgpu::util::DeviceExt;
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Debug)]
+pub struct Vec4 {
+    pub x : f32,
+    pub y : f32,
+    pub z : f32,
+    pub w : f32,
+}
+
+impl Default for Vec4 {
+    fn default() -> Self {
+        Self {
+            x : 0.0,
+            y : 0.0,
+            z : 0.0,
+            w : 0.0
+        }
+    }
+}
+
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable, Debug)]
 pub struct Vec3 {
     pub x : f32,
     pub y : f32,
