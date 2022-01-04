@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-
+use wgpu::util::DeviceExt;
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Debug)]
@@ -122,6 +122,29 @@ impl Default for CPUMesh {
 }
 
 pub struct GPUMesh {
-    vertex_buffer : wgpu::Buffer,
-    index_buffer : wgpu::Buffer
+    pub vertex_buffer : wgpu::Buffer,
+    pub index_buffer : wgpu::Buffer,
+    pub count : u32
+}
+
+impl GPUMesh {
+    pub fn from(gpu : &crate::gpu::GPU, mesh : &CPUMesh) -> Self {
+        let vertex_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(&mesh.verts),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+    
+        let index_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(&mesh.indices),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+
+        Self {
+            vertex_buffer : vertex_buf,
+            index_buffer : index_buf,
+            count : mesh.indices.len() as u32
+        }
+    }
 }

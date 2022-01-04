@@ -33,32 +33,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let kitty_data = res_system.get_data_string(&String::from("tomokitty")).unwrap();
     let mesh = engine::wavefront::SimpleWavefrontParser::from_str(&kitty_data).unwrap();
-
-    let (vertex_data, index_data) = engine::mesh::create_cube_vertices();
-
-    let vertex_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Vertex Buffer"),
-        contents: bytemuck::cast_slice(&mesh.verts),
-        usage: wgpu::BufferUsages::VERTEX,
-    });
-
-    let index_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Index Buffer"),
-        contents: bytemuck::cast_slice(&mesh.indices),
-        usage: wgpu::BufferUsages::INDEX,
-    });
-
-    // let vertex_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-    //     label: Some("Vertex Buffer"),
-    //     contents: bytemuck::cast_slice(&vertex_data),
-    //     usage: wgpu::BufferUsages::VERTEX,
-    // });
-
-    // let index_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-    //     label: Some("Index Buffer"),
-    //     contents: bytemuck::cast_slice(&index_data),
-    //     usage: wgpu::BufferUsages::INDEX,
-    // });
+    let gpu_mesh = engine::mesh::GPUMesh::from(&gpu, &mesh);
 
     let vertex_size = std::mem::size_of::<engine::mesh::Vertex>();
     let vertex_buffers = [wgpu::VertexBufferLayout {
@@ -192,10 +167,9 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     });
                     rpass.set_pipeline(&render_pipeline);
                     rpass.set_bind_group(0, &bind_group, &[]);
-                    rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint32);
-                    rpass.set_vertex_buffer(0, vertex_buf.slice(..));
-                    rpass.draw_indexed(0..mesh.indices.len() as u32, 0, 0..1);
-                    // rpass.draw_indexed(0..36 as u32, 0, 0..1);
+                    rpass.set_index_buffer(gpu_mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                    rpass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
+                    rpass.draw_indexed(0..gpu_mesh.count, 0, 0..1);
                 }
 
                 gpu.queue.submit(Some(encoder.finish()));
