@@ -5,15 +5,48 @@ use winit::{
     window::Window,
 };
 use engine::resource::*;
+use wgpu::util::DeviceExt;
 
 async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let mut res_system = FileResourceEngine::default();
     res_system.init(&String::from("./res"));
+    let mut gpu = engine::gpu::GPU::from_window(&window).await;
+
+    let (vertex_data, index_data) = engine::mesh::create_cube_vertices();
+
+    let vertex_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Vertex Buffer"),
+        contents: bytemuck::cast_slice(&vertex_data),
+        usage: wgpu::BufferUsages::VERTEX,
+    });
+
+    let index_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Index Buffer"),
+        contents: bytemuck::cast_slice(&index_data),
+        usage: wgpu::BufferUsages::INDEX,
+    });
+
+    let vertex_size = std::mem::size_of::<engine::mesh::Vertex>();
+    let vertex_buffers = [wgpu::VertexBufferLayout {
+        array_stride: vertex_size as wgpu::BufferAddress,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &[
+            wgpu::VertexAttribute {
+                format: wgpu::VertexFormat::Float32x3,
+                offset: 0,
+                shader_location: 0,
+            },
+            wgpu::VertexAttribute {
+                format: wgpu::VertexFormat::Float32x2,
+                offset: 4 * 3,
+                shader_location: 1,
+            },
+        ],
+    }];
 
     let size = window.inner_size();
 
-    let mut gpu = engine::gpu::GPU::from_window(&window).await;
 
     // Load the shaders from disk
     let shader = gpu.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
@@ -35,14 +68,17 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         vertex: wgpu::VertexState {
             module: &shader,
             entry_point: "vs_main",
-            buffers: &[],
+            buffers: &vertex_buffers,
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
             entry_point: "fs_main",
             targets: &[swapchain_format.into()],
         }),
-        primitive: wgpu::PrimitiveState::default(),
+        primitive: wgpu::PrimitiveState {
+            cull_mode: Some(wgpu::Face::Back),
+            ..Default::default()
+        },
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
@@ -86,7 +122,9 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                         depth_stencil_attachment: None,
                     });
                     rpass.set_pipeline(&render_pipeline);
-                    rpass.draw(0..3, 0..1);
+                    rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
+                    rpass.set_vertex_buffer(0, vertex_buf.slice(..));
+                    rpass.draw_indexed(0..36, 0, 0..1);
                 }
 
                 gpu.queue.submit(Some(encoder.finish()));

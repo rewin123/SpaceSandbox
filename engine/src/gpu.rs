@@ -67,7 +67,7 @@ impl GPU {
         }
     }
 
-    pub async fn resize(&mut self, width : u32, height : u32) {
+    pub fn resize(&mut self, width : u32, height : u32) {
         self.surface_config.width = width;
         self.surface_config.height = height;
         self.surface.configure(&self.device, &self.surface_config);
