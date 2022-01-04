@@ -7,6 +7,25 @@ use winit::{
 use engine::resource::*;
 use wgpu::util::DeviceExt;
 
+pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 0.5, 0.0,
+    0.0, 0.0, 0.5, 1.0,
+);
+
+
+fn generate_matrix(aspect_ratio: f32) -> cgmath::Matrix4<f32> {
+    let mx_projection = cgmath::perspective(cgmath::Deg(45f32), aspect_ratio, 1.0, 10.0);
+    let mx_view = cgmath::Matrix4::look_at_rh(
+        cgmath::Point3::new(1.5f32, -5.0, 3.0),
+        cgmath::Point3::new(0f32, 0.0, 0.0),
+        cgmath::Vector3::unit_z(),
+    );
+    let mx_correction = OPENGL_TO_WGPU_MATRIX;
+    mx_correction * mx_projection * mx_view
+}
+
 async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let mut res_system = FileResourceEngine::default();
@@ -54,9 +73,45 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         source: res_system.get_wgsl_shader(&String::from("shader_simple")).unwrap()
     });
 
+     // Create pipeline layout
+    let bind_group_layout = gpu.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: None,
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: wgpu::BufferSize::new(64),
+                },
+                count: None,
+            }
+        ],
+    });
+
+    let mx_total = generate_matrix(size.width as f32 / size.height as f32);
+    let mx_ref: &[f32; 16] = mx_total.as_ref();
+    let uniform_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Uniform Buffer"),
+        contents: bytemuck::cast_slice(mx_ref),
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    });
+
+    let bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout: &bind_group_layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buf.as_entire_binding(),
+            }
+        ],
+        label: None,
+    });
+
     let pipeline_layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
-        bind_group_layouts: &[],
+        bind_group_layouts: &[&bind_group_layout],
         push_constant_ranges: &[],
     });
 
@@ -122,6 +177,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                         depth_stencil_attachment: None,
                     });
                     rpass.set_pipeline(&render_pipeline);
+                    rpass.set_bind_group(0, &bind_group, &[]);
                     rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
                     rpass.set_vertex_buffer(0, vertex_buf.slice(..));
                     rpass.draw_indexed(0..36, 0, 0..1);
