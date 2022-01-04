@@ -12,48 +12,24 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
     res_system.init(&String::from("./res"));
 
     let size = window.inner_size();
-    let instance = wgpu::Instance::new(wgpu::Backends::all());
-    let surface = unsafe { instance.create_surface(&window) };
-    let adapter = instance
-        .request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::default(),
-            force_fallback_adapter: false,
-            // Request an adapter which can render to our surface
-            compatible_surface: Some(&surface),
-        })
-        .await
-        .expect("Failed to find an appropriate adapter");
 
-    // Create the logical device and command queue
-    let (device, queue) = adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: None,
-                features: wgpu::Features::empty(),
-                // Make sure we use the texture resolution limits from the adapter, so we can support images the size of the swapchain.
-                limits: wgpu::Limits::downlevel_webgl2_defaults()
-                    .using_resolution(adapter.limits()),
-            },
-            None,
-        )
-        .await
-        .expect("Failed to create device");
+    let mut gpu = engine::gpu::GPU::from_window(&window).await;
 
     // Load the shaders from disk
-    let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+    let shader = gpu.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
         label: None,
-        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
+        source: res_system.get_wgsl_shader(&String::from("shader_simple")).unwrap()
     });
 
-    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+    let pipeline_layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
         bind_group_layouts: &[],
         push_constant_ranges: &[],
     });
 
-    let swapchain_format = surface.get_preferred_format(&adapter).unwrap();
+    let swapchain_format = gpu.surface.get_preferred_format(&gpu.adapter).unwrap();
 
-    let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let render_pipeline = gpu.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: None,
         layout: Some(&pipeline_layout),
         vertex: wgpu::VertexState {
@@ -72,21 +48,11 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         multiview: None,
     });
 
-    let mut config = wgpu::SurfaceConfiguration {
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format: swapchain_format,
-        width: size.width,
-        height: size.height,
-        present_mode: wgpu::PresentMode::Mailbox,
-    };
-
-    surface.configure(&device, &config);
-
     event_loop.run(move |event, _, control_flow| {
         // Have the closure take ownership of the resources.
         // `event_loop.run` never returns, therefore we must do this to ensure
         // the resources are properly cleaned up.
-        let _ = (&instance, &adapter, &shader, &pipeline_layout);
+        let _ = (&gpu.instance, &gpu.adapter, &shader, &pipeline_layout);
 
         *control_flow = ControlFlow::Wait;
         match event {
@@ -95,19 +61,17 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 ..
             } => {
                 // Reconfigure the surface with the new size
-                config.width = size.width;
-                config.height = size.height;
-                surface.configure(&device, &config);
+                gpu.resize(size.width, size.height);
             }
             Event::RedrawRequested(_) => {
-                let frame = surface
+                let frame = gpu.surface
                     .get_current_texture()
                     .expect("Failed to acquire next swap chain texture");
                 let view = frame
                     .texture
                     .create_view(&wgpu::TextureViewDescriptor::default());
                 let mut encoder =
-                    device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+                    gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
                 {
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: None,
@@ -125,7 +89,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     rpass.draw(0..3, 0..1);
                 }
 
-                queue.submit(Some(encoder.finish()));
+                gpu.queue.submit(Some(encoder.finish()));
                 frame.present();
             }
             Event::WindowEvent {

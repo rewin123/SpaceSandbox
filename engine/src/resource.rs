@@ -6,6 +6,32 @@ pub trait ResourceEngine {
     fn init(&mut self, path : &String);
     fn get_json(&self, name : &String) -> Option<String>;
     fn get_data_string(&self, name : &String) -> Option<String>;
+
+    fn get_wgsl_shader(&self, name : &String) -> Result<wgpu::ShaderSource, String> {
+
+        match self.get_data_string(name) {
+            Some(data) => {
+                let shader = wgpu::ShaderSource::Wgsl(std::borrow::Cow::Owned(data));
+                return Ok(shader);
+            }
+            None => {
+                return Err(String::from("Shader source not found"));
+            }
+        }
+    }
+
+    fn get_wgsl_shader_templated(&self, name : &String) -> Result<wgpu::ShaderSource, String> {
+
+        match self.get_data_string(name) {
+            Some(data) => {
+                let shader = wgpu::ShaderSource::Wgsl(std::borrow::Cow::Owned(data));
+                return Ok(shader);
+            }
+            None => {
+                return Err(String::from("Shader source not found"));
+            }
+        }
+    }
 }
 
 pub trait ResourceBase {
