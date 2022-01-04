@@ -1,14 +1,30 @@
 use bytemuck::{Pod, Zeroable};
 
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+pub struct Vec3 {
+    x : f32,
+    y : f32,
+    z : f32,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+pub struct Vec2 {
+    x : f32,
+    y : f32,
+}
+
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct Vertex {
-    pos: [f32; 3],
-    tex_coord: [f32; 2],
+    pos: Vec3,
+    tex_coord: Vec2,
 }
 
 
-pub fn create_cube_vertices() -> (Vec<Vertex>, Vec<u16>) {
+pub fn create_cube_vertices() -> (Vec<Vertex>, Vec<u32>) {
     let vertex_data = [
         // top (0, 0, 1)
         Vertex::from_pos_uv([-1.0, -1.0, 1.0], [0.0, 0.0]),
@@ -42,7 +58,7 @@ pub fn create_cube_vertices() -> (Vec<Vertex>, Vec<u16>) {
         Vertex::from_pos_uv([1.0, -1.0, -1.0], [0.0, 1.0]),
     ];
 
-    let index_data: &[u16] = &[
+    let index_data: &[u32] = &[
         0, 1, 2, 2, 3, 0, // top
         4, 5, 6, 6, 7, 4, // bottom
         8, 9, 10, 10, 11, 8, // right
@@ -57,10 +73,15 @@ pub fn create_cube_vertices() -> (Vec<Vertex>, Vec<u16>) {
 impl Vertex {
     pub fn from_pos_uv(pos: [f32; 3], uv: [f32; 2]) -> Vertex {
         Vertex {
-            pos,
-            tex_coord: uv
+            pos : Vec3{x : pos[0], y : pos[1], z : pos[2]},
+            tex_coord : Vec2 {x : uv[0], y : uv[1]}
         }
     }
+}
+
+pub struct CPUMesh {
+    pub verts : Vec<Vertex>,
+    pub indices : Vec<u32>
 }
 
 pub struct GPUMesh {

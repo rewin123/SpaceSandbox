@@ -14,7 +14,6 @@ pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     0.0, 0.0, 0.5, 1.0,
 );
 
-
 fn generate_matrix(aspect_ratio: f32) -> cgmath::Matrix4<f32> {
     let mx_projection = cgmath::perspective(cgmath::Deg(45f32), aspect_ratio, 1.0, 10.0);
     let mx_view = cgmath::Matrix4::look_at_rh(
@@ -178,7 +177,7 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                     });
                     rpass.set_pipeline(&render_pipeline);
                     rpass.set_bind_group(0, &bind_group, &[]);
-                    rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
+                    rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint32);
                     rpass.set_vertex_buffer(0, vertex_buf.slice(..));
                     rpass.draw_indexed(0..36, 0, 0..1);
                 }
