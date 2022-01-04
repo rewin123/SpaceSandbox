@@ -2,25 +2,44 @@ use bytemuck::{Pod, Zeroable};
 
 
 #[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, Pod, Zeroable, Debug)]
 pub struct Vec3 {
-    x : f32,
-    y : f32,
-    z : f32,
+    pub x : f32,
+    pub y : f32,
+    pub z : f32,
+}
+
+impl Default for Vec3 {
+    fn default() -> Self {
+        Self {
+            x : 0.0,
+            y : 0.0,
+            z : 0.0
+        }
+    }
 }
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct Vec2 {
-    x : f32,
-    y : f32,
+    pub x : f32,
+    pub y : f32,
+}
+
+impl Default for Vec2 {
+    fn default() -> Self {
+        Self {
+            x : 0.0,
+            y : 0.0
+        }
+    }
 }
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct Vertex {
-    pos: Vec3,
-    tex_coord: Vec2,
+    pub pos: Vec3,
+    pub tex_coord: Vec2,
 }
 
 
@@ -70,6 +89,15 @@ pub fn create_cube_vertices() -> (Vec<Vertex>, Vec<u32>) {
     (vertex_data.to_vec(), index_data.to_vec())
 }
 
+impl Default for Vertex {
+    fn default() -> Self {
+        Self {
+            pos : Vec3::default(),
+            tex_coord : Vec2::default()
+        }
+    }
+}
+
 impl Vertex {
     pub fn from_pos_uv(pos: [f32; 3], uv: [f32; 2]) -> Vertex {
         Vertex {
@@ -82,6 +110,15 @@ impl Vertex {
 pub struct CPUMesh {
     pub verts : Vec<Vertex>,
     pub indices : Vec<u32>
+}
+
+impl Default for CPUMesh {
+    fn default() -> Self {
+        Self {
+            verts : vec![],
+            indices : vec![]
+        }
+    }
 }
 
 pub struct GPUMesh {

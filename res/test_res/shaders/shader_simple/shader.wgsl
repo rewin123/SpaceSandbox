@@ -17,12 +17,15 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.tex_coord = tex_coord;
-    out.position = r_locals.transform * position;
+    var scale: f32 = 0.05;
+    out.position = r_locals.transform * (position * vec4<f32>(scale, scale, scale, 1.0));
     return out;
 }
 
 [[stage(fragment)]]
 fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {
-    return vec4<f32>(in.tex_coord.x, in.tex_coord.y, 0.0, 1.0);
+    var depth : f32 = in.position.z;
+    depth = 1.0 - depth;
+    return vec4<f32>(depth, depth, depth, 1.0);
 }
 
