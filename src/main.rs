@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use winit::{
-    event::{Event, WindowEvent},
+    event::{Event, WindowEvent, StartCause},
     event_loop::{ControlFlow, EventLoop},
     window::Window,
 };
@@ -52,7 +52,11 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         }
     };
 
-    camera.uniform.pos.x = -0.5;
+    camera.uniform.pos.w = 1.0;
+    camera.uniform.frw.w = 1.0;
+    camera.uniform.up.w = 1.0;
+
+    camera.uniform.pos.x = -3.0;
     camera.uniform.frw.x = 1.0;
     camera.uniform.up.z = 1.0;
 
@@ -106,22 +110,9 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let mx_total = generate_matrix(size.width as f32 / size.height as f32);
     let mx_ref: &[f32; 16] = mx_total.as_ref();
-    let uniform_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Uniform Buffer"),
-        contents: bytemuck::bytes_of(&camera.uniform),
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-    });
+    
 
-    let bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-        layout: &bind_group_layout,
-        entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buf.as_entire_binding(),
-            }
-        ],
-        label: None,
-    });
+    
 
     let pipeline_layout = gpu.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
@@ -153,13 +144,15 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
         multiview: None,
     });
 
+    let mut angle: f32 = 0.0;
+
     event_loop.run(move |event, _, control_flow| {
         // Have the closure take ownership of the resources.
         // `event_loop.run` never returns, therefore we must do this to ensure
         // the resources are properly cleaned up.
         let _ = (&gpu.instance, &gpu.adapter, &shader, &pipeline_layout);
+        *control_flow = ControlFlow::Poll;
 
-        *control_flow = ControlFlow::Wait;
         match event {
             Event::WindowEvent {
                 event: WindowEvent::Resized(size),
@@ -168,7 +161,46 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                 // Reconfigure the surface with the new size
                 gpu.resize(size.width, size.height);
             }
+            Event::MainEventsCleared => {
+                window.request_redraw();
+            }
             Event::RedrawRequested(_) => {
+
+                angle += 0.001;
+                let sval = angle.sin();
+                let cval = angle.cos();
+                let distance = 5.0;
+
+                camera.uniform.pos = Vec4 {
+                    x : sval * distance,
+                    y : cval * distance,
+                    z : 0.0,
+                    w : 1.0
+                };
+                camera.uniform.frw = Vec4 {
+                    x : -sval,
+                    y : -cval,
+                    z : 0.0,
+                    w : 1.0
+                };
+
+                let uniform_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Uniform Buffer"),
+                    contents: bytemuck::bytes_of(&camera.uniform),
+                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                });
+
+                let bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &bind_group_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: uniform_buf.as_entire_binding(),
+                        }
+                    ],
+                    label: None,
+                });
+
                 let frame = gpu.surface
                     .get_current_texture()
                     .expect("Failed to acquire next swap chain texture");
