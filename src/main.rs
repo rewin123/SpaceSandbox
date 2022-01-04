@@ -84,6 +84,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let size = window.inner_size();
 
+    let mut depth_view = engine::gpu::GPU::create_depth_texture(&gpu.surface_config, &gpu.device);
+
 
     // Load the shaders from disk
     let shader = gpu.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
@@ -139,7 +141,13 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
             cull_mode: Some(wgpu::Face::Back),
             ..Default::default()
         },
-        depth_stencil: None,
+        depth_stencil: Some(wgpu::DepthStencilState {
+            format: wgpu::TextureFormat::Depth24Plus,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::LessEqual,
+            stencil: wgpu::StencilState::default(),
+            bias: wgpu::DepthBiasState::default(),
+        }),
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
     });
@@ -160,6 +168,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
             } => {
                 // Reconfigure the surface with the new size
                 gpu.resize(size.width, size.height);
+                
+                depth_view = engine::gpu::GPU::create_depth_texture(&gpu.surface_config, &gpu.device);
             }
             Event::MainEventsCleared => {
                 window.request_redraw();
@@ -220,7 +230,16 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
                                 store: true,
                             },
                         }],
-                        depth_stencil_attachment: None,
+                        depth_stencil_attachment: Some(
+                            wgpu::RenderPassDepthStencilAttachment {
+                                view : &depth_view,
+                                depth_ops : Some(wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(1.0),
+                                    store: false,
+                                }),
+                                stencil_ops : None,
+                            }
+                        ),
                     });
                     rpass.set_pipeline(&render_pipeline);
                     rpass.set_bind_group(0, &bind_group, &[]);

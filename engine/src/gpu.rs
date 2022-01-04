@@ -72,4 +72,25 @@ impl GPU {
         self.surface_config.height = height;
         self.surface.configure(&self.device, &self.surface_config);
     }
+
+    pub fn create_depth_texture(
+        config: &wgpu::SurfaceConfiguration,
+        device: &wgpu::Device,
+    ) -> wgpu::TextureView {
+        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+            size: wgpu::Extent3d {
+                width: config.width,
+                height: config.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth24Plus,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            label: None,
+        });
+
+        depth_texture.create_view(&wgpu::TextureViewDescriptor::default())
+    }
 }
