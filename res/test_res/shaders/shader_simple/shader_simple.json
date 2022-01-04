@@ -1,0 +1,4 @@
+{
+    "name" : "shader_simple",
+    "local_path" : "shader.wgsl"
+}

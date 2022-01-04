@@ -4,18 +4,26 @@ use serde_json;
 pub trait ResourceEngine {
     fn default() -> Self;
     fn init(&mut self, path : &String);
+    fn get_json(&self, name : &String) -> Option<String>;
+    fn get_data_string(&self, name : &String) -> Option<String>;
+}
+
+pub trait ResourceBase {
+    fn default() -> Self;
+    fn get_name(&self) -> String;
+    fn get_json(&self) -> String;
 }
 
 #[derive(Debug)]
-struct ResourceBase {
+struct FileResourceBase {
     name : String,
     json : String,
     binary_local_path : String,
     binary_path : String
 }
 
-impl ResourceBase {
-    pub fn default() -> Self {
+impl ResourceBase for FileResourceBase {
+    fn default() -> Self {
         Self {
             name : String::default(),
             json : String::default(),
@@ -23,10 +31,17 @@ impl ResourceBase {
             binary_path : String::default()
         }
     }
+    
+    fn get_name(&self) -> String {
+        self.name.clone()
+    }
+    fn get_json(&self) -> String {
+        self.json.clone()
+    }
 }
 
 pub struct FileResourceEngine {
-    resources : Vec<ResourceBase>
+    resources : Vec<FileResourceBase>
 }
 
 struct FileOps;
@@ -36,6 +51,17 @@ impl FileOps {
         std::path::Path::new(filename)
             .extension()
             .and_then(std::ffi::OsStr::to_str)
+    }
+}
+
+impl FileResourceEngine {
+    fn get_res_base(&self, name : &String) -> Option<&FileResourceBase> {
+        for asset in &self.resources {
+            if &asset.name == name {
+                return Some(asset);
+            }
+        }
+        None
     }
 }
 
@@ -65,7 +91,7 @@ impl ResourceEngine for FileResourceEngine {
 
                 if metadata.is_file() {
                     if FileOps::get_extension_from_filename(entry_path.to_str().unwrap()) == Some("json") {
-                        let mut res = ResourceBase::default();
+                        let mut res = FileResourceBase::default();
                         let json_str = std::fs::read_to_string(entry_path.to_str().unwrap()).unwrap();
                         let res_set: serde_json::Value = serde_json::from_str(json_str.as_str()).unwrap();
 
@@ -94,6 +120,30 @@ impl ResourceEngine for FileResourceEngine {
 
             i += 1;
         }
+    }
+
+    
+
+    
+    fn get_json(&self, name : &String) -> Option<String> {
+        for asset in &self.resources {
+            if &asset.name == name {
+                return Some(asset.json.clone());
+            }
+        }
+        None
+    }
+
+    fn get_data_string(&self, name : &String) -> Option<String> {
+        match self.get_res_base(name) {
+            Some(res_base) => {
+                let string_data = std::fs::read_to_string(res_base.binary_path.as_str()).unwrap();
+                return Some(string_data);
+            }
+            None => {
+                return None;
+            }
+        } 
     }
 }
 

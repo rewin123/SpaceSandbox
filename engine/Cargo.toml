@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 serde_json = "1.0"
+wavefront_obj = "10.0.0"
+winit = "0.26.0"

@@ -1,6 +1,5 @@
 
 pub mod resource;
+pub mod wavefront;
+pub mod mesh;
 
-pub fn just_test_fun() {
-    println!("Hood test");
-}
