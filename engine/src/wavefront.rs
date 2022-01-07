@@ -10,9 +10,13 @@ impl SimpleWavefrontParser {
 
         let i1 : usize = words[0].parse().unwrap();
         let i2 : usize = words[1].parse().unwrap();
-        let i3 : usize = words[2].parse().unwrap();
+        let i3 : usize = words[2].trim().parse().unwrap();
 
         (i1, i2, i3)
+    }
+
+    fn save_float_parse(data : &str) -> f32 {
+        data.trim().parse::<f32>().unwrap()
     }
 
     pub fn from_str(data : &String) -> Result<CPUMesh, String> {
@@ -27,6 +31,7 @@ impl SimpleWavefrontParser {
         let mut reuse_count = 0;
 
         for line in data.split("\n") {
+            // let line = tmp.clone().replace(".", ",");
             if line.len() > 0 {
                 //its not a comment
                 if line.get(0..1) != Some("#") {
@@ -38,9 +43,12 @@ impl SimpleWavefrontParser {
                         }
                         Some(&"v") => {
                             let mut pos = Vec3::default();
+
                             pos.x = words[1].parse().unwrap();
                             pos.y = words[2].parse().unwrap();
-                            pos.z = words[3].parse().unwrap();
+                            pos.z = SimpleWavefrontParser::save_float_parse(words[3]);
+
+                            // pos.z = words[3].parse().unwrap();
 
                             poses.push(pos);
 
@@ -51,14 +59,14 @@ impl SimpleWavefrontParser {
                             let mut normal = Vec3::default();
                             normal.x = words[1].parse().unwrap();
                             normal.y = words[2].parse().unwrap();
-                            normal.z = words[3].parse().unwrap();
+                            normal.z = words[3].trim().parse().unwrap();
 
                             normals.push(normal);
                         }
                         Some(&"vt") => {
                             let mut uv = Vec2::default();
                             uv.x = words[1].parse().unwrap();
-                            uv.y = words[2].parse().unwrap();
+                            uv.y = words[2].trim().parse().unwrap();
 
                             tex_coords.push(uv);
                         }
