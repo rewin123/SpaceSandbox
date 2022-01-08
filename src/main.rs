@@ -38,6 +38,36 @@ struct Camera {
     uniform : CameraUniform
 }
 
+struct TestGame {
+    
+}
+
+impl Default for TestGame {
+    fn default() -> Self {
+        Self {
+
+        }
+    }
+}
+
+impl engine::loop_game::LoopGame for TestGame {
+    fn init(&mut self, base : &engine::loop_game::LoopGameBase) {
+        todo!()
+    }
+
+    fn logick_loop(&mut self, base : &mut engine::loop_game::LoopGameBase) {
+        todo!()
+    }
+
+    fn draw_loop(&mut self, base : &mut engine::loop_game::LoopGameBase) {
+        todo!()
+    }
+
+    fn resize_event(&mut self, base : &mut engine::loop_game::LoopGameBase, size : &winit::dpi::PhysicalSize<u32>) {
+        todo!()
+    }
+}
+
 async fn run(event_loop: EventLoop<()>, window: Window) {
 
     let mut res_system = FileResourceEngine::default();
@@ -174,6 +204,15 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
             Event::MainEventsCleared => {
                 window.request_redraw();
             }
+            Event::WindowEvent {
+                event :
+                    WindowEvent::CursorMoved {
+                        ..
+                    },
+                ..
+            } => {
+                
+            }
             Event::RedrawRequested(_) => {
 
                 angle += 0.001;
@@ -261,9 +300,8 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 }
 
 fn main() {
-    let event_loop = EventLoop::new();
-    let window = winit::window::Window::new(&event_loop).unwrap();
+    let base_loop = engine::loop_game::LoopGameBase::default();
+    let mut my_game = TestGame::default();
 
-    env_logger::init();
-    pollster::block_on(run(event_loop, window));
+    base_loop.run(&mut my_game);
 }
