@@ -12,3 +12,5 @@ wavefront_obj = "10.0.0"
 winit = "0.26.0"
 bytemuck =  { version = "1.7.3", features = ["derive"] }
 cgmath = "0.18.0"
+legion = "*"
+specs = "*"

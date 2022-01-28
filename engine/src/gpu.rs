@@ -93,4 +93,8 @@ impl GPU {
 
         depth_texture.create_view(&wgpu::TextureViewDescriptor::default())
     }
+
+    pub fn get_swapchain_format(&self) -> wgpu::TextureFormat {
+        self.surface.get_preferred_format(&self.adapter).unwrap()
+    }
 }

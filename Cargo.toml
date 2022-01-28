@@ -18,6 +18,7 @@ cgmath = "0.18.0"
 tokio = { version = "1", features = ["full"] }
 async-trait = "0.1.52"
 async-std = "1.10.0"
+specs = "0.17.0"
 
 [dependencies.engine]
 path = "engine"
