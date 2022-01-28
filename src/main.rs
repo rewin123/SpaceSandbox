@@ -65,11 +65,6 @@ impl ModelViewGame {
 
         let gpu_mesh = engine.load_gpu_mesh(&String::from("tomokitty")).unwrap();
 
-        let size = window.inner_size();
-
-        let swapchain_format = engine.gpu.get_swapchain_format();
-
-
         let render = engine::render::DepthRender::from_engine(&engine);
 
         Self {
