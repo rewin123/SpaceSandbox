@@ -47,7 +47,7 @@ impl LoopGameBase {
                     event: WindowEvent::Resized(size),
                     ..
                 } => {
-                    tx.send(LoopGameEvent::Resize(size));
+                    tx.send(LoopGameEvent::Resize(size)).unwrap();
                 }
                 Event::WindowEvent {
                     event: WindowEvent::CloseRequested,
