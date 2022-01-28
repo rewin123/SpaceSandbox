@@ -105,62 +105,7 @@ impl engine::loop_game::LoopGame for ModelViewGame {
             w : 1.0
         };
 
-        let uniform_buf = self.engine.gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Uniform Buffer"),
-            contents: bytemuck::bytes_of(&self.camera.uniform),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let bind_group = self.engine.gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &self.render.bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: uniform_buf.as_entire_binding(),
-                }
-            ],
-            label: None,
-        });
-
-        let frame = self.engine.gpu.surface
-            .get_current_texture()
-            .expect("Failed to acquire next swap chain texture");
-        let view = frame
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder =
-            self.engine.gpu.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        {
-            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
-                        store: true,
-                    },
-                }],
-                depth_stencil_attachment: Some(
-                    wgpu::RenderPassDepthStencilAttachment {
-                        view : &self.render.depth_view,
-                        depth_ops : Some(wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(1.0),
-                            store: false,
-                        }),
-                        stencil_ops : None,
-                    }
-                ),
-            });
-            rpass.set_pipeline(&self.render.render_pipeline);
-            rpass.set_bind_group(0, &bind_group, &[]);
-            rpass.set_index_buffer(self.gpu_mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-            rpass.set_vertex_buffer(0, self.gpu_mesh.vertex_buffer.slice(..));
-            rpass.draw_indexed(0..self.gpu_mesh.count, 0, 0..1);
-        }
-
-        self.engine.gpu.queue.submit(Some(encoder.finish()));
-        frame.present();
+        self.render.raw_draw(&self.gpu_mesh, &self.camera, &self.engine.gpu);
     }
 
     fn resize_event(&mut self, size : &winit::dpi::PhysicalSize<u32>) {
