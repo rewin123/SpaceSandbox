@@ -7,6 +7,9 @@ use winit::{
 use engine::{resource::*, mesh::*};
 use wgpu::util::DeviceExt;
 use bytemuck::{Pod, Zeroable};
+use std::sync::mpsc;
+use std::thread;
+use engine::loop_game::{LoopGame, LoopGameEvent};
 
 pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     1.0, 0.0, 0.0, 0.0,
@@ -55,21 +58,22 @@ impl engine::loop_game::LoopGame for TestGame {
         todo!()
     }
 
-    fn logick_loop(&mut self, base : &mut engine::loop_game::LoopGameBase) {
+    fn logick_loop(&mut self) {
         todo!()
     }
 
-    fn draw_loop(&mut self, base : &mut engine::loop_game::LoopGameBase) {
+    fn draw_loop(&mut self) {
         todo!()
     }
 
-    fn resize_event(&mut self, base : &mut engine::loop_game::LoopGameBase, size : &winit::dpi::PhysicalSize<u32>) {
+    fn resize_event(&mut self, size : &winit::dpi::PhysicalSize<u32>) {
         todo!()
     }
 }
 
 async fn run(event_loop: EventLoop<()>, window: Window) {
 
+    println!("Start game");
     let mut res_system = FileResourceEngine::default();
     res_system.init(&String::from("./res"));
     let mut gpu = engine::gpu::GPU::from_window(&window).await;
@@ -300,8 +304,41 @@ async fn run(event_loop: EventLoop<()>, window: Window) {
 }
 
 fn main() {
-    let base_loop = engine::loop_game::LoopGameBase::default();
     let mut my_game = TestGame::default();
 
-    base_loop.run(&mut my_game);
+    let (tx, rx) = mpsc::channel();
+    let handler = thread::spawn(move || {
+        let mut game_running = true;
+        while game_running {
+            match rx.try_recv() {
+                Ok(val) => {
+
+                    match val {
+                        LoopGameEvent::Redraw => {
+                            println!("Redraw");
+                            my_game.draw_loop();
+
+                        }
+                        LoopGameEvent::Exit => {
+                            game_running = false;
+                        }
+                        LoopGameEvent::Resize(size) => {
+
+                        }
+                        LoopGameEvent::None => {
+
+                        }
+                    }
+                }
+                Err(err) => {
+
+                }
+            }
+        }
+    });
+
+
+
+    let base_loop = engine::loop_game::LoopGameBase::default();
+    base_loop.run(tx);
 }
