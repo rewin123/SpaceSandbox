@@ -6,6 +6,7 @@ pub mod gpu;
 pub mod loop_game;
 pub mod camera;
 pub mod render;
+pub mod gui;
 
 use crate::{resource::*, mesh::*};
 use crate::gpu::GPU;

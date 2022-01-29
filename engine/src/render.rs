@@ -12,7 +12,7 @@ pub struct DepthRender {
 
 impl DepthRender {
 
-    pub fn raw_draw(&self, mesh : &GPUMesh, camera : &Camera, gpu : &GPU) {
+    pub fn raw_draw(&self, mesh : &GPUMesh, camera : &Camera, gpu : &GPU, frame : &SurfaceTexture) {
        
         let uniform_buf = gpu.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
@@ -31,9 +31,7 @@ impl DepthRender {
             label: None,
         });
 
-        let frame = gpu.surface
-            .get_current_texture()
-            .expect("Failed to acquire next swap chain texture");
+        
         let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -69,7 +67,6 @@ impl DepthRender {
         }
 
         gpu.queue.submit(Some(encoder.finish()));
-        frame.present();
     }
 
     pub fn from_engine(engine : &crate::Engine) -> Self {

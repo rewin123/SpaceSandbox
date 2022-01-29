@@ -14,3 +14,7 @@ bytemuck =  { version = "1.7.3", features = ["derive"] }
 cgmath = "0.18.0"
 legion = "*"
 specs = "*"
+egui_wgpu_backend = "0.16"
+egui = "0.16"
+epi = "0.16"
+egui_winit_platform = "0.13"

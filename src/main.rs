@@ -36,7 +36,8 @@ struct ModelViewGame {
     render : engine::render::DepthRender,
     angle : f32,
     camera : Camera,
-    gpu_mesh : engine::mesh::GPUMesh
+    gpu_mesh : engine::mesh::GPUMesh,
+    gui_render : engine::gui::GUIRender,
 }
 
 
@@ -44,8 +45,6 @@ impl ModelViewGame {
     pub async fn new(window : &Window) -> Self {
 
         let engine = engine::Engine::from_window(window, &String::from("./res")).await;
-
-        let depth_view = engine.create_screen_depth_texture();
 
         let mut camera = Camera {
             uniform : CameraUniform {
@@ -67,12 +66,15 @@ impl ModelViewGame {
 
         let render = engine::render::DepthRender::from_engine(&engine);
 
+        let gui_render = engine::gui::GUIRender::new(&window, &engine.gpu);
+
         Self {
             engine,
             angle : 0.0, 
             camera,
             gpu_mesh,
-            render
+            render,
+            gui_render
         }
     }
 }
@@ -105,7 +107,37 @@ impl engine::loop_game::LoopGame for ModelViewGame {
             w : 1.0
         };
 
-        self.render.raw_draw(&self.gpu_mesh, &self.camera, &self.engine.gpu);
+        let frame = self.engine.gpu.surface
+            .get_current_texture()
+            .expect("Failed to acquire next swap chain texture");
+        self.render.raw_draw(&self.gpu_mesh, &self.camera, &self.engine.gpu, &frame);
+
+        self.gui_render.start_gui_draw();
+
+        let ctx = self.gui_render.platform.context();
+        
+        egui::Window::new("Window").show(&ctx, |ui| {
+            ui.label("Windows can be moved by dragging them.");
+            ui.label("They are automatically sized based on contents.");
+            ui.label("You can turn on resizing and scrolling if you like.");
+            ui.label("You would normally chose either panels OR windows.");
+        });
+
+        // egui::CentralPanel::default().show(&ctx, |ui| {
+        //     // The central panel the region left after adding TopPanel's and SidePanel's
+
+        //     ui.heading("eframe template");
+        //     ui.hyperlink("https://github.com/emilk/eframe_template");
+        //     ui.add(egui::github_link_file!(
+        //         "https://github.com/emilk/eframe_template/blob/master/",
+        //         "Source code."
+        //     ));
+        //     egui::warn_if_debug_build(ui);
+        // });
+
+        self.gui_render.end_gui_draw(&self.engine.gpu, &frame);
+
+        frame.present();
     }
 
     fn resize_event(&mut self, size : &winit::dpi::PhysicalSize<u32>) {

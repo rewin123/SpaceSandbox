@@ -18,7 +18,11 @@ cgmath = "0.18.0"
 tokio = { version = "1", features = ["full"] }
 async-trait = "0.1.52"
 async-std = "1.10.0"
-specs = "0.17.0"
+legion = "*"
+egui_wgpu_backend = "0.16"
+egui = "0.16"
+epi = "0.16"
+egui_winit_platform = "0.13"
 
 [dependencies.engine]
 path = "engine"
