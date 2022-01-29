@@ -67,10 +67,3 @@ impl LoopGameBase {
     }
 }
 
-pub trait LoopGame {
-    
-    fn init(&mut self, base : &LoopGameBase);
-    fn logick_loop(&mut self);
-    fn draw_loop(&mut self);
-    fn resize_event(&mut self, size : &PhysicalSize<u32>);
-}

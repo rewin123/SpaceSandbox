@@ -9,8 +9,8 @@ use wgpu::{util::DeviceExt, TextureView};
 use bytemuck::{Pod, Zeroable};
 use std::sync::mpsc;
 use std::thread;
-use engine::loop_game::{LoopGame, LoopGameEvent};
 use engine::camera::*;
+use std::sync::Arc;
 
 pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     1.0, 0.0, 0.0, 0.0,
@@ -32,19 +32,20 @@ fn generate_matrix(aspect_ratio: f32) -> cgmath::Matrix4<f32> {
 
 
 struct ModelViewGame {
-    engine : engine::Engine,
     render : engine::render::DepthRender,
     angle : f32,
     camera : Camera,
     gpu_mesh : engine::mesh::GPUMesh,
-    gui_render : engine::gui::GUIRender,
 }
 
 
 impl ModelViewGame {
-    pub async fn new(window : &Window) -> Self {
+    
+}
 
-        let engine = engine::Engine::from_window(window, &String::from("./res")).await;
+impl engine::LoopGame for ModelViewGame {
+
+    fn from_engine(window : &Window, engine : &mut engine::Engine) -> Self {
 
         let mut camera = Camera {
             uniform : CameraUniform {
@@ -66,29 +67,19 @@ impl ModelViewGame {
 
         let render = engine::render::DepthRender::from_engine(&engine);
 
-        let gui_render = engine::gui::GUIRender::new(&window, &engine.gpu);
-
         Self {
-            engine,
             angle : 0.0, 
             camera,
             gpu_mesh,
             render,
-            gui_render
         }
-    }
-}
-
-impl engine::loop_game::LoopGame for ModelViewGame {
-    fn init(&mut self, base : &engine::loop_game::LoopGameBase) {
-        
     }
 
     fn logick_loop(&mut self) {
         
     }
 
-    fn draw_loop(&mut self) {
+    fn draw_loop(&mut self, engine : &mut engine::Engine) {
         self.angle += 0.001;
         let sval = self.angle.sin();
         let cval = self.angle.cos();
@@ -107,14 +98,14 @@ impl engine::loop_game::LoopGame for ModelViewGame {
             w : 1.0
         };
 
-        let frame = self.engine.gpu.surface
+        let frame = engine.gpu.surface
             .get_current_texture()
             .expect("Failed to acquire next swap chain texture");
-        self.render.raw_draw(&self.gpu_mesh, &self.camera, &self.engine.gpu, &frame);
+        self.render.raw_draw(&self.gpu_mesh, &self.camera, &engine.gpu, &frame);
 
-        self.gui_render.start_gui_draw();
+        engine.gui_render.start_gui_draw();
 
-        let ctx = self.gui_render.platform.context();
+        let ctx = engine.gui_render.platform.context();
         
         egui::Window::new("Window").show(&ctx, |ui| {
             ui.label("Windows can be moved by dragging them.");
@@ -135,56 +126,22 @@ impl engine::loop_game::LoopGame for ModelViewGame {
         //     egui::warn_if_debug_build(ui);
         // });
 
-        self.gui_render.end_gui_draw(&self.engine.gpu, &frame);
+        engine.gui_render.end_gui_draw(&engine.gpu, &frame);
 
         frame.present();
     }
 
-    fn resize_event(&mut self, size : &winit::dpi::PhysicalSize<u32>) {
+    fn resize_event(&mut self, size : &winit::dpi::PhysicalSize<u32>, engine : &mut engine::Engine) {
         
-        self.engine.gpu.resize(size.width, size.height);
-        self.render.depth_view = engine::gpu::GPU::create_depth_texture(&self.engine.gpu.surface_config, &self.engine.gpu.device);
+        engine.gpu.resize(size.width, size.height);
+        self.render.depth_view = engine::gpu::GPU::create_depth_texture(&engine.gpu.surface_config, &engine.gpu.device);
     }
 }
 
 #[tokio::main]
 async fn main() {
-    let base_loop = engine::loop_game::LoopGameBase::default();
-    let mut my_game = ModelViewGame::new(&base_loop.window).await;
 
-    let (tx, rx) = mpsc::channel();
-    let handler = thread::spawn(move || {
-        let mut game_running = true;
-        while game_running {
-            match rx.try_recv() {
-                Ok(val) => {
-
-                    match val {
-                        LoopGameEvent::Redraw => {
-                            my_game.draw_loop();
-
-                        }
-                        LoopGameEvent::Exit => {
-                            game_running = false;
-                        }
-                        LoopGameEvent::Resize(size) => {
-
-                        }
-                        LoopGameEvent::None => {
-
-                        }
-                    }
-                }
-                Err(err) => {
-
-                }
-            }
-        }
-    });
-
-
-
-    base_loop.run(tx);
+    engine::GameProgram::<ModelViewGame>::run(&String::from("./res")).await;
 
     // Ok(())
 }
