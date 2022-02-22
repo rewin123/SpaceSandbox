@@ -1,0 +1,10 @@
+^C:\USERS\REWIN\ONEDRIVE\DOCUMENTS\GITHUB\SPACESANDBOX\RENDER\BUILD\CMAKEFILES\6E70B19362F7F03B1429802FA4564B7F\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/rewin/OneDrive/Documents/GitHub/SpaceSandbox/render -BC:/Users/rewin/OneDrive/Documents/GitHub/SpaceSandbox/render/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/rewin/OneDrive/Documents/GitHub/SpaceSandbox/render/build/render.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

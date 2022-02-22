@@ -2,27 +2,17 @@
 name = "SpaceSandbox"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-wgpu = {version = "0.12.0", features = ["spirv"] }
-winit = "0.26.0"
-pollster = "0.2.4"
-env_logger = "0.9.0"
-serde = "1.0"
-serde_derive = "1.0"
-serde_json = "1.0"
-bytemuck =  { version = "1.7.3", features = ["derive"] }
-cgmath = "0.18.0"
-tokio = { version = "1", features = ["full"] }
-async-trait = "0.1.52"
-async-std = "1.10.0"
-legion = "*"
-egui_wgpu_backend = "0.16"
-egui = "0.16"
-epi = "0.16"
-egui_winit_platform = "0.13"
+rlua = "*"
+subprocess = "*"
+libc = "0.2"
 
 [dependencies.engine]
 path = "engine"
+
+[build-dependencies]
+subprocess = "*"
