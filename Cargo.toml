@@ -2,14 +2,19 @@
 name = "SpaceSandbox"
 version = "0.1.0"
 edition = "2021"
-build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 rlua = "*"
-subprocess = "*"
-libc = "0.2"
+vulkano = "0.28.0"
+vulkano-shaders = "0.28.0"
+winit = "0.26"
+vulkano-win = "0.28.0"
+egui = "0.16.0"
+egui_winit_vulkano = "0.15.0"
+cgmath = "0.18.0"
+egui_demo_lib = "0.16.0"
 
 [dependencies.engine]
 path = "engine"
