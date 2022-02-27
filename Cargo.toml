@@ -15,6 +15,7 @@ egui = "0.16.0"
 egui_winit_vulkano = "0.15.0"
 cgmath = "0.18.0"
 egui_demo_lib = "0.16.0"
+image = "0.24"
 
 [dependencies.engine]
 path = "engine"

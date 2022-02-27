@@ -3,11 +3,27 @@ use vulkano::Version;
 use vulkano::device::physical::{PhysicalDevice, QueueFamily};
 use vulkano::device::{Device, DeviceExtensions, Features, QueuesIter, Queue};
 use std::sync::Arc;
+use vulkano::image::*;
 
 pub struct RPU {
     pub instance: Arc<Instance>,
     pub device: Arc<Device>,
     pub queue : Arc<Queue>
+}
+
+impl RPU {
+    pub fn create_image(&self, width : u32, height : u32, format : vulkano::format::Format) -> Result<Arc<StorageImage>, ImageCreationError> {
+        StorageImage::new(
+            self.device.clone(),
+            ImageDimensions::Dim2d {
+                width,
+                height,
+                array_layers : 1
+            },
+            format,
+            Some(self.queue.family())
+        )
+    }
 }
 
 impl Default for RPU {
