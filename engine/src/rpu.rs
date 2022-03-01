@@ -1,9 +1,11 @@
 use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, PrimaryCommandBuffer};
+use vulkano::image::view::ImageView;
 use vulkano::instance::{Instance, InstanceExtensions};
 use vulkano::Version;
 use vulkano::device::physical::{PhysicalDevice, QueueFamily, PhysicalDeviceType};
 use vulkano::device::{Device, DeviceExtensions, Features, QueuesIter, Queue};
-use vulkano::render_pass::Framebuffer;
+use vulkano::pipeline::graphics::viewport::Viewport;
+use vulkano::render_pass::{Framebuffer, RenderPass};
 use vulkano::swapchain::{Surface, Swapchain};
 use vulkano_win::VkSurfaceBuild;
 use winit::event_loop::EventLoop;
@@ -11,6 +13,44 @@ use winit::window::{Window, WindowBuilder};
 use std::sync::Arc;
 use vulkano::image::*;
 
+
+#[derive(Debug, Clone)]
+pub struct RPU {
+    pub instance: Arc<Instance>,
+    pub device: Arc<Device>,
+    pub queue : Arc<Queue>
+}
+
+#[derive(Clone)]
+pub struct WinRpu {
+    pub rpu : RPU,
+    pub surface : Arc<Surface<Window>>,
+    pub swapchain : Arc<Swapchain<Window>>, 
+    pub swapchain_images : Vec<Arc<SwapchainImage<Window>>>,
+    pub framebuffers : Vec<Arc<Framebuffer>>,
+    pub render_pass : Arc<RenderPass>,
+    pub viewport : Viewport,
+}
+
+/// This method is called once during initialization, then again whenever the window is resized
+fn window_size_dependent_setup(
+    images: &[Arc<SwapchainImage<Window>>],
+    render_pass: Arc<RenderPass>,
+    viewport: &mut Viewport,
+) -> Vec<Arc<Framebuffer>> {
+    let dimensions = images[0].dimensions().width_height();
+    viewport.dimensions = [dimensions[0] as f32, dimensions[1] as f32];
+
+    images
+        .iter()
+        .map(|image| -> Arc<Framebuffer> {
+            let view = ImageView::new(image.clone()).unwrap();
+            Framebuffer::start(render_pass.clone())
+                .add(view.clone()).unwrap().build().unwrap()
+            }
+        )
+        .collect::<Vec<_>>()
+}
 
 fn select_surfaced_physical_device<'a>(
     instance: &'a Arc<Instance>,
@@ -37,22 +77,8 @@ fn select_surfaced_physical_device<'a>(
 }
 
 
-pub struct RPU {
-    pub instance: Arc<Instance>,
-    pub device: Arc<Device>,
-    pub queue : Arc<Queue>
-}
-
-pub struct WinRpu {
-    pub rpu : RPU,
-    pub surface : Arc<Surface<Window>>,
-    pub swapchain : Arc<Swapchain<Window>>, 
-    pub swapchain_images : Vec<Arc<SwapchainImage<Window>>>,
-    pub framebuffers : Vec<Arc<Framebuffer>>
-}
-
 impl WinRpu {
-    fn default() -> (Self, EventLoop<()>) {
+    pub fn default() -> (Self, EventLoop<()>) {
         let required_extensions = vulkano_win::required_extensions();
         let instance = 
                 Instance::new(
@@ -109,6 +135,47 @@ impl WinRpu {
                 .expect("failed to create swapchain")
         };
 
+        let render_pass = vulkano::single_pass_renderpass!(
+            device.clone(),
+            attachments: {
+                // `color` is a custom name we give to the first and only attachment.
+                color: {
+                    // `load: Clear` means that we ask the GPU to clear the content of this
+                    // attachment at the start of the drawing.
+                    load: Clear,
+                    // `store: Store` means that we ask the GPU to store the output of the draw
+                    // in the actual image. We could also ask it to discard the result.
+                    store: Store,
+                    // `format: <ty>` indicates the type of the format of the image. This has to
+                    // be one of the types of the `vulkano::format` module (or alternatively one
+                    // of your structs that implements the `FormatDesc` trait). Here we use the
+                    // same format as the swapchain.
+                    format: swapchain.format(),
+                    // TODO:
+                    samples: 1,
+                }
+            },
+            pass: {
+                // We use the attachment named `color` as the one and only color attachment.
+                color: [color],
+                // No depth-stencil attachment is indicated with empty brackets.
+                depth_stencil: {}
+            }
+        )
+        .unwrap();
+
+        let mut viewport = Viewport {
+            origin: [0.0, 0.0],
+            dimensions: [0.0, 0.0],
+            depth_range: 0.0..1.0,
+        };
+
+        let framebuffers = 
+            window_size_dependent_setup(
+                &images, 
+                render_pass.clone(), 
+                &mut viewport);
+
         (Self {
             rpu : RPU {
                 device,
@@ -117,7 +184,10 @@ impl WinRpu {
             },
             swapchain,
             surface,
-            swapchain_images : images
+            swapchain_images : images,
+            framebuffers,
+            render_pass,
+            viewport
         }, event_loop)
     }
 }
