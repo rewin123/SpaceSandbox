@@ -5,12 +5,9 @@ use vulkano::{buffer::{CpuAccessibleBuffer, BufferUsage}, format::Format, image:
 use vulkano::render_pass::Framebuffer;
 
 fn main() {
-    
-    let (mut rpu, 
-        surface, 
-        event_loop, 
-        swapchain, 
-        images) = engine::rpu::RPU::from_surface();
+
+    let (win_rpu, event_loop) = engine::rpu::WinRpu::default();
+    let rpu = win_rpu.rpu.clone();
 
     let image = rpu.create_image(1024, 1024, Format::R8G8B8A8_UNORM).unwrap();
     let view = ImageView::new(image.clone()).unwrap();
@@ -63,7 +60,7 @@ fn main() {
             CommandBufferUsage::OneTimeSubmit,
         )
         .unwrap();
-        
+
     builder
         .begin_render_pass(
             framebuffer.clone(),
@@ -82,7 +79,7 @@ fn main() {
         dimensions: [1024.0, 1024.0],
         depth_range: 0.0..1.0,
     };
-    
+
     let pipeline = GraphicsPipeline::start()
         // Describes the layout of the vertex input and how should it behave
         .vertex_input_state(BuffersDefinition::new().vertex::<Vec2>())
@@ -107,7 +104,7 @@ fn main() {
         CommandBufferUsage::OneTimeSubmit,
     )
     .unwrap();
-    
+
     builder
         .begin_render_pass(
             framebuffer.clone(),
@@ -115,14 +112,14 @@ fn main() {
             vec![[0.0, 0.0, 1.0, 1.0].into()],
         )
         .unwrap()
-    
+
         // new stuff
         .bind_pipeline_graphics(pipeline.clone())
         .bind_vertex_buffers(0, vertex_buffer.clone())
         .draw(
             3, 1, 0, 0, // 3 is the number of vertices, 1 is the number of instances
         )
-        
+
         .unwrap()
         .end_render_pass()
         .unwrap()
