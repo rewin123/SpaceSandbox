@@ -1,5 +1,8 @@
 use vulkano::buffer::*;
 use vulkano::command_buffer::*;
+use vulkano::descriptor_set::PersistentDescriptorSet;
+use vulkano::descriptor_set::WriteDescriptorSet;
+use vulkano::pipeline::PipelineBindPoint;
 use vulkano::sync;
 use vulkano::sync::GpuFuture;
 

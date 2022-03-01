@@ -1,20 +1,15 @@
 
-use engine::math::*;
+use SpaceSandbox::math::*;
 use image::{ImageBuffer, Rgba};
-use vulkano::{buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess}, format::Format, image::view::ImageView, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, pipeline::{graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState}, GraphicsPipeline}, render_pass::Subpass, sync::{GpuFuture, self, FlushError}, swapchain::{self, AcquireError}};
+use vulkano::{buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess}, image::view::ImageView, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, pipeline::{graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState}, GraphicsPipeline}, render_pass::Subpass, sync::{GpuFuture, self, FlushError}, swapchain::{self, AcquireError}};
 use vulkano::render_pass::Framebuffer;
 use winit::{event::{Event, WindowEvent}, event_loop::ControlFlow};
+use SpaceSandbox::mesh::*;
 
-#[repr(C)]
-#[derive(Default, Debug, Clone)]
-struct Vertex {
-    position : [f32; 2]
-}
-vulkano::impl_vertex!(Vertex, position);
 
 fn main() {
 
-    let (mut win_rpu, event_loop) = engine::rpu::WinRpu::default();
+    let (mut win_rpu, event_loop) = SpaceSandbox::rpu::WinRpu::default();
     let rpu = win_rpu.rpu.clone();
 
     let mut recreate_swapchain = false;
@@ -29,13 +24,13 @@ fn main() {
         false,
         [
             Vertex {
-                position: [-0.5, -0.25],
+                position: [-0.5, -0.25, 0.0],
             },
             Vertex {
-                position: [0.0, 0.5],
+                position: [0.0, 0.5, 0.0],
             },
             Vertex {
-                position: [0.25, -0.1],
+                position: [0.25, -0.1, 0.0],
             },
         ]
         .iter()
@@ -205,13 +200,13 @@ mod vs {
         src: "
 #version 450
 
-layout(location = 0) in vec2 position;
+layout(location = 0) in vec3 position;
 
 layout(location = 0) out vec2 frag_pos;
 
 void main() {
-    frag_pos = position + vec2(1.0);
-    gl_Position = vec4(position, 0.0, 1.0);
+    frag_pos = vec2(position.x, position.y) + vec2(1.0);
+    gl_Position = vec4(position, 1.0);
 }"
     }
 }
