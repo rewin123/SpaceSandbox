@@ -5,7 +5,12 @@ use vulkano::{buffer::{CpuAccessibleBuffer, BufferUsage}, format::Format, image:
 use vulkano::render_pass::Framebuffer;
 
 fn main() {
-    let mut rpu = engine::rpu::RPU::default();
+    
+    let (mut rpu, 
+        surface, 
+        event_loop, 
+        swapchain, 
+        images) = engine::rpu::RPU::from_surface();
 
     let image = rpu.create_image(1024, 1024, Format::R8G8B8A8_UNORM).unwrap();
     let view = ImageView::new(image.clone()).unwrap();
