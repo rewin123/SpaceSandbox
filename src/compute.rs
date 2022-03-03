@@ -2,7 +2,7 @@ use vulkano::buffer::*;
 use vulkano::command_buffer::*;
 use vulkano::descriptor_set::PersistentDescriptorSet;
 use vulkano::descriptor_set::WriteDescriptorSet;
-use vulkano::pipeline::PipelineBindPoint;
+use vulkano::pipeline::{ComputePipeline, Pipeline, PipelineBindPoint};
 use vulkano::sync;
 use vulkano::sync::GpuFuture;
 
@@ -43,7 +43,7 @@ fn copy_buffer_test() {
 
 #[test]
 fn test_compute_shader() {
-    let mut rpu = engine::rpu::RPU::default();
+    let mut rpu = crate::rpu::RPU::default();
 
     let data_iter = 0..65536;
     let data_budffer = CpuAccessibleBuffer::from_iter(
