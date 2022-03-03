@@ -1,4 +1,3 @@
-
 use std::{sync::Arc, fs::File, io::{BufReader, BufRead}};
 use std::collections::HashMap;
 use vulkano;
@@ -90,12 +89,19 @@ pub fn wavefront_mesh_from_file(path : String) -> Option<Arc<CpuMesh>> {
     Some(Arc::new(mesh))
 }
 
-#[test]
-fn test_wavefront_loading() {
-    let mesh = wavefront_mesh_from_file(
-        String::from("res/test/wavefront/test.obj")).unwrap();
-    println!("{:?}",mesh);
-    assert_eq!(mesh.indices.len(), 3);
-    assert_eq!(mesh.poses.len(), 1);
-    assert_eq!(mesh.poses[0].data[0], 1.0);
+#[cfg(test)]
+mod WavefrontTest {
+    use crate::mesh::wavefront_mesh_from_file;
+
+    #[test]
+    fn test_wavefront_loading() {
+        let mesh = wavefront_mesh_from_file(
+            String::from("res/test/wavefront/test.obj")).unwrap();
+        println!("{:?}",mesh);
+        assert_eq!(mesh.indices.len(), 3);
+        assert_eq!(mesh.poses.len(), 1);
+        assert_eq!(mesh.poses[0].data[0], 1.0);
+    }
+
 }
+
