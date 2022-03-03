@@ -50,11 +50,9 @@ pub fn wavefront_mesh_from_file(path : String) -> Option<Arc<CpuMesh>> {
             continue;
         }
         let words_str = line.split(" ").collect::<Vec<&str>>();
-        if words_str.len() != 4 {
-            continue;
-        }
+
         let mut words = vec![];
-        for i in 0..4 {
+        for i in 0..words_str.len() {
             words.push(String::from(words_str[i]));
         }
 
