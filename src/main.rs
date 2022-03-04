@@ -1,4 +1,6 @@
-
+use std::borrow::BorrowMut;
+use std::sync::Arc;
+use std::time::Duration;
 use SpaceSandbox::math::*;
 use image::{ImageBuffer, Rgba};
 use vulkano::{buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess}, image::view::ImageView, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, pipeline::{graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState}, GraphicsPipeline}, render_pass::Subpass, sync::{GpuFuture, self, FlushError}, swapchain::{self, AcquireError}};
@@ -18,25 +20,17 @@ fn main() {
     let vs = vs::load(rpu.device.clone()).unwrap();
     let fs = fs::load(rpu.device.clone()).unwrap();
 
-    let vertex_buffer = CpuAccessibleBuffer::from_iter(
+    let mut cpu_mesh = mesh_from_file(
+        String::from("res/test_res/models/tomokitty/sculpt.obj")).unwrap();
+
+    cpu_mesh.scale(0.25);
+
+
+    let mesh = GpuMesh::from_cpu(
+        Arc::new(cpu_mesh),
         rpu.device.clone(),
-        BufferUsage::all(),
-        false,
-        [
-            Vertex {
-                position: [-0.5, -0.25, 0.0],
-            },
-            Vertex {
-                position: [0.0, 0.5, 0.0],
-            },
-            Vertex {
-                position: [0.25, -0.1, 0.0],
-            },
-        ]
-        .iter()
-        .cloned(),
-    )
-    .unwrap();
+        );
+
 
     let pipeline = GraphicsPipeline::start()
         // We need to indicate the layout of the vertices.
@@ -58,6 +52,7 @@ fn main() {
         .unwrap();
 
     event_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::Poll;
         match event {
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
@@ -92,7 +87,7 @@ fn main() {
                 // This function can block if no image is available. The parameter is an optional timeout
                 // after which the function call will return an error.
                 let (image_num, suboptimal, acquire_future) =
-                    match swapchain::acquire_next_image(win_rpu.swapchain.clone(), None) {
+                    match swapchain::acquire_next_image(win_rpu.swapchain.clone(), Some(Duration::from_millis(100))) {
                         Ok(r) => r,
                         Err(AcquireError::OutOfDate) => {
                             recreate_swapchain = true;
@@ -147,8 +142,9 @@ fn main() {
                     // Since we used an `EmptyPipeline` object, the objects have to be `()`.
                     .set_viewport(0, [win_rpu.viewport.clone()])
                     .bind_pipeline_graphics(pipeline.clone())
-                    .bind_vertex_buffers(0, vertex_buffer.clone())
-                    .draw(vertex_buffer.len() as u32, 1, 0, 0)
+                    .bind_vertex_buffers(0, mesh.verts.clone())
+                    .bind_index_buffer(mesh.indices.clone())
+                    .draw_indexed(mesh.indices.len() as u32, 1, 0, 0, 0)
                     .unwrap()
                     // We leave the render pass by calling `draw_end`. Note that if we had multiple
                     // subpasses we could have called `next_inline` (or `next_secondary`) to jump to the
