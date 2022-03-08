@@ -4,7 +4,7 @@ use std::time::Duration;
 use SpaceSandbox::math::*;
 use cgmath::Point3;
 use image::{ImageBuffer, Rgba};
-use vulkano::{buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess}, image::view::ImageView, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, pipeline::{graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState}, GraphicsPipeline, Pipeline, PipelineBindPoint}, render_pass::Subpass, sync::{GpuFuture, self, FlushError}, swapchain::{self, AcquireError}, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet}};
+use vulkano::{buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess}, image::view::ImageView, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, pipeline::{graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, depth_stencil::DepthStencilState}, GraphicsPipeline, Pipeline, PipelineBindPoint}, render_pass::Subpass, sync::{GpuFuture, self, FlushError}, swapchain::{self, AcquireError}, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet}};
 use vulkano::render_pass::Framebuffer;
 use winit::{event::{Event, WindowEvent}, event_loop::ControlFlow};
 use SpaceSandbox::mesh::*;
@@ -48,6 +48,8 @@ fn main() {
         .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
         // See `vertex_shader`.
         .fragment_shader(fs.entry_point("main").unwrap(), ())
+        
+        .depth_stencil_state(DepthStencilState::simple_depth_test())
         // We have to indicate which subpass of which render pass this pipeline is going to be used
         // in. The pipeline will only be usable from this particular subpass.
         .render_pass(Subpass::from(win_rpu.render_pass.clone(), 0).unwrap())
@@ -123,7 +125,7 @@ fn main() {
                 }
 
                 // Specify the color to clear the framebuffer with i.e. blue
-                let clear_values = vec![[0.0, 0.0, 1.0, 1.0].into()];
+                let clear_values = vec![[0.0, 0.0, 1.0, 1.0].into(), 1f32.into()];
 
                 // In order to draw, we have to build a *command buffer*. The command buffer object holds
                 // the list of commands that are going to be executed.

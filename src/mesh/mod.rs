@@ -10,9 +10,10 @@ pub mod wavefront;
 #[repr(C)]
 #[derive(Default, Debug, Clone)]
 pub struct Vertex {
-    pub position : [f32; 3]
+    pub position : [f32; 3],
+    pub normal : [f32; 3]
 }
-vulkano::impl_vertex!(Vertex, position);
+vulkano::impl_vertex!(Vertex, position, normal);
 
 #[derive(Debug)]
 pub struct CpuMesh {
@@ -88,7 +89,8 @@ mod mesh_tests {
         let cpu_mesh = Arc::new(CpuMesh {
             verts : vec![
                 Vertex {
-                    position : [0.0, 0.0, 0.0]
+                    position : [0.0, 0.0, 0.0], 
+                    normal : [0.0, 0.0, 0.0]
                 }
             ],
             indices: vec![0]

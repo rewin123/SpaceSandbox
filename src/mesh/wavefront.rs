@@ -71,7 +71,8 @@ pub fn mesh_from_file(path : String) -> Option<CpuMesh> {
                     let (pos_idx, uv_idx, norm_idx) = wavefront_indices(&words[i]);
 
                     let vert = Vertex {
-                        position : poses[(pos_idx - 1) as usize].data
+                        position : poses[(pos_idx - 1) as usize].data,
+                        normal : normals[(norm_idx - 1) as usize].data
                     };
                     verts.push(vert);
 

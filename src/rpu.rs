@@ -11,7 +11,8 @@ use vulkano_win::VkSurfaceBuild;
 use winit::event_loop::EventLoop;
 use winit::window::{Window, WindowBuilder};
 use std::sync::Arc;
-use vulkano::image::*;
+use vulkano::{image::*};
+use vulkano::format::Format;
 
 
 #[derive(Debug, Clone)]
@@ -37,16 +38,24 @@ fn window_size_dependent_setup(
     images: &[Arc<SwapchainImage<Window>>],
     render_pass: Arc<RenderPass>,
     viewport: &mut Viewport,
+    device : Arc<Device>,
 ) -> Vec<Arc<Framebuffer>> {
     let dimensions = images[0].dimensions().width_height();
     viewport.dimensions = [dimensions[0] as f32, dimensions[1] as f32];
+
+    let depth_buffer = ImageView::new(
+        AttachmentImage::transient(device.clone(), dimensions, Format::D16_UNORM).unwrap(),
+    )
+    .unwrap();
 
     images
         .iter()
         .map(|image| -> Arc<Framebuffer> {
             let view = ImageView::new(image.clone()).unwrap();
             Framebuffer::start(render_pass.clone())
-                .add(view.clone()).unwrap().build().unwrap()
+                .add(view.clone()).unwrap()
+                .add(depth_buffer.clone()).unwrap()
+                .build().unwrap()
             }
         )
         .collect::<Vec<_>>()
@@ -153,13 +162,19 @@ impl WinRpu {
                     format: swapchain.format(),
                     // TODO:
                     samples: 1,
+                },
+                depth: {
+                    load: Clear,
+                    store: DontCare,
+                    format: Format::D16_UNORM,
+                    samples: 1,
                 }
             },
             pass: {
                 // We use the attachment named `color` as the one and only color attachment.
                 color: [color],
                 // No depth-stencil attachment is indicated with empty brackets.
-                depth_stencil: {}
+                depth_stencil: {depth}
             }
         )
         .unwrap();
@@ -174,7 +189,8 @@ impl WinRpu {
             window_size_dependent_setup(
                 &images, 
                 render_pass.clone(), 
-                &mut viewport);
+                &mut viewport,
+                device.clone());
 
         (Self {
             rpu : RPU {
