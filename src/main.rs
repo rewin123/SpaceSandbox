@@ -2,8 +2,9 @@ use std::borrow::BorrowMut;
 use std::sync::Arc;
 use std::time::Duration;
 use SpaceSandbox::math::*;
+use cgmath::Point3;
 use image::{ImageBuffer, Rgba};
-use vulkano::{buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess}, image::view::ImageView, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, pipeline::{graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState}, GraphicsPipeline}, render_pass::Subpass, sync::{GpuFuture, self, FlushError}, swapchain::{self, AcquireError}};
+use vulkano::{buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess}, image::view::ImageView, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, pipeline::{graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState}, GraphicsPipeline, Pipeline, PipelineBindPoint}, render_pass::Subpass, sync::{GpuFuture, self, FlushError}, swapchain::{self, AcquireError}, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet}};
 use vulkano::render_pass::Framebuffer;
 use winit::{event::{Event, WindowEvent}, event_loop::ControlFlow};
 use SpaceSandbox::mesh::*;
@@ -17,20 +18,23 @@ fn main() {
     let mut recreate_swapchain = false;
     let mut previous_frame_end = Some(sync::now(rpu.device.clone()).boxed());
 
-    let vs = vs::load(rpu.device.clone()).unwrap();
+    let vs = SpaceSandbox::render::standart_vertex::load(rpu.device.clone()).unwrap();
     let fs = fs::load(rpu.device.clone()).unwrap();
 
     let mut cpu_mesh = mesh_from_file(
-        String::from("res/test_res/models/tomokitty/sculpt.obj")).unwrap();
+        String::from(r"C:\Users\rewin\OneDrive\Documents\GitHub\SpaceSandbox\res\test_res\models\tomokitty\sculpt.obj")).unwrap();
 
-    cpu_mesh.scale(0.25);
-
+    cpu_mesh.scale(0.25 * 0.25 * 0.25);
 
     let mesh = GpuMesh::from_cpu(
         Arc::new(cpu_mesh),
         rpu.device.clone(),
         );
 
+    let camera = SpaceSandbox::render::Camera {
+        position: Point3::new(1.0, 1.0, 0.0),
+        aspect_ratio : 1.0
+    };
 
     let pipeline = GraphicsPipeline::start()
         // We need to indicate the layout of the vertices.
@@ -50,6 +54,9 @@ fn main() {
         // Now that our builder is filled, we call `build()` to obtain an actual pipeline.
         .build(rpu.device.clone())
         .unwrap();
+
+    let mut unifrom_buffer = camera.get_uniform_buffer(rpu.device.clone());
+    
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -79,6 +86,18 @@ fn main() {
                     
                 }
 
+
+                let subbuffer = camera.get_subbuffer(&mut unifrom_buffer);
+                
+                let layout = pipeline.layout().descriptor_set_layouts().get(0).unwrap();
+
+                let set = PersistentDescriptorSet::new(
+                    layout.clone(),
+                    [WriteDescriptorSet::buffer(0, subbuffer)]).unwrap();
+
+                // let set = PersistentDescriptorSet::new(layout.clone(), pipeline
+                //     [WriteDescriptorSet::buffer(0, uniform_buffer_subbuffer)]);
+                
                 // Before we can draw on the output, we have to *acquire* an image from the swapchain. If
                 // no image is available (which happens if you submit draw commands too quickly), then the
                 // function will block.
@@ -142,6 +161,12 @@ fn main() {
                     // Since we used an `EmptyPipeline` object, the objects have to be `()`.
                     .set_viewport(0, [win_rpu.viewport.clone()])
                     .bind_pipeline_graphics(pipeline.clone())
+                    .bind_descriptor_sets(
+                        PipelineBindPoint::Graphics,
+                        pipeline.layout().clone(),
+                        0,
+                        set.clone()
+                    )
                     .bind_vertex_buffers(0, mesh.verts.clone())
                     .bind_index_buffer(mesh.indices.clone())
                     .draw_indexed(mesh.indices.len() as u32, 1, 0, 0, 0)
@@ -189,24 +214,6 @@ fn main() {
     });
 }
 
-
-mod vs {
-    vulkano_shaders::shader!{
-        ty: "vertex",
-        src: "
-#version 450
-
-layout(location = 0) in vec3 position;
-
-layout(location = 0) out vec2 frag_pos;
-
-void main() {
-    frag_pos = vec2(position.x, position.y) + vec2(1.0);
-    gl_Position = vec4(position, 1.0);
-}"
-    }
-}
-
 mod fs {
     vulkano_shaders::shader!{
         ty: "fragment",
@@ -215,10 +222,10 @@ mod fs {
 
 layout(location = 0) out vec4 f_color;
 
-layout(location = 0) in vec2 frag_pos;
+layout(location = 0) in vec3 v_normal;
 
 void main() {
-    f_color = vec4(frag_pos.x, frag_pos.y, 1.0, 1.0);
+    f_color = vec4(v_normal.x, v_normal.y, v_normal.z, 1.0);
 }"
     }
 }
