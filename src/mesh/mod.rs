@@ -11,9 +11,10 @@ pub mod wavefront;
 #[derive(Default, Debug, Clone)]
 pub struct Vertex {
     pub position : [f32; 3],
-    pub normal : [f32; 3]
+    pub normal : [f32; 3],
+    pub uv : [f32; 2]
 }
-vulkano::impl_vertex!(Vertex, position, normal);
+vulkano::impl_vertex!(Vertex, position, normal, uv);
 
 #[derive(Debug)]
 pub struct CpuMesh {

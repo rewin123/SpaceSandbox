@@ -4,7 +4,7 @@ use std::time::Duration;
 use SpaceSandbox::math::*;
 use cgmath::Point3;
 use image::{ImageBuffer, Rgba};
-use vulkano::{buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess}, image::view::ImageView, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, pipeline::{graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, depth_stencil::DepthStencilState}, GraphicsPipeline, Pipeline, PipelineBindPoint}, render_pass::Subpass, sync::{GpuFuture, self, FlushError}, swapchain::{self, AcquireError}, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet}};
+use vulkano::{buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess}, image::view::ImageView, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, pipeline::{graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, depth_stencil::DepthStencilState}, GraphicsPipeline, Pipeline, PipelineBindPoint}, render_pass::Subpass, sync::{GpuFuture, self, FlushError}, swapchain::{self, AcquireError}, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet}, sampler::{Sampler, Filter, SamplerAddressMode, SamplerMipmapMode}};
 use vulkano::render_pass::Framebuffer;
 use winit::{event::{Event, WindowEvent}, event_loop::ControlFlow};
 use SpaceSandbox::mesh::*;
@@ -20,6 +20,17 @@ fn main() {
 
     let vs = SpaceSandbox::render::standart_vertex::load(rpu.device.clone()).unwrap();
     let fs = fs::load(rpu.device.clone()).unwrap();
+
+
+    let (texture_test, texture_future) = SpaceSandbox::io::image::image_to_rpu(
+        include_bytes!(r"C:\Users\rewin\OneDrive\Documents\GitHub\SpaceSandbox/res/test/image/nice_image.png").to_vec(), &rpu);
+    
+    match texture_future.boxed() {
+        _ => {}
+    }
+    
+
+    let texture_view = ImageView::new(texture_test).unwrap();
 
     let mut cpu_mesh = mesh_from_file(
         String::from(r"C:\Users\rewin\OneDrive\Documents\GitHub\SpaceSandbox\res\test_res\models\tomokitty\sculpt.obj")).unwrap();
@@ -48,17 +59,17 @@ fn main() {
         .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
         // See `vertex_shader`.
         .fragment_shader(fs.entry_point("main").unwrap(), ())
-        
         .depth_stencil_state(DepthStencilState::simple_depth_test())
         // We have to indicate which subpass of which render pass this pipeline is going to be used
         // in. The pipeline will only be usable from this particular subpass.
         .render_pass(Subpass::from(win_rpu.render_pass.clone(), 0).unwrap())
+        // .with_pipeline_layout(rpu.device.clone(), pipeline_layout)
+        
         // Now that our builder is filled, we call `build()` to obtain an actual pipeline.
         .build(rpu.device.clone())
         .unwrap();
 
     let mut unifrom_buffer = camera.get_uniform_buffer(rpu.device.clone());
-    
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -93,9 +104,32 @@ fn main() {
                 
                 let layout = pipeline.layout().descriptor_set_layouts().get(0).unwrap();
 
+                let sampler = Sampler::start(
+                    rpu.device.clone(),
+                    // SamplerCreateInfo {
+                    //     mag_filter: Filter::Linear,
+                    //     min_filter: Filter::Linear,
+                    //     address_mode: [SamplerAddressMode::Repeat; 3],
+                    //     ..Default::default()
+                    // },
+                ).mag_filter(Filter::Linear)
+                .min_filter(Filter::Linear)
+                .address_mode(SamplerAddressMode::Repeat)
+                .mipmap_mode(SamplerMipmapMode::Linear).build().unwrap();
+
                 let set = PersistentDescriptorSet::new(
                     layout.clone(),
-                    [WriteDescriptorSet::buffer(0, subbuffer)]).unwrap();
+                    [
+                        WriteDescriptorSet::buffer(0, subbuffer)]).unwrap();
+
+
+                let set2 = PersistentDescriptorSet::new(
+                    pipeline.layout().descriptor_set_layouts().get(1).unwrap().clone(),
+                    [WriteDescriptorSet::image_view_sampler(
+                        0, 
+                        texture_view.clone(),
+                    sampler.clone())]
+                ).unwrap();
 
                 // let set = PersistentDescriptorSet::new(layout.clone(), pipeline
                 //     [WriteDescriptorSet::buffer(0, uniform_buffer_subbuffer)]);
@@ -169,6 +203,12 @@ fn main() {
                         0,
                         set.clone()
                     )
+                    .bind_descriptor_sets(
+                        PipelineBindPoint::Graphics,
+                        pipeline.layout().clone(),
+                        1,
+                        set2.clone()
+                    )
                     .bind_vertex_buffers(0, mesh.verts.clone())
                     .bind_index_buffer(mesh.indices.clone())
                     .draw_indexed(mesh.indices.len() as u32, 1, 0, 0, 0)
@@ -225,9 +265,14 @@ mod fs {
 layout(location = 0) out vec4 f_color;
 
 layout(location = 0) in vec3 v_normal;
+layout(location = 1) in vec2 v_uv;
+
+
+layout(set = 1, binding = 0) uniform sampler2D tex;
 
 void main() {
-    f_color = vec4(v_normal.x, v_normal.y, v_normal.z, 1.0);
+    vec4 tex_color = texture(tex, v_uv);
+    f_color = tex_color;
 }"
     }
 }

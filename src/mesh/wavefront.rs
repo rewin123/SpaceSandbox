@@ -72,7 +72,8 @@ pub fn mesh_from_file(path : String) -> Option<CpuMesh> {
 
                     let vert = Vertex {
                         position : poses[(pos_idx - 1) as usize].data,
-                        normal : normals[(norm_idx - 1) as usize].data
+                        normal : normals[(norm_idx - 1) as usize].data,
+                        uv : uvs[(uv_idx - 1) as usize].data
                     };
                     verts.push(vert);
 

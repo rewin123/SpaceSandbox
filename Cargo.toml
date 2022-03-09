@@ -17,6 +17,7 @@ cgmath = "0.18.0"
 egui_demo_lib = "0.16.0"
 image = "0.24"
 bytemuck = "1.8.0"
+png = "0.17.5"
 
 [dev-dependencies]
 criterion = "0.3"
