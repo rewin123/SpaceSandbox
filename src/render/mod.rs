@@ -6,10 +6,27 @@ use vulkano::{device::Device, buffer::{CpuBufferPool, BufferUsage, cpu_pool::*},
 
 pub struct Camera {
     pub position : cgmath::Point3<f32>,
+    pub forward : cgmath::Vector3<f32>,
+    pub up : cgmath::Vector3<f32>,
     pub aspect_ratio : f32
 }
 
 impl Camera {
+
+    pub fn get_right(&self) -> cgmath::Vector3<f32> {
+        cgmath::Vector3::cross(self.forward, self.up).normalize()
+    }
+
+    pub fn rotate_camera(&mut self, dx : f32, dy : f32) {
+        let right = self.get_right();
+        self.forward = self.forward + dy * self.up;
+        self.forward = cgmath::Vector3::normalize(self.forward);
+        // self.up = right.cross(self.forward).normalize();
+        let right = self.get_right();
+        self.forward = self.forward + dx * right;
+        self.forward = cgmath::Vector3::normalize(self.forward);
+        
+    }
 
     pub fn get_uniform_buffer(&self, device : Arc<Device>) -> CpuBufferPool<standart_vertex::ty::Data> {
         CpuBufferPool::<standart_vertex::ty::Data>::new(device.clone(), BufferUsage::all())
@@ -29,8 +46,8 @@ impl Camera {
             );
             let view = Matrix4::look_at_rh(
                 self.position.clone(),
-                Point3::new(0.0, 0.0, 0.0),
-                Vector3::new(0.0, -1.0, 0.0),
+                self.position.clone() + self.forward.clone(),
+                self.up.clone(),
             );
             let scale = Matrix4::from_scale(1.0);
 

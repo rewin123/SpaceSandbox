@@ -12,6 +12,12 @@ use SpaceSandbox::mesh::*;
 
 fn main() {
 
+    let asset = SpaceSandbox::io::AssetLoader::new(r"C:\Users\rewin\OneDrive\Documents\GitHub\SpaceSandbox\");
+
+    let sponza = gltf::Gltf::open(asset.get_real_path("res/test_res/models/sponza/glTF/Sponza.gltf")).unwrap();
+
+    println!("{:?}", sponza);
+
     let (mut win_rpu, event_loop) = SpaceSandbox::rpu::WinRpu::default();
     let rpu = win_rpu.rpu.clone();
 
@@ -42,8 +48,10 @@ fn main() {
         rpu.device.clone(),
         );
 
-    let camera = SpaceSandbox::render::Camera {
+    let mut camera = SpaceSandbox::render::Camera {
         position: Point3::new(1.0, 1.0, 0.0),
+        forward: cgmath::Vector3::new(-1.0, -1.0, 0.0),
+        up: cgmath::Vector3::new(0.0, -1.0, 0.0),
         aspect_ratio : 1.0
     };
 
@@ -71,8 +79,18 @@ fn main() {
 
     let mut unifrom_buffer = camera.get_uniform_buffer(rpu.device.clone());
 
+    let mut dx = 0.0;
+    let mut dy = 0.0;
+
+    let mut old_cursor_pos = [0.0, 0.0];
+    let mut pressed = false;
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
+
+        dx = 0.0;
+        dy = 0.0;
+
         match event {
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
@@ -86,6 +104,39 @@ fn main() {
             } => {
                 recreate_swapchain = true;
             },
+            Event::WindowEvent {
+                event: WindowEvent::CursorMoved  {
+                    position,
+                    ..
+                },
+                ..
+            } => {
+                dx = position.x - old_cursor_pos[0];
+                dy = position.y - old_cursor_pos[1];
+                dx *= 0.01;
+                dy *= 0.01;
+                old_cursor_pos = [position.x, position.y];
+
+                if pressed {
+                    camera.rotate_camera(dx as f32, dy as f32);
+                }
+            }
+            Event::WindowEvent {
+                event: WindowEvent::MouseInput {
+                    button,
+                    state,
+                    ..
+                },
+                ..
+            } => {
+                if button == winit::event::MouseButton::Left {
+                    if state == winit::event::ElementState::Pressed {
+                        pressed = true;
+                    } else {
+                        pressed = false;
+                    }
+                }
+            }
             Event::RedrawEventsCleared => {
                 // It is important to call this function from time to time, otherwise resources will keep
                 // accumulating and you will eventually reach an out of memory error.
