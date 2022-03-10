@@ -1,329 +1,96 @@
-use std::borrow::BorrowMut;
+// Copyright (c) 2021 Okko Hakola
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT
+// license <LICENSE-MIT or https://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 use std::sync::Arc;
-use std::time::Duration;
-use SpaceSandbox::math::*;
-use cgmath::Point3;
-use image::{ImageBuffer, Rgba};
-use vulkano::{buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess}, image::view::ImageView, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, pipeline::{graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, depth_stencil::DepthStencilState}, GraphicsPipeline, Pipeline, PipelineBindPoint}, render_pass::Subpass, sync::{GpuFuture, self, FlushError}, swapchain::{self, AcquireError}, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet}, sampler::{Sampler, Filter, SamplerAddressMode, SamplerMipmapMode}};
-use vulkano::render_pass::Framebuffer;
-use winit::{event::{Event, WindowEvent}, event_loop::ControlFlow};
-use SpaceSandbox::mesh::*;
+
+use egui::{ScrollArea, TextEdit, TextStyle, Vec2};
+use egui_winit_vulkano::Gui;
+use vulkano::{
+    device::{physical::PhysicalDevice, Device, DeviceExtensions, Features, Queue},
+    image::{view::ImageView, ImageUsage, SwapchainImage},
+    instance::{Instance, InstanceExtensions},
+    swapchain,
+    swapchain::{
+        AcquireError, ColorSpace, FullscreenExclusive, PresentMode, Surface, SurfaceTransform,
+        Swapchain, SwapchainCreationError,
+    },
+    sync,
+    sync::{FlushError, GpuFuture},
+    Version,
+};
+use vulkano_win::VkSurfaceBuild;
+use winit::{
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::{Window, WindowBuilder},
+};
+use SpaceSandbox::gui::SimpleGuiRenderer;
+use SpaceSandbox::io::AssetLoader;
+use SpaceSandbox::rpu::WinRpu;
+
+pub fn main() {
+
+    let asset = AssetLoader::new("");
 
 
-fn main() {
-
-    let asset = SpaceSandbox::io::AssetLoader::new(r"C:\Users\rewin\OneDrive\Documents\GitHub\SpaceSandbox\");
-
-    let sponza = gltf::Gltf::open(asset.get_real_path("res/test_res/models/sponza/glTF/Sponza.gltf")).unwrap();
-
-    println!("{:?}", sponza);
-
-    let (mut win_rpu, event_loop) = SpaceSandbox::rpu::WinRpu::default();
-    let rpu = win_rpu.rpu.clone();
-
-    let mut recreate_swapchain = false;
-    let mut previous_frame_end = Some(sync::now(rpu.device.clone()).boxed());
-
-    let vs = SpaceSandbox::render::standart_vertex::load(rpu.device.clone()).unwrap();
-    let fs = fs::load(rpu.device.clone()).unwrap();
-
-
-    let (texture_test, texture_future) = SpaceSandbox::io::image::image_to_rpu(
-        include_bytes!(r"C:\Users\rewin\OneDrive\Documents\GitHub\SpaceSandbox/res/test/image/nice_image.png").to_vec(), &rpu);
-    
-    match texture_future.boxed() {
-        _ => {}
-    }
-    
-
-    let texture_view = ImageView::new(texture_test).unwrap();
-
-    let mut cpu_mesh = mesh_from_file(
-        String::from(r"C:\Users\rewin\OneDrive\Documents\GitHub\SpaceSandbox\res\test_res\models\tomokitty\sculpt.obj")).unwrap();
-
-    cpu_mesh.scale(0.25 * 0.25 * 0.25);
-
-    let mesh = GpuMesh::from_cpu(
-        Arc::new(cpu_mesh),
-        rpu.device.clone(),
-        );
-
-    let mut camera = SpaceSandbox::render::Camera {
-        position: Point3::new(1.0, 1.0, 0.0),
-        forward: cgmath::Vector3::new(-1.0, -1.0, 0.0),
-        up: cgmath::Vector3::new(0.0, -1.0, 0.0),
-        aspect_ratio : 1.0
-    };
-
-    let pipeline = GraphicsPipeline::start()
-        // We need to indicate the layout of the vertices.
-        .vertex_input_state(BuffersDefinition::new().vertex::<Vertex>())
-        // A Vulkan shader can in theory contain multiple entry points, so we have to specify
-        // which one.
-        .vertex_shader(vs.entry_point("main").unwrap(), ())
-        // The content of the vertex buffer describes a list of triangles.
-        .input_assembly_state(InputAssemblyState::new())
-        // Use a resizable viewport set to draw over the entire window
-        .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
-        // See `vertex_shader`.
-        .fragment_shader(fs.entry_point("main").unwrap(), ())
-        .depth_stencil_state(DepthStencilState::simple_depth_test())
-        // We have to indicate which subpass of which render pass this pipeline is going to be used
-        // in. The pipeline will only be usable from this particular subpass.
-        .render_pass(Subpass::from(win_rpu.render_pass.clone(), 0).unwrap())
-        // .with_pipeline_layout(rpu.device.clone(), pipeline_layout)
-        
-        // Now that our builder is filled, we call `build()` to obtain an actual pipeline.
-        .build(rpu.device.clone())
-        .unwrap();
-
-    let mut unifrom_buffer = camera.get_uniform_buffer(rpu.device.clone());
-
-    let mut dx = 0.0;
-    let mut dy = 0.0;
-
-    let mut old_cursor_pos = [0.0, 0.0];
-    let mut pressed = false;
-
+    // Winit event loop & our time tracking initialization
+    let (win_rpu, event_loop) = WinRpu::default();
+    // Create renderer for our scene & ui
+    let window_size = [1280, 720];
+    let mut renderer =
+        SimpleGuiRenderer::new(win_rpu.clone(), window_size, PresentMode::Immediate, "Minimal");
+    // After creating the renderer (window, gfx_queue) create out gui integration
+    let mut gui = Gui::new(renderer.surface(), renderer.queue(), false);
+    // Create gui state (pass anything your state requires)
+    let tex_id = gui.register_user_image(
+        include_bytes!("../res/test/image/nice_image.png"),
+        vulkano::format::Format::R8G8B8A8_SRGB);
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Poll;
-
-        dx = 0.0;
-        dy = 0.0;
-
+        // Update Egui integration so the UI works!
+        gui.update(&event);
         match event {
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } => {
-                *control_flow = ControlFlow::Exit;
-            }
-            Event::WindowEvent {
-                event: WindowEvent::Resized(_),
-                ..
-            } => {
-                recreate_swapchain = true;
+            Event::WindowEvent { event, window_id } if window_id == window_id => match event {
+                WindowEvent::Resized(_) => {
+                    renderer.resize();
+                }
+                WindowEvent::ScaleFactorChanged { .. } => {
+                    renderer.resize();
+                }
+                WindowEvent::CloseRequested => {
+                    *control_flow = ControlFlow::Exit;
+                }
+                _ => (),
             },
-            Event::WindowEvent {
-                event: WindowEvent::CursorMoved  {
-                    position,
-                    ..
-                },
-                ..
-            } => {
-                dx = position.x - old_cursor_pos[0];
-                dy = position.y - old_cursor_pos[1];
-                dx *= 0.01;
-                dy *= 0.01;
-                old_cursor_pos = [position.x, position.y];
+            Event::RedrawRequested(window_id) if window_id == window_id => {
+                // Set immediate UI in redraw here
+                gui.immediate_ui(|gui| {
+                    let ctx = gui.context();
+                    egui::CentralPanel::default().show(&ctx, |ui| {
+                        ui.vertical_centered(|ui| {
+                            ui.add(egui::widgets::Label::new("Hi there!"));
+                        });
 
-                if pressed {
-                    camera.rotate_camera(dx as f32, dy as f32);
-                }
-            }
-            Event::WindowEvent {
-                event: WindowEvent::MouseInput {
-                    button,
-                    state,
-                    ..
-                },
-                ..
-            } => {
-                if button == winit::event::MouseButton::Left {
-                    if state == winit::event::ElementState::Pressed {
-                        pressed = true;
-                    } else {
-                        pressed = false;
-                    }
-                }
-            }
-            Event::RedrawEventsCleared => {
-                // It is important to call this function from time to time, otherwise resources will keep
-                // accumulating and you will eventually reach an out of memory error.
-                // Calling this function polls various fences in order to determine what the GPU has
-                // already processed, and frees the resources that are no longer needed.
-                previous_frame_end.as_mut().unwrap().cleanup_finished();
-
-                // Whenever the window resizes we need to recreate everything dependent on the window size.
-                // In this example that includes the swapchain, the framebuffers and the dynamic state viewport.
-                if recreate_swapchain {
-                    
-                }
-
-
-                let subbuffer = camera.get_subbuffer(&mut unifrom_buffer);
-                
-                let layout = pipeline.layout().descriptor_set_layouts().get(0).unwrap();
-
-                let sampler = Sampler::start(
-                    rpu.device.clone(),
-                    // SamplerCreateInfo {
-                    //     mag_filter: Filter::Linear,
-                    //     min_filter: Filter::Linear,
-                    //     address_mode: [SamplerAddressMode::Repeat; 3],
-                    //     ..Default::default()
-                    // },
-                ).mag_filter(Filter::Linear)
-                .min_filter(Filter::Linear)
-                .address_mode(SamplerAddressMode::Repeat)
-                .mipmap_mode(SamplerMipmapMode::Linear).build().unwrap();
-
-                let set = PersistentDescriptorSet::new(
-                    layout.clone(),
-                    [
-                        WriteDescriptorSet::buffer(0, subbuffer)]).unwrap();
-
-
-                let set2 = PersistentDescriptorSet::new(
-                    pipeline.layout().descriptor_set_layouts().get(1).unwrap().clone(),
-                    [WriteDescriptorSet::image_view_sampler(
-                        0, 
-                        texture_view.clone(),
-                    sampler.clone())]
-                ).unwrap();
-
-                // let set = PersistentDescriptorSet::new(layout.clone(), pipeline
-                //     [WriteDescriptorSet::buffer(0, uniform_buffer_subbuffer)]);
-                
-                // Before we can draw on the output, we have to *acquire* an image from the swapchain. If
-                // no image is available (which happens if you submit draw commands too quickly), then the
-                // function will block.
-                // This operation returns the index of the image that we are allowed to draw upon.
-                //
-                // This function can block if no image is available. The parameter is an optional timeout
-                // after which the function call will return an error.
-                let (image_num, suboptimal, acquire_future) =
-                    match swapchain::acquire_next_image(win_rpu.swapchain.clone(), Some(Duration::from_millis(100))) {
-                        Ok(r) => r,
-                        Err(AcquireError::OutOfDate) => {
-                            recreate_swapchain = true;
-                            return;
+                        if ui.button("Hello button").clicked() {
+                            println!("Button clicked!");
                         }
-                        Err(e) => panic!("Failed to acquire next image: {:?}", e),
-                    };
 
-                // acquire_next_image can be successful, but suboptimal. This means that the swapchain image
-                // will still work, but it may not display correctly. With some drivers this can be when
-                // the window resizes, but it may not cause the swapchain to become out of date.
-                if suboptimal {
-                    recreate_swapchain = true;
-                }
+                        ui.image(tex_id, Vec2::new(200.0,200.0));
 
-                // Specify the color to clear the framebuffer with i.e. blue
-                let clear_values = vec![[0.0, 0.0, 1.0, 1.0].into(), 1f32.into()];
-
-                // In order to draw, we have to build a *command buffer*. The command buffer object holds
-                // the list of commands that are going to be executed.
-                //
-                // Building a command buffer is an expensive operation (usually a few hundred
-                // microseconds), but it is known to be a hot path in the driver and is expected to be
-                // optimized.
-                //
-                // Note that we have to pass a queue family when we create the command buffer. The command
-                // buffer will only be executable on that given queue family.
-                let mut builder = AutoCommandBufferBuilder::primary(
-                    rpu.device.clone(),
-                    rpu.queue.family(),
-                    CommandBufferUsage::OneTimeSubmit,
-                )
-                .unwrap();
-
-                builder
-                    // Before we can draw, we have to *enter a render pass*. There are two methods to do
-                    // this: `draw_inline` and `draw_secondary`. The latter is a bit more advanced and is
-                    // not covered here.
-                    //
-                    // The third parameter builds the list of values to clear the attachments with. The API
-                    // is similar to the list of attachments when building the framebuffers, except that
-                    // only the attachments that use `load: Clear` appear in the list.
-                    .begin_render_pass(
-                        win_rpu.framebuffers[image_num].clone(),
-                        SubpassContents::Inline,
-                        clear_values,
-                    )
-                    .unwrap()
-                    // We are now inside the first subpass of the render pass. We add a draw command.
-                    //
-                    // The last two parameters contain the list of resources to pass to the shaders.
-                    // Since we used an `EmptyPipeline` object, the objects have to be `()`.
-                    .set_viewport(0, [win_rpu.viewport.clone()])
-                    .bind_pipeline_graphics(pipeline.clone())
-                    .bind_descriptor_sets(
-                        PipelineBindPoint::Graphics,
-                        pipeline.layout().clone(),
-                        0,
-                        set.clone()
-                    )
-                    .bind_descriptor_sets(
-                        PipelineBindPoint::Graphics,
-                        pipeline.layout().clone(),
-                        1,
-                        set2.clone()
-                    )
-                    .bind_vertex_buffers(0, mesh.verts.clone())
-                    .bind_index_buffer(mesh.indices.clone())
-                    .draw_indexed(mesh.indices.len() as u32, 1, 0, 0, 0)
-                    .unwrap()
-                    // We leave the render pass by calling `draw_end`. Note that if we had multiple
-                    // subpasses we could have called `next_inline` (or `next_secondary`) to jump to the
-                    // next subpass.
-                    .end_render_pass()
-                    .unwrap();
-
-                // Finish building the command buffer by calling `build`.
-                let command_buffer = builder.build().unwrap();
-
-                let future = previous_frame_end
-                    .take()
-                    .unwrap()
-                    .join(acquire_future)
-                    .then_execute(rpu.queue.clone(), command_buffer)
-                    .unwrap()
-                    // The color output is now expected to contain our triangle. But in order to show it on
-                    // the screen, we have to *present* the image by calling `present`.
-                    //
-                    // This function does not actually present the image immediately. Instead it submits a
-                    // present command at the end of the queue. This means that it will only be presented once
-                    // the GPU has finished executing the command buffer that draws the triangle.
-                    .then_swapchain_present(rpu.queue.clone(), win_rpu.swapchain.clone(), image_num)
-                    .then_signal_fence_and_flush();
-
-                match future {
-                    Ok(future) => {
-                        previous_frame_end = Some(future.boxed());
-                    }
-                    Err(FlushError::OutOfDate) => {
-                        recreate_swapchain = true;
-                        previous_frame_end = Some(sync::now(rpu.device.clone()).boxed());
-                    }
-                    Err(e) => {
-                        println!("Failed to flush future: {:?}", e);
-                        previous_frame_end = Some(sync::now(rpu.device.clone()).boxed());
-                    }
-                }
-            },
-            _ => ()
+                    });
+                });
+                // Render UI
+                renderer.render(&mut gui);
+            }
+            Event::MainEventsCleared => {
+                renderer.surface().window().request_redraw();
+            }
+            _ => (),
         }
     });
-}
-
-mod fs {
-    vulkano_shaders::shader!{
-        ty: "fragment",
-        src: "
-#version 450
-
-layout(location = 0) out vec4 f_color;
-
-layout(location = 0) in vec3 v_normal;
-layout(location = 1) in vec2 v_uv;
-
-
-layout(set = 1, binding = 0) uniform sampler2D tex;
-
-void main() {
-    vec4 tex_color = texture(tex, v_uv);
-    f_color = tex_color;
-}"
-    }
 }

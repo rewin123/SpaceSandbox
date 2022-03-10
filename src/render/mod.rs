@@ -11,6 +11,10 @@ pub struct Camera {
     pub aspect_ratio : f32
 }
 
+pub struct ImageRender {
+
+}
+
 impl Camera {
 
     pub fn get_right(&self) -> cgmath::Vector3<f32> {
