@@ -2,7 +2,9 @@
 use std::sync::Arc;
 
 use cgmath::*;
+use specs::{Component, VecStorage};
 use vulkano::{device::Device, buffer::{CpuBufferPool, BufferUsage, cpu_pool::*}, memory::pool::StdMemoryPool};
+use crate::mesh::GpuMesh;
 
 pub struct Camera {
     pub position : cgmath::Point3<f32>,
@@ -11,8 +13,22 @@ pub struct Camera {
     pub aspect_ratio : f32
 }
 
-pub struct ImageRender {
 
+
+pub struct GMesh {
+    mesh: GpuMesh
+}
+
+pub trait Render {
+
+}
+
+pub struct GRender {
+
+}
+
+impl Component for GMesh {
+    type Storage = VecStorage<Self>;
 }
 
 impl Camera {

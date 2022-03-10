@@ -6,3 +6,5 @@ pub mod math;
 pub mod mesh;
 pub mod render;
 pub mod io;
+pub mod static_world;
+pub mod game_object;

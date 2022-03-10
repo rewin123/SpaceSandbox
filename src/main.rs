@@ -34,63 +34,69 @@ use SpaceSandbox::gui::SimpleGuiRenderer;
 use SpaceSandbox::io::AssetLoader;
 use SpaceSandbox::rpu::WinRpu;
 
+use specs::*;
+use specs::prelude::*;
+
+#[derive(Debug, Default)]
+struct Pos {
+    x : f32,
+    y : f32
+}
+
+
+
 pub fn main() {
-
     let asset = AssetLoader::new("");
-
 
     // Winit event loop & our time tracking initialization
     let (win_rpu, event_loop) = WinRpu::default();
-    // Create renderer for our scene & ui
-    let window_size = [1280, 720];
-    let mut renderer =
-        SimpleGuiRenderer::new(win_rpu.clone(), window_size, PresentMode::Immediate, "Minimal");
-    // After creating the renderer (window, gfx_queue) create out gui integration
-    let mut gui = Gui::new(renderer.surface(), renderer.queue(), false);
-    // Create gui state (pass anything your state requires)
-    let tex_id = gui.register_user_image(
-        include_bytes!("../res/test/image/nice_image.png"),
-        vulkano::format::Format::R8G8B8A8_SRGB);
-    event_loop.run(move |event, _, control_flow| {
-        // Update Egui integration so the UI works!
-        gui.update(&event);
-        match event {
-            Event::WindowEvent { event, window_id } if window_id == window_id => match event {
-                WindowEvent::Resized(_) => {
-                    renderer.resize();
-                }
-                WindowEvent::ScaleFactorChanged { .. } => {
-                    renderer.resize();
-                }
-                WindowEvent::CloseRequested => {
-                    *control_flow = ControlFlow::Exit;
-                }
-                _ => (),
-            },
-            Event::RedrawRequested(window_id) if window_id == window_id => {
-                // Set immediate UI in redraw here
-                gui.immediate_ui(|gui| {
-                    let ctx = gui.context();
-                    egui::CentralPanel::default().show(&ctx, |ui| {
-                        ui.vertical_centered(|ui| {
-                            ui.add(egui::widgets::Label::new("Hi there!"));
-                        });
 
-                        if ui.button("Hello button").clicked() {
-                            println!("Button clicked!");
-                        }
-
-                        ui.image(tex_id, Vec2::new(200.0,200.0));
-
-                    });
-                });
-                // Render UI
-                renderer.render(&mut gui);
-            }
-            Event::MainEventsCleared => {
-                renderer.surface().window().request_redraw();
-            }
-            _ => (),
-        }
-    });
+    let mut world = SpaceSandbox::static_world::from_gltf(
+        "res/test_res/models/sponza/glTF/Sponza.gltf");
+    //
+    // // Create renderer for our scene & ui
+    // let window_size = [1280, 720];
+    // let mut renderer =
+    //     SimpleGuiRenderer::new(win_rpu.clone(), window_size, PresentMode::Immediate, "Minimal");
+    // // After creating the renderer (window, gfx_queue) create out gui integration
+    // let mut gui = Gui::new(renderer.surface(), renderer.queue(), false);
+    // // Create gui state (pass anything your state requires)
+    // let tex_id = gui.register_user_image(
+    //     include_bytes!("../res/test/image/nice_image.png"),
+    //     vulkano::format::Format::R8G8B8A8_SRGB);
+    // event_loop.run(move |event, _, control_flow| {
+    //     // Update Egui integration so the UI works!
+    //     gui.update(&event);
+    //     match event {
+    //         Event::WindowEvent { event, window_id } if window_id == window_id => match event {
+    //             WindowEvent::Resized(_) => {
+    //                 renderer.resize();
+    //             }
+    //             WindowEvent::ScaleFactorChanged { .. } => {
+    //                 renderer.resize();
+    //             }
+    //             WindowEvent::CloseRequested => {
+    //                 *control_flow = ControlFlow::Exit;
+    //             }
+    //             _ => (),
+    //         },
+    //         Event::RedrawRequested(window_id) if window_id == window_id => {
+    //             // Set immediate UI in redraw here
+    //             gui.immediate_ui(|gui| {
+    //                 let ctx = gui.context();
+    //                 egui::CentralPanel::default().show(&ctx, |ui| {
+    //
+    //                     let image_resp = ui.image(tex_id, Vec2::new(512.0,512.0));
+    //
+    //                 });
+    //             });
+    //             // Render UI
+    //             renderer.render(&mut gui);
+    //         }
+    //         Event::MainEventsCleared => {
+    //             renderer.surface().window().request_redraw();
+    //         }
+    //         _ => (),
+    //     }
+    // });
 }
