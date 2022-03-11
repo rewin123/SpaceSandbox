@@ -20,6 +20,7 @@ bytemuck = "1.8.0"
 png = "0.17.5"
 gltf = "1.0.0"
 specs = "0.17.0"
+easy-gltf = "0.1.4"
 
 [dev-dependencies]
 criterion = "0.3"

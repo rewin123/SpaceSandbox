@@ -16,7 +16,7 @@ pub struct Camera {
 
 
 pub struct GMesh {
-    mesh: GpuMesh
+    pub mesh: Arc<GpuMesh>
 }
 
 pub trait Render {

@@ -1,7 +1,7 @@
 use specs::*;
 use specs::prelude::*;
 
-pub struct Pos(cgmath::Vector3<f32>);
+pub struct Pos(pub cgmath::Vector3<f32>);
 
 impl Default for Pos {
     fn default() -> Self {
