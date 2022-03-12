@@ -253,6 +253,33 @@ impl RPU {
 
         future.wait(None).unwrap();
     }
+
+    pub fn clear_attach_image(
+        &self,
+        image : Arc<AttachmentImage>, 
+        clear_val : ClearValue
+    ) {
+        let mut builder = AutoCommandBufferBuilder::primary(
+            self.device.clone(),
+            self.queue.family(),
+            CommandBufferUsage::OneTimeSubmit,
+        )
+        .unwrap();
+        
+        builder
+            .clear_depth_stencil_image(image.clone(), clear_val)
+            .unwrap();
+        
+        let command_buffer = builder.build().unwrap();
+
+        let future = sync::now(self.device.clone())
+            .then_execute(self.queue.clone(), command_buffer)
+            .unwrap()
+            .then_signal_fence_and_flush()
+            .unwrap();
+
+        future.wait(None).unwrap();
+    }
 }
 
 impl Default for RPU {

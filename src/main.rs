@@ -52,7 +52,14 @@ pub fn main() {
     let mut world = SpaceSandbox::static_world::from_gltf(
         "res/test_res/models/sponza/glTF/Sponza.gltf", win_rpu.rpu.device.clone());
 
-    let render = SpaceSandbox::render::GRender::from_rpu(win_rpu.rpu.clone(), 512, 512);
+    let mut render = SpaceSandbox::render::GRender::from_rpu(win_rpu.rpu.clone(), 512, 512);
+
+    let mut camera = SpaceSandbox::render::Camera {
+        position: [5.0, 2.0, 0.0].into(),
+        forward: [-1.0, 0.0, 0.0].into(),
+        up: [0.0, -1.0, 0.0].into(),
+        aspect_ratio: 1.0,
+    };
     
     // Create renderer for our scene & ui
     let window_size = [1280, 720];
@@ -61,9 +68,7 @@ pub fn main() {
     // After creating the renderer (window, gfx_queue) create out gui integration
     let mut gui = Gui::new(renderer.surface(), renderer.queue(), false);
     // Create gui state (pass anything your state requires)
-    let tex_id = gui.register_user_image(
-        include_bytes!("../res/test/image/nice_image.png"),
-        vulkano::format::Format::R8G8B8A8_SRGB);
+    let tex_id = gui.register_user_image_view(ImageView::new(render.diffuse_img.clone()).unwrap());
     event_loop.run(move |event, _, control_flow| {
         // Update Egui integration so the UI works!
         gui.update(&event);
@@ -81,6 +86,9 @@ pub fn main() {
                 _ => (),
             },
             Event::RedrawRequested(window_id) if window_id == window_id => {
+
+                render.draw(&world, &camera);
+
                 // Set immediate UI in redraw here
                 gui.immediate_ui(|gui| {
                     let ctx = gui.context();
