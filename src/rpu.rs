@@ -1,7 +1,8 @@
 use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, PrimaryCommandBuffer};
 use vulkano::image::view::ImageView;
 use vulkano::instance::{Instance, InstanceExtensions};
-use vulkano::Version;
+use vulkano::sync::{GpuFuture, NowFuture, FenceSignalFuture};
+use vulkano::{Version, sync};
 use vulkano::device::physical::{PhysicalDevice, QueueFamily, PhysicalDeviceType};
 use vulkano::device::{Device, DeviceExtensions, Features, QueuesIter, Queue};
 use vulkano::pipeline::graphics::viewport::Viewport;
@@ -12,7 +13,7 @@ use winit::event_loop::EventLoop;
 use winit::window::{Window, WindowBuilder};
 use std::sync::Arc;
 use vulkano::{image::*};
-use vulkano::format::Format;
+use vulkano::format::{Format, ClearValue};
 
 
 #[derive(Debug, Clone)]
@@ -224,6 +225,33 @@ impl RPU {
             format,
             Some(self.queue.family())
         )
+    }
+
+    pub fn clear_image(
+        &self,
+        image : Arc<StorageImage>, 
+        clear_val : ClearValue
+    ) {
+        let mut builder = AutoCommandBufferBuilder::primary(
+            self.device.clone(),
+            self.queue.family(),
+            CommandBufferUsage::OneTimeSubmit,
+        )
+        .unwrap();
+        
+        builder
+            .clear_color_image(image.clone(), clear_val)
+            .unwrap();
+        
+        let command_buffer = builder.build().unwrap();
+
+        let future = sync::now(self.device.clone())
+            .then_execute(self.queue.clone(), command_buffer)
+            .unwrap()
+            .then_signal_fence_and_flush()
+            .unwrap();
+
+        future.wait(None).unwrap();
     }
 }
 

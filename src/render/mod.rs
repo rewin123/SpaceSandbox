@@ -2,9 +2,9 @@
 use std::sync::Arc;
 
 use cgmath::*;
-use specs::{Component, VecStorage};
-use vulkano::{device::Device, buffer::{CpuBufferPool, BufferUsage, cpu_pool::*}, memory::pool::StdMemoryPool};
-use crate::mesh::GpuMesh;
+use specs::{Component, VecStorage, World, WorldExt, Join};
+use vulkano::{device::Device, buffer::{CpuBufferPool, BufferUsage, cpu_pool::*}, memory::pool::StdMemoryPool, image::{view::ImageView, StorageImage}, format::{Format, ClearValue}};
+use crate::{mesh::GpuMesh, rpu::RPU, game_object::Pos};
 
 pub struct Camera {
     pub position : cgmath::Point3<f32>,
@@ -12,8 +12,6 @@ pub struct Camera {
     pub up : cgmath::Vector3<f32>,
     pub aspect_ratio : f32
 }
-
-
 
 pub struct GMesh {
     pub mesh: Arc<GpuMesh>
@@ -24,7 +22,38 @@ pub trait Render {
 }
 
 pub struct GRender {
+    pub rpu : RPU,
+    pub diffuse_img : Arc<StorageImage>,
+}
 
+impl GRender {
+    pub fn from_rpu(rpu : RPU, w : u32, h : u32) -> Self {
+        
+        let diffuse_img = rpu.create_image(w, h, Format::R8G8B8A8_SRGB).unwrap();
+
+        let vs = standart_vertex::load(rpu.device.clone()).unwrap();
+        let fs = gmesh_fragment::load(rpu.device.clone()).unwrap();
+
+        Self {
+            diffuse_img,
+            rpu : rpu.clone()
+        }
+    }
+
+    pub fn draw(&mut self, world : &World) {
+        
+        let read_mesh = world.read_storage::<GMesh>();
+        let read_pos = world.read_storage::<Pos>();
+
+        //clean image
+        self.rpu.clear_image(self.diffuse_img.clone(), ClearValue::Float([0.0,0.0,0.0,0.0]));
+
+        let diffuse_view = ImageView::new(self.diffuse_img.clone());
+
+        for (pos, mesh) in (&read_pos, &read_mesh).join() {
+            //do draw stuff
+        }
+    }
 }
 
 impl Component for GMesh {
@@ -88,5 +117,12 @@ pub mod standart_vertex {
     vulkano_shaders::shader!{
         ty: "vertex",
         path : "src/render/standart_vertex.glsl" ,
+    }
+}
+
+pub mod gmesh_fragment {
+    vulkano_shaders::shader!{
+        ty: "fragment",
+        path : "src/render/gmesh_fragment.glsl" ,
     }
 }

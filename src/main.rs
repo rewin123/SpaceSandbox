@@ -43,8 +43,6 @@ struct Pos {
     y : f32
 }
 
-
-
 pub fn main() {
     let asset = AssetLoader::new("");
 
@@ -53,6 +51,8 @@ pub fn main() {
 
     let mut world = SpaceSandbox::static_world::from_gltf(
         "res/test_res/models/sponza/glTF/Sponza.gltf", win_rpu.rpu.device.clone());
+
+    let render = SpaceSandbox::render::GRender::from_rpu(win_rpu.rpu.clone(), 512, 512);
     
     // Create renderer for our scene & ui
     let window_size = [1280, 720];

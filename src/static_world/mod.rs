@@ -46,7 +46,7 @@ pub fn from_gltf(path : &str, device : Arc<Device>) -> World {
                 cpu_mesh.indices.push(*idx as u32);
             }
 
-            println!("Create mesh with {} verts", cpu_mesh.verts.len());
+            // println!("Create mesh with {} verts", cpu_mesh.verts.len());
 
             let gpu_mesh = crate::mesh::GpuMesh::from_cpu(Arc::new(cpu_mesh), device.clone());
 

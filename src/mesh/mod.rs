@@ -91,7 +91,8 @@ mod mesh_tests {
             verts : vec![
                 Vertex {
                     position : [0.0, 0.0, 0.0], 
-                    normal : [0.0, 0.0, 0.0]
+                    normal : [0.0, 0.0, 0.0], 
+                    uv : [0.0, 0.0]
                 }
             ],
             indices: vec![0]

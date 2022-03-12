@@ -9,5 +9,15 @@ pub fn small_wavefront_loading(c: &mut Criterion) {
         String::from("res/test_res/models/tomokitty/sculpt.obj")))));
 }
 
-criterion_group!(benches, small_wavefront_loading);
+pub fn test_sponza_loading(c : &mut Criterion) {
+    let rpu = SpaceSandbox::rpu::RPU::default();
+    c.bench_function("sponza_easy_gltf_loading",
+        |b| b.iter(|| SpaceSandbox::static_world::from_gltf(black_box("res/test_res/models/sponza/glTF/Sponza.gltf"), rpu.device.clone())));
+}
+
+criterion_group!(
+    benches, 
+    small_wavefront_loading, 
+    test_sponza_loading);
+
 criterion_main!(benches);
