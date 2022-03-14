@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use cgmath::*;
 use specs::{Component, VecStorage, World, WorldExt, Join};
-use vulkano::{device::Device, buffer::{CpuBufferPool, BufferUsage, cpu_pool::*, TypedBufferAccess}, memory::pool::StdMemoryPool, image::{view::ImageView, StorageImage, AttachmentImage}, format::{Format, ClearValue}, pipeline::{GraphicsPipeline, graphics::{vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, viewport::{ViewportState, Viewport}, depth_stencil::DepthStencilState}, Pipeline, PipelineBindPoint}, render_pass::{Subpass, RenderPass, Framebuffer}, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet}, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, sync::{self, GpuFuture}};
+use vulkano::{device::{Device, Queue}, buffer::{CpuBufferPool, BufferUsage, cpu_pool::*, TypedBufferAccess}, memory::pool::StdMemoryPool, image::{view::ImageView, StorageImage, AttachmentImage, MipmapsCount, ImmutableImage, ImageDimensions}, format::{Format, ClearValue}, pipeline::{GraphicsPipeline, graphics::{vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, viewport::{ViewportState, Viewport}, depth_stencil::DepthStencilState}, Pipeline, PipelineBindPoint}, render_pass::{Subpass, RenderPass, Framebuffer}, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet}, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, sync::{self, GpuFuture}, sampler::{Sampler, Filter, SamplerAddressMode}};
 use crate::{mesh::{GpuMesh, Vertex}, rpu::RPU, game_object::Pos};
 
 pub struct Camera {
@@ -13,8 +13,14 @@ pub struct Camera {
     pub aspect_ratio : f32
 }
 
+pub struct Material {
+    pub base_color_factor : Vector4<f32>, 
+    pub base_color_texture : Arc<ImmutableImage>,
+}
+
 pub struct GMesh {
-    pub mesh: Arc<GpuMesh>
+    pub mesh: Arc<GpuMesh>,
+    pub material : Arc<Material>
 }
 
 pub trait Render {
@@ -28,6 +34,41 @@ pub struct GRender {
     pub pipeline : Arc<GraphicsPipeline>,
     pub render_pass : Arc<RenderPass>,
     pub viewport : Viewport,
+}
+
+impl Material {
+    pub fn from_gltf(
+            mat : Arc<easy_gltf::Material>,
+            queue : Arc<Queue>) -> Self {
+
+            let diffuse_buf = mat.pbr.base_color_texture.clone().unwrap();
+
+            let diffuse_dim = ImageDimensions::Dim2d {
+                width: diffuse_buf.width(),
+                height: diffuse_buf.height(),
+                array_layers: 1,
+            };
+    
+            let mut data = vec![];
+            for p_data in diffuse_buf.iter() {
+                data.push(*p_data);
+            }
+    
+            let (diffuse_img, mut diffuse_future) = ImmutableImage::from_iter(
+                data,
+                diffuse_dim,
+                MipmapsCount::One,
+                Format::R8G8B8A8_SRGB,
+                queue.clone()
+            ).unwrap();
+    
+            diffuse_future.cleanup_finished();
+
+        Self {
+            base_color_factor : mat.pbr.base_color_factor,
+            base_color_texture: diffuse_img
+        }
+    }
 }
 
 impl GRender {
@@ -132,22 +173,49 @@ impl GRender {
         .unwrap();
         
         builder
-        .begin_render_pass(
-            framebuffer.clone(),
-            SubpassContents::Inline,
-            vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()],
-        ).unwrap()
-        .set_viewport(0, [self.viewport.clone()])
-        .bind_pipeline_graphics(self.pipeline.clone())
-        .bind_descriptor_sets(
-            PipelineBindPoint::Graphics,
-            self.pipeline.layout().clone(),
-            0,
-            set.clone()
-        );
+            .begin_render_pass(
+                framebuffer.clone(),
+                SubpassContents::Inline,
+                vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()],
+            ).unwrap()
+            .set_viewport(0, [self.viewport.clone()])
+            .bind_pipeline_graphics(self.pipeline.clone());
+
+        let sampler = Sampler::start(self.rpu.device.clone())
+            .mag_filter(Filter::Linear)
+            .min_filter(Filter::Linear)
+            .address_mode(SamplerAddressMode::Repeat)
+            .build().unwrap();
+    
 
         for (pos, gmesh) in (&read_pos, &read_mesh).join() {
+
+            let base_tex_view = 
+                ImageView::new(gmesh.material.base_color_texture.clone()).unwrap();
+
+            let texture_set = PersistentDescriptorSet::new(
+                self.pipeline.layout().descriptor_set_layouts().get(1).unwrap().clone(),
+                [WriteDescriptorSet::image_view_sampler(
+                    0,
+                    base_tex_view.clone(),
+                    sampler.clone(),
+                )],
+            )
+            .unwrap();
+
             builder
+            .bind_descriptor_sets(
+                PipelineBindPoint::Graphics,
+                self.pipeline.layout().clone(),
+                0,
+                set.clone()
+            )
+            .bind_descriptor_sets(
+                PipelineBindPoint::Graphics,
+                self.pipeline.layout().clone(),
+                1,
+                texture_set.clone()
+            )
             .bind_vertex_buffers(0, gmesh.mesh.verts.clone())
             .bind_index_buffer(gmesh.mesh.indices.clone())
             .draw_indexed(gmesh.mesh.indices.len() as u32, 1, 0, 0, 0).unwrap();

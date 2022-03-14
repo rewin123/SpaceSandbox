@@ -6,6 +6,7 @@ use specs::prelude::*;
 use vulkano::device::Device;
 use crate::render::GMesh;
 use crate::game_object::Pos;
+use crate::rpu::RPU;
 
 pub fn generate_static_world() -> World {
     let mut world = World::new();
@@ -17,7 +18,7 @@ pub fn generate_static_world() -> World {
 }
 
 
-pub fn from_gltf(path : &str, device : Arc<Device>) -> World {
+pub fn from_gltf(path : &str, rpu : RPU) -> World {
     let mut world = generate_static_world();
 
     let scenes = easy_gltf::load(path).unwrap();
@@ -26,6 +27,8 @@ pub fn from_gltf(path : &str, device : Arc<Device>) -> World {
         for model in scene.models {
             let vertices = model.vertices();
             let indices = model.indices().unwrap();
+
+
 
             let mut cpu_mesh = crate::mesh::CpuMesh {
                 verts : vec![],
@@ -48,10 +51,11 @@ pub fn from_gltf(path : &str, device : Arc<Device>) -> World {
 
             //println!("Create mesh with {} verts", cpu_mesh.verts.len());
 
-            let gpu_mesh = crate::mesh::GpuMesh::from_cpu(Arc::new(cpu_mesh), device.clone());
+            let gpu_mesh = crate::mesh::GpuMesh::from_cpu(Arc::new(cpu_mesh), rpu.device.clone());
 
             let mut gmesh = GMesh {
-                mesh : gpu_mesh
+                mesh : gpu_mesh,
+                material : Arc::new(crate::render::Material::from_gltf(model.material(), rpu.queue.clone()))
             };
 
             world.create_entity().with(Pos(cgmath::Vector3::new(0.0, 0.0, 0.0))).with(gmesh).build();

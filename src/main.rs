@@ -50,7 +50,7 @@ pub fn main() {
     let (win_rpu, event_loop) = WinRpu::default();
 
     let mut world = SpaceSandbox::static_world::from_gltf(
-        "res/test_res/models/sponza/glTF/Sponza.gltf", win_rpu.rpu.device.clone());
+        "res/test_res/models/sponza/glTF/Sponza.gltf", win_rpu.rpu.clone());
 
     let mut render = SpaceSandbox::render::GRender::from_rpu(win_rpu.rpu.clone(), 512, 512);
 
