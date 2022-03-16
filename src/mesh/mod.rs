@@ -1,5 +1,6 @@
 use std::{sync::Arc, fs::File, io::{BufReader, BufRead}};
 use std::collections::HashMap;
+use bytemuck::Zeroable;
 use vulkano;
 use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
 use vulkano::device::Device;

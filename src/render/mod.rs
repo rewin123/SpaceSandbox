@@ -3,8 +3,10 @@ use std::sync::Arc;
 
 use cgmath::*;
 use specs::{Component, VecStorage, World, WorldExt, Join};
-use vulkano::{device::{Device, Queue}, buffer::{CpuBufferPool, BufferUsage, cpu_pool::*, TypedBufferAccess}, memory::pool::StdMemoryPool, image::{view::ImageView, StorageImage, AttachmentImage, MipmapsCount, ImmutableImage, ImageDimensions}, format::{Format, ClearValue}, pipeline::{GraphicsPipeline, graphics::{vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, viewport::{ViewportState, Viewport}, depth_stencil::DepthStencilState}, Pipeline, PipelineBindPoint}, render_pass::{Subpass, RenderPass, Framebuffer}, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet}, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, sync::{self, GpuFuture}, sampler::{Sampler, Filter, SamplerAddressMode}};
+use vulkano::{device::{Device, Queue}, buffer::{CpuBufferPool, BufferUsage, cpu_pool::*, TypedBufferAccess, CpuAccessibleBuffer}, memory::pool::StdMemoryPool, image::{view::ImageView, StorageImage, AttachmentImage, MipmapsCount, ImmutableImage, ImageDimensions}, format::{Format, ClearValue}, pipeline::{GraphicsPipeline, graphics::{vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, viewport::{ViewportState, Viewport}, depth_stencil::DepthStencilState}, Pipeline, PipelineBindPoint}, render_pass::{Subpass, RenderPass, Framebuffer}, descriptor_set::{PersistentDescriptorSet, WriteDescriptorSet}, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, sync::{self, GpuFuture}, sampler::{Sampler, Filter, SamplerAddressMode, SamplerMipmapMode}};
 use crate::{mesh::{GpuMesh, Vertex}, rpu::RPU, game_object::Pos};
+use vulkano::image::*;
+use vulkano::image::traits::*;
 
 pub struct Camera {
     pub position : cgmath::Point3<f32>,
@@ -39,30 +41,100 @@ pub struct GRender {
 impl Material {
     pub fn from_gltf(
             mat : Arc<easy_gltf::Material>,
-            queue : Arc<Queue>) -> Self {
+            rpu : RPU) -> Self {
 
-            let diffuse_buf = mat.pbr.base_color_texture.clone().unwrap();
+        let diffuse_buf = mat.pbr.base_color_texture.clone().unwrap();
 
-            let diffuse_dim = ImageDimensions::Dim2d {
-                width: diffuse_buf.width(),
-                height: diffuse_buf.height(),
-                array_layers: 1,
-            };
-    
-            let mut data = vec![];
-            for p_data in diffuse_buf.iter() {
-                data.push(*p_data);
-            }
-    
-            let (diffuse_img, mut diffuse_future) = ImmutableImage::from_iter(
-                data,
-                diffuse_dim,
-                MipmapsCount::One,
-                Format::R8G8B8A8_SRGB,
-                queue.clone()
-            ).unwrap();
-    
-            diffuse_future.cleanup_finished();
+        let diffuse_dim = ImageDimensions::Dim2d {
+            width: diffuse_buf.width(),
+            height: diffuse_buf.height(),
+            array_layers: 1,
+        };
+
+        let mut data = vec![];
+        for p_data in diffuse_buf.iter() {
+            data.push(*p_data);
+        }
+
+        let usage = ImageUsage {
+            transfer_destination: true,
+            transfer_source: true,
+            sampled: true,
+            ..ImageUsage::none()
+        };
+        let layout = ImageLayout::ShaderReadOnlyOptimal;
+
+        let buffer = CpuAccessibleBuffer::from_iter(
+            rpu.device.clone(),
+            BufferUsage::transfer_source(),
+            false,
+            data,
+        )
+        .unwrap();
+
+        let (diffuse_img, diffuse_future) = ImmutableImage::uninitialized(
+            rpu.device.clone(),
+            diffuse_dim,
+            Format::R8G8B8A8_UNORM,
+            diffuse_dim.max_mip_levels(),
+            usage,
+            vulkano::image::ImageCreateFlags::default(),
+            layout,
+            rpu.device.active_queue_families()
+        ).unwrap();
+
+        let mut builder = AutoCommandBufferBuilder::primary(
+            rpu.device.clone(),
+            rpu.queue.family(),
+            CommandBufferUsage::OneTimeSubmit,
+        )
+        .unwrap();
+
+        builder.copy_buffer_to_image_dimensions(
+            buffer,
+            diffuse_future,
+            [0,0,0],
+            diffuse_dim.width_height_depth(),
+            0,
+            1,
+            0
+        ).unwrap();
+
+        for mipmap_dst in 1..diffuse_img.clone().mip_levels() {
+            
+            let src_width = diffuse_buf.width() / (2 as u32).pow(mipmap_dst - 1);
+            let src_height = diffuse_buf.height() / (2 as u32).pow(mipmap_dst - 1);
+            
+            let dst_width = diffuse_buf.width() / (2 as u32).pow(mipmap_dst);
+            let dst_height = diffuse_buf.height() / (2 as u32).pow(mipmap_dst);
+
+            println!("Mipmap lvl dst: {}", mipmap_dst);
+
+            builder.blit_image(
+                diffuse_img.clone(), 
+                [0,0,0], 
+                [src_width as i32 - 1, src_height as i32 - 1, 1], 
+                0, 
+                mipmap_dst - 1, 
+                diffuse_img.clone(), 
+                [0,0,0], 
+                [dst_width as i32 - 1, dst_height as i32 - 1, 1], 
+                0, 
+                mipmap_dst, 
+                1, 
+                Filter::Linear).unwrap();
+            
+        }
+
+        
+        let command_buffer = builder.build().unwrap();
+
+        let future = sync::now(rpu.device.clone())
+            .then_execute(rpu.queue.clone(), command_buffer).unwrap()
+            .then_signal_fence_and_flush().unwrap();
+
+        future.wait(None).unwrap();
+            
 
         Self {
             base_color_factor : mat.pbr.base_color_factor,
@@ -185,6 +257,8 @@ impl GRender {
             .mag_filter(Filter::Linear)
             .min_filter(Filter::Linear)
             .address_mode(SamplerAddressMode::Repeat)
+            .mipmap_mode(SamplerMipmapMode::Linear)
+            .lod(0.0..=4.0)
             .build().unwrap();
     
 

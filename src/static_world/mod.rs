@@ -55,7 +55,7 @@ pub fn from_gltf(path : &str, rpu : RPU) -> World {
 
             let mut gmesh = GMesh {
                 mesh : gpu_mesh,
-                material : Arc::new(crate::render::Material::from_gltf(model.material(), rpu.queue.clone()))
+                material : Arc::new(crate::render::Material::from_gltf(model.material(), rpu.clone()))
             };
 
             world.create_entity().with(Pos(cgmath::Vector3::new(0.0, 0.0, 0.0))).with(gmesh).build();
