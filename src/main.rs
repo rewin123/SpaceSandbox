@@ -68,7 +68,7 @@ pub fn main() {
     // After creating the renderer (window, gfx_queue) create out gui integration
     let mut gui = Gui::new(renderer.surface(), renderer.queue(), false);
     // Create gui state (pass anything your state requires)
-    let tex_id = gui.register_user_image_view(ImageView::new(render.diffuse_img.clone()).unwrap());
+    let tex_id = gui.register_user_image_view(ImageView::new(render.cam_pos_img.clone()).unwrap());
     event_loop.run(move |event, _, control_flow| {
         // Update Egui integration so the UI works!
         gui.update(&event);

@@ -1,4 +1,6 @@
 
+pub mod image_render;
+
 use std::sync::Arc;
 
 use cgmath::*;
@@ -7,6 +9,16 @@ use vulkano::{device::{Device, Queue}, buffer::{CpuBufferPool, BufferUsage, cpu_
 use crate::{mesh::{GpuMesh, Vertex}, rpu::RPU, game_object::Pos};
 use vulkano::image::*;
 use vulkano::image::traits::*;
+
+pub struct PointLight {
+    pub position : cgmath::Point3<f32>,
+    pub emissive : cgmath::Vector3<f32>,
+}
+
+pub struct DirectLight {
+    pub dir : cgmath::Vector3<f32>,
+    pub emissive : cgmath::Vector3<f32>,
+}
 
 pub struct Camera {
     pub position : cgmath::Point3<f32>,
@@ -32,6 +44,8 @@ pub trait Render {
 pub struct GRender {
     pub rpu : RPU,
     pub diffuse_img : Arc<StorageImage>,
+    pub normal_img : Arc<StorageImage>,
+    pub cam_pos_img : Arc<StorageImage>,
     pub depth_img : Arc<AttachmentImage>,
     pub pipeline : Arc<GraphicsPipeline>,
     pub render_pass : Arc<RenderPass>,
@@ -123,7 +137,6 @@ impl Material {
                 mipmap_dst, 
                 1, 
                 Filter::Linear).unwrap();
-            
         }
 
         
@@ -147,6 +160,8 @@ impl GRender {
     pub fn from_rpu(rpu : RPU, w : u32, h : u32) -> Self {
         
         let diffuse_img = rpu.create_image(w, h, Format::R8G8B8A8_UNORM).unwrap();
+        let normal_img = rpu.create_image(w, h, Format::R32G32B32A32_SFLOAT).unwrap();
+        let cam_pos_img = rpu.create_image(w, h, Format::R32G32B32A32_SFLOAT).unwrap();
 
         let vs = standart_vertex::load(rpu.device.clone()).unwrap();
         let fs = gmesh_fragment::load(rpu.device.clone()).unwrap();
@@ -159,6 +174,18 @@ impl GRender {
                     format: Format::R8G8B8A8_UNORM,
                     samples: 1,
                 },
+                normal: {
+                    load: Clear,
+                    store: Store,
+                    format: Format::R32G32B32A32_SFLOAT,
+                    samples: 1,
+                },
+                cam_pos: {
+                    load: Clear,
+                    store: Store,
+                    format: Format::R32G32B32A32_SFLOAT,
+                    samples: 1,
+                },
                 depth: {
                     load: Clear,
                     store: DontCare,
@@ -167,7 +194,7 @@ impl GRender {
                 }
             },
             pass: {
-                color: [color],
+                color: [color, normal, cam_pos],
                 depth_stencil: {depth}
             }
         )
@@ -203,6 +230,8 @@ impl GRender {
 
         Self {
             diffuse_img,
+            normal_img,
+            cam_pos_img,
             rpu : rpu.clone(), 
             pipeline,
             render_pass,
@@ -220,6 +249,8 @@ impl GRender {
 
 
         let diffuse_view = ImageView::new(self.diffuse_img.clone()).unwrap();
+        let normal_view = ImageView::new(self.normal_img.clone()).unwrap();
+        let cam_pos_view = ImageView::new(self.cam_pos_img.clone()).unwrap();
         let depth_view = ImageView::new(self.depth_img.clone()).unwrap();
 
         let mut unifrom_buffer = camera.get_uniform_buffer(self.rpu.device.clone());
@@ -232,6 +263,8 @@ impl GRender {
         
         let framebuffer = Framebuffer::start(self.render_pass.clone())
             .add(diffuse_view).unwrap()
+            .add(normal_view).unwrap()
+            .add(cam_pos_view).unwrap()
             .add(depth_view).unwrap()
             .build().unwrap();
 
@@ -248,7 +281,11 @@ impl GRender {
             .begin_render_pass(
                 framebuffer.clone(),
                 SubpassContents::Inline,
-                vec![[0.0, 0.0, 0.0, 1.0].into(), 1f32.into()],
+                vec![
+                    [0.0, 0.0, 0.0, 1.0].into(), 
+                    [0.0, 0.0, 0.0, 0.0].into(), 
+                    [0.0, 0.0, 0.0, 0.0].into(),
+                    1f32.into()],
             ).unwrap()
             .set_viewport(0, [self.viewport.clone()])
             .bind_pipeline_graphics(self.pipeline.clone());
@@ -361,6 +398,7 @@ impl Camera {
                 world: Matrix4::one().into(),
                 view: (view * scale).into(),
                 proj: proj.into(),
+                cam_pos: self.position.clone().into(),
             };
 
             uniform_buffer.next(uniform_data).unwrap()
