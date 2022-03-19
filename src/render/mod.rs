@@ -41,6 +41,12 @@ pub trait Render {
 
 }
 
+pub struct GView {
+    pub diffuse_view : Arc<dyn vulkano::image::ImageViewAbstract>,
+    pub normal_view : Arc<dyn vulkano::image::ImageViewAbstract>,
+    pub pos_view : Arc<dyn vulkano::image::ImageViewAbstract>,
+}
+
 pub struct GRender {
     pub rpu : RPU,
     pub diffuse_img : Arc<StorageImage>,
@@ -101,8 +107,7 @@ impl Material {
             rpu.device.clone(),
             rpu.queue.family(),
             CommandBufferUsage::OneTimeSubmit,
-        )
-        .unwrap();
+        ).unwrap();
 
         builder.copy_buffer_to_image_dimensions(
             buffer,
@@ -157,6 +162,15 @@ impl Material {
 }
 
 impl GRender {
+
+    pub fn get_gview(&self) -> GView {
+        GView {
+            diffuse_view : ImageView::new(self.diffuse_img.clone()).unwrap(),
+            normal_view : ImageView::new(self.normal_img.clone()).unwrap(),
+            pos_view : ImageView::new(self.cam_pos_img.clone()).unwrap(),
+        }
+    }
+
     pub fn from_rpu(rpu : RPU, w : u32, h : u32) -> Self {
         
         let diffuse_img = rpu.create_image(w, h, Format::R8G8B8A8_UNORM).unwrap();

@@ -53,6 +53,7 @@ pub fn main() {
         "res/test_res/models/sponza/glTF/Sponza.gltf", win_rpu.rpu.clone());
 
     let mut render = SpaceSandbox::render::GRender::from_rpu(win_rpu.rpu.clone(), 512, 512);
+    let mut light_render = SpaceSandbox::render::image_render::DirectLightRender::new(win_rpu.rpu.clone(), 512, 512);
 
     let mut camera = SpaceSandbox::render::Camera {
         position: [5.0, 2.0, 0.0].into(),
@@ -68,7 +69,8 @@ pub fn main() {
     // After creating the renderer (window, gfx_queue) create out gui integration
     let mut gui = Gui::new(renderer.surface(), renderer.queue(), false);
     // Create gui state (pass anything your state requires)
-    let tex_id = gui.register_user_image_view(ImageView::new(render.cam_pos_img.clone()).unwrap());
+    // let tex_id = gui.register_user_image_view(ImageView::new(render.cam_pos_img.clone()).unwrap());
+    let tex_id = gui.register_user_image_view(light_render.target.clone());
     event_loop.run(move |event, _, control_flow| {
         // Update Egui integration so the UI works!
         gui.update(&event);
@@ -88,6 +90,8 @@ pub fn main() {
             Event::RedrawRequested(window_id) if window_id == window_id => {
 
                 render.draw(&world, &camera);
+
+                light_render.draw(render.get_gview());
 
                 // Set immediate UI in redraw here
                 gui.immediate_ui(|gui| {
