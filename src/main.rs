@@ -62,6 +62,8 @@ pub fn main() {
         aspect_ratio: 1.0,
     };
     
+    
+
     // Create renderer for our scene & ui
     let window_size = [1280, 720];
     let mut renderer =
@@ -71,6 +73,7 @@ pub fn main() {
     // Create gui state (pass anything your state requires)
     // let tex_id = gui.register_user_image_view(ImageView::new(render.cam_pos_img.clone()).unwrap());
     let tex_id = gui.register_user_image_view(light_render.target.clone());
+    let mut solar_rotation = 0.0_f32;
     event_loop.run(move |event, _, control_flow| {
         // Update Egui integration so the UI works!
         gui.update(&event);
@@ -96,10 +99,11 @@ pub fn main() {
                 // Set immediate UI in redraw here
                 gui.immediate_ui(|gui| {
                     let ctx = gui.context();
+                    egui::Window::new("Sun").show(&ctx, |ui| {
+                        ui.drag_angle(&mut solar_rotation);
+                    });
                     egui::CentralPanel::default().show(&ctx, |ui| {
-    
                         let image_resp = ui.image(tex_id, Vec2::new(512.0,512.0));
-    
                     });
                 });
                 // Render UI
