@@ -127,8 +127,6 @@ impl Material {
             let dst_width = diffuse_buf.width() / (2 as u32).pow(mipmap_dst);
             let dst_height = diffuse_buf.height() / (2 as u32).pow(mipmap_dst);
 
-            println!("Mipmap lvl dst: {}", mipmap_dst);
-
             builder.blit_image(
                 diffuse_img.clone(), 
                 [0,0,0], 

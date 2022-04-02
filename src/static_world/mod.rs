@@ -28,8 +28,6 @@ pub fn from_gltf(path : &str, rpu : RPU) -> World {
             let vertices = model.vertices();
             let indices = model.indices().unwrap();
 
-
-
             let mut cpu_mesh = crate::mesh::CpuMesh {
                 verts : vec![],
                 indices : vec![],
