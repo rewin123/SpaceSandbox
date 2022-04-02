@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use specs::{World, WorldExt, Join};
-use vulkano::{image::view::ImageView, pipeline::{GraphicsPipeline, graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, depth_stencil::DepthStencilState}, Pipeline, PipelineBindPoint}, render_pass::{RenderPass, Subpass, Framebuffer}, format::Format, buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess, CpuBufferPool}, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, sampler::{Filter, Sampler, SamplerMipmapMode}, descriptor_set::PersistentDescriptorSet, sync::{self, GpuFuture}};
+use vulkano::{image::{view::ImageView, ImageViewAbstract, StorageImage}, pipeline::{GraphicsPipeline, graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, depth_stencil::DepthStencilState}, Pipeline, PipelineBindPoint}, render_pass::{RenderPass, Subpass, Framebuffer}, format::Format, buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess, CpuBufferPool}, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, sampler::{Filter, Sampler, SamplerMipmapMode}, descriptor_set::PersistentDescriptorSet, sync::{self, GpuFuture}};
 use vulkano::descriptor_set::*;
 
 use crate::{rpu::RPU, game_object::DirectLight};
@@ -39,6 +39,39 @@ pub struct SimpleTextureRender {
     pub render_pass : Arc<RenderPass>,
     pub viewport : Viewport,
     square : Arc<CpuAccessibleBuffer<[ImageVert]>>
+}
+
+pub struct MimapBuffer {
+    pub buffers : Vec<Arc<StorageImage>>
+}
+
+impl MimapBuffer {
+    pub fn new(rpu : &RPU, w : u32, h : u32, format : vulkano::format::Format) -> Arc<Self> {
+        let mut res = Self { 
+            buffers : vec![]
+        };
+
+        let mut wi = w;
+        let mut hi = h;
+
+        while wi > 1 || hi > 1 {
+
+            let img = rpu.create_image(wi, hi, format).unwrap();
+            res.buffers.push(img);
+            //update sizes
+            wi = wi / 2;
+            hi = hi / 2;
+            if wi == 0 {
+                wi = 1;
+            }
+            if hi == 0 {
+                hi = 1;
+            }
+        }
+
+
+        Arc::new(res)
+    }
 }
 
 impl DirectLightRender {
@@ -161,8 +194,6 @@ impl DirectLightRender {
         let set = PersistentDescriptorSet::new(
             self.pipeline.layout().descriptor_set_layouts().get(1).unwrap().clone(), 
             [WriteDescriptorSet::buffer(0, subbuffer)]).unwrap();
-        
-        
 
         let sampler = Sampler::start(self.rpu.device.clone())
             .mag_filter(Filter::Linear)
