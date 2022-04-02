@@ -5,7 +5,7 @@ use specs::*;
 use specs::prelude::*;
 use vulkano::device::Device;
 use crate::render::GMesh;
-use crate::game_object::Pos;
+use crate::game_object::{Pos, DirectLight};
 use crate::rpu::RPU;
 
 pub fn generate_static_world() -> World {
@@ -13,6 +13,7 @@ pub fn generate_static_world() -> World {
 
     world.register::<Pos>();
     world.register::<GMesh>();
+    world.register::<DirectLight>();
 
     world
 }

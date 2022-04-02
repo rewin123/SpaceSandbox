@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
+use specs::{World, WorldExt, Join};
 use vulkano::{image::view::ImageView, pipeline::{GraphicsPipeline, graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, depth_stencil::DepthStencilState}, Pipeline, PipelineBindPoint}, render_pass::{RenderPass, Subpass, Framebuffer}, format::Format, buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess, CpuBufferPool}, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, sampler::{Filter, Sampler, SamplerMipmapMode}, descriptor_set::PersistentDescriptorSet, sync::{self, GpuFuture}};
 use vulkano::descriptor_set::*;
 
-use crate::rpu::RPU;
+use crate::{rpu::RPU, game_object::DirectLight};
 
-use super::GView;
+use super::{GView};
 
 #[derive(Clone, Copy, Debug, Default)]
 struct ImageVert {
@@ -117,7 +118,7 @@ impl DirectLightRender {
         }
     }
 
-    pub fn draw(&self, gview : GView) {
+    pub fn draw(&self, world : &World, gview : GView) {
 
         let framebuffer = Framebuffer::start(self.render_pass.clone())
             .add(self.target.clone()).unwrap()
@@ -130,22 +131,8 @@ impl DirectLightRender {
         )
         .unwrap();
 
-        let pool = 
-            CpuBufferPool::<direct_light_fragment::ty::LightData>::new(
-                self.rpu.device.clone(), BufferUsage::all());
+        let read_dir_light = world.read_storage::<DirectLight>();
 
-        let subbuffer = {
-            let uniform_data = direct_light_fragment::ty::LightData {
-                direction : [1.0, 1.0, 1.0]
-            };
-
-            pool.next(uniform_data).unwrap()
-        };
-
-        let set = PersistentDescriptorSet::new(
-            self.pipeline.layout().descriptor_set_layouts().get(1).unwrap().clone(), 
-            [WriteDescriptorSet::buffer(0, subbuffer)]).unwrap();
-        
         builder
             .begin_render_pass(
                 framebuffer.clone(),
@@ -155,6 +142,27 @@ impl DirectLightRender {
             ).unwrap()
             .set_viewport(0, [self.viewport.clone()])
             .bind_pipeline_graphics(self.pipeline.clone());
+
+        for (light,) in (&read_dir_light,).join() {
+            let pool = 
+            CpuBufferPool::<direct_light_fragment::ty::LightData>::new(
+                self.rpu.device.clone(), BufferUsage::all());
+
+        let subbuffer = {
+            let uniform_data = direct_light_fragment::ty::LightData {
+                direction : light.dir.into(),
+                color : light.color.into(),
+                _dummy0 : [0,0,0,0]
+            };
+
+            pool.next(uniform_data).unwrap()
+        };
+
+        let set = PersistentDescriptorSet::new(
+            self.pipeline.layout().descriptor_set_layouts().get(1).unwrap().clone(), 
+            [WriteDescriptorSet::buffer(0, subbuffer)]).unwrap();
+        
+        
 
         let sampler = Sampler::start(self.rpu.device.clone())
             .mag_filter(Filter::Linear)
@@ -192,6 +200,7 @@ impl DirectLightRender {
             )
             .bind_vertex_buffers(0, self.square.clone())
             .draw(self.square.len() as u32, 1, 0, 0).unwrap();
+        }
 
         builder.end_render_pass().unwrap();
 

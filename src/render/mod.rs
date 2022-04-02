@@ -15,11 +15,6 @@ pub struct PointLight {
     pub emissive : cgmath::Vector3<f32>,
 }
 
-pub struct DirectLight {
-    pub dir : cgmath::Vector3<f32>,
-    pub emissive : cgmath::Vector3<f32>,
-}
-
 pub struct Camera {
     pub position : cgmath::Point3<f32>,
     pub forward : cgmath::Vector3<f32>,

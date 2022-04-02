@@ -1,4 +1,6 @@
 
+pub mod dir_light;
+
 use std::sync::Arc;
 
 use egui::{ScrollArea, TextEdit, TextStyle};

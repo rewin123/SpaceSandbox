@@ -30,7 +30,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
-use SpaceSandbox::gui::SimpleGuiRenderer;
+use SpaceSandbox::{gui::SimpleGuiRenderer, game_object::DirectLight};
 use SpaceSandbox::io::AssetLoader;
 use SpaceSandbox::rpu::WinRpu;
 
@@ -51,6 +51,14 @@ pub fn main() {
 
     let mut world = SpaceSandbox::static_world::from_gltf(
         "res/test_res/models/sponza/glTF/Sponza.gltf", win_rpu.rpu.clone());
+
+    let dir_light = DirectLight {
+        dir : [0.35, 0.85, 0.35].into(),
+        color : [1.0, 1.0, 1.0].into()
+    };
+
+    world.create_entity().with(dir_light).build();
+    
 
     let mut render = SpaceSandbox::render::GRender::from_rpu(win_rpu.rpu.clone(), 512, 512);
     let mut light_render = SpaceSandbox::render::image_render::DirectLightRender::new(win_rpu.rpu.clone(), 512, 512);
@@ -94,14 +102,12 @@ pub fn main() {
 
                 render.draw(&world, &camera);
 
-                light_render.draw(render.get_gview());
+                light_render.draw(&world, render.get_gview());
 
                 // Set immediate UI in redraw here
                 gui.immediate_ui(|gui| {
                     let ctx = gui.context();
-                    egui::Window::new("Sun").show(&ctx, |ui| {
-                        ui.drag_angle(&mut solar_rotation);
-                    });
+                    SpaceSandbox::gui::dir_light::draw(&ctx, &world);
                     egui::CentralPanel::default().show(&ctx, |ui| {
                         let image_resp = ui.image(tex_id, Vec2::new(512.0,512.0));
                     });
