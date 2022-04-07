@@ -1,5 +1,6 @@
 
 pub mod image_render;
+pub mod shaders;
 
 use std::sync::Arc;
 

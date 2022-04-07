@@ -41,12 +41,23 @@ pub struct SimpleTextureRender {
     square : Arc<CpuAccessibleBuffer<[ImageVert]>>
 }
 
-pub struct MimapBuffer {
+pub struct MipmapBuffer {
     pub buffers : Vec<Arc<StorageImage>>
 }
 
-impl MimapBuffer {
-    pub fn new(rpu : &RPU, w : u32, h : u32, format : vulkano::format::Format) -> Arc<Self> {
+pub struct EyeImageRender {
+    pub rpu : RPU,
+    pub target : Arc<dyn vulkano::image::view::ImageViewAbstract + Send + Sync>,
+    pub max_pipeline : Arc<GraphicsPipeline>,
+    pub final_pipeline : Arc<GraphicsPipeline>,
+    pub render_pass : Arc<RenderPass>,
+    pub viewport : Viewport,
+    square : Arc<CpuAccessibleBuffer<[ImageVert]>>,
+    pub mipmap : Arc<MipmapBuffer>
+}
+
+impl MipmapBuffer {
+    pub fn new(rpu : RPU, w : u32, h : u32, format : vulkano::format::Format) -> Arc<Self> {
         let mut res = Self { 
             buffers : vec![]
         };
@@ -386,6 +397,133 @@ impl SimpleTextureRender {
             .then_signal_fence_and_flush().unwrap();
 
         future.wait(None).unwrap();
+    }
+}
+
+
+impl EyeImageRender {
+    pub fn new(
+        rpu: RPU, 
+        w : u32, 
+        h : u32) -> Self {
+
+
+        let square = CpuAccessibleBuffer::from_iter(
+            rpu.device.clone(), 
+            BufferUsage::all(),
+            false,
+            [
+                ImageVert::new(0.0, 0.0),
+                ImageVert::new(1.0, 0.0),
+                ImageVert::new(0.0, 1.0),
+                
+                ImageVert::new(1.0, 1.0),
+                ImageVert::new(1.0, 0.0),
+                ImageVert::new(0.0, 1.0),
+            ]
+        ).unwrap();
+
+        let target_img = rpu.create_image(w, h, Format::R8G8B8A8_UNORM).unwrap();
+
+
+        let render_pass = vulkano::single_pass_renderpass!(rpu.device.clone(),
+            attachments: {
+                color: {
+                    load: Clear,
+                    store: Store,
+                    format: Format::R8G8B8A8_UNORM,
+                    samples: 1,
+                }
+            },
+            pass: {
+                color: [color],
+                depth_stencil: {}
+            }
+        ).unwrap();
+
+        let viewport = Viewport {
+            origin: [0.0, 0.0],
+            dimensions: [w as f32, h as f32],
+            depth_range: 0.0..1.0,
+        };
+        
+        let max_pipeline = {
+            let vs = image_vertex::load(rpu.device.clone()).unwrap();
+            let fs = crate::render::shaders::max_image_fragment::load(rpu.device.clone()).unwrap();
+    
+            let pipeline = GraphicsPipeline::start()
+                // Describes the layout of the vertex input and how should it behave
+                .vertex_input_state(BuffersDefinition::new().vertex::<ImageVert>())
+                // A Vulkan shader can in theory contain multiple entry points, so we have to specify
+                // which one.
+                .vertex_shader(vs.entry_point("main").unwrap(), ())
+                // Indicate the type of the primitives (the default is a list of triangles)
+                .input_assembly_state(InputAssemblyState::new())
+                // Set the fixed viewport
+                .viewport_state(ViewportState::viewport_fixed_scissor_irrelevant([viewport.clone()]))
+                // Same as the vertex input, but this for the fragment input
+                .fragment_shader(fs.entry_point("main").unwrap(), ())
+                .depth_stencil_state(DepthStencilState::simple_depth_test())
+                // This graphics pipeline object concerns the first pass of the render pass.
+                .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
+                // Now that everything is specified, we call `build`.
+                .build(rpu.device.clone())
+                .unwrap();
+
+            pipeline
+        };
+
+        let final_pipeline = {
+            let vs = image_vertex::load(rpu.device.clone()).unwrap();
+            let fs = crate::render::shaders::eye_fragment::load(rpu.device.clone()).unwrap();
+    
+            let pipeline = GraphicsPipeline::start()
+                // Describes the layout of the vertex input and how should it behave
+                .vertex_input_state(BuffersDefinition::new().vertex::<ImageVert>())
+                // A Vulkan shader can in theory contain multiple entry points, so we have to specify
+                // which one.
+                .vertex_shader(vs.entry_point("main").unwrap(), ())
+                // Indicate the type of the primitives (the default is a list of triangles)
+                .input_assembly_state(InputAssemblyState::new())
+                // Set the fixed viewport
+                .viewport_state(ViewportState::viewport_fixed_scissor_irrelevant([viewport.clone()]))
+                // Same as the vertex input, but this for the fragment input
+                .fragment_shader(fs.entry_point("main").unwrap(), ())
+                .depth_stencil_state(DepthStencilState::simple_depth_test())
+                // This graphics pipeline object concerns the first pass of the render pass.
+                .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
+                // Now that everything is specified, we call `build`.
+                .build(rpu.device.clone())
+                .unwrap();
+
+            pipeline
+        };
+
+        
+
+        Self {
+            rpu : rpu.clone(),
+            max_pipeline,
+            final_pipeline,
+            render_pass,
+            viewport,
+            target : ImageView::new(target_img).unwrap(),
+            square,
+            mipmap : MipmapBuffer::new(rpu.clone(), w, h, vulkano::format::Format::R32G32B32A32_SFLOAT)
+        }
+    }
+
+    fn calc_max(&mut self, view : Arc<dyn ImageViewAbstract>) {
+
+    }
+
+    pub fn draw(&self, gview : GView) {
+
+        let framebuffer = Framebuffer::start(self.render_pass.clone())
+            .add(self.target.clone()).unwrap()
+            .build().unwrap();
+
+        
     }
 }
 
