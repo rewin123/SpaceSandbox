@@ -50,7 +50,7 @@ pub fn main() {
     let (win_rpu, event_loop) = WinRpu::default();
 
     let mut world = SpaceSandbox::static_world::from_gltf(
-        "res/test_res/models/sponza/glTF/Sponza.gltf", win_rpu.rpu.clone());
+        "C:/Users/rewin/OneDrive/Documents/GitHub/SpaceSandbox/res/test_res/models/sponza/glTF/Sponza.gltf", win_rpu.rpu.clone());
 
     let dir_light = DirectLight {
         dir : [0.35, 0.85, 0.35].into(),
@@ -62,6 +62,7 @@ pub fn main() {
 
     let mut render = SpaceSandbox::render::GRender::from_rpu(win_rpu.rpu.clone(), 512, 512);
     let mut light_render = SpaceSandbox::render::image_render::DirectLightRender::new(win_rpu.rpu.clone(), 512, 512);
+    let mut eye_render = SpaceSandbox::render::image_render::EyeImageRender::new(win_rpu.rpu.clone(), 512, 512);
 
     let mut camera = SpaceSandbox::render::Camera {
         position: [5.0, 2.0, 0.0].into(),
@@ -80,7 +81,21 @@ pub fn main() {
     let mut gui = Gui::new(renderer.surface(), renderer.queue(), false);
     // Create gui state (pass anything your state requires)
     // let tex_id = gui.register_user_image_view(ImageView::new(render.cam_pos_img.clone()).unwrap());
-    let tex_id = gui.register_user_image_view(light_render.target.clone());
+
+    let mut view_layers : Vec<(String, egui::TextureId)> = vec![];
+    let mut view_idx = 0;
+
+    {
+        let tex_id = gui.register_user_image_view(light_render.target.clone());
+        view_layers.push((String::from("Direct light"), tex_id));
+    }
+    for i in 1..eye_render.mipmap.buffers.len() {
+        let tex_idx = gui.register_user_image_view(ImageView::new(eye_render.mipmap.buffers[i].clone()).unwrap());
+        let text = String::from("Eye buffer ") + &i.to_string();
+
+        view_layers.push((text, tex_idx));
+    }
+
     let mut solar_rotation = 0.0_f32;
     event_loop.run(move |event, _, control_flow| {
         // Update Egui integration so the UI works!
@@ -101,13 +116,24 @@ pub fn main() {
             Event::RedrawRequested(window_id) if window_id == window_id => {
 
                 render.draw(&world, &camera);
-
                 light_render.draw(&world, render.get_gview());
+                eye_render.draw(light_render.target.clone());
 
                 // Set immediate UI in redraw here
                 gui.immediate_ui(|gui| {
                     let ctx = gui.context();
                     SpaceSandbox::gui::dir_light::draw(&ctx, &world);
+
+                    let (tex_name, tex_id) = view_layers[view_idx].clone();
+                    egui::Window::new("View layer").show(&ctx, |ui| {
+                        for idx in 0..view_layers.len() {
+                            let (text, tex_idx) = view_layers[idx].clone();
+                            if ui.button(text).clicked() {
+                                view_idx = idx;
+                            }
+                        }   
+                    });
+
                     egui::CentralPanel::default().show(&ctx, |ui| {
                         let image_resp = ui.image(tex_id, Vec2::new(512.0,512.0));
                     });

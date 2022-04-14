@@ -42,7 +42,8 @@ pub struct SimpleTextureRender {
 }
 
 pub struct MipmapBuffer {
-    pub buffers : Vec<Arc<StorageImage>>
+    pub buffers : Vec<Arc<StorageImage>>,
+    pub sizes : Vec<(i32, i32)>
 }
 
 pub struct EyeImageRender {
@@ -59,7 +60,8 @@ pub struct EyeImageRender {
 impl MipmapBuffer {
     pub fn new(rpu : RPU, w : u32, h : u32, format : vulkano::format::Format) -> Arc<Self> {
         let mut res = Self { 
-            buffers : vec![]
+            buffers : vec![],
+            sizes : vec![]
         };
 
         let mut wi = w;
@@ -69,6 +71,7 @@ impl MipmapBuffer {
 
             let img = rpu.create_image(wi, hi, format).unwrap();
             res.buffers.push(img);
+            res.sizes.push((wi as i32, hi as i32));
             //update sizes
             wi = wi / 2;
             hi = hi / 2;
@@ -423,7 +426,7 @@ impl EyeImageRender {
             ]
         ).unwrap();
 
-        let target_img = rpu.create_image(w, h, Format::R8G8B8A8_UNORM).unwrap();
+        let target_img = rpu.create_image(w, h, Format::R32G32B32A32_SFLOAT).unwrap();
 
 
         let render_pass = vulkano::single_pass_renderpass!(rpu.device.clone(),
@@ -431,7 +434,7 @@ impl EyeImageRender {
                 color: {
                     load: Clear,
                     store: Store,
-                    format: Format::R8G8B8A8_UNORM,
+                    format: Format::R32G32B32A32_SFLOAT,
                     samples: 1,
                 }
             },
@@ -443,7 +446,8 @@ impl EyeImageRender {
 
         let viewport = Viewport {
             origin: [0.0, 0.0],
-            dimensions: [w as f32, h as f32],
+            dimensions: [0.0, 0.0],
+            // dimensions: [w as f32, h as f32],
             depth_range: 0.0..1.0,
         };
         
@@ -460,7 +464,7 @@ impl EyeImageRender {
                 // Indicate the type of the primitives (the default is a list of triangles)
                 .input_assembly_state(InputAssemblyState::new())
                 // Set the fixed viewport
-                .viewport_state(ViewportState::viewport_fixed_scissor_irrelevant([viewport.clone()]))
+                .viewport_state(ViewportState::viewport_dynamic_scissor_irrelevant())
                 // Same as the vertex input, but this for the fragment input
                 .fragment_shader(fs.entry_point("main").unwrap(), ())
                 .depth_stencil_state(DepthStencilState::simple_depth_test())
@@ -515,13 +519,83 @@ impl EyeImageRender {
 
     fn calc_max(&mut self, view : Arc<dyn ImageViewAbstract>) {
 
+        let mut cur_view = view.clone();
+        for i in 1..self.mipmap.buffers.len() {
+            let cur_target = self.mipmap.buffers[i].clone();
+            let cur_target_view = ImageView::new(cur_target).unwrap();
+            let framebuffer = Framebuffer::start(self.render_pass.clone())
+                .add(cur_target_view.clone()).unwrap()
+                .build().unwrap();
+
+            
+            let (wi, hi) = self.mipmap.sizes[i].clone();
+
+            let viewport = Viewport {
+                origin: [0.0, 0.0],
+                dimensions: [wi as f32, hi as f32],
+                depth_range: 0.0..1.0,
+            };
+
+            let mut builder = AutoCommandBufferBuilder::primary(
+                self.rpu.device.clone(),
+                self.rpu.queue.family(),
+                CommandBufferUsage::MultipleSubmit,
+            )
+            .unwrap();
+            
+            builder
+                .begin_render_pass(
+                    framebuffer.clone(),
+                    SubpassContents::Inline,
+                    vec![
+                        [0.0, 0.0, 0.0, 0.0].into(),]
+                ).unwrap()
+                .set_viewport(0, [viewport.clone()])
+                .bind_pipeline_graphics(self.max_pipeline.clone());
+    
+            let sampler = Sampler::start(self.rpu.device.clone())
+                .mag_filter(Filter::Linear)
+                .min_filter(Filter::Linear)
+                .mipmap_mode(SamplerMipmapMode::Linear)
+                .build().unwrap();
+    
+            let texture_set = PersistentDescriptorSet::new(
+                    self.max_pipeline.layout().descriptor_set_layouts().get(0).unwrap().clone(),
+                    [WriteDescriptorSet::image_view_sampler(
+                        0,
+                        cur_view.clone(),
+                        sampler.clone(),
+                    )],
+                )
+                .unwrap();
+    
+            builder
+                .bind_descriptor_sets(
+                    PipelineBindPoint::Graphics,
+                    self.max_pipeline.layout().clone(),
+                    0,
+                    texture_set.clone()
+                )
+                .bind_vertex_buffers(0, self.square.clone())
+                .draw(self.square.len() as u32, 1, 0, 0).unwrap();
+    
+            builder.end_render_pass().unwrap();
+    
+            let command_buffer = builder.build().unwrap();
+    
+            let future = sync::now(self.rpu.device.clone())
+                .then_execute(self.rpu.queue.clone(), command_buffer).unwrap()
+                .then_signal_fence_and_flush().unwrap();
+    
+            future.wait(None).unwrap();
+
+            cur_view = cur_target_view;
+        }
     }
 
-    pub fn draw(&self, gview : GView) {
+    pub fn draw(&mut self, view : Arc<dyn ImageViewAbstract>) {
 
-        let framebuffer = Framebuffer::start(self.render_pass.clone())
-            .add(self.target.clone()).unwrap()
-            .build().unwrap();
+        self.calc_max(view.clone());
 
         
     }
