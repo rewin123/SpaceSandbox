@@ -92,8 +92,12 @@ pub fn main() {
     for i in 1..eye_render.mipmap.buffers.len() {
         let tex_idx = gui.register_user_image_view(ImageView::new(eye_render.mipmap.buffers[i].clone()).unwrap());
         let text = String::from("Eye buffer ") + &i.to_string();
-
         view_layers.push((text, tex_idx));
+    }
+    {
+        let tex_id = gui.register_user_image_view(eye_render.target.clone());
+        let text = String::from("Eye");
+        view_layers.push((text, tex_id));
     }
 
     let mut solar_rotation = 0.0_f32;

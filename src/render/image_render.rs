@@ -446,7 +446,7 @@ impl EyeImageRender {
 
         let viewport = Viewport {
             origin: [0.0, 0.0],
-            dimensions: [0.0, 0.0],
+            dimensions: [w as f32, h as f32],
             // dimensions: [w as f32, h as f32],
             depth_range: 0.0..1.0,
         };
@@ -593,10 +593,84 @@ impl EyeImageRender {
         }
     }
 
+    fn eye_draw(&mut self,  view : Arc<dyn ImageViewAbstract>) {
+        let framebuffer = Framebuffer::start(self.render_pass.clone())
+                .add(self.target.clone()).unwrap()
+                .build().unwrap();
+
+        let emissive_view = ImageView::new(self.mipmap.buffers[self.mipmap.buffers.len() - 1].clone()).unwrap();
+
+        let mut builder = AutoCommandBufferBuilder::primary(
+            self.rpu.device.clone(),
+            self.rpu.queue.family(),
+            CommandBufferUsage::MultipleSubmit,
+        )
+        .unwrap();
+        
+        builder
+            .begin_render_pass(
+                framebuffer.clone(),
+                SubpassContents::Inline,
+                vec![
+                    [0.0, 0.0, 0.0, 0.0].into(),]
+            ).unwrap()
+            .set_viewport(0, [self.viewport.clone()])
+            .bind_pipeline_graphics(self.final_pipeline.clone());
+
+        let sampler = Sampler::start(self.rpu.device.clone())
+            .mag_filter(Filter::Linear)
+            .min_filter(Filter::Linear)
+            .mipmap_mode(SamplerMipmapMode::Linear)
+            .build().unwrap();
+
+        let sampler2 = Sampler::start(self.rpu.device.clone())
+            .mag_filter(Filter::Linear)
+            .min_filter(Filter::Linear)
+            .mipmap_mode(SamplerMipmapMode::Linear)
+            .build().unwrap();
+
+        let texture_set = PersistentDescriptorSet::new(
+                self.final_pipeline.layout().descriptor_set_layouts().get(0).unwrap().clone(),
+                [WriteDescriptorSet::image_view_sampler(
+                    0,
+                    view.clone(),
+                    sampler.clone(),
+                ),
+                WriteDescriptorSet::image_view_sampler(
+                    1,
+                    emissive_view.clone(),
+                    sampler2.clone(),
+                ),],
+            )
+            .unwrap();
+
+        builder
+            .bind_descriptor_sets(
+                PipelineBindPoint::Graphics,
+                self.final_pipeline.layout().clone(),
+                0,
+                texture_set.clone()
+            )
+            .bind_vertex_buffers(0, self.square.clone())
+            .draw(self.square.len() as u32, 1, 0, 0).unwrap();
+
+        builder.end_render_pass().unwrap();
+
+        let command_buffer = builder.build().unwrap();
+
+        let future = sync::now(self.rpu.device.clone())
+            .then_execute(self.rpu.queue.clone(), command_buffer).unwrap()
+            .then_signal_fence_and_flush().unwrap();
+
+        future.wait(None).unwrap();
+            
+    }
+
     pub fn draw(&mut self, view : Arc<dyn ImageViewAbstract>) {
 
         self.calc_max(view.clone());
-
+        self.eye_draw(view.clone());
+        
         
     }
 }
