@@ -18,13 +18,15 @@ impl Component for Pos {
 pub struct DirectLight {
     pub dir : Vector3<f32>,
     pub color : Vector3<f32>,
+    pub intensity : f32 //in luks
 }
 
 impl Default for DirectLight {
     fn default() -> Self {
         Self { 
             dir : [0.0, 1.0, 0.0].into(),
-            color : [1.0, 1.0, 1.0].into()
+            color : [1.0, 1.0, 1.0].into(),
+            intensity : 100000.0
         }
     }
 }

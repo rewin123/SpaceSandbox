@@ -25,6 +25,8 @@ pub fn draw(
             ui.add(egui::widgets::Slider::new(
                 &mut light.dir.z, -1.0..=1.0));
 
+            ui.add(egui::widgets::DragValue::new(&mut light.intensity));
+
             let mut mgn = light.dir.x * light.dir.x + light.dir.y * light.dir.y + light.dir.z * light.dir.z;
             mgn = mgn.sqrt();
             light.dir /= mgn;

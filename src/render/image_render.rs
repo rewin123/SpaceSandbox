@@ -46,7 +46,7 @@ pub struct MipmapBuffer {
     pub sizes : Vec<(i32, i32)>
 }
 
-pub struct EyeImageRender {
+pub struct MaxImageRender {
     pub rpu : RPU,
     pub target : Arc<dyn vulkano::image::view::ImageViewAbstract + Send + Sync>,
     pub max_pipeline : Arc<GraphicsPipeline>,
@@ -110,7 +110,7 @@ impl DirectLightRender {
             ]
         ).unwrap();
 
-        let target_img = rpu.create_image(w, h, Format::R8G8B8A8_UNORM).unwrap();
+        let target_img = rpu.create_image(w, h, Format::R32G32B32A32_SFLOAT).unwrap();
 
         let vs = image_vertex::load(rpu.device.clone()).unwrap();
         let fs = direct_light_fragment::load(rpu.device.clone()).unwrap();
@@ -120,7 +120,7 @@ impl DirectLightRender {
                 color: {
                     load: Clear,
                     store: Store,
-                    format: Format::R8G8B8A8_UNORM,
+                    format: Format::R32G32B32A32_SFLOAT,
                     samples: 1,
                 }
             },
@@ -195,10 +195,12 @@ impl DirectLightRender {
             CpuBufferPool::<direct_light_fragment::ty::LightData>::new(
                 self.rpu.device.clone(), BufferUsage::all());
 
+        let converted_color = light.color * light.intensity;
+
         let subbuffer = {
             let uniform_data = direct_light_fragment::ty::LightData {
                 direction : light.dir.into(),
-                color : light.color.into(),
+                color : converted_color.into(),
                 _dummy0 : [0,0,0,0]
             };
 
@@ -404,7 +406,7 @@ impl SimpleTextureRender {
 }
 
 
-impl EyeImageRender {
+impl MaxImageRender {
     pub fn new(
         rpu: RPU, 
         w : u32, 
@@ -670,8 +672,6 @@ impl EyeImageRender {
 
         self.calc_max(view.clone());
         self.eye_draw(view.clone());
-        
-        
     }
 }
 

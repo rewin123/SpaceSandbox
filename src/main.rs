@@ -13,7 +13,7 @@ use egui::{ScrollArea, TextEdit, TextStyle, Vec2};
 use egui_winit_vulkano::Gui;
 use vulkano::{
     device::{physical::PhysicalDevice, Device, DeviceExtensions, Features, Queue},
-    image::{view::ImageView, ImageUsage, SwapchainImage},
+    image::{view::ImageView, ImageUsage, SwapchainImage, ImageViewAbstract},
     instance::{Instance, InstanceExtensions},
     swapchain,
     swapchain::{
@@ -54,7 +54,8 @@ pub fn main() {
 
     let dir_light = DirectLight {
         dir : [0.35, 0.85, 0.35].into(),
-        color : [1.0, 1.0, 1.0].into()
+        color : [1.0, 1.0, 1.0].into(),
+        intensity : 100000.0
     };
 
     world.create_entity().with(dir_light).build();
@@ -62,7 +63,7 @@ pub fn main() {
 
     let mut render = SpaceSandbox::render::GRender::from_rpu(win_rpu.rpu.clone(), 512, 512);
     let mut light_render = SpaceSandbox::render::image_render::DirectLightRender::new(win_rpu.rpu.clone(), 512, 512);
-    let mut eye_render = SpaceSandbox::render::image_render::EyeImageRender::new(win_rpu.rpu.clone(), 512, 512);
+    let mut max_render = SpaceSandbox::render::image_render::MaxImageRender::new(win_rpu.rpu.clone(), 512, 512);
 
     let mut camera = SpaceSandbox::render::Camera {
         position: [5.0, 2.0, 0.0].into(),
@@ -82,22 +83,14 @@ pub fn main() {
     // Create gui state (pass anything your state requires)
     // let tex_id = gui.register_user_image_view(ImageView::new(render.cam_pos_img.clone()).unwrap());
 
-    let mut view_layers : Vec<(String, egui::TextureId)> = vec![];
+    let max_id = gui.register_user_image_view(max_render.target.clone());
+
+    let mut view_layers : Vec<(String, Arc<dyn ImageViewAbstract>)> = vec![];
     let mut view_idx = 0;
 
     {
         let tex_id = gui.register_user_image_view(light_render.target.clone());
-        view_layers.push((String::from("Direct light"), tex_id));
-    }
-    for i in 1..eye_render.mipmap.buffers.len() {
-        let tex_idx = gui.register_user_image_view(ImageView::new(eye_render.mipmap.buffers[i].clone()).unwrap());
-        let text = String::from("Eye buffer ") + &i.to_string();
-        view_layers.push((text, tex_idx));
-    }
-    {
-        let tex_id = gui.register_user_image_view(eye_render.target.clone());
-        let text = String::from("Eye");
-        view_layers.push((text, tex_id));
+        view_layers.push((String::from("Direct light"), light_render.target.clone()));
     }
 
     let mut solar_rotation = 0.0_f32;
@@ -121,14 +114,15 @@ pub fn main() {
 
                 render.draw(&world, &camera);
                 light_render.draw(&world, render.get_gview());
-                eye_render.draw(light_render.target.clone());
+
+                let (tex_name, max_input) = view_layers[view_idx].clone();
+                max_render.draw(max_input.clone());
 
                 // Set immediate UI in redraw here
                 gui.immediate_ui(|gui| {
                     let ctx = gui.context();
                     SpaceSandbox::gui::dir_light::draw(&ctx, &world);
 
-                    let (tex_name, tex_id) = view_layers[view_idx].clone();
                     egui::Window::new("View layer").show(&ctx, |ui| {
                         for idx in 0..view_layers.len() {
                             let (text, tex_idx) = view_layers[idx].clone();
@@ -139,7 +133,7 @@ pub fn main() {
                     });
 
                     egui::CentralPanel::default().show(&ctx, |ui| {
-                        let image_resp = ui.image(tex_id, Vec2::new(512.0,512.0));
+                        let image_resp = ui.image(max_id, Vec2::new(512.0,512.0));
                     });
                 });
                 // Render UI
