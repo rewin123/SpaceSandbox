@@ -20,3 +20,10 @@ pub mod eye_fragment {
         path : "src/render/shaders/image_eye.glsl",
     }
 }
+
+pub mod dir_light_shadow_fragment {
+    vulkano_shaders::shader!{
+        ty: "fragment",
+        path : "src/render/shaders/dir_light_shadow_fragment.glsl",
+    }
+}

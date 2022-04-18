@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
+use cgmath::{Matrix4, One, Vector3};
 use specs::{World, WorldExt, Join};
 use vulkano::{image::{view::ImageView, ImageViewAbstract, StorageImage}, pipeline::{GraphicsPipeline, graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, depth_stencil::DepthStencilState}, Pipeline, PipelineBindPoint}, render_pass::{RenderPass, Subpass, Framebuffer}, format::Format, buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess, CpuBufferPool}, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, sampler::{Filter, Sampler, SamplerMipmapMode}, descriptor_set::PersistentDescriptorSet, sync::{self, GpuFuture}};
 use vulkano::descriptor_set::*;
 
 use crate::{rpu::RPU, game_object::DirectLight};
 
-use super::{GView};
+use super::{GView, Camera};
 
 #[derive(Clone, Copy, Debug, Default)]
 struct ImageVert {
@@ -165,7 +166,7 @@ impl DirectLightRender {
         }
     }
 
-    pub fn draw(&self, world : &World, gview : GView) {
+    pub fn draw(&self, world : &World, gview : GView, camera : &Camera) {
 
         let framebuffer = Framebuffer::start(self.render_pass.clone())
             .add(self.target.clone()).unwrap()
@@ -195,58 +196,106 @@ impl DirectLightRender {
             CpuBufferPool::<direct_light_fragment::ty::LightData>::new(
                 self.rpu.device.clone(), BufferUsage::all());
 
-        let converted_color = light.color * light.intensity;
+            let converted_color = light.color * light.intensity;
 
-        let subbuffer = {
-            let uniform_data = direct_light_fragment::ty::LightData {
-                direction : light.dir.into(),
-                color : converted_color.into(),
-                _dummy0 : [0,0,0,0]
+            let subbuffer = {
+                let uniform_data = direct_light_fragment::ty::LightData {
+                    direction : light.dir.into(),
+                    color : converted_color.into(),
+                    _dummy0 : [0,0,0,0],
+                    _dummy1 : [0,0,0,0],
+                    _dummy2 : [0,0,0,0],
+                    cam_pos : camera.position.into(),
+                    light_pos : camera.position.into(),
+                };
+
+                pool.next(uniform_data).unwrap()
             };
 
-            pool.next(uniform_data).unwrap()
-        };
+            let mut camera_uniform_buffer = CpuBufferPool::<direct_light_fragment::ty::LightPosData>::new(self.rpu.device.clone(), BufferUsage::all());
+            
 
-        let set = PersistentDescriptorSet::new(
-            self.pipeline.layout().descriptor_set_layouts().get(1).unwrap().clone(), 
-            [WriteDescriptorSet::buffer(0, subbuffer)]).unwrap();
+            let camera_subbuffer = {
 
-        let sampler = Sampler::start(self.rpu.device.clone())
-            .mag_filter(Filter::Linear)
-            .min_filter(Filter::Linear)
-            .mipmap_mode(SamplerMipmapMode::Linear)
-            .build().unwrap();
+                let proj = cgmath::ortho::<f32>(
+                    -25.0, 25.0, 
+                    -25.0, 25.0, 
+                    0.0, 50.0
+                );
 
-        let texture_set = PersistentDescriptorSet::new(
-                self.pipeline.layout().descriptor_set_layouts().get(0).unwrap().clone(),
-                [WriteDescriptorSet::image_view_sampler(
+                let cur_pos = camera.position.clone() + light.dir * 25.0;
+
+                let view = Matrix4::look_at_rh(
+                    cur_pos,
+                    cur_pos - light.dir,
+                    camera.up.clone() + Vector3::new(0.1, 0.1, 0.1),
+                );
+                let scale = Matrix4::from_scale(1.0);
+    
+                let uniform_data = direct_light_fragment::ty::LightPosData {
+                    world: Matrix4::one().into(),
+                    view: (view * scale).into(),
+                    proj: proj.into(),
+                    cam_pos: camera.position.clone().into(),
+                };
+    
+                camera_uniform_buffer.next(uniform_data).unwrap()
+            };
+
+            let set = PersistentDescriptorSet::new(
+                self.pipeline.layout().descriptor_set_layouts().get(1).unwrap().clone(), 
+                [
+                    WriteDescriptorSet::buffer(0, subbuffer),
+                    WriteDescriptorSet::buffer(1, camera_subbuffer)]).unwrap();
+
+            let sampler = Sampler::start(self.rpu.device.clone())
+                .mag_filter(Filter::Linear)
+                .min_filter(Filter::Linear)
+                .mipmap_mode(SamplerMipmapMode::Linear)
+                .build().unwrap();
+
+            let texs = light.textures.clone().unwrap();
+
+            let texture_set = PersistentDescriptorSet::new(
+                    self.pipeline.layout().descriptor_set_layouts().get(0).unwrap().clone(),
+                    [WriteDescriptorSet::image_view_sampler(
+                        0,
+                        gview.diffuse_view.clone(),
+                        sampler.clone(),
+                    ),
+                    WriteDescriptorSet::image_view_sampler(
+                        1,
+                        gview.normal_view.clone(),
+                        sampler.clone(),
+                    ),
+                    WriteDescriptorSet::image_view_sampler(
+                        2,
+                        gview.pos_view.clone(),
+                        sampler.clone(),
+                    ),
+                    WriteDescriptorSet::image_view_sampler(
+                        3,
+                        ImageView::new(texs.pos_img.clone()).unwrap(),
+                        sampler.clone(),
+                    ),],
+                )
+                .unwrap();
+
+            builder
+                .bind_descriptor_sets(
+                    PipelineBindPoint::Graphics,
+                    self.pipeline.layout().clone(),
                     0,
-                    gview.diffuse_view.clone(),
-                    sampler.clone(),
-                ),
-                WriteDescriptorSet::image_view_sampler(
+                    texture_set.clone()
+                )
+                .bind_descriptor_sets(
+                    PipelineBindPoint::Graphics,
+                    self.pipeline.layout().clone(),
                     1,
-                    gview.normal_view.clone(),
-                    sampler.clone(),
-                ),],
-            )
-            .unwrap();
-
-        builder
-            .bind_descriptor_sets(
-                PipelineBindPoint::Graphics,
-                self.pipeline.layout().clone(),
-                0,
-                texture_set.clone()
-            )
-            .bind_descriptor_sets(
-                PipelineBindPoint::Graphics,
-                self.pipeline.layout().clone(),
-                1,
-                set.clone()
-            )
-            .bind_vertex_buffers(0, self.square.clone())
-            .draw(self.square.len() as u32, 1, 0, 0).unwrap();
+                    set.clone()
+                )
+                .bind_vertex_buffers(0, self.square.clone())
+                .draw(self.square.len() as u32, 1, 0, 0).unwrap();
         }
 
         builder.end_render_pass().unwrap();

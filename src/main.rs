@@ -30,7 +30,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
-use SpaceSandbox::{gui::SimpleGuiRenderer, game_object::DirectLight};
+use SpaceSandbox::{gui::SimpleGuiRenderer, game_object::DirectLight, render::DirLightShadowRender};
 use SpaceSandbox::io::AssetLoader;
 use SpaceSandbox::rpu::WinRpu;
 
@@ -52,11 +52,13 @@ pub fn main() {
     let mut world = SpaceSandbox::static_world::from_gltf(
         "C:/Users/rewin/OneDrive/Documents/GitHub/SpaceSandbox/res/test_res/models/sponza/glTF/Sponza.gltf", win_rpu.rpu.clone());
 
-    let dir_light = DirectLight {
-        dir : [0.35, 0.85, 0.35].into(),
+    let mut dir_light = DirectLight {
+        dir : [0.0, 1.0, 0.0].into(),
         color : [1.0, 1.0, 1.0].into(),
-        intensity : 100000.0
+        intensity : 100000.0, 
+        textures : None
     };
+    dir_light.AllocTextures(win_rpu.rpu.clone(), 2048, 2048);
 
     world.create_entity().with(dir_light).build();
     
@@ -64,6 +66,7 @@ pub fn main() {
     let mut render = SpaceSandbox::render::GRender::from_rpu(win_rpu.rpu.clone(), 512, 512);
     let mut light_render = SpaceSandbox::render::image_render::DirectLightRender::new(win_rpu.rpu.clone(), 512, 512);
     let mut max_render = SpaceSandbox::render::image_render::MaxImageRender::new(win_rpu.rpu.clone(), 512, 512);
+    let mut light_shadow_render = DirLightShadowRender::from_rpu(win_rpu.rpu.clone(), 2048, 2048);
 
     let mut camera = SpaceSandbox::render::Camera {
         position: [5.0, 2.0, 0.0].into(),
@@ -113,7 +116,8 @@ pub fn main() {
             Event::RedrawRequested(window_id) if window_id == window_id => {
 
                 render.draw(&world, &camera);
-                light_render.draw(&world, render.get_gview());
+                light_shadow_render.draw(&world, &camera);
+                light_render.draw(&world, render.get_gview(), &camera);
 
                 let (tex_name, max_input) = view_layers[view_idx].clone();
                 max_render.draw(max_input.clone());
