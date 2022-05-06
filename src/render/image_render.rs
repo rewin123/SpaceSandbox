@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use cgmath::{Matrix4, One, Vector3};
+use cgmath::{Matrix4, One, Vector3, InnerSpace};
 use specs::{World, WorldExt, Join};
 use vulkano::{image::{view::ImageView, ImageViewAbstract, StorageImage}, pipeline::{GraphicsPipeline, graphics::{viewport::{Viewport, ViewportState}, vertex_input::BuffersDefinition, input_assembly::InputAssemblyState, depth_stencil::DepthStencilState}, Pipeline, PipelineBindPoint}, render_pass::{RenderPass, Subpass, Framebuffer}, format::Format, buffer::{CpuAccessibleBuffer, BufferUsage, TypedBufferAccess, CpuBufferPool}, command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents}, sampler::{Filter, Sampler, SamplerMipmapMode}, descriptor_set::PersistentDescriptorSet, sync::{self, GpuFuture}};
 use vulkano::descriptor_set::*;
@@ -219,11 +219,22 @@ impl DirectLightRender {
             let camera_light_subbuffer = {
                 let forward = light.dir;
 
-                let up = Vector3::<f32>::new(
-                    forward.y, 
-                    -forward.x, 
-                    0.0
+                let dz = {
+                    if forward.z == 0.0 {
+                        0.0
+                    } else {
+                        0.0
+                    }
+                };
+
+                let mut up = Vector3::<f32>::new(
+                    1.0, 
+                    1.0, 
+                    1.0
                 );
+
+                let right = up.cross(forward).normalize();
+                up = right.cross(forward).normalize();
     
                 let uniform_data = direct_light_fragment::ty::LightPosData
                 {

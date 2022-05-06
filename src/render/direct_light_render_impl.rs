@@ -93,11 +93,22 @@ impl DirLightShadowRender {
                 let subbuffer = {
                     let forward = dir_light.dir;
 
-                    let up = Vector3::<f32>::new(
-                        forward.y, 
-                        -forward.x, 
-                        0.0
+                    let dz = {
+                        if forward.z == 0.0 {
+                            0.0
+                        } else {
+                            0.0
+                        }
+                    };
+
+                    let mut up = Vector3::<f32>::new(
+                        1.0, 
+                        1.0, 
+                        1.0
                     );
+
+                    let mut right = up.cross(forward).normalize();
+                    up = right.cross(forward).normalize();
         
                     let uniform_data = shaders::dir_light_shadow_vertex::ty::Data 
                     {

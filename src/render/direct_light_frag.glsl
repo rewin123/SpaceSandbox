@@ -38,19 +38,23 @@ void main() {
     vec3 pos = texture(pos_tex, f_uv).rgb;
     vec4 shadow_val = texture(shadow_tex, f_uv);
 
-    vec3 pixel_light_pos = GetDirLightPos(pos + light_cam.cam_pos);
+    vec3 pixel_light_pos = GetDirLightPos(pos + light.cam_pos);
     vec2 uv = pixel_light_pos.rg / 50.0;
-    uv.x = -uv.x * 0.5 + 0.5;
-    uv.y = uv.y  * 0.5 + 0.5;
+    uv.x = uv.x * 0.5 + 0.5;
+    uv.y = uv.y * 0.5 + 0.5;
     vec3 shadow_pos = texture(shadow_tex, uv).rgb;
 
     vec3 dd = light.direction;
     vec3 ll = light_cam.forward;
 
-    if (abs(shadow_pos.z - pixel_light_pos.z) <= 0.01) {
-        color = vec4(1.0);
-    } else {
+    float light_factor = dot(-light.direction, normal);
+
+    if (abs(shadow_pos.z - pixel_light_pos.z) > 0.1 || light_factor <= 0) {
+
         color = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+    else {
+        color = vec4(light_factor * diff_color.rgb, 1.0);
     }
     
     // color = vec4(shadow_pos, 1.0);
