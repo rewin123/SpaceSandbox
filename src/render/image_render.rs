@@ -7,7 +7,7 @@ use vulkano::descriptor_set::*;
 
 use crate::{rpu::RPU, game_object::DirectLight};
 
-use super::{GView, Camera};
+use super::{GView, Camera, shaders};
 
 #[derive(Clone, Copy, Debug, Default)]
 struct ImageVert {
@@ -212,41 +212,36 @@ impl DirectLightRender {
                 pool.next(uniform_data).unwrap()
             };
 
-            let mut camera_uniform_buffer = CpuBufferPool::<direct_light_fragment::ty::LightPosData>::new(self.rpu.device.clone(), BufferUsage::all());
-            
+            let camera_light_buffer = 
+                    CpuBufferPool::<direct_light_fragment::ty::LightPosData>::new(
+                        self.rpu.device.clone(), BufferUsage::all());
 
-            let camera_subbuffer = {
+            let camera_light_subbuffer = {
+                let forward = light.dir;
 
-                let proj = cgmath::ortho::<f32>(
-                    -25.0, 25.0, 
-                    -25.0, 25.0, 
-                    0.0, 50.0
+                let up = Vector3::<f32>::new(
+                    forward.y, 
+                    -forward.x, 
+                    0.0
                 );
-
-                let cur_pos = camera.position.clone() + light.dir * 25.0;
-
-                let view = Matrix4::look_at_rh(
-                    cur_pos,
-                    cur_pos - light.dir,
-                    camera.up.clone() + Vector3::new(0.1, 0.1, 0.1),
-                );
-                let scale = Matrix4::from_scale(1.0);
     
-                let uniform_data = direct_light_fragment::ty::LightPosData {
-                    world: Matrix4::one().into(),
-                    view: (view * scale).into(),
-                    proj: proj.into(),
+                let uniform_data = direct_light_fragment::ty::LightPosData
+                {
+                    forward: forward.clone().into(),
+                    up: up.clone().into(),
                     cam_pos: camera.position.clone().into(),
+                    _dummy0 : [0, 0, 0, 0],
+                    _dummy1 : [0, 0, 0, 0],
                 };
     
-                camera_uniform_buffer.next(uniform_data).unwrap()
+                camera_light_buffer.next(uniform_data).unwrap()
             };
 
             let set = PersistentDescriptorSet::new(
                 self.pipeline.layout().descriptor_set_layouts().get(1).unwrap().clone(), 
                 [
                     WriteDescriptorSet::buffer(0, subbuffer),
-                    WriteDescriptorSet::buffer(1, camera_subbuffer)]).unwrap();
+                    WriteDescriptorSet::buffer(1, camera_light_subbuffer)]).unwrap();
 
             let sampler = Sampler::start(self.rpu.device.clone())
                 .mag_filter(Filter::Linear)

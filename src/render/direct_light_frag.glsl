@@ -17,35 +17,41 @@ layout(set = 1, binding = 0) uniform LightData {
 } light;
 
 layout(set = 1, binding = 1) uniform LightPosData {
-    mat4 world;
-    mat4 view;
-    mat4 proj;
+    vec3 forward;
+    vec3 up;
     vec3 cam_pos;
-} uniforms;
+} light_cam;
+
+vec3 GetDirLightPos(vec3 global_pos) {
+    vec3 local_pos = global_pos - light_cam.cam_pos;
+    float f = dot(light_cam.forward, local_pos);
+    float u = dot(light_cam.up, local_pos);
+    float r = dot(cross(light_cam.up, light_cam.forward), local_pos);
+    vec3 cam_pos = vec3(r, u, f);
+    return cam_pos;
+}
 
 void main() {
     vec4 diff_color = texture(diffuse_tex, f_uv);
     vec3 normal = texture(normal_tex, f_uv).rgb;
 
-    vec3 pos = texture(pos_tex, f_uv).rgb + light.cam_pos;
+    vec3 pos = texture(pos_tex, f_uv).rgb;
+    vec4 shadow_val = texture(shadow_tex, f_uv);
 
-    vec4 shadow_sampled = uniforms.proj * uniforms.view * uniforms.world * vec4(pos, 1.0);
-    shadow_sampled.x = (shadow_sampled.x + 1.0) * 0.5;
-    shadow_sampled.y = (shadow_sampled.y + 1.0) * 0.5;
+    vec3 pixel_light_pos = GetDirLightPos(pos + light_cam.cam_pos);
+    vec2 uv = pixel_light_pos.rg / 50.0;
+    uv.x = -uv.x * 0.5 + 0.5;
+    uv.y = uv.y  * 0.5 + 0.5;
+    vec3 shadow_pos = texture(shadow_tex, uv).rgb;
 
-    vec3 shadow_pos = texture(shadow_tex, vec2(shadow_sampled.x, shadow_sampled.y)).rgb;
-    vec3 pos_in_dir = pos - light.light_pos;
+    vec3 dd = light.direction;
+    vec3 ll = light_cam.forward;
 
-    float shadow_dist = -dot(shadow_pos, light.direction);
-    float pos_dist = -dot(pos_in_dir, light.direction);
-
-    if (pos_dist <= shadow_dist) {
-        float light_factor = dot(light.direction.rgb, normal);
-        light_factor = max(0.2, light_factor);
-        color = vec4(diff_color.rgb * light_factor * light.color.rgb, 1.0);
+    if (abs(shadow_pos.z - pixel_light_pos.z) <= 0.01) {
+        color = vec4(1.0);
     } else {
         color = vec4(0.0, 0.0, 0.0, 1.0);
     }
-
     
+    // color = vec4(shadow_pos, 1.0);
 }

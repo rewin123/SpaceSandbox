@@ -27,3 +27,10 @@ pub mod dir_light_shadow_fragment {
         path : "src/render/shaders/dir_light_shadow_fragment.glsl",
     }
 }
+
+pub mod dir_light_shadow_vertex {
+    vulkano_shaders::shader!{
+        ty: "vertex",
+        path : "src/render/shaders/dir_light_shadow_vertex.glsl",
+    }
+}
