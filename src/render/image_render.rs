@@ -255,9 +255,9 @@ impl DirectLightRender {
                     WriteDescriptorSet::buffer(1, camera_light_subbuffer)]).unwrap();
 
             let sampler = Sampler::start(self.rpu.device.clone())
-                .mag_filter(Filter::Linear)
-                .min_filter(Filter::Linear)
-                .mipmap_mode(SamplerMipmapMode::Linear)
+                .mag_filter(Filter::Nearest)
+                .min_filter(Filter::Nearest)
+                .mipmap_mode(SamplerMipmapMode::Nearest)
                 .build().unwrap();
 
             let texs = light.textures.clone().unwrap();

@@ -49,12 +49,14 @@ void main() {
 
     float light_factor = dot(-light.direction, normal);
 
+    vec3 ambient = diff_color.rgb * light.color * 0.5;
+
     if (abs(shadow_pos.z - pixel_light_pos.z) > 0.1 || light_factor <= 0) {
 
-        color = vec4(0.0, 0.0, 0.0, 1.0);
+        color = vec4(ambient, 1.0);
     }
     else {
-        color = vec4(light_factor * diff_color.rgb, 1.0);
+        color = vec4(ambient + light_factor * diff_color.rgb * light.color, 1.0);
     }
     
     // color = vec4(shadow_pos, 1.0);

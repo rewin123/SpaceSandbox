@@ -50,7 +50,7 @@ pub fn main() {
     let (win_rpu, event_loop) = WinRpu::default();
 
     let mut world = SpaceSandbox::static_world::from_gltf(
-        "C:/Users/rewin/OneDrive/Documents/GitHub/SpaceSandbox/res/test_res/models/shadow_test/shadow_test.gltf", win_rpu.rpu.clone());
+        "C:/Users/rewin/OneDrive/Documents/GitHub/SpaceSandbox/res/test_res/models/sponza/glTF/Sponza.gltf", win_rpu.rpu.clone());
 
     let mut dir_light = DirectLight {
         dir : [0.0, -1.0, 0.0].into(),
@@ -58,19 +58,18 @@ pub fn main() {
         intensity : 100000.0, 
         textures : None
     };
-    dir_light.AllocTextures(win_rpu.rpu.clone(), 2048, 2048);
+    dir_light.AllocTextures(win_rpu.rpu.clone(), 2048 * 4, 2048 * 4);
 
     world.create_entity().with(dir_light).build();
-    
 
     let mut render = SpaceSandbox::render::GRender::from_rpu(win_rpu.rpu.clone(), 512, 512);
     let mut light_render = SpaceSandbox::render::image_render::DirectLightRender::new(win_rpu.rpu.clone(), 512, 512);
     let mut max_render = SpaceSandbox::render::image_render::MaxImageRender::new(win_rpu.rpu.clone(), 512, 512);
-    let mut light_shadow_render = DirLightShadowRender::from_rpu(win_rpu.rpu.clone(), 2048, 2048);
+    let mut light_shadow_render = DirLightShadowRender::from_rpu(win_rpu.rpu.clone(), 2048 * 4, 2048 * 4);
 
     let mut camera = SpaceSandbox::render::Camera {
-        position: [10.0, 10.0, 0.0].into(),
-        forward: [-1.0, -1.0, 0.0].into(),
+        position: [5.0, 2.0, 0.0].into(),
+        forward: [-1.0, 0.0, 0.0].into(),
         up: [0.0, -1.0, 0.0].into(),
         aspect_ratio: 1.0,
     };
