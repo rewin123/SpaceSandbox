@@ -6,28 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rlua = "*"
-vulkano = "0.28.0"
-vulkano-shaders = "0.28.0"
-winit = "0.26"
-vulkano-win = "0.28.0"
-egui = "0.16.0"
-egui_winit_vulkano = "0.15.0"
-cgmath = "0.18.0"
-egui_demo_lib = "0.16.0"
-image = "0.24"
-bytemuck = "1.8.0"
-png = "0.17.5"
-gltf = "1.0.0"
-specs = "0.17.0"
-easy-gltf = "0.1.4"
-
-[dev-dependencies]
-criterion = "0.3"
-
-[[bench]]
-name = "mesh_bench"
-harness = false
-
-[build-dependencies]
-subprocess = "*"
+winit     = "0.20.0"
+ash       = "*"
+num       = "0.2"
+cgmath    = "0.17.0"
+image     = "0.22"
+memoffset = "0.5.1"
+tobj      = "0.1.10"
