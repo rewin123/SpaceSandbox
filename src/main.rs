@@ -1,14 +1,32 @@
-use ash::InstanceError;
-use ash::version::EntryV1_0;
-use ash::version::InstanceV1_0;
+use ash::prelude::VkResult;
 use ash::vk;
+use winit::window::CursorIcon::Default;
 
 const EngineName : &str = "Rewin engine";
 const AppName : &str = "SpaceSandbox";
 
 fn main() {
-    let entry = ash::Entry::new().unwrap();
-    let instance = InstanceSafe::new(&entry).unwrap();
+    let entry = unsafe {ash::Entry::load().unwrap() };
+
+    let enginename = std::ffi::CString::new(EngineName).unwrap();
+    let appname = std::ffi::CString::new(AppName).unwrap();
+
+
+    let app_info = vk::ApplicationInfo::builder()
+        .application_name(&appname)
+        .engine_name(&enginename)
+        .application_version(vk::make_version(0, 1, 0))
+        .api_version(vk::make_version(1, 0, 106))
+        .engine_version(vk::make_version(0, 1, 0))
+        .build();
+
+    let instance_create_info = vk::InstanceCreateInfo::builder()
+        .application_info(&app_info)
+        .build();
+
+    dbg!(&instance_create_info);
+
+    let instance = InstanceSafe::new(&entry, &instance_create_info).unwrap();
 
 }
 
@@ -33,18 +51,20 @@ struct InstanceSafe {
 }
 
 impl InstanceSafe {
-    pub fn new(entry : &ash::Entry) -> Result<Self, InstanceError> {
+    pub fn new(
+            entry : &ash::Entry,
+            instance_create_info : &vk::InstanceCreateInfo) -> Option<InstanceSafe> {
         let instance_res =  unsafe {
-            entry.create_instance(&Default::default(), None)
+            entry.create_instance(&instance_create_info, None)
         };
-        match instance_res {
+        return match instance_res {
             Ok(res) => {
-                return Ok(Self {
-                    instance : res
-                });
-            },
+                Some(Self {
+                    instance: res
+                })
+            }
             Err(err) => {
-                return Err(err);
+                None
             }
         }
     }
