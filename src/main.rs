@@ -19,14 +19,24 @@ fn main() {
         .api_version(vk::make_version(1, 0, 106))
         .engine_version(vk::make_version(0, 1, 0))
         .build();
+    let layer_names: Vec<std::ffi::CString> =
+        vec![std::ffi::CString::new("VK_LAYER_KHRONOS_validation").unwrap()];
+    let layer_name_pointers: Vec<*const i8> = layer_names
+        .iter()
+        .map(|layer_name| layer_name.as_ptr())
+        .collect();
+    let extension_name_pointers: Vec<*const i8> =
+        vec![ash::extensions::ext::DebugUtils::name().as_ptr()];
 
     let instance_create_info = vk::InstanceCreateInfo::builder()
         .application_info(&app_info)
+        .enabled_layer_names(&layer_name_pointers)
+        .enabled_extension_names(&extension_name_pointers)
         .build();
 
     dbg!(&instance_create_info);
 
-    let instance = InstanceSafe::new(&entry, &instance_create_info).unwrap();
+    let instance = InstanceSafe::new(&entry, &instance_create_info);
 
 }
 
@@ -53,19 +63,12 @@ struct InstanceSafe {
 impl InstanceSafe {
     pub fn new(
             entry : &ash::Entry,
-            instance_create_info : &vk::InstanceCreateInfo) -> Option<InstanceSafe> {
+            instance_create_info : &vk::InstanceCreateInfo) -> InstanceSafe {
         let instance_res =  unsafe {
             entry.create_instance(&instance_create_info, None)
         };
-        return match instance_res {
-            Ok(res) => {
-                Some(Self {
-                    instance: res
-                })
-            }
-            Err(err) => {
-                None
-            }
+        Self {
+            instance : instance_res.unwrap()
         }
     }
 }
