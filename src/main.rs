@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::os::raw::c_char;
 use ash::{vk};
 use ash::extensions::{ext::DebugUtils, khr::Surface};
 use ash::vk::{PhysicalDevice, PhysicalDeviceProperties};
@@ -20,6 +21,10 @@ fn main() {
         ]
     );
 
+    let eventloop = winit::event_loop::EventLoop::new();
+    let window = winit::window::Window::new(&eventloop).unwrap();
+    info!("Created window");
+
     let entry = unsafe {ash::Entry::load().unwrap() };
 
     let enginename = std::ffi::CString::new(EngineName).unwrap();
@@ -33,14 +38,24 @@ fn main() {
         .api_version(vk::API_VERSION_1_1)
         .engine_version(vk::make_version(0, 1, 0))
         .build();
+
+    let mut extension_name_pointers : Vec<*const c_char> =
+        ash_window::enumerate_required_extensions(&window).unwrap()
+            .iter()
+            .map(|&name| name.as_ptr())
+            .collect();
+
     let layer_names: Vec<std::ffi::CString> =
         vec![std::ffi::CString::new("VK_LAYER_KHRONOS_validation").unwrap()];
     let layer_name_pointers: Vec<*const i8> = layer_names
         .iter()
         .map(|layer_name| layer_name.as_ptr())
         .collect();
-    let extension_name_pointers: Vec<*const i8> =
-        vec![ash::extensions::ext::DebugUtils::name().as_ptr()];
+    // let extension_name_pointers: Vec<*const i8> =
+    //     vec![ash::extensions::ext::DebugUtils::name().as_ptr()];
+    extension_name_pointers.push(
+        ash::extensions::ext::DebugUtils::name().as_ptr());
+
 
     let mut debugcreateinfo = vk::DebugUtilsMessengerCreateInfoEXT::builder()
         .message_severity(
@@ -66,6 +81,13 @@ fn main() {
     dbg!(&instance_create_info);
 
     let instance = InstanceSafe::new(&entry, &instance_create_info);
+
+    let surface_loader = unsafe {
+        ash_window::create_surface(
+            &entry,
+            &instance.inner,
+            &window, None).unwrap()
+    };
 
     let debug_utils = ash::extensions::ext::DebugUtils::new(&entry, &instance.inner);
     let utils_messenger =
@@ -94,6 +116,7 @@ fn main() {
     let transfer_queue = unsafe { logical_device.get_device_queue(qfamindices.1, 0) };
 
     unsafe {
+
         logical_device.destroy_device(None);
         debug_utils.destroy_debug_utils_messenger(utils_messenger, None);
     };
