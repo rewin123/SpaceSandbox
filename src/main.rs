@@ -1,6 +1,5 @@
-use ash::prelude::VkResult;
-use ash::vk;
-use winit::window::CursorIcon::Default;
+use ash::{vk};
+use ash::extensions::{ext::DebugUtils, khr::Surface};
 
 const EngineName : &str = "Rewin engine";
 const AppName : &str = "SpaceSandbox";
@@ -15,8 +14,8 @@ fn main() {
     let app_info = vk::ApplicationInfo::builder()
         .application_name(&appname)
         .engine_name(&enginename)
-        .application_version(vk::make_version(0, 1, 0))
-        .api_version(vk::make_version(1, 0, 106))
+        .application_version(vk::make_api_version(0, 1, 0, 0))
+        .api_version(vk::API_VERSION_1_1)
         .engine_version(vk::make_version(0, 1, 0))
         .build();
     let layer_names: Vec<std::ffi::CString> =
@@ -38,6 +37,25 @@ fn main() {
 
     let instance = InstanceSafe::new(&entry, &instance_create_info);
 
+    let debug_utils = ash::extensions::ext::DebugUtils::new(&entry, &instance.instance);
+    let debugcreateinfo = vk::DebugUtilsMessengerCreateInfoEXT {
+        message_severity: vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
+            | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
+            | vk::DebugUtilsMessageSeverityFlagsEXT::INFO
+            | vk::DebugUtilsMessageSeverityFlagsEXT::ERROR,
+        message_type: vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
+            | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
+            | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION,
+        pfn_user_callback: Some(vulkan_debug_utils_callback),
+        ..Default::default()
+    };
+
+    let utils_messenger =
+        unsafe { debug_utils.create_debug_utils_messenger(&debugcreateinfo, None).unwrap() };
+
+    unsafe {
+        debug_utils.destroy_debug_utils_messenger(utils_messenger, None);
+    };
 }
 
 
