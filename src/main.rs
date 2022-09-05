@@ -1,11 +1,13 @@
 use std::fs::File;
 use std::os::raw::c_char;
-use ash::{vk};
+use ash::{Entry, vk};
 use ash::extensions::{ext::DebugUtils, khr::Surface};
-use ash::vk::{PhysicalDevice, PhysicalDeviceProperties};
+use ash::vk::{Handle, PhysicalDevice, PhysicalDeviceProperties};
 
 use log::*;
 use simplelog::*;
+use winit::platform::unix::WindowExtUnix;
+use winit::window::Window;
 
 const EngineName : &str = "Rewin engine";
 const AppName : &str = "SpaceSandbox";
@@ -82,11 +84,8 @@ fn main() {
 
     let instance = InstanceSafe::new(&entry, &instance_create_info);
 
-    let surface_loader = unsafe {
-        ash_window::create_surface(
-            &entry,
-            &instance.inner,
-            &window, None).unwrap()
+    let surface = unsafe {
+        ash_window::create_surface(&entry, &instance.inner, &window, None).unwrap()
     };
 
     let debug_utils = ash::extensions::ext::DebugUtils::new(&entry, &instance.inner);
@@ -107,16 +106,23 @@ fn main() {
             .queue_priorities(&priorities)
             .build(),
     ];
+
+    let device_extension_name_pointers : Vec<*const i8> = 
+        vec![ash::extensions::khr::Swapchain::name().as_ptr()];
+
+
     let device_create_info = vk::DeviceCreateInfo::builder()
         .queue_create_infos(&queue_infos)
+        .enabled_extension_names(&device_extension_name_pointers)
         .enabled_layer_names(&layer_name_pointers);
     let logical_device =
         unsafe { instance.inner.create_device(physical_device, &device_create_info, None).unwrap()};
     let graphics_queue = unsafe { logical_device.get_device_queue(qfamindices.0, 0) };
     let transfer_queue = unsafe { logical_device.get_device_queue(qfamindices.1, 0) };
 
-    unsafe {
 
+    unsafe {
+        
         logical_device.destroy_device(None);
         debug_utils.destroy_debug_utils_messenger(utils_messenger, None);
     };
