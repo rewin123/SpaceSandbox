@@ -1,8 +1,9 @@
 use std::fs::File;
 use std::os::raw::c_char;
-use ash::{Entry, vk};
+use ash::{Device, Entry, vk};
 use ash::extensions::{ext::DebugUtils, khr::Surface};
-use ash::vk::{Handle, PhysicalDevice, PhysicalDeviceProperties, SurfaceKHR};
+use ash::extensions::khr::Swapchain;
+use ash::vk::{Handle, PhysicalDevice, PhysicalDeviceProperties, SurfaceKHR, SwapchainKHR};
 
 use log::*;
 use simplelog::*;
@@ -80,8 +81,6 @@ fn main() {
         .enabled_layer_names(&layer_name_pointers)
         .enabled_extension_names(&extension_name_pointers).build();
 
-    dbg!(&instance_create_info);
-
     let instance = InstanceSafe::new(&entry, &instance_create_info);
 
     let debug_utils = ash::extensions::ext::DebugUtils::new(&entry, &instance.inner);
@@ -119,20 +118,39 @@ fn main() {
 
     let surface = SurfaceSafe::new(&window, &instance, &entry);
 
-    let surface_capabilities = unsafe {
-        surface.loader.get_physical_device_surface_capabilities(physical_device, surface.inner)
+    let swapchain = SwapchainSafe::new(
+        &surface,
+        physical_device,
+        qfamindices.clone(),
+        &logical_device,
+        &instance);
+
+    let swapchain_images = unsafe {
+        swapchain.loader.get_swapchain_images(swapchain.inner).unwrap()
     };
-    let surface_present_modes = unsafe {
-        surface.loader.get_physical_device_surface_present_modes(physical_device, surface.inner)
-    };
-    let surface_formats =
-        unsafe { surface.loader.get_physical_device_surface_formats(physical_device, surface.inner) };
-    dbg!(&surface_capabilities);
-    dbg!(&surface_present_modes);
-    dbg!(&surface_formats);
+    let mut swapchain_imageviews = Vec::with_capacity(swapchain_images.len());
+    for image in &swapchain_images {
+        let subresource_range = vk::ImageSubresourceRange::builder()
+            .aspect_mask(vk::ImageAspectFlags::COLOR)
+            .base_mip_level(0)
+            .level_count(1)
+            .base_array_layer(0)
+            .layer_count(1);
+        let imageview_create_info = vk::ImageViewCreateInfo::builder()
+            .image(*image)
+            .view_type(vk::ImageViewType::TYPE_2D)
+            .format(vk::Format::B8G8R8A8_UNORM)
+            .subresource_range(*subresource_range);
+        let imageview = unsafe {
+            logical_device.create_image_view(&imageview_create_info, None).unwrap()
+        };
+        swapchain_imageviews.push(imageview);
+    }
 
     unsafe {
-        
+        for iv in &swapchain_imageviews {
+            logical_device.destroy_image_view(*iv, None);
+        }
         logical_device.destroy_device(None);
         debug_utils.destroy_debug_utils_messenger(utils_messenger, None);
     };
@@ -261,6 +279,71 @@ impl Drop for SurfaceSafe {
     fn drop(&mut self) {
         unsafe {
             self.loader.destroy_surface(self.inner, None);
+        }
+    }
+}
+
+pub struct SwapchainSafe {
+    inner : SwapchainKHR,
+    loader : Swapchain
+}
+
+impl SwapchainSafe {
+    pub fn new(
+        surface : &SurfaceSafe,
+        physical_device : PhysicalDevice,
+        qfamindices : (u32, u32),
+        logical_device : &Device,
+        instance : &InstanceSafe) -> Self {
+        let surface_capabilities = unsafe {
+            surface.loader.get_physical_device_surface_capabilities(
+                physical_device, surface.inner).unwrap()
+        };
+        let surface_present_modes = unsafe {
+            surface.loader.get_physical_device_surface_present_modes(
+                physical_device, surface.inner).unwrap()
+        };
+        let surface_formats = unsafe {
+            surface.loader.get_physical_device_surface_formats(
+                physical_device, surface.inner).unwrap()
+        };
+
+        info!("Creating swapchain!");
+        let queuefamilies = [qfamindices.0];
+        let swapchain_create_info = vk::SwapchainCreateInfoKHR::builder()
+            .surface(surface.inner)
+            .min_image_count(
+                3.max(surface_capabilities.min_image_count)
+                    .min(surface_capabilities.max_image_count)
+            )
+            .image_format(surface_formats.first().unwrap().format)
+            .image_color_space(surface_formats.first().unwrap().color_space)
+            .image_extent(surface_capabilities.current_extent)
+            .image_array_layers(1)
+            .image_usage(vk::ImageUsageFlags::COLOR_ATTACHMENT)
+            .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
+            .queue_family_indices(&queuefamilies)
+            .pre_transform(surface_capabilities.current_transform)
+            .composite_alpha(vk::CompositeAlphaFlagsKHR::OPAQUE)
+            .present_mode(vk::PresentModeKHR::FIFO)
+            .build();
+        let swapchain_loader = ash::extensions::khr::Swapchain::new(&instance.inner, &logical_device);
+        let swapchain = unsafe {
+            swapchain_loader.create_swapchain(&swapchain_create_info, None).unwrap()
+        };
+        debug!("{:#?}", swapchain_create_info);
+
+        Self {
+            inner : swapchain,
+            loader : swapchain_loader
+        }
+    }
+}
+
+impl Drop for SwapchainSafe {
+    fn drop(&mut self) {
+        unsafe {
+            // self.loader.destroy_swapchain(self.inner, None);
         }
     }
 }
