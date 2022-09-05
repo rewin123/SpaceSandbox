@@ -2,7 +2,7 @@ use std::fs::File;
 use std::os::raw::c_char;
 use ash::{Entry, vk};
 use ash::extensions::{ext::DebugUtils, khr::Surface};
-use ash::vk::{Handle, PhysicalDevice, PhysicalDeviceProperties};
+use ash::vk::{Handle, PhysicalDevice, PhysicalDeviceProperties, SurfaceKHR};
 
 use log::*;
 use simplelog::*;
@@ -84,11 +84,8 @@ fn main() {
 
     let instance = InstanceSafe::new(&entry, &instance_create_info);
 
-    let surface = unsafe {
-        ash_window::create_surface(&entry, &instance.inner, &window, None).unwrap()
-    };
-
     let debug_utils = ash::extensions::ext::DebugUtils::new(&entry, &instance.inner);
+
     let utils_messenger =
         unsafe { debug_utils.create_debug_utils_messenger(&debugcreateinfo, None).unwrap() };
 
@@ -120,6 +117,19 @@ fn main() {
     let graphics_queue = unsafe { logical_device.get_device_queue(qfamindices.0, 0) };
     let transfer_queue = unsafe { logical_device.get_device_queue(qfamindices.1, 0) };
 
+    let surface = SurfaceSafe::new(&window, &instance, &entry);
+
+    let surface_capabilities = unsafe {
+        surface.loader.get_physical_device_surface_capabilities(physical_device, surface.inner)
+    };
+    let surface_present_modes = unsafe {
+        surface.loader.get_physical_device_surface_present_modes(physical_device, surface.inner)
+    };
+    let surface_formats =
+        unsafe { surface.loader.get_physical_device_surface_formats(physical_device, surface.inner) };
+    dbg!(&surface_capabilities);
+    dbg!(&surface_present_modes);
+    dbg!(&surface_formats);
 
     unsafe {
         
@@ -197,7 +207,7 @@ unsafe extern "system" fn vulkan_debug_utils_callback(
 
 
 #[repr(transparent)]
-struct InstanceSafe {
+pub struct InstanceSafe {
     inner : ash::Instance
 }
 
@@ -219,6 +229,38 @@ impl Drop for InstanceSafe {
     fn drop(&mut self) {
         unsafe {
             self.inner.destroy_instance(None);
+        }
+    }
+}
+
+
+pub struct SurfaceSafe {
+    inner : SurfaceKHR,
+    loader : Surface
+}
+
+impl SurfaceSafe {
+    pub fn new(window : &Window, instance : &InstanceSafe, entry : &Entry) -> Self {
+        let x11_display = window.xlib_display().unwrap();
+        let x11_window = window.xlib_window().unwrap();
+        let x11_create_info = vk::XlibSurfaceCreateInfoKHR::builder()
+            .window(x11_window)
+            .dpy(x11_display as *mut vk::Display);
+        let xlib_surface_loader = ash::extensions::khr::XlibSurface::new(&entry, &instance.inner);
+        let surface = unsafe { xlib_surface_loader.create_xlib_surface(&x11_create_info, None) }.unwrap();
+        let surface_loader = ash::extensions::khr::Surface::new(&entry, &instance.inner);
+
+        Self {
+            inner : surface,
+            loader : surface_loader
+        }
+    }
+}
+
+impl Drop for SurfaceSafe {
+    fn drop(&mut self) {
+        unsafe {
+            self.loader.destroy_surface(self.inner, None);
         }
     }
 }
