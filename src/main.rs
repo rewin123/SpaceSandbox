@@ -1,9 +1,10 @@
 use std::fs::File;
+use std::ops::Deref;
 use std::os::raw::c_char;
-use ash::{Device, Entry, vk};
+use ash::{Device, Entry, Instance, vk};
 use ash::extensions::{ext::DebugUtils, khr::Surface};
 use ash::extensions::khr::Swapchain;
-use ash::vk::{Handle, PhysicalDevice, PhysicalDeviceProperties, SurfaceKHR, SwapchainKHR};
+use ash::vk::{DeviceQueueCreateInfo, Handle, PhysicalDevice, PhysicalDeviceProperties, SurfaceKHR, SwapchainKHR};
 
 use log::*;
 use simplelog::*;
@@ -30,17 +31,6 @@ fn main() {
 
     let entry = unsafe {ash::Entry::load().unwrap() };
 
-    let enginename = std::ffi::CString::new(EngineName).unwrap();
-    let appname = std::ffi::CString::new(AppName).unwrap();
-
-
-    let app_info = vk::ApplicationInfo::builder()
-        .application_name(&appname)
-        .engine_name(&enginename)
-        .application_version(vk::make_api_version(0, 1, 0, 0))
-        .api_version(vk::API_VERSION_1_1)
-        .engine_version(vk::make_version(0, 1, 0))
-        .build();
 
     let mut extension_name_pointers : Vec<*const c_char> =
         ash_window::enumerate_required_extensions(&window).unwrap()
@@ -48,82 +38,29 @@ fn main() {
             .map(|&name| name.as_ptr())
             .collect();
 
-    let layer_names: Vec<std::ffi::CString> =
-        vec![std::ffi::CString::new("VK_LAYER_KHRONOS_validation").unwrap()];
-    let layer_name_pointers: Vec<*const i8> = layer_names
-        .iter()
-        .map(|layer_name| layer_name.as_ptr())
-        .collect();
-    // let extension_name_pointers: Vec<*const i8> =
-    //     vec![ash::extensions::ext::DebugUtils::name().as_ptr()];
-    extension_name_pointers.push(
-        ash::extensions::ext::DebugUtils::name().as_ptr());
 
-
-    let mut debugcreateinfo = vk::DebugUtilsMessengerCreateInfoEXT::builder()
-        .message_severity(
-            vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
-                | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
-                | vk::DebugUtilsMessageSeverityFlagsEXT::INFO
-                | vk::DebugUtilsMessageSeverityFlagsEXT::ERROR,
-        )
-        .message_type(
-            vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
-                | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
-                | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION,
-        )
-        .pfn_user_callback(Some(vulkan_debug_utils_callback))
-        .build();
-
-    let instance_create_info = vk::InstanceCreateInfo::builder()
-        .push_next(&mut debugcreateinfo)
-        .application_info(&app_info)
-        .enabled_layer_names(&layer_name_pointers)
-        .enabled_extension_names(&extension_name_pointers).build();
-
-    let instance = InstanceSafe::new(&entry, &instance_create_info);
-
-    let debug_utils = ash::extensions::ext::DebugUtils::new(&entry, &instance.inner);
-
-    let utils_messenger =
-        unsafe { debug_utils.create_debug_utils_messenger(&debugcreateinfo, None).unwrap() };
+    let layer_names = vec!["VK_LAYER_KHRONOS_validation"];
+    let instance = init_instance(&entry, &layer_names, &window);
+    let debug = DebugDongXi::init(&entry, &instance).unwrap();
 
     let (physical_device, physical_device_properties) = GetDefaultPhysicalDevice(&instance);
+
     let qfamindices = GetGraphicQueue(&instance, &physical_device);
-
-    let priorities = [1.0f32];
-    let queue_infos = [
-        vk::DeviceQueueCreateInfo::builder()
-            .queue_family_index(qfamindices.0)
-            .queue_priorities(&priorities)
-            .build(),
-        vk::DeviceQueueCreateInfo::builder()
-            .queue_family_index(qfamindices.1)
-            .queue_priorities(&priorities)
-            .build(),
-    ];
-
-    let device_extension_name_pointers : Vec<*const i8> = 
-        vec![ash::extensions::khr::Swapchain::name().as_ptr()];
-
-
-    let device_create_info = vk::DeviceCreateInfo::builder()
-        .queue_create_infos(&queue_infos)
-        .enabled_extension_names(&device_extension_name_pointers)
-        .enabled_layer_names(&layer_name_pointers);
-    let logical_device =
-        unsafe { instance.inner.create_device(physical_device, &device_create_info, None).unwrap()};
-    let graphics_queue = unsafe { logical_device.get_device_queue(qfamindices.0, 0) };
-    let transfer_queue = unsafe { logical_device.get_device_queue(qfamindices.1, 0) };
+    let (logical_device, queues) = GetLogicalDevice(
+        &layer_names,
+        &instance,
+        physical_device,
+        &qfamindices);
 
     let surface = SurfaceSafe::new(&window, &instance, &entry);
 
     let swapchain = SwapchainSafe::new(
         &surface,
         physical_device,
-        qfamindices.clone(),
+        &qfamindices,
         &logical_device,
         &instance);
+
 
     let swapchain_images = unsafe {
         swapchain.loader.get_swapchain_images(swapchain.inner).unwrap()
@@ -147,16 +84,174 @@ fn main() {
         swapchain_imageviews.push(imageview);
     }
 
+
+    std::mem::drop(debug);
+
     unsafe {
         for iv in &swapchain_imageviews {
             logical_device.destroy_image_view(*iv, None);
         }
         logical_device.destroy_device(None);
-        debug_utils.destroy_debug_utils_messenger(utils_messenger, None);
     };
 }
 
-fn GetGraphicQueue(instance: &InstanceSafe, physical_device: &PhysicalDevice) -> (u32, u32) {
+pub struct QueueFamilies {
+    graphics_q_index: u32,
+    transfer_q_index: u32,
+}
+
+pub struct Queues {
+    graphics_queue: vk::Queue,
+    transfer_queue: vk::Queue,
+}
+
+pub fn GetLogicalDevice(
+        layer_names: &Vec<&str>,
+        instance: &InstanceSafe,
+        physical_device: PhysicalDevice,
+        qfamindex : &QueueFamilies) -> (Device, Queues) {
+
+
+    let priorities = [1.0f32];
+    let queue_infos = [
+        vk::DeviceQueueCreateInfo::builder()
+            .queue_family_index(qfamindex.graphics_q_index)
+            .queue_priorities(&priorities)
+            .build(),
+        vk::DeviceQueueCreateInfo::builder()
+            .queue_family_index(qfamindex.transfer_q_index)
+            .queue_priorities(&priorities)
+            .build(),
+    ];
+
+    let device_extension_name_pointers: Vec<*const i8> =
+        vec![ash::extensions::khr::Swapchain::name().as_ptr()];
+
+    let layer_names_c: Vec<std::ffi::CString> = layer_names
+        .iter()
+        .map(|&ln| std::ffi::CString::new(ln).unwrap())
+        .collect();
+    let layer_name_pointers: Vec<*const i8> = layer_names_c
+        .iter()
+        .map(|layer_name| layer_name.as_ptr())
+        .collect();
+
+    let device_create_info = vk::DeviceCreateInfo::builder()
+        .queue_create_infos(&queue_infos)
+        .enabled_extension_names(&device_extension_name_pointers)
+        .enabled_layer_names(&layer_name_pointers);
+
+
+    let logical_device = unsafe { instance.create_device(physical_device, &device_create_info, None).unwrap() };
+
+    let graphics_queue = unsafe { logical_device.get_device_queue(qfamindex.graphics_q_index, 0) };
+    let transfer_queue = unsafe { logical_device.get_device_queue(qfamindex.transfer_q_index, 0) };
+
+    let queues = Queues {
+        graphics_queue,
+        transfer_queue
+    };
+
+    (logical_device, queues)
+}
+
+
+struct DebugDongXi {
+    loader: ash::extensions::ext::DebugUtils,
+    messenger: vk::DebugUtilsMessengerEXT,
+}
+impl DebugDongXi {
+    fn init(entry: &ash::Entry, instance: &ash::Instance) -> Result<DebugDongXi, vk::Result> {
+        let mut debugcreateinfo = vk::DebugUtilsMessengerCreateInfoEXT::builder()
+            .message_severity(
+                vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
+                    | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
+                    | vk::DebugUtilsMessageSeverityFlagsEXT::INFO
+                    | vk::DebugUtilsMessageSeverityFlagsEXT::ERROR,
+            )
+            .message_type(
+                vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
+                    | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
+                    | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION,
+            )
+            .pfn_user_callback(Some(vulkan_debug_utils_callback));
+
+        let loader = ash::extensions::ext::DebugUtils::new(entry, instance);
+        let messenger = unsafe { loader.create_debug_utils_messenger(&debugcreateinfo, None)? };
+
+        Ok(DebugDongXi { loader, messenger })
+    }
+}
+
+impl Drop for DebugDongXi {
+    fn drop(&mut self) {
+        unsafe {
+            self.loader
+                .destroy_debug_utils_messenger(self.messenger, None)
+        };
+    }
+}
+
+fn init_instance(
+    entry : &Entry,
+    layer_names: &[&str],
+    window : &Window
+) -> InstanceSafe {
+    let enginename = std::ffi::CString::new(EngineName).unwrap();
+    let appname = std::ffi::CString::new(AppName).unwrap();
+
+    let app_info = vk::ApplicationInfo::builder()
+        .application_name(&appname)
+        .engine_name(&enginename)
+        .application_version(vk::make_api_version(0, 1, 0, 0))
+        .api_version(vk::API_VERSION_1_1)
+        .engine_version(vk::make_version(0, 1, 0))
+        .build();
+
+    let layer_names_c: Vec<std::ffi::CString> = layer_names
+        .iter()
+        .map(|&ln| std::ffi::CString::new(ln).unwrap())
+        .collect();
+    let layer_name_pointers: Vec<*const i8> = layer_names_c
+        .iter()
+        .map(|layer_name| layer_name.as_ptr())
+        .collect();
+
+    let mut extension_name_pointers : Vec<*const c_char> =
+        ash_window::enumerate_required_extensions(&window).unwrap()
+            .iter()
+            .map(|&name| name.as_ptr())
+            .collect();
+
+    extension_name_pointers.push(
+        ash::extensions::ext::DebugUtils::name().as_ptr());
+
+    let mut debugcreateinfo = vk::DebugUtilsMessengerCreateInfoEXT::builder()
+        .message_severity(
+            vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
+                | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
+                | vk::DebugUtilsMessageSeverityFlagsEXT::INFO
+                | vk::DebugUtilsMessageSeverityFlagsEXT::ERROR,
+        )
+        .message_type(
+            vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
+                | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
+                | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION,
+        )
+        .pfn_user_callback(Some(vulkan_debug_utils_callback))
+        .build();
+
+    let instance_create_info = vk::InstanceCreateInfo::builder()
+        .push_next(&mut debugcreateinfo)
+        .application_info(&app_info)
+        .enabled_layer_names(&layer_name_pointers)
+        .enabled_extension_names(&extension_name_pointers).build();
+
+    let instance = InstanceSafe::new(&entry, &instance_create_info);
+    instance
+}
+
+fn GetGraphicQueue(instance: &InstanceSafe, physical_device: &PhysicalDevice) -> QueueFamilies {
     let queuefamilyproperties =
         unsafe { instance.inner.get_physical_device_queue_family_properties(physical_device.clone()) };
     // dbg!(&queuefamilyproperties);
@@ -178,10 +273,11 @@ fn GetGraphicQueue(instance: &InstanceSafe, physical_device: &PhysicalDevice) ->
             }
         }
     }
-    (
-        found_graphics_q_index.unwrap(),
-        found_transfer_q_index.unwrap(),
-    )
+
+    QueueFamilies {
+        graphics_q_index : found_graphics_q_index.unwrap(),
+        transfer_q_index : found_transfer_q_index.unwrap()
+    }
 }
 
 fn GetDefaultPhysicalDevice(instance: &InstanceSafe) -> (PhysicalDevice, PhysicalDeviceProperties) {
@@ -243,6 +339,14 @@ impl InstanceSafe {
     }
 }
 
+impl std::ops::Deref for InstanceSafe {
+    type Target = Instance;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
 impl Drop for InstanceSafe {
     fn drop(&mut self) {
         unsafe {
@@ -292,7 +396,7 @@ impl SwapchainSafe {
     pub fn new(
         surface : &SurfaceSafe,
         physical_device : PhysicalDevice,
-        qfamindices : (u32, u32),
+        qfamindices : &QueueFamilies,
         logical_device : &Device,
         instance : &InstanceSafe) -> Self {
         let surface_capabilities = unsafe {
@@ -309,7 +413,7 @@ impl SwapchainSafe {
         };
 
         info!("Creating swapchain!");
-        let queuefamilies = [qfamindices.0];
+        let queuefamilies = [qfamindices.graphics_q_index];
         let swapchain_create_info = vk::SwapchainCreateInfoKHR::builder()
             .surface(surface.inner)
             .min_image_count(
@@ -337,6 +441,14 @@ impl SwapchainSafe {
             inner : swapchain,
             loader : swapchain_loader
         }
+    }
+}
+
+impl Deref for SwapchainSafe {
+    type Target = SwapchainKHR;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
     }
 }
 
