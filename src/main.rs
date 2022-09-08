@@ -52,10 +52,11 @@ fn main() {
         swapchain_imageviews.push(imageview);
     }
 
+    let renderpass = init_renderpass(&graphic_base).unwrap();
+
     unsafe {
         for iv in &swapchain_imageviews {
             graphic_base.device.destroy_image_view(*iv, None);
         }
-        graphic_base.device.destroy_device(None);
     };
 }
