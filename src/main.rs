@@ -28,35 +28,15 @@ fn main() {
     let window = winit::window::Window::new(&eventloop).unwrap();
     info!("Created window");
 
-    let graphic_base = GraphicBase::init(window);
+    let mut graphic_base = GraphicBase::init(window);
 
-    let swapchain_images = unsafe {
-        graphic_base.swapchain.loader.get_swapchain_images(graphic_base.swapchain.inner).unwrap()
-    };
-    let mut swapchain_imageviews = Vec::with_capacity(swapchain_images.len());
-    for image in &swapchain_images {
-        let subresource_range = vk::ImageSubresourceRange::builder()
-            .aspect_mask(vk::ImageAspectFlags::COLOR)
-            .base_mip_level(0)
-            .level_count(1)
-            .base_array_layer(0)
-            .layer_count(1);
-        let imageview_create_info = vk::ImageViewCreateInfo::builder()
-            .image(*image)
-            .view_type(vk::ImageViewType::TYPE_2D)
-            .format(vk::Format::B8G8R8A8_UNORM)
-            .subresource_range(*subresource_range);
-        let imageview = unsafe {
-            graphic_base.device.create_image_view(&imageview_create_info, None).unwrap()
-        };
-        swapchain_imageviews.push(imageview);
-    }
+    let mut renderpass = init_renderpass(&graphic_base).unwrap();
 
-    let renderpass = init_renderpass(&graphic_base).unwrap();
+    graphic_base.swapchain.create_framebuffers(
+        &graphic_base.device,
+                    renderpass.inner);
 
     unsafe {
-        for iv in &swapchain_imageviews {
-            graphic_base.device.destroy_image_view(*iv, None);
-        }
+
     };
 }

@@ -1,4 +1,5 @@
 use ash::vk;
+use ash::vk::{Framebuffer, Image, ImageView};
 use log::info;
 use crate::*;
 
@@ -6,7 +7,11 @@ pub struct SwapchainSafe {
     pub inner : SwapchainKHR,
     pub loader : Swapchain,
     device : Arc<DeviceSafe>,
-    surface : Arc<SurfaceSafe>
+    surface : Arc<SurfaceSafe>,
+    images : Vec<Image>,
+    imageviews: Vec<ImageView>,
+    framebuffers : Vec<Framebuffer>,
+    extent: vk::Extent2D,
 }
 
 impl SwapchainSafe {
@@ -20,6 +25,8 @@ impl SwapchainSafe {
             surface.loader.get_physical_device_surface_capabilities(
                 physical_device, surface.inner).unwrap()
         };
+        let extent = surface_capabilities.current_extent;
+
         let surface_present_modes = unsafe {
             surface.loader.get_physical_device_surface_present_modes(
                 physical_device, surface.inner).unwrap()
@@ -54,12 +61,57 @@ impl SwapchainSafe {
         };
         debug!("{:#?}", swapchain_create_info);
 
+        let swapchain_images = unsafe {
+            swapchain_loader.get_swapchain_images(swapchain).unwrap()
+        };
+        let mut swapchain_imageviews = Vec::with_capacity(swapchain_images.len());
+        for image in &swapchain_images {
+            let subresource_range = vk::ImageSubresourceRange::builder()
+                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .base_mip_level(0)
+                .level_count(1)
+                .base_array_layer(0)
+                .layer_count(1);
+            let imageview_create_info = vk::ImageViewCreateInfo::builder()
+                .image(*image)
+                .view_type(vk::ImageViewType::TYPE_2D)
+                .format(vk::Format::B8G8R8A8_UNORM)
+                .subresource_range(*subresource_range);
+            let imageview = unsafe {
+                logical_device.create_image_view(&imageview_create_info, None).unwrap()
+            };
+            swapchain_imageviews.push(imageview);
+        }
+
         Self {
             inner : swapchain,
             loader : swapchain_loader,
             device : logical_device.clone(),
-            surface : surface.clone()
+            surface : surface.clone(),
+            images : swapchain_images,
+            imageviews : swapchain_imageviews,
+            framebuffers : vec![],
+            extent
         }
+    }
+
+    pub fn create_framebuffers(
+        &mut self,
+        logical_device: &ash::Device,
+        renderpass: vk::RenderPass,
+    ) -> Result<(), vk::Result> {
+        for iv in &self.imageviews {
+            let iview = [*iv];
+            let framebuffer_info = vk::FramebufferCreateInfo::builder()
+                .render_pass(renderpass)
+                .attachments(&iview)
+                .width(self.extent.width)
+                .height(self.extent.height)
+                .layers(1);
+            let fb = unsafe { logical_device.create_framebuffer(&framebuffer_info, None) }?;
+            self.framebuffers.push(fb);
+        }
+        Ok(())
     }
 }
 
@@ -75,6 +127,12 @@ impl Drop for SwapchainSafe {
     fn drop(&mut self) {
         info!("Destroy swapchain");
         unsafe {
+            for fb in &self.framebuffers {
+                self.device.destroy_framebuffer(*fb, None);
+            }
+            for iv in &self.imageviews {
+                self.device.destroy_image_view(*iv, None);
+            }
             self.loader.destroy_swapchain(self.inner, None);
         }
     }

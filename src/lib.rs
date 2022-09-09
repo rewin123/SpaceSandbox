@@ -210,5 +210,3 @@ pub fn init_renderpass(
 
 
 
-
-

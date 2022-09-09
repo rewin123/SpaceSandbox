@@ -38,7 +38,6 @@ impl Drop for DebugDongXi {
             self.loader
                 .destroy_debug_utils_messenger(self.messenger, None)
         };
-        info!("Destroyed debug layer");
     }
 }
 
