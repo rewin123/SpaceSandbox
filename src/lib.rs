@@ -114,8 +114,8 @@ pub struct QueueFamilies {
 }
 
 pub struct Queues {
-    graphics_queue: vk::Queue,
-    transfer_queue: vk::Queue,
+    pub graphics_queue: vk::Queue,
+    pub transfer_queue: vk::Queue,
 }
 
 pub struct DeviceSafe {

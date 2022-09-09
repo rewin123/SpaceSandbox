@@ -12,10 +12,11 @@ pub struct SwapchainSafe {
     pub imageviews: Vec<ImageView>,
     pub framebuffers : Vec<Framebuffer>,
     pub extent: vk::Extent2D,
-    image_available: Vec<vk::Semaphore>,
-    rendering_finished: Vec<vk::Semaphore>,
-    amount_of_images: u32,
-    current_image: usize,
+    pub image_available: Vec<vk::Semaphore>,
+    pub rendering_finished: Vec<vk::Semaphore>,
+    pub may_begin_drawing: Vec<vk::Fence>,
+    pub amount_of_images: u32,
+    pub current_image: usize,
 }
 
 impl SwapchainSafe {
@@ -91,6 +92,8 @@ impl SwapchainSafe {
         let mut image_available = vec![];
         let mut rendering_finished = vec![];
         let semaphoreinfo = vk::SemaphoreCreateInfo::builder();
+        let fenceinfo = vk::FenceCreateInfo::builder().flags(vk::FenceCreateFlags::SIGNALED);
+        let mut may_begin_drawing = vec![];
         for _ in 0..amount_of_images {
             let semaphore_available =
                 unsafe { logical_device.create_semaphore(&semaphoreinfo, None) }.unwrap();
@@ -98,6 +101,8 @@ impl SwapchainSafe {
                 unsafe { logical_device.create_semaphore(&semaphoreinfo, None) }.unwrap();
             image_available.push(semaphore_available);
             rendering_finished.push(semaphore_finished);
+            let fence = unsafe { logical_device.create_fence(&fenceinfo, None) }.unwrap();
+            may_begin_drawing.push(fence);
         }
 
         Self {
@@ -113,7 +118,7 @@ impl SwapchainSafe {
             current_image:0,
             image_available,
             rendering_finished,
-
+            may_begin_drawing
         }
     }
 
@@ -147,8 +152,9 @@ impl Deref for SwapchainSafe {
 
 impl Drop for SwapchainSafe {
     fn drop(&mut self) {
-        info!("Destroy swapchain");
+        info!("Destroying swapchain");
         unsafe {
+            self.device.device_wait_idle().expect("Waiting problem");
             for semaphore in &self.image_available {
                 self.device.destroy_semaphore(*semaphore, None);
             }

@@ -68,6 +68,12 @@ fn main() {
             event: WindowEvent::CloseRequested,
             ..
         } => {
+
+            unsafe {
+                info!("Finishing.....");
+                graphic_base.device.device_wait_idle().expect("Waiting problem");
+            }
+
             *controlflow = winit::event_loop::ControlFlow::Exit;
         }
         Event::MainEventsCleared => {
@@ -76,6 +82,77 @@ fn main() {
         }
         Event::RedrawRequested(_) => {
             //render here (later)
+            graphic_base.swapchain.current_image =
+                (graphic_base.swapchain.current_image + 1) % graphic_base.swapchain.amount_of_images as usize;
+
+            let (image_index, _) = unsafe {
+                graphic_base
+                    .swapchain
+                    .loader
+                    .acquire_next_image(
+                        graphic_base.swapchain.inner,
+                        std::u64::MAX,
+                        graphic_base.swapchain.image_available[graphic_base.swapchain.current_image],
+                        vk::Fence::null()
+                    )
+                    .expect("image acquisition trouble")
+            };
+
+            unsafe {
+                graphic_base.
+                    device
+                    .wait_for_fences(
+                        &[graphic_base.swapchain.may_begin_drawing[graphic_base.swapchain.current_image]],
+                        true,
+                        std::u64::MAX
+                    )
+                    .expect("fence waiting problem");
+
+                graphic_base
+                    .device
+                    .reset_fences(
+                        &[graphic_base.swapchain.may_begin_drawing[graphic_base.swapchain.current_image]])
+                    .expect("rest fences");
+
+                let semaphores_available = [graphic_base.swapchain.image_available[graphic_base.swapchain.current_image]];
+                let waiting_stages = [vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
+                let semaphores_finished = [graphic_base.swapchain.rendering_finished[graphic_base.swapchain.current_image]];
+                let commandbuffers = [command_buffers[image_index as usize]];
+                let submit_info = [vk::SubmitInfo::builder()
+                    .wait_semaphores(&semaphores_available)
+                    .wait_dst_stage_mask(&waiting_stages)
+                    .command_buffers(&commandbuffers)
+                    .signal_semaphores(&semaphores_finished)
+                    .build()];
+
+                unsafe {
+                    graphic_base
+                        .device
+                        .queue_submit(
+                            graphic_base.queues.graphics_queue,
+                            &submit_info,
+                            graphic_base.swapchain.may_begin_drawing[graphic_base.swapchain.current_image],
+                        )
+                        .expect("queue submission");
+                };
+
+                let swapchains = [graphic_base.swapchain.inner];
+                let indices = [image_index];
+                let present_info = vk::PresentInfoKHR::builder()
+                    .wait_semaphores(&semaphores_finished)
+                    .swapchains(&swapchains)
+                    .image_indices(&indices);
+                unsafe {
+                    graphic_base
+                        .swapchain
+                        .loader
+                        .queue_present(graphic_base.queues.graphics_queue, &present_info)
+                        .expect("queue presentation");
+                };
+
+
+
+            };
         }
         _ => {}
     });
