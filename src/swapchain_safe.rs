@@ -7,11 +7,15 @@ pub struct SwapchainSafe {
     pub inner : SwapchainKHR,
     pub loader : Swapchain,
     device : Arc<DeviceSafe>,
-    surface : Arc<SurfaceSafe>,
-    images : Vec<Image>,
-    imageviews: Vec<ImageView>,
-    framebuffers : Vec<Framebuffer>,
-    extent: vk::Extent2D,
+    pub surface : Arc<SurfaceSafe>,
+    pub images : Vec<Image>,
+    pub imageviews: Vec<ImageView>,
+    pub framebuffers : Vec<Framebuffer>,
+    pub extent: vk::Extent2D,
+    image_available: Vec<vk::Semaphore>,
+    rendering_finished: Vec<vk::Semaphore>,
+    amount_of_images: u32,
+    current_image: usize,
 }
 
 impl SwapchainSafe {
@@ -83,6 +87,19 @@ impl SwapchainSafe {
             swapchain_imageviews.push(imageview);
         }
 
+        let amount_of_images = swapchain_images.len() as u32;
+        let mut image_available = vec![];
+        let mut rendering_finished = vec![];
+        let semaphoreinfo = vk::SemaphoreCreateInfo::builder();
+        for _ in 0..amount_of_images {
+            let semaphore_available =
+                unsafe { logical_device.create_semaphore(&semaphoreinfo, None) }.unwrap();
+            let semaphore_finished =
+                unsafe { logical_device.create_semaphore(&semaphoreinfo, None) }.unwrap();
+            image_available.push(semaphore_available);
+            rendering_finished.push(semaphore_finished);
+        }
+
         Self {
             inner : swapchain,
             loader : swapchain_loader,
@@ -91,7 +108,12 @@ impl SwapchainSafe {
             images : swapchain_images,
             imageviews : swapchain_imageviews,
             framebuffers : vec![],
-            extent
+            extent,
+            amount_of_images,
+            current_image:0,
+            image_available,
+            rendering_finished,
+
         }
     }
 
@@ -127,6 +149,12 @@ impl Drop for SwapchainSafe {
     fn drop(&mut self) {
         info!("Destroy swapchain");
         unsafe {
+            for semaphore in &self.image_available {
+                self.device.destroy_semaphore(*semaphore, None);
+            }
+            for semaphore in &self.rendering_finished {
+                self.device.destroy_semaphore(*semaphore, None);
+            }
             for fb in &self.framebuffers {
                 self.device.destroy_framebuffer(*fb, None);
             }

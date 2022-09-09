@@ -12,6 +12,7 @@ use winit::platform::unix::WindowExtUnix;
 use winit::window::Window;
 
 use SpaceSandbox::*;
+use SpaceSandbox::example_pipeline::ExamplePipeline;
 
 // for time measure wolfpld/tracy
 
@@ -36,7 +37,46 @@ fn main() {
         &graphic_base.device,
                     renderpass.inner);
 
-    unsafe {
+    let pipeline = ExamplePipeline::init(
+        &graphic_base.device,
+        &graphic_base.swapchain,
+        &renderpass).unwrap();
 
-    };
+    let pools = Pools::init(
+        &graphic_base.device,
+        &graphic_base.queue_families
+    ).unwrap();
+
+    let command_buffers = create_commandbuffers(
+        &graphic_base.device,
+        &pools,
+        graphic_base.swapchain.framebuffers.len()
+    ).unwrap();
+
+    fill_commandbuffers(
+        &command_buffers,
+        &graphic_base.device,
+        &renderpass,
+        &graphic_base.swapchain,
+        &pipeline
+    ).unwrap();
+
+
+    use winit::event::{Event, WindowEvent};
+    eventloop.run(move |event, _, controlflow| match event {
+        Event::WindowEvent {
+            event: WindowEvent::CloseRequested,
+            ..
+        } => {
+            *controlflow = winit::event_loop::ControlFlow::Exit;
+        }
+        Event::MainEventsCleared => {
+            // doing the work here (later)
+            graphic_base.window.request_redraw();
+        }
+        Event::RedrawRequested(_) => {
+            //render here (later)
+        }
+        _ => {}
+    });
 }

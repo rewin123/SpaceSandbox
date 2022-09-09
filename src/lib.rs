@@ -20,12 +20,14 @@ pub mod surface_safe;
 pub mod instance_safe;
 pub mod debug_layer;
 pub mod vulkan_init_utils;
+pub mod example_pipeline;
 
 pub use swapchain_safe::*;
 pub use surface_safe::*;
 pub use instance_safe::*;
 pub use debug_layer::*;
 pub use vulkan_init_utils::*;
+use example_pipeline::*;
 
 pub struct GraphicBase {
     pub instance : Arc<InstanceSafe>,
@@ -206,6 +208,101 @@ pub fn init_renderpass(
     let renderpass = unsafe { base.device.create_render_pass(&renderpass_info, None)? };
 
     Ok(base.wrap_render_pass(renderpass))
+}
+
+pub struct Pools {
+    commandpool_graphics: vk::CommandPool,
+    commandpool_transfer: vk::CommandPool,
+    device : Arc<DeviceSafe>
+}
+
+impl Drop for Pools {
+    fn drop(&mut self) {
+        info!("Destroy command pools");
+        unsafe {
+            self.device.destroy_command_pool(self.commandpool_graphics, None);
+            self.device.destroy_command_pool(self.commandpool_transfer, None);
+        }
+    }
+}
+
+impl Pools {
+    pub fn init(
+        logical_device: &Arc<DeviceSafe>,
+        queue_families: &QueueFamilies,
+    ) -> Result<Pools, vk::Result> {
+        let graphics_commandpool_info = vk::CommandPoolCreateInfo::builder()
+            .queue_family_index(queue_families.graphics_q_index)
+            .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER);
+        let commandpool_graphics =
+            unsafe { logical_device.create_command_pool(&graphics_commandpool_info, None) }?;
+        let transfer_commandpool_info = vk::CommandPoolCreateInfo::builder()
+            .queue_family_index(queue_families.transfer_q_index)
+            .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER);
+        let commandpool_transfer =
+            unsafe { logical_device.create_command_pool(&transfer_commandpool_info, None) }?;
+
+        Ok(Pools {
+            commandpool_graphics,
+            commandpool_transfer,
+            device : logical_device.clone()
+        })
+    }
+}
+
+pub fn create_commandbuffers(
+    logical_device: &ash::Device,
+    pools: &Pools,
+    amount: usize,
+) -> Result<Vec<vk::CommandBuffer>, vk::Result> {
+    let commandbuf_allocate_info = vk::CommandBufferAllocateInfo::builder()
+        .command_pool(pools.commandpool_graphics)
+        .command_buffer_count(amount as u32);
+    unsafe { logical_device.allocate_command_buffers(&commandbuf_allocate_info) }
+}
+
+pub fn fill_commandbuffers(
+    commandbuffers: &[vk::CommandBuffer],
+    logical_device: &ash::Device,
+    renderpass: &vk::RenderPass,
+    swapchain: &SwapchainSafe,
+    pipeline: &ExamplePipeline,
+) -> Result<(), vk::Result> {
+    for (i, &commandbuffer) in commandbuffers.iter().enumerate() {
+        let commandbuffer_begininfo = vk::CommandBufferBeginInfo::builder();
+        unsafe {
+            logical_device.begin_command_buffer(commandbuffer, &commandbuffer_begininfo)?;
+        }
+        let clearvalues = [vk::ClearValue {
+            color: vk::ClearColorValue {
+                float32: [0.0, 0.0, 0.08, 1.0],
+            },
+        }];
+        let renderpass_begininfo = vk::RenderPassBeginInfo::builder()
+            .render_pass(*renderpass)
+            .framebuffer(swapchain.framebuffers[i])
+            .render_area(vk::Rect2D {
+                offset: vk::Offset2D { x: 0, y: 0 },
+                extent: swapchain.extent,
+            })
+            .clear_values(&clearvalues);
+        unsafe {
+            logical_device.cmd_begin_render_pass(
+                commandbuffer,
+                &renderpass_begininfo,
+                vk::SubpassContents::INLINE,
+            );
+            logical_device.cmd_bind_pipeline(
+                commandbuffer,
+                vk::PipelineBindPoint::GRAPHICS,
+                pipeline.pipeline,
+            );
+            logical_device.cmd_draw(commandbuffer, 1, 1, 0, 0);
+            logical_device.cmd_end_render_pass(commandbuffer);
+            logical_device.end_command_buffer(commandbuffer)?;
+        }
+    }
+    Ok(())
 }
 
 
