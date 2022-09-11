@@ -42,6 +42,7 @@ pub struct GraphicBase {
 
     pub window : winit::window::Window,
     pub entry : Entry,
+    pub allocator : Arc<AllocatorSafe>
 }
 
 impl GraphicBase {
@@ -79,6 +80,17 @@ impl GraphicBase {
             &device,
             &instance);
 
+        let allocator_create_info = vk_mem::AllocatorCreateInfo {
+            physical_device,
+            device: logical_device.clone(),
+            instance: instance.inner.clone(),
+            ..Default::default()
+        };
+        let mut allocator =
+            Arc::new(AllocatorSafe {
+                inner : vk_mem::Allocator::new(&allocator_create_info).unwrap())
+            });
+
         Self {
             window,
             entry,
@@ -90,7 +102,8 @@ impl GraphicBase {
             queue_families : qfamindices,
             queues,
             device,
-            swapchain
+            swapchain,
+            allocator
         }
     }
 
@@ -98,6 +111,19 @@ impl GraphicBase {
         RenderPassSafe {
             inner : pass,
             device : self.device.clone()
+        }
+    }
+}
+
+struct AllocatorSafe {
+    pub inner : vk_mem::Allocator
+}
+
+impl Drop for AllocatorSafe {
+    fn drop(&mut self) {
+        info!("Destroy allocator");
+        unsafe {
+            self.inner.destroy();
         }
     }
 }
@@ -305,5 +331,6 @@ pub fn fill_commandbuffers(
     Ok(())
 }
 
-
-
+pub struct BufferSafe {
+    pub buffer : vk::Buffer
+}

@@ -45,7 +45,24 @@ impl ExamplePipeline {
             .module(fragmentshader_module)
             .name(&mainfunctionname);
         let shader_stages = vec![vertexshader_stage.build(), fragmentshader_stage.build()];
-        let vertex_input_info = vk::PipelineVertexInputStateCreateInfo::builder();
+
+        let vertex_attrib_descs = [vk::VertexInputAttributeDescription {
+            binding: 0,
+            location: 0,
+            offset: 0,
+            format: vk::Format::R32G32B32A32_SFLOAT,
+        }];
+
+        let vertex_binding_descs = [vk::VertexInputBindingDescription {
+            binding: 0,
+            stride: 16,
+            input_rate: vk::VertexInputRate::VERTEX,
+        }];
+
+        let vertex_input_info = vk::PipelineVertexInputStateCreateInfo::builder()
+            .vertex_attribute_descriptions(&vertex_attrib_descs)
+            .vertex_binding_descriptions(&vertex_binding_descs);
+
         let input_assembly_info = vk::PipelineInputAssemblyStateCreateInfo::builder()
             .topology(vk::PrimitiveTopology::POINT_LIST);
         let viewports = [vk::Viewport {
