@@ -342,7 +342,7 @@ pub fn fill_commandbuffers(
                 pipeline.pipeline,
             );
             logical_device.cmd_bind_vertex_buffers(commandbuffer, 0, &[*vb], &[0]);
-            logical_device.cmd_draw(commandbuffer, 1, 1, 0, 0);
+            logical_device.cmd_draw(commandbuffer, 2, 1, 0, 0);
             logical_device.cmd_end_render_pass(commandbuffer);
             logical_device.end_command_buffer(commandbuffer)?;
         }

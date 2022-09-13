@@ -43,17 +43,14 @@ fn main() {
     };
     let buffer = BufferSafe::new(
         &graphic_base.allocator,
-        16,
+        16 * 2,
         vk::BufferUsageFlags::VERTEX_BUFFER,
         vk_mem::MemoryUsage::CpuToGpu
     ).unwrap();
-    let data = [-0.5f32, 0.0f32, 0.0f32, 1.0f32];
+    let data = [-0.5f32, 0.0f32, 0.0f32, 1.0f32,
+                        0.5f32, 0.0f32, 0.0f32, 1.0f32];
     buffer.fill(&data).unwrap();
 
-    let data_ptr = graphic_base.allocator.map_memory(&buffer.allocation).unwrap() as *mut f32;
-
-    unsafe { data_ptr.copy_from_nonoverlapping(data.as_ptr(), 4) };
-    graphic_base.allocator.unmap_memory(&buffer.allocation);
 
     let pipeline = ExamplePipeline::init(
         &graphic_base.device,
