@@ -37,6 +37,23 @@ fn main() {
         &graphic_base.device,
                     renderpass.inner);
 
+    let allocation_create_info = vk_mem::AllocationCreateInfo {
+        usage: vk_mem::MemoryUsage::CpuToGpu,
+        ..Default::default()
+    };
+    let (buffer, allocation, allocation_info) = graphic_base.allocator.create_buffer(
+        &ash::vk::BufferCreateInfo::builder()
+            .size(16)
+            .usage(vk::BufferUsageFlags::VERTEX_BUFFER)
+            .build(),
+        &allocation_create_info,
+    ).unwrap();
+
+    let data_ptr = graphic_base.allocator.map_memory(&allocation).unwrap() as *mut f32;
+    let data = [-0.5f32, 0.0f32, 0.0f32, 1.0f32];
+    unsafe { data_ptr.copy_from_nonoverlapping(data.as_ptr(), 4) };
+    graphic_base.allocator.unmap_memory(&allocation);
+
     let pipeline = ExamplePipeline::init(
         &graphic_base.device,
         &graphic_base.swapchain,
@@ -58,7 +75,8 @@ fn main() {
         &graphic_base.device,
         &renderpass,
         &graphic_base.swapchain,
-        &pipeline
+        &pipeline,
+        &buffer
     ).unwrap();
 
 

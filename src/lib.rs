@@ -49,7 +49,6 @@ impl GraphicBase {
     pub fn init(window : Window) -> Self {
         let entry = unsafe {ash::Entry::load().unwrap() };
 
-
         let mut extension_name_pointers : Vec<*const c_char> =
             ash_window::enumerate_required_extensions(&window).unwrap()
                 .iter()
@@ -69,7 +68,7 @@ impl GraphicBase {
             &instance,
             physical_device,
             &qfamindices);
-        let device = Arc::new(DeviceSafe {inner : logical_device, instance : instance.clone()});
+        let device = Arc::new(DeviceSafe {inner : logical_device.clone(), instance : instance.clone()});
 
         let surface = Arc::new(SurfaceSafe::new(&window, &instance, &entry));
 
@@ -80,16 +79,24 @@ impl GraphicBase {
             &device,
             &instance);
 
+        info!("Creating allocator create info...");
+        
         let allocator_create_info = vk_mem::AllocatorCreateInfo {
             physical_device,
             device: logical_device.clone(),
             instance: instance.inner.clone(),
-            ..Default::default()
+            flags: Default::default(),
+            preferred_large_heap_block_size: 0,
+            frame_in_use_count: 0,
+            heap_size_limits: None
         };
+        info!("Creating allocator...");
         let mut allocator =
             Arc::new(AllocatorSafe {
-                inner : vk_mem::Allocator::new(&allocator_create_info).unwrap())
+                inner : vk_mem::Allocator::new(&allocator_create_info).unwrap()
             });
+
+        info!("Finished creating GraphicBase");
 
         Self {
             window,
@@ -115,8 +122,16 @@ impl GraphicBase {
     }
 }
 
-struct AllocatorSafe {
+pub struct AllocatorSafe {
     pub inner : vk_mem::Allocator
+}
+
+impl Deref for AllocatorSafe {
+    type Target = vk_mem::Allocator;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
 }
 
 impl Drop for AllocatorSafe {
@@ -293,6 +308,7 @@ pub fn fill_commandbuffers(
     renderpass: &vk::RenderPass,
     swapchain: &SwapchainSafe,
     pipeline: &ExamplePipeline,
+    vb: &vk::Buffer,
 ) -> Result<(), vk::Result> {
     for (i, &commandbuffer) in commandbuffers.iter().enumerate() {
         let commandbuffer_begininfo = vk::CommandBufferBeginInfo::builder();
@@ -323,6 +339,7 @@ pub fn fill_commandbuffers(
                 vk::PipelineBindPoint::GRAPHICS,
                 pipeline.pipeline,
             );
+            logical_device.cmd_bind_vertex_buffers(commandbuffer, 0, &[*vb], &[0]);
             logical_device.cmd_draw(commandbuffer, 1, 1, 0, 0);
             logical_device.cmd_end_render_pass(commandbuffer);
             logical_device.end_command_buffer(commandbuffer)?;
