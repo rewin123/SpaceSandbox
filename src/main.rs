@@ -48,7 +48,8 @@ fn main() {
         vk_mem::MemoryUsage::CpuToGpu
     ).unwrap();
     let data = [-0.5f32, 0.0f32, 0.0f32, 1.0f32,
-                        0.5f32, 0.0f32, 0.0f32, 1.0f32];
+                        0.5f32, 0.0f32, 0.0f32, 1.0f32,
+                        0.0f32, 0.5f32, 0.0f32, 1.0f32];
     buffer.fill(&data).unwrap();
 
 

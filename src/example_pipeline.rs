@@ -64,7 +64,7 @@ impl ExamplePipeline {
             .vertex_binding_descriptions(&vertex_binding_descs);
 
         let input_assembly_info = vk::PipelineInputAssemblyStateCreateInfo::builder()
-            .topology(vk::PrimitiveTopology::POINT_LIST);
+            .topology(vk::PrimitiveTopology::TRIANGLE_LIST);
         let viewports = [vk::Viewport {
             x: 0.,
             y: 0.,
