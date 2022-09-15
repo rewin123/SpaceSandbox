@@ -384,7 +384,7 @@ pub fn fill_commandbuffers(
 use nalgebra as na;
 use vk_mem::ffi::VkResult;
 
-struct Camera {
+pub struct Camera {
     viewmatrix : na::Matrix4<f32>,
     position: na::Vector3<f32>,
     view_direction: na::Unit<na::Vector3<f32>>,
@@ -403,11 +403,11 @@ impl Default for Camera {
 }
 
 impl Camera {
-    fn update_buffer(&self, buffer: &mut BufferSafe) {
+    pub fn update_buffer(&self, buffer: &mut BufferSafe) {
         let data: [[f32; 4]; 4] = self.viewmatrix.into();
         buffer.fill(&data);
     }
-    fn update_viewmatrix(&mut self) {
+    pub fn update_viewmatrix(&mut self) {
         let right = na::Unit::new_normalize(self.down_direction.cross(&self.view_direction));
         let m = na::Matrix4::new(
             right.x,
@@ -429,29 +429,29 @@ impl Camera {
         );
         self.viewmatrix =  m;
     }
-    fn move_forward(&mut self, distance: f32) {
+    pub fn move_forward(&mut self, distance: f32) {
         self.position += distance * self.view_direction.as_ref();
         self.update_viewmatrix();
     }
-    fn move_backward(&mut self, distance: f32) {
+    pub fn move_backward(&mut self, distance: f32) {
         self.move_forward(-distance);
     }
-    fn turn_right(&mut self, angle: f32) {
+    pub fn turn_right(&mut self, angle: f32) {
         let rotation = na::Rotation3::from_axis_angle(&self.down_direction, angle);
         self.view_direction = rotation * self.view_direction;
         self.update_viewmatrix();
     }
-    fn turn_left(&mut self, angle: f32) {
+    pub fn turn_left(&mut self, angle: f32) {
         self.turn_right(-angle);
     }
-    fn turn_up(&mut self, angle: f32) {
+    pub fn turn_up(&mut self, angle: f32) {
         let right = na::Unit::new_normalize(self.down_direction.cross(&self.view_direction));
         let rotation = na::Rotation3::from_axis_angle(&right, angle);
         self.view_direction = rotation * self.view_direction;
         self.down_direction = rotation * self.down_direction;
         self.update_viewmatrix();
     }
-    fn turn_down(&mut self, angle: f32) {
+    pub fn turn_down(&mut self, angle: f32) {
         self.turn_up(-angle);
     }
 }

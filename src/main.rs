@@ -90,6 +90,8 @@ fn main() {
         unsafe { graphic_base.device.allocate_descriptor_sets(&descriptor_set_allocate_info)
         }.unwrap();
 
+    let mut camera = Camera::default();
+
     for (i, descset) in descriptor_sets.iter().enumerate() {
         let buffer_infos = [vk::DescriptorBufferInfo {
             buffer: uniformbuffer.buffer,
@@ -145,6 +147,39 @@ fn main() {
             // doing the work here (later)
             graphic_base.window.request_redraw();
         }
+        Event::WindowEvent {
+            event: WindowEvent::KeyboardInput { input, .. },
+            ..
+        } => {
+            if let winit::event::KeyboardInput {
+                state: winit::event::ElementState::Pressed,
+                virtual_keycode: Some(keycode),
+                ..
+            } = input
+            {
+                match keycode {
+                    winit::event::VirtualKeyCode::Right => {
+                        camera.turn_right(0.1);
+                    }
+                    winit::event::VirtualKeyCode::Left => {
+                        camera.turn_left(0.1);
+                    }
+                    winit::event::VirtualKeyCode::Up => {
+                        camera.move_forward(0.05);
+                    }
+                    winit::event::VirtualKeyCode::Down => {
+                        camera.move_backward(0.05);
+                    }
+                    winit::event::VirtualKeyCode::PageUp => {
+                        camera.turn_up(0.02);
+                    }
+                    winit::event::VirtualKeyCode::PageDown => {
+                        camera.turn_down(0.02);
+                    }
+                    _ => {}
+                }
+            }
+        }
         Event::RedrawRequested(_) => {
             //render here (later)
             graphic_base.swapchain.current_image =
@@ -178,6 +213,20 @@ fn main() {
                     .reset_fences(
                         &[graphic_base.swapchain.may_begin_drawing[graphic_base.swapchain.current_image]])
                     .expect("rest fences");
+
+                camera.update_viewmatrix();
+                camera.update_buffer(&mut uniformbuffer);
+
+                update_commandbuffer(
+                    command_buffers[image_index as usize],
+                    &graphic_base.device,
+                    &renderpass,
+                    &graphic_base.swapchain,
+                    &pipeline,
+                    &buffer,
+                    &descriptor_sets,
+                    image_index as usize
+                );
 
                 let semaphores_available = [graphic_base.swapchain.image_available[graphic_base.swapchain.current_image]];
                 let waiting_stages = [vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
