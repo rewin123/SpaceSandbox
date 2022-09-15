@@ -8,6 +8,5 @@ layout (set=0, binding=0) uniform UniformBufferObject {
 
 
 void main() {
-    gl_PointSize=20.0;
     gl_Position = ubo.view_matrix * position;
 }
