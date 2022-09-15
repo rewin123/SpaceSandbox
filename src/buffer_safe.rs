@@ -8,7 +8,10 @@ pub struct BufferSafe {
     pub buffer : vk::Buffer,
     pub allocation : vk_mem::Allocation,
     pub allocation_info : vk_mem::AllocationInfo,
-    pub allocator : Arc<AllocatorSafe>
+    pub allocator : Arc<AllocatorSafe>,
+    pub size_in_bytes: u64,
+    buffer_usage: vk::BufferUsageFlags,
+    memory_usage: vk_mem::MemoryUsage,
 }
 
 impl BufferSafe {
@@ -33,14 +36,28 @@ impl BufferSafe {
             buffer,
             allocation,
             allocation_info,
-            allocator : allocator.clone()
+            allocator : allocator.clone(),
+            size_in_bytes,
+            buffer_usage : usage,
+            memory_usage
         })
     }
 
     pub fn fill<T: Sized>(
-        &self,
+        &mut self,
         data: &[T],
     ) -> Result<(), vk_mem::error::Error> {
+        let bytes_to_write = (data.len() * std::mem::size_of::<T>()) as u64;
+        if bytes_to_write > self.size_in_bytes {
+            // self.allocator.destroy_buffer(self.buffer, &self.allocation);
+            let newbuffer = BufferSafe::new(
+                &self.allocator,
+                bytes_to_write,
+                self.buffer_usage,
+                self.memory_usage,
+            )?;
+            *self = newbuffer;
+        }
         let data_ptr = self.allocator.map_memory(&self.allocation)? as *mut T;
         unsafe { data_ptr.copy_from_nonoverlapping(data.as_ptr(), data.len()) };
         self.allocator.unmap_memory(&self.allocation);

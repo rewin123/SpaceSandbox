@@ -1,18 +1,23 @@
 use std::sync::Arc;
 use ash::vk;
+use ash::vk::DescriptorSetLayout;
 use log::info;
 use crate::{DeviceSafe, RenderPassSafe, SwapchainSafe};
 
 pub struct ExamplePipeline {
     pub pipeline: vk::Pipeline,
     pub layout: vk::PipelineLayout,
-    device : Arc<DeviceSafe>
+    device : Arc<DeviceSafe>,
+    pub descriptor_set_layouts : Vec<DescriptorSetLayout>
 }
 
 impl Drop for ExamplePipeline {
     fn drop(&mut self) {
         info!("Destroy pipeline");
         unsafe {
+            for dsl in &self.descriptor_set_layouts {
+                self.device.destroy_descriptor_set_layout(*dsl, None);
+            }
             self.device.destroy_pipeline(self.pipeline, None);
             self.device.destroy_pipeline_layout(self.layout, None);
         }
@@ -105,7 +110,21 @@ impl ExamplePipeline {
             .build()];
         let colourblend_info =
             vk::PipelineColorBlendStateCreateInfo::builder().attachments(&colourblend_attachments);
-        let pipelinelayout_info = vk::PipelineLayoutCreateInfo::builder();
+
+        let descriptorset_layout_binding_descs = [vk::DescriptorSetLayoutBinding::builder()
+            .binding(0)
+            .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
+            .descriptor_count(1)
+            .stage_flags(vk::ShaderStageFlags::VERTEX)
+            .build()];
+        let descriptorset_layout_info = vk::DescriptorSetLayoutCreateInfo::builder()
+            .bindings(&descriptorset_layout_binding_descs);
+        let descriptorsetlayout = unsafe {
+            logical_device.create_descriptor_set_layout(&descriptorset_layout_info, None)
+        }?;
+        let desclayouts = vec![descriptorsetlayout];
+        let pipelinelayout_info = vk::PipelineLayoutCreateInfo::builder().set_layouts(&desclayouts);
+
         let pipelinelayout =
             unsafe { logical_device.create_pipeline_layout(&pipelinelayout_info, None) }?;
         let pipeline_info = vk::GraphicsPipelineCreateInfo::builder()
@@ -135,7 +154,8 @@ impl ExamplePipeline {
         Ok(ExamplePipeline {
             pipeline: graphicspipeline,
             layout: pipelinelayout,
-            device : logical_device.clone()
+            device : logical_device.clone(),
+            descriptor_set_layouts : desclayouts
         })
     }
 }

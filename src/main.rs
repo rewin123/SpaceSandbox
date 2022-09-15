@@ -41,7 +41,7 @@ fn main() {
         usage: vk_mem::MemoryUsage::CpuToGpu,
         ..Default::default()
     };
-    let buffer = BufferSafe::new(
+    let mut buffer = BufferSafe::new(
         &graphic_base.allocator,
         16 * 2,
         vk::BufferUsageFlags::VERTEX_BUFFER,
@@ -52,11 +52,58 @@ fn main() {
                         0.0f32, 0.5f32, 0.0f32, 1.0f32];
     buffer.fill(&data).unwrap();
 
+    let mut uniformbuffer = BufferSafe::new(
+        &graphic_base.allocator,
+        64,
+        vk::BufferUsageFlags::UNIFORM_BUFFER,
+        vk_mem::MemoryUsage::CpuToGpu
+    ).unwrap();
+    let cameratransform: [[f32; 4]; 4] = nalgebra::Matrix4::identity().into();
+    uniformbuffer.fill(&cameratransform).unwrap();
+
 
     let pipeline = ExamplePipeline::init(
         &graphic_base.device,
         &graphic_base.swapchain,
         &renderpass).unwrap();
+
+
+    let pool_sizes = [
+        vk::DescriptorPoolSize {
+            ty : vk::DescriptorType::UNIFORM_BUFFER,
+            descriptor_count : graphic_base.swapchain.amount_of_images
+        }
+    ];
+    let descriptor_pool_info = vk::DescriptorPoolCreateInfo::builder()
+        .max_sets(graphic_base.swapchain.amount_of_images)
+        .pool_sizes(&pool_sizes);
+    let descriptor_pool = unsafe {
+        graphic_base.device.create_descriptor_pool(&descriptor_pool_info, None)
+    }.unwrap();
+
+    let desc_layouts =
+        vec![pipeline.descriptor_set_layouts[0]; graphic_base.swapchain.amount_of_images as usize];
+    let descriptor_set_allocate_info = vk::DescriptorSetAllocateInfo::builder()
+        .descriptor_pool(descriptor_pool)
+        .set_layouts(&desc_layouts);
+    let descriptor_sets =
+        unsafe { graphic_base.device.allocate_descriptor_sets(&descriptor_set_allocate_info)
+        }.unwrap();
+
+    for (i, descset) in descriptor_sets.iter().enumerate() {
+        let buffer_infos = [vk::DescriptorBufferInfo {
+            buffer: uniformbuffer.buffer,
+            offset: 0,
+            range: 64,
+        }];
+        let desc_sets_write = [vk::WriteDescriptorSet::builder()
+            .dst_set(*descset)
+            .dst_binding(0)
+            .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
+            .buffer_info(&buffer_infos)
+            .build()];
+        unsafe { graphic_base.device.update_descriptor_sets(&desc_sets_write, &[]) };
+    }
 
     let pools = Pools::init(
         &graphic_base.device,
@@ -75,7 +122,8 @@ fn main() {
         &renderpass,
         &graphic_base.swapchain,
         &pipeline,
-        &buffer
+        &buffer,
+        &descriptor_sets
     ).unwrap();
 
 
@@ -166,9 +214,6 @@ fn main() {
                         .queue_present(graphic_base.queues.graphics_queue, &present_info)
                         .expect("queue presentation");
                 };
-
-
-
             };
         }
         _ => {}
