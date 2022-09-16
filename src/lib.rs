@@ -74,15 +74,9 @@ impl GraphicBase {
 
         let surface = Arc::new(SurfaceSafe::new(&window, &instance, &entry));
 
-        let swapchain = SwapchainSafe::new(
-            &surface,
-            physical_device,
-            &qfamindices,
-            &device,
-            &instance);
 
         info!("Creating allocator create info...");
-        
+
         let allocator_create_info = vk_mem::AllocatorCreateInfo {
             physical_device,
             device: logical_device.clone(),
@@ -97,6 +91,15 @@ impl GraphicBase {
             Arc::new(AllocatorSafe {
                 inner : vk_mem::Allocator::new(&allocator_create_info).unwrap()
             });
+
+        let swapchain = SwapchainSafe::new(
+            &surface,
+            physical_device,
+            &qfamindices,
+            &device,
+            &instance,
+            &allocator);
+
 
         info!("Finished creating GraphicBase");
 
@@ -226,13 +229,28 @@ pub fn init_renderpass(
         .initial_layout(vk::ImageLayout::UNDEFINED)
         .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
         .samples(vk::SampleCountFlags::TYPE_1)
-        .build()];
+        .build(),
+        vk::AttachmentDescription::builder()
+            .format(vk::Format::D32_SFLOAT)
+            .load_op(vk::AttachmentLoadOp::CLEAR)
+            .store_op(vk::AttachmentStoreOp::DONT_CARE)
+            .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
+            .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
+            .initial_layout(vk::ImageLayout::UNDEFINED)
+            .final_layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+            .samples(vk::SampleCountFlags::TYPE_1)
+            .build(),];
     let color_attachment_references = [vk::AttachmentReference {
         attachment: 0,
         layout: vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
     }];
+    let depth_attachment_reference = vk::AttachmentReference {
+        attachment: 1,
+        layout: vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+    };
     let subpasses = [vk::SubpassDescription::builder()
         .color_attachments(&color_attachment_references)
+        .depth_stencil_attachment(&depth_attachment_reference)
         .pipeline_bind_point(vk::PipelineBindPoint::GRAPHICS)
         .build()];
     let subpass_dependencies = [vk::SubpassDependency::builder()
@@ -322,6 +340,12 @@ pub fn update_commandbuffer(
         color: vk::ClearColorValue {
             float32: [0.0, 0.0, 0.08, 1.0],
         },
+    },
+    vk::ClearValue {
+        depth_stencil: vk::ClearDepthStencilValue {
+            depth: 1.0,
+            stencil: 0,
+        }
     }];
     let renderpass_begininfo = vk::RenderPassBeginInfo::builder()
         .render_pass(*renderpass)

@@ -71,7 +71,7 @@ impl ExamplePipeline {
         },
         vk::VertexInputBindingDescription {
             binding: 1,
-            stride: 16,
+            stride: 4 * 3,
             input_rate: vk::VertexInputRate::VERTEX
         }];
 
@@ -136,6 +136,11 @@ impl ExamplePipeline {
         let desclayouts = vec![descriptorsetlayout];
         let pipelinelayout_info = vk::PipelineLayoutCreateInfo::builder().set_layouts(&desclayouts);
 
+        let depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo::builder()
+            .depth_test_enable(true)
+            .depth_write_enable(true)
+            .depth_compare_op(vk::CompareOp::LESS_OR_EQUAL);
+
         let pipelinelayout =
             unsafe { logical_device.create_pipeline_layout(&pipelinelayout_info, None) }?;
         let pipeline_info = vk::GraphicsPipelineCreateInfo::builder()
@@ -145,6 +150,7 @@ impl ExamplePipeline {
             .viewport_state(&viewport_info)
             .rasterization_state(&rasterizer_info)
             .multisample_state(&multisampler_info)
+            .depth_stencil_state(&depth_stencil_info)
             .color_blend_state(&colourblend_info)
             .layout(pipelinelayout)
             .render_pass(renderpass.inner)

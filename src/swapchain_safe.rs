@@ -17,6 +17,13 @@ pub struct SwapchainSafe {
     pub may_begin_drawing: Vec<vk::Fence>,
     pub amount_of_images: u32,
     pub current_image: usize,
+
+    pub depth_image: vk::Image,
+    pub depth_image_allocation: vk_mem::Allocation,
+    pub depth_image_allocation_info: vk_mem::AllocationInfo,
+    pub depth_imageview: vk::ImageView,
+
+    pub allocator : Arc<AllocatorSafe>
 }
 
 impl SwapchainSafe {
@@ -25,7 +32,8 @@ impl SwapchainSafe {
         physical_device : PhysicalDevice,
         qfamindices : &QueueFamilies,
         logical_device : &Arc<DeviceSafe>,
-        instance : &InstanceSafe) -> Self {
+        instance : &InstanceSafe,
+        allocator : &Arc<AllocatorSafe>) -> Self {
         let surface_capabilities = unsafe {
             surface.loader.get_physical_device_surface_capabilities(
                 physical_device, surface.inner).unwrap()
@@ -105,6 +113,43 @@ impl SwapchainSafe {
             may_begin_drawing.push(fence);
         }
 
+        let extent3d = vk::Extent3D {
+            width: extent.width,
+            height: extent.height,
+            depth: 1,
+        };
+        let depth_image_info = vk::ImageCreateInfo::builder()
+            .image_type(vk::ImageType::TYPE_2D)
+            .format(vk::Format::D32_SFLOAT)
+            .extent(extent3d)
+            .mip_levels(1)
+            .array_layers(1)
+            .samples(vk::SampleCountFlags::TYPE_1)
+            .tiling(vk::ImageTiling::OPTIMAL)
+            .usage(vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT)
+            .sharing_mode(vk::SharingMode::EXCLUSIVE)
+            .queue_family_indices(&queuefamilies);
+        let allocation_info = vk_mem::AllocationCreateInfo {
+            usage: vk_mem::MemoryUsage::GpuOnly,
+            ..Default::default()
+        };
+        let (depth_image, depth_image_allocation, depth_image_allocation_info) =
+            allocator.create_image(&depth_image_info, &allocation_info).unwrap();
+
+        let subresource_range = vk::ImageSubresourceRange::builder()
+            .aspect_mask(vk::ImageAspectFlags::DEPTH)
+            .base_mip_level(0)
+            .level_count(1)
+            .base_array_layer(0)
+            .layer_count(1);
+        let imageview_create_info = vk::ImageViewCreateInfo::builder()
+            .image(depth_image)
+            .view_type(vk::ImageViewType::TYPE_2D)
+            .format(vk::Format::D32_SFLOAT)
+            .subresource_range(*subresource_range);
+        let depth_imageview =
+            unsafe { logical_device.create_image_view(&imageview_create_info, None) }.unwrap();
+
         Self {
             inner : swapchain,
             loader : swapchain_loader,
@@ -118,7 +163,12 @@ impl SwapchainSafe {
             current_image:0,
             image_available,
             rendering_finished,
-            may_begin_drawing
+            may_begin_drawing,
+            depth_image,
+            depth_imageview,
+            depth_image_allocation,
+            depth_image_allocation_info,
+            allocator : allocator.clone()
         }
     }
 
@@ -128,7 +178,7 @@ impl SwapchainSafe {
         renderpass: vk::RenderPass,
     ) -> Result<(), vk::Result> {
         for iv in &self.imageviews {
-            let iview = [*iv];
+            let iview = [*iv, self.depth_imageview];
             let framebuffer_info = vk::FramebufferCreateInfo::builder()
                 .render_pass(renderpass)
                 .attachments(&iview)
@@ -155,6 +205,8 @@ impl Drop for SwapchainSafe {
         info!("Destroying swapchain");
         unsafe {
             self.device.device_wait_idle().expect("Waiting problem");
+            self.device.destroy_image_view(self.depth_imageview, None);
+            self.allocator.destroy_image(self.depth_image, &self.depth_image_allocation);
             for semaphore in &self.image_available {
                 self.device.destroy_semaphore(*semaphore, None);
             }
