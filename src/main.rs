@@ -25,6 +25,8 @@ fn main() {
         ]
     );
 
+
+
     let eventloop = winit::event_loop::EventLoop::new();
     let window = winit::window::Window::new(&eventloop).unwrap();
     info!("Created window");
@@ -36,6 +38,52 @@ fn main() {
     graphic_base.swapchain.create_framebuffers(
         &graphic_base.device,
                     renderpass.inner);
+
+    info!("Tomokitty loading...");
+    let (models, materials) = tobj::load_obj("res/test_res/models/tomokitty/sculpt.obj",
+                                             &tobj::GPU_LOAD_OPTIONS).expect("Problem with loading model");
+
+    let mut scene = vec![];
+    for (i, m) in models.iter().enumerate() {
+        info!("Found model {}!", m.name.clone());
+
+        let mesh = &m.mesh;
+
+        let mut chandeg_pos = vec![];
+        for vertex_idx in 0..(mesh.positions.len() / 3) {
+            chandeg_pos.push(mesh.positions[vertex_idx * 3]);
+            chandeg_pos.push(mesh.positions[vertex_idx * 3 + 1]);
+            chandeg_pos.push(mesh.positions[vertex_idx * 3 + 2]);
+            chandeg_pos.push(1.0);
+        }
+
+
+        let mut pos_data = BufferSafe::new(
+            &graphic_base.allocator,
+            (chandeg_pos.len() * 4) as u64,
+            vk::BufferUsageFlags::VERTEX_BUFFER,
+            vk_mem::MemoryUsage::CpuToGpu
+        ).unwrap();
+
+        let mut index_data = BufferSafe::new(
+            &graphic_base.allocator,
+            (mesh.indices.len() * 4) as u64,
+            vk::BufferUsageFlags::INDEX_BUFFER,
+            vk_mem::MemoryUsage::CpuToGpu
+        ).unwrap();
+
+        pos_data.fill(&chandeg_pos).unwrap();
+        index_data.fill(&mesh.indices).unwrap();
+
+        scene.push(
+            GPUMesh {
+                pos_data,
+                index_data,
+                vertex_count: mesh.indices.len() as u32,
+            }
+        );
+    }
+
 
     let allocation_create_info = vk_mem::AllocationCreateInfo {
         usage: vk_mem::MemoryUsage::CpuToGpu,
@@ -99,7 +147,7 @@ fn main() {
         let buffer_infos = [vk::DescriptorBufferInfo {
             buffer: uniformbuffer.buffer,
             offset: 0,
-            range: 64,
+            range: 128,
         }];
         let desc_sets_write = [vk::WriteDescriptorSet::builder()
             .dst_set(*descset)
@@ -127,7 +175,7 @@ fn main() {
         &renderpass,
         &graphic_base.swapchain,
         &pipeline,
-        &buffer,
+        &scene,
         &descriptor_sets
     ).unwrap();
 
@@ -138,7 +186,6 @@ fn main() {
             event: WindowEvent::CloseRequested,
             ..
         } => {
-
             unsafe {
                 info!("Finishing.....");
                 graphic_base.device.device_wait_idle().expect("Waiting problem");
@@ -226,7 +273,7 @@ fn main() {
                     &renderpass,
                     &graphic_base.swapchain,
                     &pipeline,
-                    &buffer,
+                    &scene,
                     &descriptor_sets,
                     image_index as usize
                 );

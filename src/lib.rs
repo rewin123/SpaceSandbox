@@ -310,7 +310,7 @@ pub fn update_commandbuffer(
     renderpass: &vk::RenderPass,
     swapchain: &SwapchainSafe,
     pipeline: &ExamplePipeline,
-    vb: &vk::Buffer,
+    meshes : &Vec<GPUMesh>,
     descriptor_sets : &[vk::DescriptorSet],
     i : usize
 ) -> Result<(), vk::Result> {
@@ -350,8 +350,12 @@ pub fn update_commandbuffer(
             &[descriptor_sets[i]],
             &[]
         );
-        logical_device.cmd_bind_vertex_buffers(commandbuffer, 0, &[*vb], &[0]);
-        logical_device.cmd_draw(commandbuffer, 3, 1, 0, 0);
+        for mesh in meshes {
+            logical_device.cmd_bind_vertex_buffers(commandbuffer, 0, &[mesh.pos_data.buffer], &[0]);
+            logical_device.cmd_bind_index_buffer(commandbuffer, mesh.index_data.buffer, 0, vk::IndexType::UINT32);
+            logical_device.cmd_draw_indexed(commandbuffer, mesh.vertex_count, 1, 0, 0, 0);
+        }
+
         logical_device.cmd_end_render_pass(commandbuffer);
         logical_device.end_command_buffer(commandbuffer)?;
     }
@@ -365,7 +369,7 @@ pub fn fill_commandbuffers(
     renderpass: &vk::RenderPass,
     swapchain: &SwapchainSafe,
     pipeline: &ExamplePipeline,
-    vb: &vk::Buffer,
+    meshes : &Vec<GPUMesh>,
     descriptor_sets : &[vk::DescriptorSet]
 ) -> Result<(), vk::Result> {
     for (i, &commandbuffer) in commandbuffers.iter().enumerate() {
@@ -374,7 +378,7 @@ pub fn fill_commandbuffers(
             renderpass,
             swapchain,
             pipeline,
-            vb,
+                             meshes,
             descriptor_sets,
             i);
     }
@@ -400,13 +404,13 @@ impl Default for Camera {
     fn default() -> Self {
         let mut camera = Camera {
             viewmatrix: na::Matrix4::identity(),
-            position: na::Vector3::new(0.0, 0.0, -3.0),
+            position: na::Vector3::new(0.0, 25.0, -100.0),
             view_direction: na::Unit::new_normalize(na::Vector3::new(0.0, 0.0, 1.0)),
-            down_direction: na::Unit::new_normalize(na::Vector3::new(0.0, 1.0, 0.0)),
+            down_direction: na::Unit::new_normalize(na::Vector3::new(0.0, -1.0, 0.0)),
             fovy : std::f32::consts::FRAC_PI_3,
             aspect : 800.0 / 600.0,
             near : 0.1,
-            far : 100.0,
+            far : 1000.0,
             projectionmatrix : na::Matrix4::identity()
         };
         camera.update_viewmatrix();
@@ -492,5 +496,10 @@ impl Camera {
     }
 }
 
+pub struct GPUMesh {
+    pub pos_data : BufferSafe,
+    pub index_data : BufferSafe,
+    pub vertex_count : u32
+}
 
 
