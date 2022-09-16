@@ -351,7 +351,7 @@ pub fn update_commandbuffer(
             &[]
         );
         for mesh in meshes {
-            logical_device.cmd_bind_vertex_buffers(commandbuffer, 0, &[mesh.pos_data.buffer], &[0]);
+            logical_device.cmd_bind_vertex_buffers(commandbuffer, 0, &[mesh.pos_data.buffer, mesh.normal_data.buffer], &[0, 0]);
             logical_device.cmd_bind_index_buffer(commandbuffer, mesh.index_data.buffer, 0, vk::IndexType::UINT32);
             logical_device.cmd_draw_indexed(commandbuffer, mesh.vertex_count, 1, 0, 0, 0);
         }
@@ -390,13 +390,13 @@ use vk_mem::ffi::VkResult;
 
 pub struct Camera {
     viewmatrix : na::Matrix4<f32>,
-    position: na::Vector3<f32>,
-    view_direction: na::Unit<na::Vector3<f32>>,
-    down_direction: na::Unit<na::Vector3<f32>>,
-    fovy: f32,
-    aspect: f32,
-    near: f32,
-    far: f32,
+    pub position: na::Vector3<f32>,
+    pub view_direction: na::Unit<na::Vector3<f32>>,
+    pub down_direction: na::Unit<na::Vector3<f32>>,
+    pub fovy: f32,
+    pub aspect: f32,
+    pub near: f32,
+    pub far: f32,
     projectionmatrix: na::Matrix4<f32>,
 }
 
@@ -498,6 +498,7 @@ impl Camera {
 
 pub struct GPUMesh {
     pub pos_data : BufferSafe,
+    pub normal_data : BufferSafe,
     pub index_data : BufferSafe,
     pub vertex_count : u32
 }

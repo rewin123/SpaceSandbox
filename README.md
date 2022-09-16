@@ -1,3 +1,9 @@
+Полезные ссылки:
+1. https://github.com/bombomby/optick - профайлер для игр
+2. https://crates.io/crates/profiling - обертка профайлеров для rust
+3. https://crates.io/crates/texture-synthesis - интересный генератор текстур
+4. 
+
 Разработка ведется в стиле функционал-рефакторинг
 
 "Функционал" - увеличиваем функционал кода

@@ -72,33 +72,26 @@ fn main() {
             vk_mem::MemoryUsage::CpuToGpu
         ).unwrap();
 
+        let mut normal_data = BufferSafe::new(
+            &graphic_base.allocator,
+            (mesh.normals.len() * 3) as u64,
+            vk::BufferUsageFlags::VERTEX_BUFFER,
+            vk_mem::MemoryUsage::CpuToGpu
+        ).unwrap();
+
         pos_data.fill(&chandeg_pos).unwrap();
         index_data.fill(&mesh.indices).unwrap();
+        normal_data.fill(&mesh.normals).unwrap();
 
         scene.push(
             GPUMesh {
                 pos_data,
                 index_data,
+                normal_data,
                 vertex_count: mesh.indices.len() as u32,
             }
         );
     }
-
-
-    let allocation_create_info = vk_mem::AllocationCreateInfo {
-        usage: vk_mem::MemoryUsage::CpuToGpu,
-        ..Default::default()
-    };
-    let mut buffer = BufferSafe::new(
-        &graphic_base.allocator,
-        16 * 2,
-        vk::BufferUsageFlags::VERTEX_BUFFER,
-        vk_mem::MemoryUsage::CpuToGpu
-    ).unwrap();
-    let data = [-0.5f32, 0.0f32, 0.0f32, 1.0f32,
-                        0.5f32, 0.0f32, 0.0f32, 1.0f32,
-                        0.0f32, 0.5f32, 0.0f32, 1.0f32];
-    buffer.fill(&data).unwrap();
 
     let mut uniformbuffer = BufferSafe::new(
         &graphic_base.allocator,
@@ -142,6 +135,8 @@ fn main() {
         }.unwrap();
 
     let mut camera = Camera::default();
+    camera.aspect = (graphic_base.swapchain.extent.width as f32) / (graphic_base.swapchain.extent.height as f32);
+    camera.update_projectionmatrix();
 
     for (i, descset) in descriptor_sets.iter().enumerate() {
         let buffer_infos = [vk::DescriptorBufferInfo {

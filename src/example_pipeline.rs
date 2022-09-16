@@ -56,12 +56,23 @@ impl ExamplePipeline {
             location: 0,
             offset: 0,
             format: vk::Format::R32G32B32A32_SFLOAT,
+        },
+        vk::VertexInputAttributeDescription {
+            binding: 1,
+            location: 1,
+            offset: 0,
+            format: vk::Format::R32G32B32_SFLOAT
         }];
 
         let vertex_binding_descs = [vk::VertexInputBindingDescription {
             binding: 0,
             stride: 16,
             input_rate: vk::VertexInputRate::VERTEX,
+        },
+        vk::VertexInputBindingDescription {
+            binding: 1,
+            stride: 16,
+            input_rate: vk::VertexInputRate::VERTEX
         }];
 
         let vertex_input_info = vk::PipelineVertexInputStateCreateInfo::builder()
