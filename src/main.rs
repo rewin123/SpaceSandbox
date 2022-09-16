@@ -54,11 +54,14 @@ fn main() {
 
     let mut uniformbuffer = BufferSafe::new(
         &graphic_base.allocator,
-        64,
+        64 * 2,
         vk::BufferUsageFlags::UNIFORM_BUFFER,
         vk_mem::MemoryUsage::CpuToGpu
     ).unwrap();
-    let cameratransform: [[f32; 4]; 4] = nalgebra::Matrix4::identity().into();
+    let cameratransform: [[[f32; 4]; 4]; 2] = [
+        nalgebra::Matrix4::identity().into(),
+        nalgebra::Matrix4::identity().into()
+    ];
     uniformbuffer.fill(&cameratransform).unwrap();
 
 
