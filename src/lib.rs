@@ -9,8 +9,7 @@ use ash::vk::{DeviceQueueCreateInfo, Handle, PhysicalDevice, PhysicalDevicePrope
 
 use log::*;
 use simplelog::*;
-use winit::platform::unix::WindowExtUnix;
-use winit::window::Window;
+// use winit::window::Window;
 
 const EngineName : &str = "Rewin engine";
 const AppName : &str = "SpaceSandbox";
@@ -411,6 +410,7 @@ pub fn fill_commandbuffers(
 
 use nalgebra as na;
 use vk_mem::ffi::VkResult;
+use winit::window::Window;
 
 pub struct Camera {
     viewmatrix : na::Matrix4<f32>,

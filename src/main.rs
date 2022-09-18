@@ -8,7 +8,6 @@ use ash::vk::{DeviceQueueCreateInfo, Handle, PhysicalDevice, PhysicalDevicePrope
 
 use log::*;
 use simplelog::*;
-use winit::platform::unix::WindowExtUnix;
 use winit::window::Window;
 
 use SpaceSandbox::*;
