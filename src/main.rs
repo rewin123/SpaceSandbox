@@ -111,24 +111,9 @@ fn main() {
             }
             Event::RedrawRequested(_) => {
                 //render here (later)
-                graphic_base.swapchain.current_image =
-                    (graphic_base.swapchain.current_image + 1) % graphic_base.swapchain.amount_of_images as usize;
-
-                let (image_index, _) = unsafe {
-                    graphic_base
-                        .swapchain
-                        .loader
-                        .acquire_next_image(
-                            graphic_base.swapchain.inner,
-                            std::u64::MAX,
-                            graphic_base.swapchain.image_available[graphic_base.swapchain.current_image],
-                            vk::Fence::null()
-                        )
-                        .expect("image acquisition trouble")
-                };
+                let image_index = graphic_base.next_frame();
 
                 unsafe {
-                    graphic_base.start_frame();
 
                     camera.update_viewmatrix();
                     camera.update_inner_buffer();

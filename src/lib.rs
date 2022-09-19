@@ -186,6 +186,28 @@ impl GraphicBase {
                 .expect("queue presentation");
         };
     }
+
+    pub fn next_frame(&mut self) -> u32 {
+        self.swapchain.current_image =
+            (self.swapchain.current_image + 1) % self.swapchain.amount_of_images as usize;
+
+        let (image_index, _) = unsafe {
+            self
+                .swapchain
+                .loader
+                .acquire_next_image(
+                    self.swapchain.inner,
+                    std::u64::MAX,
+                    self.swapchain.image_available[self.swapchain.current_image],
+                    vk::Fence::null()
+                )
+                .expect("image acquisition trouble")
+        };
+
+        self.start_frame();
+
+        return image_index;
+    }
 }
 
 pub struct AllocatorSafe {
