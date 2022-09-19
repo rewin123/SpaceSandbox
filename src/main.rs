@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::ops::Deref;
 use std::os::raw::c_char;
+use std::sync::Arc;
 use ash::{Device, Entry, Instance, vk};
 use ash::extensions::{ext::DebugUtils, khr::Surface};
 use ash::extensions::khr::Swapchain;
@@ -286,9 +287,25 @@ fn main() {
                         image_index as usize
                     );
 
+                    let mut style = egui::Style::default();
+                    style.visuals.widgets.noninteractive.bg_fill = egui::Color32::WHITE;
+                    style.visuals.widgets.noninteractive.fg_stroke = egui::Stroke { width: 1.0, color: egui::Color32::BLACK };
+                    style.visuals.widgets.active.bg_fill = egui::Color32::WHITE;
+                    style.visuals.widgets.active.fg_stroke = egui::Stroke { width: 1.0, color: egui::Color32::BLACK };
+                    style.visuals.widgets.inactive.bg_fill = egui::Color32::LIGHT_BLUE;
+                    style.visuals.widgets.inactive.fg_stroke = egui::Stroke { width: 1.0, color: egui::Color32::BLACK };
+                    gui.integration.context().set_style(style);
+
                     gui.integration.begin_frame();
 
-                    egui::Window::new("Test window").show(&gui.integration.context(), |ui| {});
+                    egui::Window::new("Test window")
+                            .resizable(true)
+                            .show(&gui.integration.context(), |ui| {
+                        ui.label("Hello world");
+                        ui.button("Its a button");
+
+
+                    });
                     let (_, shapes) = gui.integration.end_frame(&mut graphic_base.window);
                     let clipped_meshes = gui.integration.context().tessellate(shapes);
                     gui.integration.paint(command_buffers[image_index as usize], image_index as usize, clipped_meshes);
