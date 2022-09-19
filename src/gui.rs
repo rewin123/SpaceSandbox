@@ -50,6 +50,15 @@ impl EguiWrapper {
             graphic_base.swapchain.format.clone()
         );
 
+        let mut style = egui::Style::default();
+        style.visuals.widgets.noninteractive.bg_fill = egui::Color32::WHITE;
+        style.visuals.widgets.noninteractive.fg_stroke = egui::Stroke { width: 1.0, color: egui::Color32::BLACK };
+        style.visuals.widgets.active.bg_fill = egui::Color32::WHITE;
+        style.visuals.widgets.active.fg_stroke = egui::Stroke { width: 1.0, color: egui::Color32::BLACK };
+        style.visuals.widgets.inactive.bg_fill = egui::Color32::LIGHT_BLUE;
+        style.visuals.widgets.inactive.fg_stroke = egui::Stroke { width: 1.0, color: egui::Color32::BLACK };
+        egui_integration.context().set_style(style);
+
         Self {
             allocator : allocator_lock,
             integration : egui_integration,

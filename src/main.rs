@@ -10,6 +10,8 @@ use ash::vk::{DeviceQueueCreateInfo, Handle, PhysicalDevice, PhysicalDevicePrope
 
 use log::*;
 use simplelog::*;
+use tobj::LoadError;
+use winit::platform::unix::WindowExtUnix;
 use winit::window::Window;
 
 use SpaceSandbox::*;
@@ -17,32 +19,18 @@ use SpaceSandbox::example_pipeline::ExamplePipeline;
 
 // for time measure wolfpld/tracy
 
-
-fn main() {
+fn init_logger() {
     let _ = CombinedLogger::init(
         vec![
             TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed, ColorChoice::Auto),
             WriteLogger::new(LevelFilter::Debug, Config::default(), File::create("detailed.log").unwrap())
         ]
     );
+}
 
-
-
-    let eventloop = winit::event_loop::EventLoop::new();
-    let window = winit::window::Window::new(&eventloop).unwrap();
-    info!("Created window");
-
-    let mut graphic_base = GraphicBase::init(window);
-
-    let mut renderpass = init_renderpass(&graphic_base).unwrap();
-
-    graphic_base.swapchain.create_framebuffers(
-        &graphic_base.device,
-                    renderpass.inner);
-
-    info!("Tomokitty loading...");
-    let (models, materials) = tobj::load_obj("res/test_res/models/tomokitty/sculpt.obj",
-                                             &tobj::GPU_LOAD_OPTIONS).expect("Problem with loading model");
+fn load_gray_obj_now(graphic_base : &GraphicBase, path : String) -> Result<Vec<GPUMesh>, LoadError> {
+    let (models, materials) = tobj::load_obj(path,
+                                             &tobj::GPU_LOAD_OPTIONS)?;
 
     let mut scene = vec![];
 
@@ -96,17 +84,29 @@ fn main() {
         );
     }
 
-    let mut uniformbuffer = BufferSafe::new(
-        &graphic_base.allocator,
-        64 * 2,
-        vk::BufferUsageFlags::UNIFORM_BUFFER,
-        vk_mem::MemoryUsage::CpuToGpu
-    ).unwrap();
-    let cameratransform: [[[f32; 4]; 4]; 2] = [
-        nalgebra::Matrix4::identity().into(),
-        nalgebra::Matrix4::identity().into()
-    ];
-    uniformbuffer.fill(&cameratransform).unwrap();
+    Ok(scene)
+}
+
+fn main() {
+    init_logger();
+
+    let eventloop = winit::event_loop::EventLoop::new();
+    let window = winit::window::Window::new(&eventloop).unwrap();
+    info!("Created window");
+
+    let mut graphic_base = GraphicBase::init(window);
+
+    let mut renderpass = init_renderpass(&graphic_base).unwrap();
+
+    graphic_base.swapchain.create_framebuffers(
+        &graphic_base.device,
+                    renderpass.inner);
+
+    info!("Tomokitty loading...");
+    let scene = load_gray_obj_now(
+        &graphic_base,
+        String::from("res/test_res/models/tomokitty/sculpt.obj")).unwrap();
+
 
 
     let pipeline = ExamplePipeline::init(
@@ -137,13 +137,13 @@ fn main() {
         unsafe { graphic_base.device.allocate_descriptor_sets(&descriptor_set_allocate_info)
         }.unwrap();
 
-    let mut camera = Camera::default();
+    let mut camera = RenderCamera::new(&graphic_base.allocator);
     camera.aspect = (graphic_base.swapchain.extent.width as f32) / (graphic_base.swapchain.extent.height as f32);
     camera.update_projectionmatrix();
 
     for (i, descset) in descriptor_sets.iter().enumerate() {
         let buffer_infos = [vk::DescriptorBufferInfo {
-            buffer: uniformbuffer.buffer,
+            buffer: camera.uniformbuffer.buffer,
             offset: 0,
             range: 128,
         }];
@@ -271,7 +271,7 @@ fn main() {
                         .expect("rest fences");
 
                     camera.update_viewmatrix();
-                    camera.update_buffer(&mut uniformbuffer);
+                    camera.update_inner_buffer();
 
                     unsafe {
                         graphic_base.device.begin_command_buffer(command_buffers[image_index as usize], &vk::CommandBufferBeginInfo::builder());
@@ -287,14 +287,7 @@ fn main() {
                         image_index as usize
                     );
 
-                    let mut style = egui::Style::default();
-                    style.visuals.widgets.noninteractive.bg_fill = egui::Color32::WHITE;
-                    style.visuals.widgets.noninteractive.fg_stroke = egui::Stroke { width: 1.0, color: egui::Color32::BLACK };
-                    style.visuals.widgets.active.bg_fill = egui::Color32::WHITE;
-                    style.visuals.widgets.active.fg_stroke = egui::Stroke { width: 1.0, color: egui::Color32::BLACK };
-                    style.visuals.widgets.inactive.bg_fill = egui::Color32::LIGHT_BLUE;
-                    style.visuals.widgets.inactive.fg_stroke = egui::Stroke { width: 1.0, color: egui::Color32::BLACK };
-                    gui.integration.context().set_style(style);
+
 
                     gui.integration.begin_frame();
 
