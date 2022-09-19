@@ -29,65 +29,16 @@ fn main() {
 
     let mut graphic_base = GraphicBase::init(window);
 
-    let mut renderpass = init_renderpass(&graphic_base).unwrap();
+    let mut camera = RenderCamera::new(&graphic_base.allocator);
+    camera.aspect = (graphic_base.swapchain.extent.width as f32) / (graphic_base.swapchain.extent.height as f32);
+    camera.update_projectionmatrix();
 
-    graphic_base.swapchain.create_framebuffers(
-        &graphic_base.device,
-                    renderpass.inner);
+    let mut gray_draw = GrayscalePipeline::new(&graphic_base, &camera).unwrap();
 
     info!("Tomokitty loading...");
     let scene = load_gray_obj_now(
         &graphic_base,
         String::from("res/test_res/models/tomokitty/sculpt.obj")).unwrap();
-
-
-
-    let pipeline = ExamplePipeline::init(
-        &graphic_base.device,
-        &graphic_base.swapchain,
-        &renderpass).unwrap();
-
-
-    let pool_sizes = [
-        vk::DescriptorPoolSize {
-            ty : vk::DescriptorType::UNIFORM_BUFFER,
-            descriptor_count : graphic_base.swapchain.amount_of_images
-        }
-    ];
-    let descriptor_pool_info = vk::DescriptorPoolCreateInfo::builder()
-        .max_sets(graphic_base.swapchain.amount_of_images)
-        .pool_sizes(&pool_sizes);
-    let descriptor_pool = unsafe {
-        graphic_base.device.create_descriptor_pool(&descriptor_pool_info, None)
-    }.unwrap();
-
-    let desc_layouts =
-        vec![pipeline.descriptor_set_layouts[0]; graphic_base.swapchain.amount_of_images as usize];
-    let descriptor_set_allocate_info = vk::DescriptorSetAllocateInfo::builder()
-        .descriptor_pool(descriptor_pool)
-        .set_layouts(&desc_layouts);
-    let descriptor_sets =
-        unsafe { graphic_base.device.allocate_descriptor_sets(&descriptor_set_allocate_info)
-        }.unwrap();
-
-    let mut camera = RenderCamera::new(&graphic_base.allocator);
-    camera.aspect = (graphic_base.swapchain.extent.width as f32) / (graphic_base.swapchain.extent.height as f32);
-    camera.update_projectionmatrix();
-
-    for (i, descset) in descriptor_sets.iter().enumerate() {
-        let buffer_infos = [vk::DescriptorBufferInfo {
-            buffer: camera.uniformbuffer.buffer,
-            offset: 0,
-            range: 128,
-        }];
-        let desc_sets_write = [vk::WriteDescriptorSet::builder()
-            .dst_set(*descset)
-            .dst_binding(0)
-            .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
-            .buffer_info(&buffer_infos)
-            .build()];
-        unsafe { graphic_base.device.update_descriptor_sets(&desc_sets_write, &[]) };
-    }
 
     let pools = Pools::init(
         &graphic_base.device,
@@ -97,19 +48,8 @@ fn main() {
     let command_buffers = create_commandbuffers(
         &graphic_base.device,
         &pools,
-        graphic_base.swapchain.framebuffers.len()
+        graphic_base.swapchain.imageviews.len()
     ).unwrap();
-
-    fill_commandbuffers(
-        &command_buffers,
-        &graphic_base.device,
-        &renderpass,
-        &graphic_base.swapchain,
-        &pipeline,
-        &scene,
-        &descriptor_sets
-    ).unwrap();
-
 
     let mut gui = EguiWrapper::new(
         &graphic_base
@@ -209,14 +149,12 @@ fn main() {
                     unsafe {
                         graphic_base.device.begin_command_buffer(command_buffers[image_index as usize], &vk::CommandBufferBeginInfo::builder());
                     }
-                    update_commandbuffer(
+
+                    gray_draw.update_commandbuffer(
                         command_buffers[image_index as usize],
                         &graphic_base.device,
-                        &renderpass,
                         &graphic_base.swapchain,
-                        &pipeline,
                         &scene,
-                        &descriptor_sets,
                         image_index as usize
                     );
 

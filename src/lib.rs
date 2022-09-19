@@ -21,6 +21,7 @@ pub mod vulkan_init_utils;
 pub mod example_pipeline;
 pub mod gui;
 pub mod camera;
+pub mod grayscale_pipeline;
 
 pub use debug_layer::*;
 pub use vulkan_init_utils::*;
@@ -28,6 +29,7 @@ use example_pipeline::*;
 pub use gui::*;
 pub use camera::*;
 pub use safe_warp::*;
+pub use grayscale_pipeline::*;
 
 pub struct GraphicBase {
     pub instance : Arc<InstanceSafe>,
@@ -322,98 +324,6 @@ pub fn create_commandbuffers(
     unsafe { logical_device.allocate_command_buffers(&commandbuf_allocate_info) }
 }
 
-pub fn update_commandbuffer(
-    commandbuffer : vk::CommandBuffer,
-    logical_device: &ash::Device,
-    renderpass: &vk::RenderPass,
-    swapchain: &SwapchainSafe,
-    pipeline: &ExamplePipeline,
-    meshes : &Vec<GPUMesh>,
-    descriptor_sets : &[vk::DescriptorSet],
-    i : usize
-) -> Result<(), vk::Result> {
-    let commandbuffer_begininfo = vk::CommandBufferBeginInfo::builder();
-    unsafe {
-        // logical_device.begin_command_buffer(commandbuffer, &commandbuffer_begininfo)?;
-    }
-    let clearvalues = [vk::ClearValue {
-        color: vk::ClearColorValue {
-            float32: [0.0, 0.0, 0.08, 1.0],
-        },
-    },
-    vk::ClearValue {
-        depth_stencil: vk::ClearDepthStencilValue {
-            depth: 1.0,
-            stencil: 0,
-        }
-    }];
-    let renderpass_begininfo = vk::RenderPassBeginInfo::builder()
-        .render_pass(*renderpass)
-        .framebuffer(swapchain.framebuffers[i])
-        .render_area(vk::Rect2D {
-            offset: vk::Offset2D { x: 0, y: 0 },
-            extent: swapchain.extent,
-        })
-        .clear_values(&clearvalues);
-    unsafe {
-        logical_device.cmd_begin_render_pass(
-            commandbuffer,
-            &renderpass_begininfo,
-            vk::SubpassContents::INLINE,
-        );
-        logical_device.cmd_bind_pipeline(
-            commandbuffer,
-            vk::PipelineBindPoint::GRAPHICS,
-            pipeline.pipeline,
-        );
-        logical_device.cmd_bind_descriptor_sets(
-            commandbuffer,
-            vk::PipelineBindPoint::GRAPHICS,
-            pipeline.layout,
-            0,
-            &[descriptor_sets[i]],
-            &[]
-        );
-        for mesh in meshes {
-            logical_device.cmd_bind_vertex_buffers(commandbuffer, 0, &[mesh.pos_data.buffer, mesh.normal_data.buffer], &[0, 0]);
-            logical_device.cmd_bind_index_buffer(commandbuffer, mesh.index_data.buffer, 0, vk::IndexType::UINT32);
-            logical_device.cmd_draw_indexed(commandbuffer, mesh.vertex_count, 1, 0, 0, 0);
-        }
-
-        logical_device.cmd_end_render_pass(commandbuffer);
-        // logical_device.end_command_buffer(commandbuffer)?;
-    }
-
-    Ok(())
-}
-
-pub fn fill_commandbuffers(
-    commandbuffers: &[vk::CommandBuffer],
-    logical_device: &ash::Device,
-    renderpass: &vk::RenderPass,
-    swapchain: &SwapchainSafe,
-    pipeline: &ExamplePipeline,
-    meshes : &Vec<GPUMesh>,
-    descriptor_sets : &[vk::DescriptorSet]
-) -> Result<(), vk::Result> {
-    for (i, &commandbuffer) in commandbuffers.iter().enumerate() {
-        unsafe {
-            logical_device.begin_command_buffer(commandbuffers[i], &vk::CommandBufferBeginInfo::builder());
-        }
-        update_commandbuffer(commandbuffers[i],
-            logical_device,
-            renderpass,
-            swapchain,
-            pipeline,
-                             meshes,
-            descriptor_sets,
-            i);
-        unsafe {
-            logical_device.end_command_buffer(commandbuffers[i]);
-        }
-    }
-    Ok(())
-}
 
 use nalgebra as na;
 use tobj::LoadError;
