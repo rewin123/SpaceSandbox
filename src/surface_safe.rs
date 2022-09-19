@@ -1,9 +1,6 @@
 use ash::{prelude::VkResult, extensions::khr};
-use raw_window_handle::HasRawWindowHandle;
 use crate::*;
 
-use winit::platform::windows::WindowExtWindows;
-// use winit::platform::unix::WindowExtUnix;
 
 pub struct SurfaceSafe {
     pub inner : SurfaceKHR,
