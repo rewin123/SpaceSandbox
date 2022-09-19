@@ -5,7 +5,7 @@ use std::sync::Arc;
 use ash::{Device, Entry, Instance, vk};
 use ash::extensions::{ext::DebugUtils, khr::Surface};
 use ash::extensions::khr::Swapchain;
-use ash::vk::{DeviceQueueCreateInfo, Handle, PhysicalDevice, PhysicalDeviceProperties, RenderPass, SurfaceKHR, SwapchainKHR};
+use ash::vk::{CommandBuffer, DeviceQueueCreateInfo, Handle, PhysicalDevice, PhysicalDeviceProperties, RenderPass, SurfaceKHR, SwapchainKHR};
 
 
 use log::*;
@@ -126,6 +126,65 @@ impl GraphicBase {
             inner : pass,
             device : self.device.clone()
         }
+    }
+
+    pub fn start_frame(&self) {
+        unsafe {
+            self.
+                device
+                .wait_for_fences(
+                    &[self.swapchain.may_begin_drawing[self.swapchain.current_image]],
+                    true,
+                    std::u64::MAX
+                )
+                .expect("fence waiting problem");
+
+            self
+                .device
+                .reset_fences(
+                    &[self.swapchain.may_begin_drawing[self.swapchain.current_image]])
+                .expect("rest fences");
+        }
+    }
+
+
+    pub fn end_frame(&self, command_buffers: &Vec<CommandBuffer>, image_index: u32) {
+        let semaphores_available = [self.swapchain.image_available[self.swapchain.current_image]];
+        let waiting_stages = [vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
+        let semaphores_finished = [self.swapchain.rendering_finished[self.swapchain.current_image]];
+        let commandbuffers = [command_buffers[image_index as usize]];
+        let submit_info = [vk::SubmitInfo::builder()
+            .wait_semaphores(&semaphores_available)
+            .wait_dst_stage_mask(&waiting_stages)
+            .command_buffers(&commandbuffers)
+            .signal_semaphores(&semaphores_finished)
+            .build()];
+
+        unsafe {
+            self
+                .device
+                .queue_submit(
+                    self.queues.graphics_queue,
+                    &submit_info,
+                    self.swapchain.may_begin_drawing[self.swapchain.current_image],
+                )
+                .expect("queue submission");
+        };
+
+
+        let swapchains = [self.swapchain.inner];
+        let indices = [image_index];
+        let present_info = vk::PresentInfoKHR::builder()
+            .wait_semaphores(&semaphores_finished)
+            .swapchains(&swapchains)
+            .image_indices(&indices);
+        unsafe {
+            self
+                .swapchain
+                .loader
+                .queue_present(self.queues.graphics_queue, &present_info)
+                .expect("queue presentation");
+        };
     }
 }
 

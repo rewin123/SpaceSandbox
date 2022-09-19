@@ -1,80 +1,80 @@
-15:53:45 [INFO] Guessed window scale factor: 1
-15:53:45 [DEBUG] (1) winit::platform_impl::platform::x11::window: Calculated physical dimensions: 800x600
-15:53:45 [INFO] Created window
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for layer manifest files"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   In following folders:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.config/vulkan/implicit_layer.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/xdg/vulkan/implicit_layer.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/implicit_layer.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.local/share/vulkan/implicit_layer.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/local/share/vulkan/implicit_layer.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/implicit_layer.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   Found the following files:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/implicit_layer.d/renderdoc_capture.json"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/implicit_layer.d/nvidia_layers.json"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found manifest file /etc/vulkan/implicit_layer.d/renderdoc_capture.json (file version \"1.1.2\")"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Layer \"VK_LAYER_RENDERDOC_Capture\" using deprecated \'vkGetInstanceProcAddr\' tag which was deprecated starting with JSON file version 1.1.0. The new vkNegotiateLoaderLayerInterfaceVersion function is preferred, though for compatibility reasons it may be desirable to continue using the deprecated tag."
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Layer \"VK_LAYER_RENDERDOC_Capture\" using deprecated \'vkGetDeviceProcAddr\' tag which was deprecated starting with JSON file version 1.1.0. The new vkNegotiateLoaderLayerInterfaceVersion function is preferred, though for compatibility reasons it may be desirable to continue using the deprecated tag."
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found manifest file /usr/share/vulkan/implicit_layer.d/nvidia_layers.json (file version \"1.0.0\")"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for layer manifest files"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   In following folders:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.config/vulkan/explicit_layer.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/xdg/vulkan/explicit_layer.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/explicit_layer.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.local/share/vulkan/explicit_layer.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/local/share/vulkan/explicit_layer.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/explicit_layer.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   Found the following files:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found manifest file /usr/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json (file version \"1.2.0\")"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for driver manifest files"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   In following folders:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.config/vulkan/icd.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/xdg/vulkan/icd.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/icd.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.local/share/vulkan/icd.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/local/share/vulkan/icd.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/icd.d"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   Found the following files:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/icd.d/nvidia_icd.json"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found ICD manifest file /usr/share/vulkan/icd.d/nvidia_icd.json, version \"1.0.0\""
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for ICD drivers named libGLX_nvidia.so.0"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Build ICD instance extension list"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Loading layer library libVkLayer_khronos_validation.so"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Insert instance layer VK_LAYER_KHRONOS_validation (libVkLayer_khronos_validation.so)"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Build ICD instance extension list"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [validation] "Validation Information: [ UNASSIGNED-khronos-validation-createinstance-status-message ] Object 0: handle = 0x557f52bc3990, type = VK_OBJECT_TYPE_INSTANCE; | MessageID = 0xd7fa5f44 | Khronos Validation Layer Active:\n    Settings File: None. Default location is /home/rewin/projects/SpaceSandbox\\vk_layer_settings.txt.\n    Current Enables: None.\n    Current Disables: None.\n"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Copying old device 0 into new device 0"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Copying old device 0 into new device 0"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Copying old device 0 into new device 0"
-15:53:45 [INFO] Vulkan device: NVIDIA TITAN Xp
-15:53:45 [INFO] Selected device: NVIDIA TITAN Xp
-15:53:45 [INFO] Found graphic queue!
-15:53:45 [INFO] Found transfer queue!
-15:53:45 [INFO] Found transfer queue!
-15:53:45 [INFO] Found transfer queue!
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Loading layer library libVkLayer_khronos_validation.so"
-15:53:45 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Inserted device layer VK_LAYER_KHRONOS_validation (libVkLayer_khronos_validation.so)"
-15:53:45 [INFO] Creating allocator create info...
-15:53:45 [INFO] Creating allocator...
-15:53:45 [INFO] Creating swapchain!
-15:53:45 [DEBUG] (1) SpaceSandbox::safe_warp::swapchain_safe: SwapchainCreateInfoKHR {
+16:02:59 [INFO] Guessed window scale factor: 1
+16:02:59 [DEBUG] (1) winit::platform_impl::platform::x11::window: Calculated physical dimensions: 800x600
+16:02:59 [INFO] Created window
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for layer manifest files"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   In following folders:"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.config/vulkan/implicit_layer.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/xdg/vulkan/implicit_layer.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/implicit_layer.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.local/share/vulkan/implicit_layer.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/local/share/vulkan/implicit_layer.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/implicit_layer.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   Found the following files:"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/implicit_layer.d/renderdoc_capture.json"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/implicit_layer.d/nvidia_layers.json"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found manifest file /etc/vulkan/implicit_layer.d/renderdoc_capture.json (file version \"1.1.2\")"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Layer \"VK_LAYER_RENDERDOC_Capture\" using deprecated \'vkGetInstanceProcAddr\' tag which was deprecated starting with JSON file version 1.1.0. The new vkNegotiateLoaderLayerInterfaceVersion function is preferred, though for compatibility reasons it may be desirable to continue using the deprecated tag."
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Layer \"VK_LAYER_RENDERDOC_Capture\" using deprecated \'vkGetDeviceProcAddr\' tag which was deprecated starting with JSON file version 1.1.0. The new vkNegotiateLoaderLayerInterfaceVersion function is preferred, though for compatibility reasons it may be desirable to continue using the deprecated tag."
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found manifest file /usr/share/vulkan/implicit_layer.d/nvidia_layers.json (file version \"1.0.0\")"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for layer manifest files"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   In following folders:"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.config/vulkan/explicit_layer.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/xdg/vulkan/explicit_layer.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/explicit_layer.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.local/share/vulkan/explicit_layer.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/local/share/vulkan/explicit_layer.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/explicit_layer.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   Found the following files:"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found manifest file /usr/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json (file version \"1.2.0\")"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for driver manifest files"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   In following folders:"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.config/vulkan/icd.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/xdg/vulkan/icd.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/icd.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.local/share/vulkan/icd.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/local/share/vulkan/icd.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/icd.d"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   Found the following files:"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/icd.d/nvidia_icd.json"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found ICD manifest file /usr/share/vulkan/icd.d/nvidia_icd.json, version \"1.0.0\""
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for ICD drivers named libGLX_nvidia.so.0"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Build ICD instance extension list"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Loading layer library libVkLayer_khronos_validation.so"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Insert instance layer VK_LAYER_KHRONOS_validation (libVkLayer_khronos_validation.so)"
+16:02:59 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Build ICD instance extension list"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [validation] "Validation Information: [ UNASSIGNED-khronos-validation-createinstance-status-message ] Object 0: handle = 0x5601f5a11990, type = VK_OBJECT_TYPE_INSTANCE; | MessageID = 0xd7fa5f44 | Khronos Validation Layer Active:\n    Settings File: None. Default location is /home/rewin/projects/SpaceSandbox\\vk_layer_settings.txt.\n    Current Enables: None.\n    Current Disables: None.\n"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Copying old device 0 into new device 0"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Copying old device 0 into new device 0"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Copying old device 0 into new device 0"
+16:03:00 [INFO] Vulkan device: NVIDIA TITAN Xp
+16:03:00 [INFO] Selected device: NVIDIA TITAN Xp
+16:03:00 [INFO] Found graphic queue!
+16:03:00 [INFO] Found transfer queue!
+16:03:00 [INFO] Found transfer queue!
+16:03:00 [INFO] Found transfer queue!
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Loading layer library libVkLayer_khronos_validation.so"
+16:03:00 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Inserted device layer VK_LAYER_KHRONOS_validation (libVkLayer_khronos_validation.so)"
+16:03:00 [INFO] Creating allocator create info...
+16:03:00 [INFO] Creating allocator...
+16:03:00 [INFO] Creating swapchain!
+16:03:00 [DEBUG] (1) SpaceSandbox::safe_warp::swapchain_safe: SwapchainCreateInfoKHR {
     s_type: SWAPCHAIN_CREATE_INFO_KHR,
     p_next: 0x0000000000000000,
     flags: ,
@@ -90,37 +90,37 @@
     image_usage: COLOR_ATTACHMENT,
     image_sharing_mode: EXCLUSIVE,
     queue_family_index_count: 1,
-    p_queue_family_indices: 0x00007ffde1064404,
+    p_queue_family_indices: 0x00007ffe7c101924,
     pre_transform: IDENTITY,
     composite_alpha: OPAQUE,
     present_mode: FIFO,
     clipped: 0,
     old_swapchain: 0x0,
 }
-15:53:45 [INFO] Finished creating GraphicBase
-15:53:45 [INFO] Tomokitty loading...
-15:53:45 [INFO] Found model Cube!
-15:53:45 [INFO] Destroy buffer
-15:53:45 [INFO] Found model Circle!
-15:53:45 [INFO] Destroy buffer
-15:53:45 [INFO] Found model Circle.001!
-15:53:45 [INFO] Destroy buffer
-15:53:51 [INFO] Finishing.....
-15:53:51 [INFO] Destroying egui wrapper.....
-15:53:51 [INFO] Destroy GraphicBase
-15:53:51 [INFO] Destroy debug layer
-15:53:51 [INFO] Destroying swapchain
-15:53:51 [INFO] Destroy surface
-15:53:51 [INFO] Destroy buffer
-15:53:51 [INFO] Destroy pipeline
-15:53:51 [INFO] Destroy RenderPass
-15:53:51 [INFO] Destroy buffer
-15:53:51 [INFO] Destroy buffer
-15:53:51 [INFO] Destroy buffer
-15:53:51 [INFO] Destroy buffer
-15:53:51 [INFO] Destroy buffer
-15:53:51 [INFO] Destroy buffer
-15:53:51 [INFO] Destroy buffer
-15:53:51 [INFO] Destroy buffer
-15:53:51 [INFO] Destroy buffer
-15:53:51 [INFO] Destroy allocator
+16:03:00 [INFO] Finished creating GraphicBase
+16:03:00 [INFO] Tomokitty loading...
+16:03:00 [INFO] Found model Cube!
+16:03:00 [INFO] Destroy buffer
+16:03:00 [INFO] Found model Circle!
+16:03:00 [INFO] Destroy buffer
+16:03:00 [INFO] Found model Circle.001!
+16:03:00 [INFO] Destroy buffer
+16:03:01 [INFO] Finishing.....
+16:03:01 [INFO] Destroying egui wrapper.....
+16:03:01 [INFO] Destroy GraphicBase
+16:03:01 [INFO] Destroy debug layer
+16:03:01 [INFO] Destroying swapchain
+16:03:01 [INFO] Destroy surface
+16:03:01 [INFO] Destroy buffer
+16:03:01 [INFO] Destroy pipeline
+16:03:01 [INFO] Destroy RenderPass
+16:03:01 [INFO] Destroy buffer
+16:03:01 [INFO] Destroy buffer
+16:03:01 [INFO] Destroy buffer
+16:03:01 [INFO] Destroy buffer
+16:03:01 [INFO] Destroy buffer
+16:03:01 [INFO] Destroy buffer
+16:03:01 [INFO] Destroy buffer
+16:03:01 [INFO] Destroy buffer
+16:03:01 [INFO] Destroy buffer
+16:03:01 [INFO] Destroy allocator
