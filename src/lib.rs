@@ -15,25 +15,19 @@ use simplelog::*;
 const EngineName : &str = "Rewin engine";
 const AppName : &str = "SpaceSandbox";
 
-pub mod swapchain_safe;
-pub mod surface_safe;
-pub mod instance_safe;
+pub mod safe_warp;
 pub mod debug_layer;
 pub mod vulkan_init_utils;
 pub mod example_pipeline;
-pub mod buffer_safe;
 pub mod gui;
 pub mod camera;
 
-pub use swapchain_safe::*;
-pub use surface_safe::*;
-pub use instance_safe::*;
 pub use debug_layer::*;
 pub use vulkan_init_utils::*;
 use example_pipeline::*;
-pub use buffer_safe::*;
 pub use gui::*;
 pub use camera::*;
+pub use safe_warp::*;
 
 pub struct GraphicBase {
     pub instance : Arc<InstanceSafe>,
@@ -422,8 +416,10 @@ pub fn fill_commandbuffers(
 }
 
 use nalgebra as na;
+use tobj::LoadError;
 use vk_mem::ffi::VkResult;
 use winit::window::Window;
+use crate::safe_warp::InstanceSafe;
 
 
 pub struct GPUMesh {
@@ -434,3 +430,70 @@ pub struct GPUMesh {
 }
 
 
+pub fn init_logger() {
+    let _ = CombinedLogger::init(
+        vec![
+            TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed, ColorChoice::Auto),
+            WriteLogger::new(LevelFilter::Debug, Config::default(), File::create("detailed.log").unwrap())
+        ]
+    );
+}
+
+pub fn load_gray_obj_now(graphic_base : &GraphicBase, path : String) -> Result<Vec<GPUMesh>, LoadError> {
+    let (models, materials) = tobj::load_obj(path,
+                                             &tobj::GPU_LOAD_OPTIONS)?;
+
+    let mut scene = vec![];
+
+
+    for (i, m) in models.iter().enumerate() {
+        info!("Found model {}!", m.name.clone());
+
+        let mesh = &m.mesh;
+
+        let mut chandeg_pos = vec![];
+        for vertex_idx in 0..(mesh.positions.len() / 3) {
+            chandeg_pos.push(mesh.positions[vertex_idx * 3]);
+            chandeg_pos.push(mesh.positions[vertex_idx * 3 + 1]);
+            chandeg_pos.push(mesh.positions[vertex_idx * 3 + 2]);
+            chandeg_pos.push(1.0);
+        }
+
+
+        let mut pos_data = BufferSafe::new(
+            &graphic_base.allocator,
+            (chandeg_pos.len() * 4) as u64,
+            vk::BufferUsageFlags::VERTEX_BUFFER,
+            vk_mem::MemoryUsage::CpuToGpu
+        ).unwrap();
+
+        let mut index_data = BufferSafe::new(
+            &graphic_base.allocator,
+            (mesh.indices.len() * 4) as u64,
+            vk::BufferUsageFlags::INDEX_BUFFER,
+            vk_mem::MemoryUsage::CpuToGpu
+        ).unwrap();
+
+        let mut normal_data = BufferSafe::new(
+            &graphic_base.allocator,
+            (mesh.normals.len() * 3) as u64,
+            vk::BufferUsageFlags::VERTEX_BUFFER,
+            vk_mem::MemoryUsage::CpuToGpu
+        ).unwrap();
+
+        pos_data.fill(&chandeg_pos).unwrap();
+        index_data.fill(&mesh.indices).unwrap();
+        normal_data.fill(&mesh.normals).unwrap();
+
+        scene.push(
+            GPUMesh {
+                pos_data,
+                index_data,
+                normal_data,
+                vertex_count: mesh.indices.len() as u32,
+            }
+        );
+    }
+
+    Ok(scene)
+}
