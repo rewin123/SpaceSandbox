@@ -240,7 +240,8 @@ pub struct GPUMesh {
     pub pos_data : BufferSafe,
     pub normal_data : BufferSafe,
     pub index_data : BufferSafe,
-    pub vertex_count : u32
+    pub vertex_count : u32,
+    pub name : String
 }
 
 
@@ -305,6 +306,7 @@ pub fn load_gray_obj_now(graphic_base : &GraphicBase, path : String) -> Result<V
                 index_data,
                 normal_data,
                 vertex_count: mesh.indices.len() as u32,
+                name : m.name.clone()
             }
         );
     }

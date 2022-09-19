@@ -53,8 +53,8 @@ impl DerefMut for RenderCamera {
 pub struct Camera {
     viewmatrix : na::Matrix4<f32>,
     pub position: na::Vector3<f32>,
-    pub view_direction: na::Unit<na::Vector3<f32>>,
-    pub down_direction: na::Unit<na::Vector3<f32>>,
+    pub view_direction: na::Vector3<f32>,
+    pub down_direction: na::Vector3<f32>,
     pub fovy: f32,
     pub aspect: f32,
     pub near: f32,
@@ -67,8 +67,8 @@ impl Default for Camera {
         let mut camera = Camera {
             viewmatrix: na::Matrix4::identity(),
             position: na::Vector3::new(0.0, 25.0, -100.0),
-            view_direction: na::Unit::new_normalize(na::Vector3::new(0.0, 0.0, 1.0)),
-            down_direction: na::Unit::new_normalize(na::Vector3::new(0.0, -1.0, 0.0)),
+            view_direction: na::Vector3::new(0.0, 0.0, 1.0),
+            down_direction: na::Vector3::new(0.0, -1.0, 0.0),
             fovy : std::f32::consts::FRAC_PI_3,
             aspect : 800.0 / 600.0,
             near : 0.1,
@@ -132,14 +132,14 @@ impl Camera {
         self.viewmatrix =  m;
     }
     pub fn move_forward(&mut self, distance: f32) {
-        self.position += distance * self.view_direction.as_ref();
+        self.position += distance * self.view_direction;
         self.update_viewmatrix();
     }
     pub fn move_backward(&mut self, distance: f32) {
         self.move_forward(-distance);
     }
     pub fn turn_right(&mut self, angle: f32) {
-        let rotation = na::Rotation3::from_axis_angle(&self.down_direction, angle);
+        let rotation = na::Rotation3::from_axis_angle(&na::Unit::new_normalize(self.down_direction), angle);
         self.view_direction = rotation * self.view_direction;
         self.update_viewmatrix();
     }
@@ -155,5 +155,9 @@ impl Camera {
     }
     pub fn turn_down(&mut self, angle: f32) {
         self.turn_up(-angle);
+    }
+
+    pub fn get_right_vector(&self) -> na::Vector3<f32> {
+        self.down_direction.cross(&self.view_direction)
     }
 }

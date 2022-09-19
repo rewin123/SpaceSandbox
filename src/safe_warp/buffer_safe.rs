@@ -11,7 +11,7 @@ pub struct BufferSafe {
     pub allocator : Arc<AllocatorSafe>,
     pub size_in_bytes: u64,
     buffer_usage: vk::BufferUsageFlags,
-    memory_usage: vk_mem::MemoryUsage,
+    memory_usage: vk_mem::MemoryUsage
 }
 
 impl BufferSafe {
@@ -69,6 +69,7 @@ impl Drop for BufferSafe {
     fn drop(&mut self) {
         info!("Destroy buffer");
         unsafe {
+
             self.allocator.destroy_buffer(self.buffer, &self.allocation);
         }
     }
