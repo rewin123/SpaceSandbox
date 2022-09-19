@@ -2,6 +2,7 @@
 name = "SpaceSandbox"
 version = "0.1.0"
 edition = "2021"
+default-run = "SpaceSandbox"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,4 +21,11 @@ vk-shader-macros = "0.2.2"
 vk-mem = "0.2.2"
 nalgebra = "0.31.1"
 nalgebra-glm = "0.17.0"
-raw-window-handle = "0.4.2"
+egui-winit-ash-integration = {path = "egui-winit-ash-integration"}
+gpu-allocator = "0.17.0"
+egui = "0.16.1"
+
+[workspace]
+members = [
+    "egui-winit-ash-integration"
+]

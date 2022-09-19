@@ -7,6 +7,7 @@ use ash::extensions::{ext::DebugUtils, khr::Surface};
 use ash::extensions::khr::Swapchain;
 use ash::vk::{DeviceQueueCreateInfo, Handle, PhysicalDevice, PhysicalDeviceProperties, RenderPass, SurfaceKHR, SwapchainKHR};
 
+
 use log::*;
 use simplelog::*;
 // use winit::window::Window;
@@ -21,6 +22,7 @@ pub mod debug_layer;
 pub mod vulkan_init_utils;
 pub mod example_pipeline;
 pub mod buffer_safe;
+pub mod gui;
 
 pub use swapchain_safe::*;
 pub use surface_safe::*;
@@ -29,6 +31,7 @@ pub use debug_layer::*;
 pub use vulkan_init_utils::*;
 use example_pipeline::*;
 pub use buffer_safe::*;
+pub use gui::*;
 
 pub struct GraphicBase {
     pub instance : Arc<InstanceSafe>,
@@ -43,7 +46,7 @@ pub struct GraphicBase {
 
     pub window : winit::window::Window,
     pub entry : Entry,
-    pub allocator : Arc<AllocatorSafe>
+    pub allocator : Arc<AllocatorSafe>,
 }
 
 impl GraphicBase {
@@ -98,6 +101,8 @@ impl GraphicBase {
             &device,
             &instance,
             &allocator);
+
+
 
 
         info!("Finished creating GraphicBase");
@@ -271,8 +276,8 @@ pub fn init_renderpass(
 }
 
 pub struct Pools {
-    commandpool_graphics: vk::CommandPool,
-    commandpool_transfer: vk::CommandPool,
+    pub commandpool_graphics: vk::CommandPool,
+    pub commandpool_transfer: vk::CommandPool,
     device : Arc<DeviceSafe>
 }
 
@@ -333,7 +338,7 @@ pub fn update_commandbuffer(
 ) -> Result<(), vk::Result> {
     let commandbuffer_begininfo = vk::CommandBufferBeginInfo::builder();
     unsafe {
-        logical_device.begin_command_buffer(commandbuffer, &commandbuffer_begininfo)?;
+        // logical_device.begin_command_buffer(commandbuffer, &commandbuffer_begininfo)?;
     }
     let clearvalues = [vk::ClearValue {
         color: vk::ClearColorValue {
@@ -380,7 +385,7 @@ pub fn update_commandbuffer(
         }
 
         logical_device.cmd_end_render_pass(commandbuffer);
-        logical_device.end_command_buffer(commandbuffer)?;
+        // logical_device.end_command_buffer(commandbuffer)?;
     }
 
     Ok(())
@@ -396,6 +401,9 @@ pub fn fill_commandbuffers(
     descriptor_sets : &[vk::DescriptorSet]
 ) -> Result<(), vk::Result> {
     for (i, &commandbuffer) in commandbuffers.iter().enumerate() {
+        unsafe {
+            logical_device.begin_command_buffer(commandbuffers[i], &vk::CommandBufferBeginInfo::builder());
+        }
         update_commandbuffer(commandbuffers[i],
             logical_device,
             renderpass,
@@ -404,6 +412,9 @@ pub fn fill_commandbuffers(
                              meshes,
             descriptor_sets,
             i);
+        unsafe {
+            logical_device.end_command_buffer(commandbuffers[i]);
+        }
     }
     Ok(())
 }

@@ -23,7 +23,9 @@ pub struct SwapchainSafe {
     pub depth_image_allocation_info: vk_mem::AllocationInfo,
     pub depth_imageview: vk::ImageView,
 
-    pub allocator : Arc<AllocatorSafe>
+    pub allocator : Arc<AllocatorSafe>,
+
+    pub format : vk::SurfaceFormatKHR
 }
 
 impl SwapchainSafe {
@@ -48,6 +50,8 @@ impl SwapchainSafe {
             surface.loader.get_physical_device_surface_formats(
                 physical_device, surface.inner).unwrap()
         };
+
+        let format = surface_formats.first().unwrap().clone();
 
         info!("Creating swapchain!");
         let queuefamilies = [qfamindices.graphics_q_index];
@@ -168,7 +172,8 @@ impl SwapchainSafe {
             depth_imageview,
             depth_image_allocation,
             depth_image_allocation_info,
-            allocator : allocator.clone()
+            allocator : allocator.clone(),
+            format
         }
     }
 
