@@ -23,6 +23,7 @@ pub mod gui;
 pub mod camera;
 pub mod grayscale_pipeline;
 pub mod graphic_base;
+pub mod runtime_gpu_assets;
 
 pub use debug_layer::*;
 pub use vulkan_init_utils::*;
@@ -32,6 +33,7 @@ pub use camera::*;
 pub use safe_warp::*;
 pub use grayscale_pipeline::*;
 pub use graphic_base::*;
+pub use runtime_gpu_assets::*;
 
 pub struct AllocatorSafe {
     pub inner : vk_mem::Allocator

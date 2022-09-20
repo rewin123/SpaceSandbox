@@ -1,12 +1,30 @@
+use std::sync::Arc;
 use ash::vk;
 use ash::vk::{DescriptorSet, Framebuffer};
-use crate::{ExamplePipeline, GPUMesh, GraphicBase, init_renderpass, RenderCamera, RenderPassSafe, SwapchainSafe};
+use log::info;
+use crate::{AllocatorSafe, DeviceSafe, ExamplePipeline, GPUMesh, GraphicBase, init_renderpass, RenderCamera, RenderPassSafe, SwapchainSafe};
 
 pub struct GrayscalePipeline {
     pipeline : ExamplePipeline,
     descriptor_sets : Vec<DescriptorSet>,
     framebuffers : Vec<Framebuffer>,
-    renderpass : RenderPassSafe
+    renderpass : RenderPassSafe,
+    device : Arc<DeviceSafe>,
+    allocator : Arc<AllocatorSafe>,
+    descriptor_pool : vk::DescriptorPool
+}
+
+impl Drop for GrayscalePipeline {
+    fn drop(&mut self) {
+        unsafe {
+            info!("Destroying grayscale pipeline...");
+            self.device.device_wait_idle();
+            for fb in &self.framebuffers {
+                self.device.destroy_framebuffer(*fb, None);
+            }
+            self.device.destroy_descriptor_pool(self.descriptor_pool, None);
+        }
+    }
 }
 
 impl GrayscalePipeline {
@@ -66,7 +84,10 @@ impl GrayscalePipeline {
             pipeline,
             descriptor_sets,
             framebuffers,
-            renderpass
+            renderpass,
+            device : graphic_base.device.clone(),
+            allocator : graphic_base.allocator.clone(),
+            descriptor_pool
         })
     }
 

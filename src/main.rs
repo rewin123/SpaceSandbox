@@ -35,6 +35,18 @@ fn main() {
 
     let mut gray_draw = GrayscalePipeline::new(&graphic_base, &camera).unwrap();
 
+    // let sponza = gltf::Gltf::open("res/test_res/models/sponza/glTF/Sponza.gltf").unwrap();
+    // for m in sponza.meshes() {
+    //     for p in m.primitives() {
+    //         for att in p.attributes() {
+    //             match  { }
+    //         }
+    //     }
+    // }
+
+
+
+
     info!("Tomokitty loading...");
     let mut scene = load_gray_obj_now(
         &graphic_base,
