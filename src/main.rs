@@ -229,16 +229,20 @@ fn main() {
                         _ => {}
                     }
 
+                    move_vector *= 0.1f32;
                     let frw = camera.view_direction;
                     let up = -camera.down_direction;
                     let right = camera.get_right_vector();
-                    let dist = camera.position.magnitude();
+                    let mut dist = camera.position.magnitude();
+                    dist += move_vector.z * dist;
 
                     let dp : nalgebra::Vector3<f32> = move_vector.x * right + up.scale( move_vector.y) + frw.scale(move_vector.z);
-                    camera.position = camera.position + dp;
+                    camera.position = camera.position + dp * dist;
                     camera.position = camera.position.normalize().scale(dist);
                     camera.view_direction = -camera.position.normalize();
                     camera.down_direction = camera.view_direction.cross(&right);
+
+                    info!("{:#?}", camera.position);
                 }
             }
             Event::RedrawRequested(_) => {

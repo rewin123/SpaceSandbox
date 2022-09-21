@@ -72,7 +72,7 @@ impl Default for Camera {
             fovy : std::f32::consts::FRAC_PI_3,
             aspect : 800.0 / 600.0,
             near : 0.1,
-            far : 1000.0,
+            far : 10000.0,
             projectionmatrix : na::Matrix4::identity()
         };
         camera.update_viewmatrix();

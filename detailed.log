@@ -1,80 +1,80 @@
-14:42:17 [INFO] Guessed window scale factor: 1
-14:42:17 [DEBUG] (1) winit::platform_impl::platform::x11::window: Calculated physical dimensions: 800x600
-14:42:17 [INFO] Created window
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for layer manifest files"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   In following folders:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.config/vulkan/implicit_layer.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/xdg/vulkan/implicit_layer.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/implicit_layer.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.local/share/vulkan/implicit_layer.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/local/share/vulkan/implicit_layer.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/implicit_layer.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   Found the following files:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/implicit_layer.d/renderdoc_capture.json"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/implicit_layer.d/nvidia_layers.json"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found manifest file /etc/vulkan/implicit_layer.d/renderdoc_capture.json (file version \"1.1.2\")"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Layer \"VK_LAYER_RENDERDOC_Capture\" using deprecated \'vkGetInstanceProcAddr\' tag which was deprecated starting with JSON file version 1.1.0. The new vkNegotiateLoaderLayerInterfaceVersion function is preferred, though for compatibility reasons it may be desirable to continue using the deprecated tag."
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Layer \"VK_LAYER_RENDERDOC_Capture\" using deprecated \'vkGetDeviceProcAddr\' tag which was deprecated starting with JSON file version 1.1.0. The new vkNegotiateLoaderLayerInterfaceVersion function is preferred, though for compatibility reasons it may be desirable to continue using the deprecated tag."
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found manifest file /usr/share/vulkan/implicit_layer.d/nvidia_layers.json (file version \"1.0.0\")"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for layer manifest files"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   In following folders:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.config/vulkan/explicit_layer.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/xdg/vulkan/explicit_layer.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/explicit_layer.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.local/share/vulkan/explicit_layer.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/local/share/vulkan/explicit_layer.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/explicit_layer.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   Found the following files:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found manifest file /usr/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json (file version \"1.2.0\")"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for driver manifest files"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   In following folders:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.config/vulkan/icd.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/xdg/vulkan/icd.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/icd.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.local/share/vulkan/icd.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/local/share/vulkan/icd.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/icd.d"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   Found the following files:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/icd.d/nvidia_icd.json"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found ICD manifest file /usr/share/vulkan/icd.d/nvidia_icd.json, version \"1.0.0\""
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for ICD drivers named libGLX_nvidia.so.0"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Build ICD instance extension list"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Loading layer library libVkLayer_khronos_validation.so"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Insert instance layer VK_LAYER_KHRONOS_validation (libVkLayer_khronos_validation.so)"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Build ICD instance extension list"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [validation] "Validation Information: [ UNASSIGNED-khronos-validation-createinstance-status-message ] Object 0: handle = 0x5614deda8f60, type = VK_OBJECT_TYPE_INSTANCE; | MessageID = 0xd7fa5f44 | Khronos Validation Layer Active:\n    Settings File: None. Default location is /home/rewin/projects/SpaceSandbox\\vk_layer_settings.txt.\n    Current Enables: None.\n    Current Disables: None.\n"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Copying old device 0 into new device 0"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Copying old device 0 into new device 0"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Copying old device 0 into new device 0"
-14:42:17 [INFO] Vulkan device: NVIDIA TITAN Xp
-14:42:17 [INFO] Selected device: NVIDIA TITAN Xp
-14:42:17 [INFO] Found graphic queue!
-14:42:17 [INFO] Found transfer queue!
-14:42:17 [INFO] Found transfer queue!
-14:42:17 [INFO] Found transfer queue!
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Loading layer library libVkLayer_khronos_validation.so"
-14:42:17 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Inserted device layer VK_LAYER_KHRONOS_validation (libVkLayer_khronos_validation.so)"
-14:42:17 [INFO] Creating allocator create info...
-14:42:17 [INFO] Creating allocator...
-14:42:17 [INFO] Creating swapchain!
-14:42:17 [DEBUG] (1) SpaceSandbox::safe_warp::swapchain_safe: SwapchainCreateInfoKHR {
+14:51:30 [INFO] Guessed window scale factor: 1
+14:51:30 [DEBUG] (1) winit::platform_impl::platform::x11::window: Calculated physical dimensions: 800x600
+14:51:30 [INFO] Created window
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for layer manifest files"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   In following folders:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.config/vulkan/implicit_layer.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/xdg/vulkan/implicit_layer.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/implicit_layer.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.local/share/vulkan/implicit_layer.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/local/share/vulkan/implicit_layer.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/implicit_layer.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   Found the following files:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/implicit_layer.d/renderdoc_capture.json"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/implicit_layer.d/nvidia_layers.json"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found manifest file /etc/vulkan/implicit_layer.d/renderdoc_capture.json (file version \"1.1.2\")"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Layer \"VK_LAYER_RENDERDOC_Capture\" using deprecated \'vkGetInstanceProcAddr\' tag which was deprecated starting with JSON file version 1.1.0. The new vkNegotiateLoaderLayerInterfaceVersion function is preferred, though for compatibility reasons it may be desirable to continue using the deprecated tag."
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Layer \"VK_LAYER_RENDERDOC_Capture\" using deprecated \'vkGetDeviceProcAddr\' tag which was deprecated starting with JSON file version 1.1.0. The new vkNegotiateLoaderLayerInterfaceVersion function is preferred, though for compatibility reasons it may be desirable to continue using the deprecated tag."
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found manifest file /usr/share/vulkan/implicit_layer.d/nvidia_layers.json (file version \"1.0.0\")"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for layer manifest files"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   In following folders:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.config/vulkan/explicit_layer.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/xdg/vulkan/explicit_layer.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/explicit_layer.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.local/share/vulkan/explicit_layer.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/local/share/vulkan/explicit_layer.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/explicit_layer.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   Found the following files:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found manifest file /usr/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json (file version \"1.2.0\")"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for driver manifest files"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   In following folders:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.config/vulkan/icd.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/xdg/vulkan/icd.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /etc/vulkan/icd.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /home/rewin/.local/share/vulkan/icd.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/local/share/vulkan/icd.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/icd.d"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "   Found the following files:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "      /usr/share/vulkan/icd.d/nvidia_icd.json"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Found ICD manifest file /usr/share/vulkan/icd.d/nvidia_icd.json, version \"1.0.0\""
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Searching for ICD drivers named libGLX_nvidia.so.0"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Build ICD instance extension list"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Loading layer library libVkLayer_khronos_validation.so"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Insert instance layer VK_LAYER_KHRONOS_validation (libVkLayer_khronos_validation.so)"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Build ICD instance extension list"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [validation] "Validation Information: [ UNASSIGNED-khronos-validation-createinstance-status-message ] Object 0: handle = 0x55b7fa577990, type = VK_OBJECT_TYPE_INSTANCE; | MessageID = 0xd7fa5f44 | Khronos Validation Layer Active:\n    Settings File: None. Default location is /home/rewin/projects/SpaceSandbox\\vk_layer_settings.txt.\n    Current Enables: None.\n    Current Disables: None.\n"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Copying old device 0 into new device 0"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Copying old device 0 into new device 0"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Original order:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "linux_read_sorted_physical_devices:  Order set to:"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "           [0] NVIDIA TITAN Xp  "
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Copying old device 0 into new device 0"
+14:51:30 [INFO] Vulkan device: NVIDIA TITAN Xp
+14:51:30 [INFO] Selected device: NVIDIA TITAN Xp
+14:51:30 [INFO] Found graphic queue!
+14:51:30 [INFO] Found transfer queue!
+14:51:30 [INFO] Found transfer queue!
+14:51:30 [INFO] Found transfer queue!
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Loading layer library libVkLayer_khronos_validation.so"
+14:51:30 [DEBUG] (1) SpaceSandbox::debug_layer: [general] "Inserted device layer VK_LAYER_KHRONOS_validation (libVkLayer_khronos_validation.so)"
+14:51:30 [INFO] Creating allocator create info...
+14:51:30 [INFO] Creating allocator...
+14:51:30 [INFO] Creating swapchain!
+14:51:30 [DEBUG] (1) SpaceSandbox::safe_warp::swapchain_safe: SwapchainCreateInfoKHR {
     s_type: SWAPCHAIN_CREATE_INFO_KHR,
     p_next: 0x0000000000000000,
     flags: ,
@@ -83,546 +83,987 @@
     image_format: B8G8R8A8_UNORM,
     image_color_space: SRGB_NONLINEAR,
     image_extent: Extent2D {
-        width: 636,
+        width: 956,
         height: 1040,
     },
     image_array_layers: 1,
     image_usage: COLOR_ATTACHMENT,
     image_sharing_mode: EXCLUSIVE,
     queue_family_index_count: 1,
-    p_queue_family_indices: 0x00007ffd6f73a7d4,
+    p_queue_family_indices: 0x00007ffd21e18a24,
     pre_transform: IDENTITY,
     composite_alpha: OPAQUE,
     present_mode: FIFO,
     clipped: 0,
     old_swapchain: 0x0,
 }
-14:42:17 [INFO] Finished creating GraphicBase
-14:42:17 [INFO] Loading buffer Sponza.bin ...
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 9525 positions and 9525 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 1599 positions and 1599 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 3693 positions and 3693 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 2259 positions and 2259 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 384 positions and 384 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 1680 positions and 1680 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 5592 positions and 5592 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 5124 positions and 5124 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 9576 positions and 9576 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 48 positions and 48 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 5592 positions and 5592 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 3516 positions and 3516 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 19104 positions and 19104 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 648 positions and 648 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 636 positions and 636 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 414 positions and 414 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 378 positions and 378 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 366 positions and 366 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 378 positions and 378 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 366 positions and 366 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 378 positions and 378 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 366 positions and 366 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 378 positions and 378 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 366 positions and 366 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 378 positions and 378 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 366 positions and 366 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 378 positions and 378 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 366 positions and 366 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 378 positions and 378 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 366 positions and 366 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 378 positions and 378 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 366 positions and 366 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 378 positions and 378 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 366 positions and 366 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 2640 positions and 2640 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 168 positions and 168 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 1680 positions and 1680 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 198 positions and 198 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 942 positions and 942 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 144 positions and 144 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 294 positions and 294 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 144 positions and 144 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 2064 positions and 2064 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 276 positions and 276 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 17712 positions and 17712 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 276 positions and 276 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 21 positions and 21 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 5472 positions and 5472 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 11292 positions and 11292 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 69114 positions and 69114 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 108 positions and 108 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 360 positions and 360 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 11856 positions and 11856 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 62961 positions and 62961 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 9780 positions and 9780 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 9780 positions and 9780 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 9780 positions and 9780 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 9780 positions and 9780 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 9780 positions and 9780 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 9780 positions and 9780 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 9780 positions and 9780 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 9780 positions and 9780 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 25020 positions and 25020 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 7845 positions and 7845 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 7527 positions and 7527 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 7845 positions and 7845 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 7845 positions and 7845 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 7527 positions and 7527 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 7845 positions and 7845 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 7527 positions and 7527 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 7845 positions and 7845 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 7527 positions and 7527 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 7845 positions and 7845 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 48 positions and 48 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 8871 positions and 8871 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 48 positions and 48 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 8871 positions and 8871 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 48 positions and 48 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 8871 positions and 8871 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 48 positions and 48 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 8871 positions and 8871 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 1599 positions and 1599 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 3693 positions and 3693 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 1599 positions and 1599 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 3693 positions and 3693 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 1599 positions and 1599 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 3693 positions and 3693 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 1350 positions and 1350 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 3693 positions and 3693 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 1350 positions and 1350 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 3693 positions and 3693 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 1350 positions and 1350 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 3693 positions and 3693 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 1350 positions and 1350 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 3693 positions and 3693 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 15924 positions and 15924 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 2598 positions and 2598 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 2259 positions and 2259 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 2598 positions and 2598 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 2259 positions and 2259 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 150 positions and 150 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 35670 positions and 35670 normals
-14:42:17 [INFO] ind: U16
-14:42:17 [INFO] Loaded mesh with 60 positions and 60 normals
-14:42:17 [INFO] Finish loading
-14:43:17 [INFO] Finishing.....
-14:43:17 [INFO] Destroying egui wrapper.....
-14:43:17 [INFO] Destroy GraphicBase
-14:43:17 [INFO] Destroy debug layer
-14:43:17 [INFO] Destroying swapchain
-14:43:17 [INFO] Destroy surface
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
-14:43:17 [INFO] Destroying grayscale pipeline...
-14:43:17 [INFO] Destroy pipeline
-14:43:17 [INFO] Destroy RenderPass
-14:43:17 [INFO] Destroy allocator
+14:51:30 [INFO] Finished creating GraphicBase
+14:51:30 [INFO] Loading buffer Sponza.bin ...
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 9525 positions and 9525 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 1599 positions and 1599 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 3693 positions and 3693 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 2259 positions and 2259 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 384 positions and 384 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 1680 positions and 1680 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 5592 positions and 5592 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 5124 positions and 5124 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 9576 positions and 9576 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 48 positions and 48 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 5592 positions and 5592 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 3516 positions and 3516 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 19104 positions and 19104 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 648 positions and 648 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 636 positions and 636 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 414 positions and 414 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 378 positions and 378 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 366 positions and 366 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 378 positions and 378 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 366 positions and 366 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 378 positions and 378 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 366 positions and 366 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 378 positions and 378 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 366 positions and 366 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 378 positions and 378 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 366 positions and 366 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 378 positions and 378 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 366 positions and 366 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 378 positions and 378 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 366 positions and 366 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 378 positions and 378 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 366 positions and 366 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 378 positions and 378 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 366 positions and 366 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 2640 positions and 2640 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 168 positions and 168 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 1680 positions and 1680 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 198 positions and 198 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 942 positions and 942 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 144 positions and 144 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 294 positions and 294 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 144 positions and 144 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 2064 positions and 2064 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 276 positions and 276 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 17712 positions and 17712 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 276 positions and 276 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 21 positions and 21 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 5472 positions and 5472 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 11292 positions and 11292 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 69114 positions and 69114 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 108 positions and 108 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 360 positions and 360 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 11856 positions and 11856 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 62961 positions and 62961 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 9780 positions and 9780 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 9780 positions and 9780 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 9780 positions and 9780 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 9780 positions and 9780 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 9780 positions and 9780 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 9780 positions and 9780 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 9780 positions and 9780 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 9780 positions and 9780 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 25020 positions and 25020 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 7845 positions and 7845 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 7527 positions and 7527 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 7845 positions and 7845 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 7845 positions and 7845 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 7527 positions and 7527 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 7845 positions and 7845 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 7527 positions and 7527 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 7845 positions and 7845 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 7527 positions and 7527 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 7845 positions and 7845 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 48 positions and 48 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 8871 positions and 8871 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 48 positions and 48 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 8871 positions and 8871 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 48 positions and 48 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 8871 positions and 8871 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 48 positions and 48 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 8871 positions and 8871 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 1599 positions and 1599 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 3693 positions and 3693 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 1599 positions and 1599 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 3693 positions and 3693 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 1599 positions and 1599 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 3693 positions and 3693 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 1350 positions and 1350 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 3693 positions and 3693 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 1350 positions and 1350 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 3693 positions and 3693 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 1350 positions and 1350 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 3693 positions and 3693 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 1350 positions and 1350 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 3693 positions and 3693 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 15924 positions and 15924 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 2598 positions and 2598 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 2259 positions and 2259 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 2598 positions and 2598 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 2259 positions and 2259 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 150 positions and 150 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 35670 positions and 35670 normals
+14:51:30 [INFO] ind: U16
+14:51:30 [INFO] Loaded mesh with 60 positions and 60 normals
+14:51:30 [INFO] Finish loading
+14:51:42 [INFO] [
+    [
+        10.256611,
+        24.875933,
+        -99.50373,
+    ],
+]
+14:51:43 [INFO] [
+    [
+        20.361765,
+        24.507383,
+        -98.02953,
+    ],
+]
+14:51:43 [INFO] [
+    [
+        30.219091,
+        23.901525,
+        -95.6061,
+    ],
+]
+14:51:43 [INFO] [
+    [
+        39.736935,
+        23.067648,
+        -92.27059,
+    ],
+]
+14:51:43 [INFO] [
+    [
+        48.82908,
+        22.017002,
+        -88.06801,
+    ],
+]
+14:51:43 [INFO] [
+    [
+        57.41539,
+        20.762629,
+        -83.050514,
+    ],
+]
+14:51:44 [INFO] [
+    [
+        65.42236,
+        19.319172,
+        -77.27669,
+    ],
+]
+14:51:44 [INFO] [
+    [
+        72.78358,
+        17.702696,
+        -70.81078,
+    ],
+]
+14:51:44 [INFO] [
+    [
+        79.440125,
+        15.930491,
+        -63.721966,
+    ],
+]
+14:51:44 [INFO] [
+    [
+        85.34084,
+        14.020871,
+        -56.083485,
+    ],
+]
+14:51:44 [INFO] [
+    [
+        90.4426,
+        11.992985,
+        -47.97194,
+    ],
+]
+14:51:44 [INFO] [
+    [
+        94.71036,
+        9.86661,
+        -39.46644,
+    ],
+]
+14:51:45 [INFO] [
+    [
+        98.1173,
+        7.6619587,
+        -30.647835,
+    ],
+]
+14:51:45 [INFO] [
+    [
+        100.64479,
+        5.399492,
+        -21.597967,
+    ],
+]
+14:51:45 [INFO] [
+    [
+        102.28226,
+        3.0997252,
+        -12.398901,
+    ],
+]
+14:51:45 [INFO] [
+    [
+        101.84043,
+        12.371102,
+        -10.024149,
+    ],
+]
+14:51:45 [INFO] [
+    [
+        100.51877,
+        21.5356,
+        -7.562796,
+    ],
+]
+14:51:46 [INFO] [
+    [
+        98.3287,
+        30.51405,
+        -5.036105,
+    ],
+]
+14:51:46 [INFO] [
+    [
+        99.09059,
+        28.078957,
+        4.1987715,
+    ],
+]
+14:51:46 [INFO] [
+    [
+        98.99864,
+        25.413267,
+        13.358058,
+    ],
+]
+14:51:47 [INFO] [
+    [
+        99.092,
+        28.068098,
+        4.2379065,
+    ],
+]
+14:51:47 [INFO] [
+    [
+        89.18281,
+        25.261288,
+        3.814116,
+    ],
+]
+14:51:48 [INFO] [
+    [
+        80.264534,
+        22.73516,
+        3.4327044,
+    ],
+]
+14:51:48 [INFO] [
+    [
+        88.29099,
+        25.008678,
+        3.7759752,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        97.120094,
+        27.509548,
+        4.1535726,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        106.8321,
+        30.260504,
+        4.56893,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        117.51531,
+        33.286556,
+        5.025824,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        129.26685,
+        36.61521,
+        5.5284066,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        142.19354,
+        40.276737,
+        6.0812473,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        156.41289,
+        44.30441,
+        6.6893716,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        172.05417,
+        48.734844,
+        7.3583083,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        189.25958,
+        53.60833,
+        8.094139,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        208.18553,
+        58.96917,
+        8.903554,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        229.00409,
+        64.86609,
+        9.793909,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        251.9045,
+        71.3527,
+        10.7733,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        277.0949,
+        78.48796,
+        11.850629,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        304.80438,
+        86.33675,
+        13.03569,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        335.28482,
+        94.97043,
+        14.339259,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        368.8133,
+        104.46746,
+        15.773185,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        405.69464,
+        114.9142,
+        17.350504,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        446.2641,
+        126.40561,
+        19.085554,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        490.89053,
+        139.04617,
+        20.994108,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        539.97955,
+        152.95079,
+        23.093521,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        593.97754,
+        168.24588,
+        25.402876,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        653.37524,
+        185.07045,
+        27.943163,
+    ],
+]
+14:51:49 [INFO] [
+    [
+        718.7128,
+        203.57751,
+        30.73748,
+    ],
+]
+14:51:50 [INFO] [
+    [
+        734.4113,
+        139.36975,
+        12.358692,
+    ],
+]
+14:51:50 [INFO] [
+    [
+        743.9253,
+        73.98836,
+        -6.124166,
+    ],
+]
+14:51:51 [INFO] [
+    [
+        734.41125,
+        139.36974,
+        12.35869,
+    ],
+]
+14:51:51 [INFO] [
+    [
+        807.8524,
+        153.30672,
+        13.59456,
+    ],
+]
+14:51:52 [INFO] [
+    [
+        888.6377,
+        168.63739,
+        14.954017,
+    ],
+]
+14:51:52 [INFO] [
+    [
+        977.5015,
+        185.50113,
+        16.449417,
+    ],
+]
+14:51:52 [INFO] [
+    [
+        1075.2518,
+        204.05127,
+        18.09436,
+    ],
+]
+14:51:52 [INFO] [
+    [
+        1182.7769,
+        224.45638,
+        19.903795,
+    ],
+]
+14:51:52 [INFO] [
+    [
+        1301.0547,
+        246.90202,
+        21.894176,
+    ],
+]
+14:51:53 [INFO] [
+    [
+        1170.9492,
+        222.2118,
+        19.70476,
+    ],
+]
+14:51:54 [INFO] [
+    [
+        1145.9194,
+        324.585,
+        49.00799,
+    ],
+]
+14:51:54 [INFO] [
+    [
+        1170.9493,
+        222.2118,
+        19.704752,
+    ],
+]
+14:51:55 [INFO] [
+    [
+        1186.1185,
+        117.96735,
+        -9.764425,
+    ],
+]
+14:51:55 [INFO] [
+    [
+        1170.9495,
+        222.21184,
+        19.704756,
+    ],
+]
+14:51:57 [INFO] [
+    [
+        1170.9495,
+        222.21184,
+        19.704758,
+    ],
+]
+14:51:57 [INFO] [
+    [
+        1170.9495,
+        222.21184,
+        19.704758,
+    ],
+]
+14:52:09 [INFO] [
+    [
+        1170.9495,
+        222.21184,
+        19.704758,
+    ],
+]
+14:52:09 [INFO] Finishing.....
+14:52:09 [INFO] Destroying egui wrapper.....
+14:52:09 [INFO] Destroy GraphicBase
+14:52:09 [INFO] Destroy debug layer
+14:52:09 [INFO] Destroying swapchain
+14:52:09 [INFO] Destroy surface
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [DEBUG] (1) SpaceSandbox::safe_warp::buffer_safe: Destroy buffer
+14:52:09 [INFO] Destroying grayscale pipeline...
+14:52:09 [INFO] Destroy pipeline
+14:52:09 [INFO] Destroy RenderPass
+14:52:09 [INFO] Destroy allocator
