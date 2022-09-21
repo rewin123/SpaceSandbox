@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::sync::Arc;
 use ash::vk;
-use log::info;
+use log::{debug, info};
 use crate::AllocatorSafe;
 
 pub struct BufferSafe {
@@ -67,9 +67,8 @@ impl BufferSafe {
 
 impl Drop for BufferSafe {
     fn drop(&mut self) {
-        info!("Destroy buffer");
+        debug!("Destroy buffer");
         unsafe {
-
             self.allocator.destroy_buffer(self.buffer, &self.allocation);
         }
     }

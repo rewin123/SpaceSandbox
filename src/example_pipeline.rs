@@ -55,7 +55,7 @@ impl ExamplePipeline {
             binding: 0,
             location: 0,
             offset: 0,
-            format: vk::Format::R32G32B32A32_SFLOAT,
+            format: vk::Format::R32G32B32_SFLOAT,
         },
         vk::VertexInputAttributeDescription {
             binding: 1,
@@ -66,7 +66,7 @@ impl ExamplePipeline {
 
         let vertex_binding_descs = [vk::VertexInputBindingDescription {
             binding: 0,
-            stride: 16,
+            stride: 4 * 3,
             input_rate: vk::VertexInputRate::VERTEX,
         },
         vk::VertexInputBindingDescription {

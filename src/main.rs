@@ -1,16 +1,24 @@
 use std::fs::File;
+use std::io::Read;
 use std::ops::Deref;
 use std::os::raw::c_char;
 use std::sync::Arc;
 use ash::{Device, Entry, Instance, vk};
 use ash::extensions::{ext::DebugUtils, khr::Surface};
 use ash::extensions::khr::Swapchain;
-use ash::vk::{CommandBuffer, DeviceQueueCreateInfo, Handle, PhysicalDevice, PhysicalDeviceProperties, SurfaceKHR, SwapchainKHR};
+use ash::vk::{BufferUsageFlags, CommandBuffer, DeviceQueueCreateInfo, Handle, PhysicalDevice, PhysicalDeviceProperties, SurfaceKHR, SwapchainKHR};
+use byteorder::ByteOrder;
+use gltf::{Attribute, Semantic};
+use gltf::accessor::DataType;
+use gltf::buffer::{Source, Target};
+use gltf::json::accessor::ComponentType;
 
 
 use log::*;
+use nalgebra::inf;
 use simplelog::*;
 use tobj::LoadError;
+use vk_mem::MemoryUsage;
 use winit::platform::unix::WindowExtUnix;
 use winit::window::Window;
 
@@ -35,22 +43,122 @@ fn main() {
 
     let mut gray_draw = GrayscalePipeline::new(&graphic_base, &camera).unwrap();
 
-    // let sponza = gltf::Gltf::open("res/test_res/models/sponza/glTF/Sponza.gltf").unwrap();
-    // for m in sponza.meshes() {
-    //     for p in m.primitives() {
-    //         for att in p.attributes() {
-    //             match  { }
-    //         }
-    //     }
-    // }
+    let mut scene : Vec<GPUMesh> = vec![];
+
+    let sponza = gltf::Gltf::open("res/test_res/models/sponza/glTF/Sponza.gltf").unwrap();
+    let base = "res/test_res/models/sponza/glTF";
+
+    let mut buffers = vec![];
+    for buf in sponza.buffers() {
+        match buf.source() {
+            Source::Bin => {
+                error!("Bin buffer not supported!");
+            }
+            Source::Uri(uri) => {
+                info!("Loading buffer {} ...", uri);
+                let mut f = std::fs::File::open(format!("{}/{}", &base, uri)).unwrap();
+                let metadata = std::fs::metadata(&format!("{}/{}", &base, uri)).unwrap();
+                let mut byte_buffer = vec![0; metadata.len() as usize];
+                f.read(&mut byte_buffer).unwrap();
+                buffers.push(byte_buffer);
+            }
+        }
+    }
+
+    for m in sponza.meshes() {
+        for p in m.primitives() {
+            let mut pos : Vec<f32> = vec![];
+            let mut normals : Vec<f32> = vec![];
+
+            let indices_acc = p.indices().unwrap();
+            let indices_view = indices_acc.view().unwrap();
+            let mut indices;
+
+            info!("ind: {:?}", indices_acc.data_type());
+
+            match indices_acc.data_type() {
+                ComponentType::U16 => {
+                    indices = vec![0; indices_view.length() / 2];
+                    let buf = &buffers[indices_view.buffer().index()];
+                    for idx in 0..indices.len() {
+                        let global_idx = idx * indices_view.stride().unwrap_or(2) + indices_view.offset();
+                        indices[idx] = byteorder::LittleEndian::read_u16(&buf[global_idx..(global_idx + 2)]) as u32;
+                    }
+                }
+                _ => {panic!("Unsupported index type!");}
+            }
 
 
 
+            for (sem, acc) in p.attributes() {
+                // match  { }
+                let view = acc.view().unwrap();
+                let mut data = vec![0.0f32; view.length() / 4];
 
-    info!("Tomokitty loading...");
-    let mut scene = load_gray_obj_now(
-        &graphic_base,
-        String::from("res/test_res/models/tomokitty/sculpt.obj")).unwrap();
+                let buf = &buffers[view.buffer().index()];
+
+                for idx in 0..data.len() {
+                    let global_idx = idx * view.stride().unwrap_or(4) + view.offset();
+                    data[idx] = byteorder::LittleEndian::read_f32(&buf[global_idx..(global_idx+4)]);
+                }
+
+                match sem {
+                    Semantic::Positions => {
+                        pos.extend(data.iter());
+
+                    }
+                    Semantic::Normals => {
+                        normals.extend(data.iter());
+                    }
+                    Semantic::Tangents => {}
+                    Semantic::Colors(_) => {}
+                    Semantic::TexCoords(_) => {}
+                    Semantic::Joints(_) => {}
+                    Semantic::Weights(_) => {}
+                    _ => {}
+                }
+            }
+            info!("Loaded mesh with {} positions and {} normals", pos.len(), normals.len());
+
+            let mut pos_buffer = BufferSafe::new(
+                &graphic_base.allocator,
+                pos.len() as u64 * 4,
+                    BufferUsageFlags::VERTEX_BUFFER,
+            MemoryUsage::CpuToGpu).unwrap();
+            let mut normal_buffer = BufferSafe::new(
+                &graphic_base.allocator,
+                pos.len() as u64 * 4,
+                BufferUsageFlags::VERTEX_BUFFER,
+                MemoryUsage::CpuToGpu).unwrap();
+            let mut index_buffer = BufferSafe::new(
+                &graphic_base.allocator,
+                indices.len() as u64 * 4,
+                BufferUsageFlags::INDEX_BUFFER,
+                MemoryUsage::CpuToGpu
+            ).unwrap();
+
+            pos_buffer.fill(&pos).unwrap();
+            normal_buffer.fill(&normals).unwrap();
+            index_buffer.fill(&indices).unwrap();
+
+            let mesh = GPUMesh {
+                pos_data: pos_buffer,
+                normal_data: normal_buffer,
+                index_data: index_buffer,
+                vertex_count: indices.len() as u32,
+                name: "".to_string()
+            };
+
+            scene.push(mesh);
+            // break;
+        }
+    }
+
+    info!("Finish loading");
+
+    unsafe {
+        graphic_base.device.device_wait_idle().unwrap();
+    }
 
     let pools = Pools::init(
         &graphic_base.device,
@@ -135,6 +243,7 @@ fn main() {
             }
             Event::RedrawRequested(_) => {
                 //render here (later)
+                // info!("Start frame!");
                 let image_index = graphic_base.next_frame();
 
                 unsafe {
@@ -189,6 +298,11 @@ fn main() {
                     }
 
                     graphic_base.end_frame(&command_buffers, image_index);
+
+                    unsafe {
+                        // info!("Wait device");
+                        // graphic_base.device.device_wait_idle().unwrap();
+                    }
                 };
             }
             _ => {}

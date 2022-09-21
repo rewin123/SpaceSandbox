@@ -25,6 +25,7 @@ egui-winit-ash-integration = {path = "egui-winit-ash-integration"}
 gpu-allocator = "0.17.0"
 egui = "0.16.1"
 gltf = "1.0.0"
+byteorder = "1.4.3"
 
 [workspace]
 members = [
