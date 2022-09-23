@@ -2,6 +2,7 @@ use ash::vk;
 use ash::vk::{Framebuffer, Image, ImageView};
 use log::info;
 use crate::*;
+use std::default::Default;
 
 pub struct SwapchainSafe {
     pub inner : SwapchainKHR,
@@ -133,6 +134,7 @@ impl SwapchainSafe {
             .usage(vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT)
             .sharing_mode(vk::SharingMode::EXCLUSIVE)
             .queue_family_indices(&queuefamilies);
+
         let allocation_info = vk_mem::AllocationCreateInfo {
             usage: vk_mem::MemoryUsage::GpuOnly,
             ..Default::default()

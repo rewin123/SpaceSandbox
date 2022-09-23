@@ -53,6 +53,8 @@ pub unsafe extern "system" fn vulkan_debug_utils_callback(
     let ty = format!("{:?}", message_type).to_lowercase();
     if severity == "info" || severity == "verbose" {
         log::debug!("[{}] {:?}", ty, message);
+    } else if severity == "warning" {
+        log::warn!("[{}] {:?}", ty, message);
     } else {
         log::error!("[{}][{}] {:?}", severity, ty, message);
     }

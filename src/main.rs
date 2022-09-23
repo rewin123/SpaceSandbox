@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::fs::File;
 use std::io::Read;
 use std::ops::Deref;
@@ -8,6 +9,7 @@ use ash::extensions::{ext::DebugUtils, khr::Surface};
 use ash::extensions::khr::Swapchain;
 use ash::vk::{BufferUsageFlags, CommandBuffer, DeviceQueueCreateInfo, Handle, PhysicalDevice, PhysicalDeviceProperties, SurfaceKHR, SwapchainKHR};
 use byteorder::ByteOrder;
+use egui::panel::TopBottomSide;
 use gltf::{Attribute, Semantic};
 use gltf::accessor::DataType;
 use gltf::buffer::{Source, Target};
@@ -24,6 +26,7 @@ use winit::window::Window;
 
 use SpaceSandbox::*;
 use SpaceSandbox::example_pipeline::ExamplePipeline;
+use SpaceSandbox::render_server::Model;
 
 // for time measure wolfpld/tracy
 
@@ -41,9 +44,14 @@ fn main() {
     camera.aspect = (graphic_base.swapchain.extent.width as f32) / (graphic_base.swapchain.extent.height as f32);
     camera.update_projectionmatrix();
 
-    let mut gray_draw = GrayscalePipeline::new(&graphic_base, &camera).unwrap();
+    let mut gray_draw = SingleTexturePipeline::new(&graphic_base, &camera).unwrap();
 
-    let mut scene : Vec<GPUMesh> = vec![];
+    let pools = Pools::init(
+        &graphic_base.device,
+        &graphic_base.queue_families
+    ).unwrap();
+
+    let mut scene : Vec<RenderModel> = vec![];
 
     let sponza = gltf::Gltf::open("res/test_res/models/sponza/glTF/Sponza.gltf").unwrap();
     let base = "res/test_res/models/sponza/glTF";
@@ -65,10 +73,32 @@ fn main() {
         }
     }
 
+    let mut images = vec![];
+
+    for img_meta in sponza.images() {
+        match img_meta.source() {
+            gltf::image::Source::Uri {uri, mime_type} => {
+                let path = format!("{}/{}", base, uri);
+                info!("Loading texture {} ...", path);
+                images.push(
+                  Arc::new(
+                      RefCell::new(
+                      TextureSafe::from_file(path, &graphic_base, &pools).unwrap()
+                      )
+                  )
+                );
+            }
+            _ => {
+                panic!("Not supported source for texture");
+            }
+        }
+    }
+
     for m in sponza.meshes() {
         for p in m.primitives() {
             let mut pos : Vec<f32> = vec![];
             let mut normals : Vec<f32> = vec![];
+            let mut uv : Vec<f32> = vec![];
 
             let indices_acc = p.indices().unwrap();
             let indices_view = indices_acc.view().unwrap();
@@ -112,13 +142,18 @@ fn main() {
                     }
                     Semantic::Tangents => {}
                     Semantic::Colors(_) => {}
-                    Semantic::TexCoords(_) => {}
+                    Semantic::TexCoords(_) => {
+                        uv.extend(data.iter());
+                    }
                     Semantic::Joints(_) => {}
                     Semantic::Weights(_) => {}
                     _ => {}
                 }
             }
             info!("Loaded mesh with {} positions and {} normals", pos.len(), normals.len());
+
+            //load diffuse texture
+
 
             let mut pos_buffer = BufferSafe::new(
                 &graphic_base.allocator,
@@ -137,19 +172,37 @@ fn main() {
                 MemoryUsage::CpuToGpu
             ).unwrap();
 
+            let mut uv_buffer = BufferSafe::new(
+                &graphic_base.allocator,
+                uv.len() as u64 * 4,
+                BufferUsageFlags::VERTEX_BUFFER,
+                MemoryUsage::CpuToGpu
+            ).unwrap();
+
             pos_buffer.fill(&pos).unwrap();
             normal_buffer.fill(&normals).unwrap();
             index_buffer.fill(&indices).unwrap();
+            uv_buffer.fill(&uv).unwrap();
 
             let mesh = GPUMesh {
                 pos_data: pos_buffer,
                 normal_data: normal_buffer,
                 index_data: index_buffer,
+                uv_data : uv_buffer,
                 vertex_count: indices.len() as u32,
                 name: "".to_string()
             };
 
-            scene.push(mesh);
+            let material = Material {
+
+            };
+
+            let model = RenderModel {
+                mesh,
+                material
+            };
+
+            scene.push(model);
             // break;
         }
     }
@@ -159,11 +212,6 @@ fn main() {
     unsafe {
         graphic_base.device.device_wait_idle().unwrap();
     }
-
-    let pools = Pools::init(
-        &graphic_base.device,
-        &graphic_base.queue_families
-    ).unwrap();
 
     let command_buffers = create_commandbuffers(
         &graphic_base.device,
@@ -254,14 +302,16 @@ fn main() {
 
                     gui.integration.begin_frame();
 
+
                     egui::Window::new("Loaded meshes")
+                        .hscroll(true)
                         .resizable(true)
                         .show(&gui.integration.context(), |ui| {
 
                             let mut del_mesh = None;
                             for (idx, m) in scene.iter().enumerate() {
                                 ui.horizontal(|ui| {
-                                    ui.label(format!("{} : {} verts", m.name.clone(), m.vertex_count));
+                                    ui.label(format!("{} : {} verts", m.mesh.name.clone(), m.mesh.vertex_count));
                                     if ui.button("Delete").clicked() {
                                         del_mesh = Some(idx);
                                     }

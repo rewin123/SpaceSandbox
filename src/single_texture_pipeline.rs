@@ -1,0 +1,366 @@
+use std::sync::Arc;
+use ash::vk;
+use ash::vk::{DescriptorSet, Framebuffer};
+use log::info;
+use crate::{AllocatorSafe, DeviceSafe, GPUMesh, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe};
+use ash::vk::DescriptorSetLayout;
+
+pub struct SingTextPipeline {
+    pub pipeline: vk::Pipeline,
+    pub layout: vk::PipelineLayout,
+    device : Arc<DeviceSafe>,
+    pub descriptor_set_layouts : Vec<DescriptorSetLayout>
+}
+
+impl Drop for SingTextPipeline {
+    fn drop(&mut self) {
+        info!("Destroy pipeline");
+        unsafe {
+            for dsl in &self.descriptor_set_layouts {
+                self.device.destroy_descriptor_set_layout(*dsl, None);
+            }
+            self.device.destroy_pipeline(self.pipeline, None);
+            self.device.destroy_pipeline_layout(self.layout, None);
+        }
+    }
+}
+
+impl SingTextPipeline {
+
+    pub fn init(
+        logical_device: &Arc<DeviceSafe>,
+        swapchain: &SwapchainSafe,
+        renderpass: &RenderPassSafe,
+    ) -> Result<SingTextPipeline, vk::Result> {
+        let vertexshader_createinfo = vk::ShaderModuleCreateInfo::builder().code(
+            vk_shader_macros::include_glsl!("./shaders/single_texture_draw/shader.vert", kind: vert),
+        );
+        let vertexshader_module =
+            unsafe { logical_device.create_shader_module(&vertexshader_createinfo, None)? };
+        let fragmentshader_createinfo = vk::ShaderModuleCreateInfo::builder()
+            .code(vk_shader_macros::include_glsl!("./shaders/single_texture_draw/shader.frag"));
+        let fragmentshader_module =
+            unsafe { logical_device.create_shader_module(&fragmentshader_createinfo, None)? };
+        let mainfunctionname = std::ffi::CString::new("main").unwrap();
+        let vertexshader_stage = vk::PipelineShaderStageCreateInfo::builder()
+            .stage(vk::ShaderStageFlags::VERTEX)
+            .module(vertexshader_module)
+            .name(&mainfunctionname);
+        let fragmentshader_stage = vk::PipelineShaderStageCreateInfo::builder()
+            .stage(vk::ShaderStageFlags::FRAGMENT)
+            .module(fragmentshader_module)
+            .name(&mainfunctionname);
+        let shader_stages = vec![vertexshader_stage.build(), fragmentshader_stage.build()];
+
+        let vertex_attrib_descs = [vk::VertexInputAttributeDescription {
+                binding: 0,
+                location: 0,
+                offset: 0,
+                format: vk::Format::R32G32B32_SFLOAT,
+            },
+            vk::VertexInputAttributeDescription {
+                binding: 1,
+                location: 1,
+                offset: 0,
+                format: vk::Format::R32G32B32_SFLOAT
+            },
+            vk::VertexInputAttributeDescription {
+                binding: 2,
+                location: 2,
+                offset: 0,
+                format: vk::Format::R32G32_SFLOAT
+            }];
+
+        let vertex_binding_descs = [vk::VertexInputBindingDescription {
+            binding: 0,
+            stride: 4 * 3,
+            input_rate: vk::VertexInputRate::VERTEX,
+        },
+            vk::VertexInputBindingDescription {
+                binding: 1,
+                stride: 4 * 3,
+                input_rate: vk::VertexInputRate::VERTEX
+            },
+            vk::VertexInputBindingDescription {
+                binding: 2,
+                stride: 4 * 2,
+                input_rate: vk::VertexInputRate::VERTEX
+            }];
+
+        let vertex_input_info = vk::PipelineVertexInputStateCreateInfo::builder()
+            .vertex_attribute_descriptions(&vertex_attrib_descs)
+            .vertex_binding_descriptions(&vertex_binding_descs);
+
+        let input_assembly_info = vk::PipelineInputAssemblyStateCreateInfo::builder()
+            .topology(vk::PrimitiveTopology::TRIANGLE_LIST);
+        let viewports = [vk::Viewport {
+            x: 0.,
+            y: 0.,
+            width: swapchain.extent.width as f32,
+            height: swapchain.extent.height as f32,
+            min_depth: 0.,
+            max_depth: 1.,
+        }];
+        let scissors = [vk::Rect2D {
+            offset: vk::Offset2D { x: 0, y: 0 },
+            extent: swapchain.extent,
+        }];
+
+        let viewport_info = vk::PipelineViewportStateCreateInfo::builder()
+            .viewports(&viewports)
+            .scissors(&scissors);
+        let rasterizer_info = vk::PipelineRasterizationStateCreateInfo::builder()
+            .line_width(1.0)
+            .front_face(vk::FrontFace::COUNTER_CLOCKWISE)
+            .cull_mode(vk::CullModeFlags::NONE)
+            .polygon_mode(vk::PolygonMode::FILL);
+        let multisampler_info = vk::PipelineMultisampleStateCreateInfo::builder()
+            .rasterization_samples(vk::SampleCountFlags::TYPE_1);
+        let colourblend_attachments = [vk::PipelineColorBlendAttachmentState::builder()
+            .blend_enable(true)
+            .src_color_blend_factor(vk::BlendFactor::SRC_ALPHA)
+            .dst_color_blend_factor(vk::BlendFactor::ONE_MINUS_SRC_ALPHA)
+            .color_blend_op(vk::BlendOp::ADD)
+            .src_alpha_blend_factor(vk::BlendFactor::SRC_ALPHA)
+            .dst_alpha_blend_factor(vk::BlendFactor::ONE_MINUS_SRC_ALPHA)
+            .alpha_blend_op(vk::BlendOp::ADD)
+            .color_write_mask(
+                vk::ColorComponentFlags::R
+                    | vk::ColorComponentFlags::G
+                    | vk::ColorComponentFlags::B
+                    | vk::ColorComponentFlags::A,
+            )
+            .build()];
+        let colourblend_info =
+            vk::PipelineColorBlendStateCreateInfo::builder().attachments(&colourblend_attachments);
+
+        let descriptorset_layout_binding_descs = [vk::DescriptorSetLayoutBinding::builder()
+            .binding(0)
+            .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
+            .descriptor_count(1)
+            .stage_flags(vk::ShaderStageFlags::VERTEX)
+            .build()];
+        let descriptorset_layout_info = vk::DescriptorSetLayoutCreateInfo::builder()
+            .bindings(&descriptorset_layout_binding_descs);
+        let descriptorsetlayout = unsafe {
+            logical_device.create_descriptor_set_layout(&descriptorset_layout_info, None)
+        }?;
+        let desclayouts = vec![descriptorsetlayout];
+        let pipelinelayout_info = vk::PipelineLayoutCreateInfo::builder().set_layouts(&desclayouts);
+
+        let depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo::builder()
+            .depth_test_enable(true)
+            .depth_write_enable(true)
+            .depth_compare_op(vk::CompareOp::LESS_OR_EQUAL);
+
+        let pipelinelayout =
+            unsafe { logical_device.create_pipeline_layout(&pipelinelayout_info, None) }?;
+        let pipeline_info = vk::GraphicsPipelineCreateInfo::builder()
+            .stages(&shader_stages)
+            .vertex_input_state(&vertex_input_info)
+            .input_assembly_state(&input_assembly_info)
+            .viewport_state(&viewport_info)
+            .rasterization_state(&rasterizer_info)
+            .multisample_state(&multisampler_info)
+            .depth_stencil_state(&depth_stencil_info)
+            .color_blend_state(&colourblend_info)
+            .layout(pipelinelayout)
+            .render_pass(renderpass.inner)
+            .subpass(0);
+        let graphicspipeline = unsafe {
+            logical_device
+                .create_graphics_pipelines(
+                    vk::PipelineCache::null(),
+                    &[pipeline_info.build()],
+                    None,
+                )
+                .expect("A problem with the pipeline creation")
+        }[0];
+        unsafe {
+            logical_device.destroy_shader_module(fragmentshader_module, None);
+            logical_device.destroy_shader_module(vertexshader_module, None);
+        }
+        Ok(SingTextPipeline {
+            pipeline: graphicspipeline,
+            layout: pipelinelayout,
+            device : logical_device.clone(),
+            descriptor_set_layouts : desclayouts
+        })
+    }
+}
+
+pub struct SingleTexturePipeline {
+    pipeline : SingTextPipeline,
+    descriptor_sets : Vec<DescriptorSet>,
+    framebuffers : Vec<Framebuffer>,
+    renderpass : RenderPassSafe,
+    device : Arc<DeviceSafe>,
+    allocator : Arc<AllocatorSafe>,
+    descriptor_pool : vk::DescriptorPool
+}
+
+impl Drop for SingleTexturePipeline {
+    fn drop(&mut self) {
+        unsafe {
+            info!("Destroying grayscale pipeline...");
+            self.device.device_wait_idle();
+            for fb in &self.framebuffers {
+                self.device.destroy_framebuffer(*fb, None);
+            }
+            self.device.destroy_descriptor_pool(self.descriptor_pool, None);
+        }
+    }
+}
+
+impl SingleTexturePipeline {
+    pub fn new(
+        graphic_base : &GraphicBase,
+        camera : &RenderCamera) -> Result<Self, vk::Result> {
+        let mut renderpass = init_renderpass(&graphic_base).unwrap();
+        let framebuffers = SingleTexturePipeline::create_framebuffers(
+            &graphic_base.device,
+            renderpass.inner,
+            &graphic_base.swapchain
+        )?;
+
+        let pipeline= unsafe {
+             SingTextPipeline::init(
+                &graphic_base.device,
+                &graphic_base.swapchain,
+                &renderpass).unwrap() };
+
+        let pool_sizes = [
+            vk::DescriptorPoolSize {
+                ty : vk::DescriptorType::UNIFORM_BUFFER,
+                descriptor_count : graphic_base.swapchain.amount_of_images
+            }
+        ];
+        let descriptor_pool_info = vk::DescriptorPoolCreateInfo::builder()
+            .max_sets(graphic_base.swapchain.amount_of_images)
+            .pool_sizes(&pool_sizes);
+        let descriptor_pool = unsafe {
+            graphic_base.device.create_descriptor_pool(&descriptor_pool_info, None)
+        }.unwrap();
+
+        let desc_layouts =
+            vec![pipeline.descriptor_set_layouts[0]; graphic_base.swapchain.amount_of_images as usize];
+        let descriptor_set_allocate_info = vk::DescriptorSetAllocateInfo::builder()
+            .descriptor_pool(descriptor_pool)
+            .set_layouts(&desc_layouts);
+        let descriptor_sets =
+            unsafe { graphic_base.device.allocate_descriptor_sets(&descriptor_set_allocate_info)
+            }?;
+
+        for (i, descset) in descriptor_sets.iter().enumerate() {
+            let buffer_infos = [vk::DescriptorBufferInfo {
+                buffer: camera.uniformbuffer.buffer,
+                offset: 0,
+                range: 128,
+            }];
+            let desc_sets_write = [vk::WriteDescriptorSet::builder()
+                .dst_set(*descset)
+                .dst_binding(0)
+                .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
+                .buffer_info(&buffer_infos)
+                .build()];
+            unsafe { graphic_base.device.update_descriptor_sets(&desc_sets_write, &[]) };
+        }
+
+        Ok(Self {
+            pipeline,
+            descriptor_sets,
+            framebuffers,
+            renderpass,
+            device : graphic_base.device.clone(),
+            allocator : graphic_base.allocator.clone(),
+            descriptor_pool
+        })
+    }
+
+    fn create_framebuffers(
+        logical_device: &ash::Device,
+        renderpass: vk::RenderPass,
+        swapchain : &SwapchainSafe
+    ) -> Result<Vec<Framebuffer>, vk::Result> {
+        let mut res = vec![];
+        for iv in &swapchain.imageviews {
+            let iview = [*iv, swapchain.depth_imageview];
+            let framebuffer_info = vk::FramebufferCreateInfo::builder()
+                .render_pass(renderpass)
+                .attachments(&iview)
+                .width(swapchain.extent.width)
+                .height(swapchain.extent.height)
+                .layers(1);
+            let fb = unsafe { logical_device.create_framebuffer(&framebuffer_info, None) }?;
+            res.push(fb);
+        }
+        Ok(res)
+    }
+
+    pub fn update_commandbuffer(
+        &mut self,
+        commandbuffer : vk::CommandBuffer,
+        logical_device: &ash::Device,
+        swapchain: &SwapchainSafe,
+        models : &Vec<RenderModel>,
+        i : usize
+    ) -> Result<(), vk::Result> {
+
+        let clearvalues = [vk::ClearValue {
+            color: vk::ClearColorValue {
+                float32: [0.0, 0.0, 0.08, 1.0],
+            },
+        },
+            vk::ClearValue {
+                depth_stencil: vk::ClearDepthStencilValue {
+                    depth: 1.0,
+                    stencil: 0,
+                }
+            }];
+        let renderpass_begininfo = vk::RenderPassBeginInfo::builder()
+            .render_pass(self.renderpass.inner)
+            .framebuffer(self.framebuffers[i])
+            .render_area(vk::Rect2D {
+                offset: vk::Offset2D { x: 0, y: 0 },
+                extent: swapchain.extent,
+            })
+            .clear_values(&clearvalues);
+        unsafe {
+            logical_device.cmd_begin_render_pass(
+                commandbuffer,
+                &renderpass_begininfo,
+                vk::SubpassContents::INLINE,
+            );
+            logical_device.cmd_bind_pipeline(
+                commandbuffer,
+                vk::PipelineBindPoint::GRAPHICS,
+                self.pipeline.pipeline,
+            );
+            logical_device.cmd_bind_descriptor_sets(
+                commandbuffer,
+                vk::PipelineBindPoint::GRAPHICS,
+                self.pipeline.layout,
+                0,
+                &[self.descriptor_sets[i]],
+                &[]
+            );
+            for model in models {
+                logical_device.cmd_bind_vertex_buffers(
+                    commandbuffer,
+                    0,
+                    &[model.mesh.pos_data.buffer,
+                        model.mesh.normal_data.buffer,
+                        model.mesh.uv_data.buffer],
+                    &[0, 0, 0]);
+                logical_device.cmd_bind_index_buffer(commandbuffer, model.mesh.index_data.buffer, 0, vk::IndexType::UINT32);
+                logical_device.cmd_draw_indexed(commandbuffer, model.mesh.vertex_count, 1, 0, 0, 0);
+            }
+
+            logical_device.cmd_end_render_pass(commandbuffer);
+            // logical_device.end_command_buffer(commandbuffer)?;
+        }
+
+        Ok(())
+    }
+
+}
