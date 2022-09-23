@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::os::raw::c_char;
 use std::sync::Arc;
@@ -257,7 +258,7 @@ pub struct GPUMesh {
 }
 
 pub struct Material {
-
+    pub color : Arc<TextureSafe>
 }
 
 pub struct RenderModel {
@@ -277,11 +278,12 @@ pub struct TextureSafe {
 
 impl Drop for TextureSafe {
     fn drop(&mut self) {
+
         unsafe {
             debug!("Destroy TextureSafe");
             self.device.destroy_sampler(self.sampler, None);
             self.device.destroy_image_view(self.imageview, None);
-            self.allocator.destroy_image(self.image, &self.allocation);
+            self.allocator.destroy_image(self.image, &self.allocation).unwrap();
         }
     }
 }
@@ -308,12 +310,12 @@ impl TextureSafe {
 
         let data = image.clone().into_raw();
         info!("data len {}", data.len());
-        let mut buffer = BufferSafe::new(
+        let mut buffer = ManuallyDrop::new( BufferSafe::new(
             &gb.allocator,
             data.len() as u64,
             vk::BufferUsageFlags::TRANSFER_SRC,
             vk_mem::MemoryUsage::CpuToGpu,
-        ).unwrap();
+        ).unwrap());
         buffer.fill(&data).unwrap();
 
         let commandbuf_allocate_info = vk::CommandBufferAllocateInfo::builder()
@@ -333,10 +335,6 @@ impl TextureSafe {
                 .device
                 .begin_command_buffer(copycmdbuffer, &cmdbegininfo)
         }?;
-
-        unsafe {
-            gb.device.device_wait_idle();
-        }
 
 
         let barrier = vk::ImageMemoryBarrier::builder()
@@ -438,13 +436,26 @@ impl TextureSafe {
                 .queue_submit(gb.queues.graphics_queue, &submit_infos, fence)
         }?;
         unsafe { gb.device.wait_for_fences(&[fence], true, std::u64::MAX) }?;
+
+
         unsafe { gb.device.destroy_fence(fence, None) };
-        gb.allocator.destroy_buffer(buffer.buffer, &buffer.allocation)?;
+        // gb.allocator.destroy_buffer(buffer.buffer, &buffer.allocation)?;
         unsafe {
             gb
                 .device
                 .free_command_buffers(pools.commandpool_graphics, &[copycmdbuffer])
         };
+
+        unsafe {
+            gb.device.device_wait_idle().unwrap();
+            }
+    
+
+        info!("Finish copy");
+
+        unsafe {
+            ManuallyDrop::drop(&mut buffer);
+        }
 
         Ok(res)
     }

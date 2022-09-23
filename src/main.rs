@@ -21,7 +21,6 @@ use nalgebra::inf;
 use simplelog::*;
 use tobj::LoadError;
 use vk_mem::MemoryUsage;
-use winit::platform::unix::WindowExtUnix;
 use winit::window::Window;
 
 use SpaceSandbox::*;
@@ -82,9 +81,7 @@ fn main() {
                 info!("Loading texture {} ...", path);
                 images.push(
                   Arc::new(
-                      RefCell::new(
                       TextureSafe::from_file(path, &graphic_base, &pools).unwrap()
-                      )
                   )
                 );
             }
@@ -194,7 +191,7 @@ fn main() {
             };
 
             let material = Material {
-
+                color : images[p.material().pbr_metallic_roughness().base_color_texture().unwrap().texture().index()].clone()
             };
 
             let model = RenderModel {
