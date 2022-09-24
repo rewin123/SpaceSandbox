@@ -67,7 +67,7 @@ impl BufferSafe {
 
 impl Drop for BufferSafe {
     fn drop(&mut self) {
-        info!("Destroy buffer");
+        debug!("Destroy buffer");
         unsafe {
             self.allocator.destroy_buffer(self.buffer, &self.allocation);
         }

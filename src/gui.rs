@@ -65,4 +65,8 @@ impl EguiWrapper {
             device : graphic_base.device.clone()
         }
     }
+
+    pub fn wait_draw(&self) {
+        
+    }
 }

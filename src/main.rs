@@ -329,20 +329,21 @@ fn main() {
                     camera.update_viewmatrix();
                     camera.update_inner_buffer();
 
+                    
+
+
                     unsafe {
                         graphic_base.device.begin_command_buffer(command_buffers[image_index as usize], &vk::CommandBufferBeginInfo::builder());
                     }
 
+                    
                     gray_draw.update_commandbuffer(
                         command_buffers[image_index as usize],
                         &graphic_base.device,
                         &graphic_base.swapchain,
                         &scene,
                         image_index as usize
-                    );
-
-
-                    gui.integration.paint(command_buffers[image_index as usize], image_index as usize, clipped_meshes);
+                    ).unwrap();
 
                     unsafe {
                         graphic_base.device.end_command_buffer(command_buffers[image_index as usize]).unwrap();

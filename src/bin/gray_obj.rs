@@ -11,7 +11,6 @@ use ash::vk::{CommandBuffer, DeviceQueueCreateInfo, Handle, PhysicalDevice, Phys
 use log::*;
 use simplelog::*;
 use tobj::LoadError;
-use winit::platform::unix::WindowExtUnix;
 use winit::window::Window;
 
 use SpaceSandbox::*;

@@ -1,8 +1,9 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use ash::vk;
 use ash::vk::{DescriptorSet, Framebuffer};
 use log::info;
-use crate::{AllocatorSafe, DeviceSafe, GPUMesh, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe};
+use crate::{AllocatorSafe, DeviceSafe, GPUMesh, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, CommandBufferSafe, Pools, DescriptorPoolSafe};
 use ash::vk::DescriptorSetLayout;
 
 pub struct SingTextPipeline {
@@ -212,8 +213,8 @@ pub struct SingleTexturePipeline {
     renderpass : RenderPassSafe,
     device : Arc<DeviceSafe>,
     allocator : Arc<AllocatorSafe>,
-    descriptor_pool : vk::DescriptorPool,
-    descriptor_sets_texture : Vec<DescriptorSet>
+    descriptor_pool : Arc<DescriptorPoolSafe>,
+    descriptor_sets_texture : HashMap<usize, DescriptorSet>
 }
 
 impl Drop for SingleTexturePipeline {
@@ -224,7 +225,6 @@ impl Drop for SingleTexturePipeline {
             for fb in &self.framebuffers {
                 self.device.destroy_framebuffer(*fb, None);
             }
-            self.device.destroy_descriptor_pool(self.descriptor_pool, None);
         }
     }
 }
@@ -253,11 +253,12 @@ impl SingleTexturePipeline {
             },
             vk::DescriptorPoolSize {
                 ty : vk::DescriptorType::COMBINED_IMAGE_SAMPLER,
-                descriptor_count : graphic_base.swapchain.amount_of_images
-            }
+                descriptor_count : 1024
+            },
         ];
         let descriptor_pool_info = vk::DescriptorPoolCreateInfo::builder()
-            .max_sets(graphic_base.swapchain.amount_of_images * 2)
+            .flags(vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET)
+            .max_sets(1024 + 3)
             .pool_sizes(&pool_sizes);
         let descriptor_pool = unsafe {
             graphic_base.device.create_descriptor_pool(&descriptor_pool_info, None)
@@ -287,15 +288,6 @@ impl SingleTexturePipeline {
             unsafe { graphic_base.device.update_descriptor_sets(&desc_sets_write, &[]) };
         }
 
-        let desc_layouts_texture =
-            vec![pipeline.descriptor_set_layouts[1]; graphic_base.swapchain.amount_of_images as usize];
-        let descriptor_set_allocate_info_texture = vk::DescriptorSetAllocateInfo::builder()
-            .descriptor_pool(descriptor_pool)
-            .set_layouts(&desc_layouts_texture);
-        let descriptor_sets_texture = unsafe {
-            graphic_base.device.allocate_descriptor_sets(&descriptor_set_allocate_info_texture)
-        }?;
-
         Ok(Self {
             pipeline,
             descriptor_sets,
@@ -303,8 +295,8 @@ impl SingleTexturePipeline {
             renderpass,
             device : graphic_base.device.clone(),
             allocator : graphic_base.allocator.clone(),
-            descriptor_pool,
-            descriptor_sets_texture
+            descriptor_pool : Arc::new(DescriptorPoolSafe { pool: descriptor_pool, device: graphic_base.device.clone() }),
+            descriptor_sets_texture : HashMap::new()
         })
     }
 
@@ -327,6 +319,7 @@ impl SingleTexturePipeline {
         }
         Ok(res)
     }
+
 
     pub fn update_commandbuffer(
         &mut self,
@@ -367,36 +360,51 @@ impl SingleTexturePipeline {
                 vk::PipelineBindPoint::GRAPHICS,
                 self.pipeline.pipeline,
             );
-            logical_device.cmd_bind_descriptor_sets(
-                commandbuffer,
-                vk::PipelineBindPoint::GRAPHICS,
-                self.pipeline.layout,
-                0,
-                &[self.descriptor_sets[i], self.descriptor_sets_texture[i]],
-                &[]
-            );
 
-            let model = &models[0];
-            let imageinfo = vk::DescriptorImageInfo::builder()
+
+            for model in models {
+                if self.descriptor_sets_texture.contains_key(&model.material.color.index) == false {
+                    let imageinfo = vk::DescriptorImageInfo::builder()
                     .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
                     .image_view(model.material.color.imageview)
                     .sampler(model.material.color.sampler)
                     .build();
 
-            let mut descriptorwrite_image = vk::WriteDescriptorSet::builder()
-                .dst_set(self.descriptor_sets_texture[i])
-                .dst_binding(0)
-                .dst_array_element(0)
-                .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
-                .build();
-                
-            descriptorwrite_image.descriptor_count = 1;
-            descriptorwrite_image.p_image_info = [imageinfo].as_ptr();
+                    let desc_layouts_texture =
+                        vec![self.pipeline.descriptor_set_layouts[1]; 1];
+                    let descriptor_set_allocate_info_texture = vk::DescriptorSetAllocateInfo::builder()
+                        .descriptor_pool(self.descriptor_pool.pool)
+                        .set_layouts(&desc_layouts_texture);
+                    self.descriptor_sets_texture.insert(model.material.color.index,  self.device.allocate_descriptor_sets(
+                        &descriptor_set_allocate_info_texture).unwrap()[0]);
 
-            unsafe {
-                logical_device.update_descriptor_sets(&[descriptorwrite_image], &[]);
+                    let mut descriptorwrite_image = vk::WriteDescriptorSet::builder()
+                        .dst_set(self.descriptor_sets_texture[&model.material.color.index])
+                        .dst_binding(0)
+                        .dst_array_element(0)
+                        .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
+                        .build();
+                        
+                    descriptorwrite_image.descriptor_count = 1;
+                    descriptorwrite_image.p_image_info = [imageinfo].as_ptr();    
+                    unsafe {
+                        logical_device.update_descriptor_sets(&[descriptorwrite_image], &[]);
+                    }
+                }
             }
+
             for model in models {
+
+                logical_device.cmd_bind_descriptor_sets(
+                    commandbuffer,
+                    vk::PipelineBindPoint::GRAPHICS,
+                    self.pipeline.layout,
+                    0,
+                    &[self.descriptor_sets[i], self.descriptor_sets_texture[&model.material.color.index]],
+                    &[]
+                );
+
+
                 logical_device.cmd_bind_vertex_buffers(
                     commandbuffer,
                     0,
@@ -406,6 +414,7 @@ impl SingleTexturePipeline {
                     &[0, 0, 0]);
                 logical_device.cmd_bind_index_buffer(commandbuffer, model.mesh.index_data.buffer, 0, vk::IndexType::UINT32);
                 logical_device.cmd_draw_indexed(commandbuffer, model.mesh.vertex_count, 1, 0, 0, 0);
+            
             }
 
             logical_device.cmd_end_render_pass(commandbuffer);
