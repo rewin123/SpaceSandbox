@@ -24,8 +24,6 @@ use vk_mem::MemoryUsage;
 use winit::window::Window;
 
 use SpaceSandbox::*;
-use SpaceSandbox::example_pipeline::ExamplePipeline;
-use SpaceSandbox::render_server::Model;
 
 // for time measure wolfpld/tracy
 

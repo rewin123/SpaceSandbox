@@ -2,7 +2,9 @@ use std::sync::Arc;
 use ash::vk;
 use ash::vk::{DescriptorSet, Framebuffer};
 use log::info;
-use crate::{AllocatorSafe, DeviceSafe, ExamplePipeline, GPUMesh, GraphicBase, init_renderpass, RenderCamera, RenderPassSafe, SwapchainSafe};
+use crate::{AllocatorSafe, DeviceSafe, GPUMesh, GraphicBase, init_renderpass, RenderCamera, RenderPassSafe, SwapchainSafe};
+
+use super::example_pipeline::ExamplePipeline;
 
 pub struct GrayscalePipeline {
     pipeline : ExamplePipeline,

@@ -23,26 +23,22 @@ const AppName : &str = "SpaceSandbox";
 pub mod safe_warp;
 pub mod debug_layer;
 pub mod vulkan_init_utils;
-pub mod example_pipeline;
 pub mod gui;
 pub mod camera;
-pub mod grayscale_pipeline;
 pub mod graphic_base;
 pub mod assets;
 pub mod render_server;
-pub mod single_texture_pipeline;
+pub mod pipelines;
 
 pub use debug_layer::*;
 pub use vulkan_init_utils::*;
-use example_pipeline::*;
 pub use gui::*;
 pub use camera::*;
 pub use safe_warp::*;
-pub use grayscale_pipeline::*;
 pub use graphic_base::*;
 pub use assets::runtime_gpu_assets::*;
 pub use assets::*;
-pub use single_texture_pipeline::*;
+pub use pipelines::*;
 
 
 pub struct AllocatorSafe {
