@@ -4,6 +4,7 @@ use crate::{TextureSafe, GraphicBase, Pools, ApiBase, Pool};
 use egui::mutex::RwLock;
 use rayon::prelude::*;
 use ash::vk;
+use crate::task_server::TaskServer;
 
 #[derive(Clone)]
 pub struct ServerTexture {
@@ -25,11 +26,12 @@ pub struct TextureServer {
     index : usize,
     update_count : usize,
     waiting_list : Arc<Mutex<Vec<TexFormTask>>>,
-    api_base : ApiBase
+    api_base : ApiBase,
+    task_server : Arc<TaskServer>
 }
 
 impl TextureServer {
-    pub fn new(gb : &GraphicBase, pools : &Pools) -> Self {
+    pub fn new(gb : &GraphicBase, pools : &Pools, task_server : Arc<TaskServer>) -> Self {
         Self {
             textures : HashMap::new(),
             index : 0,
@@ -40,7 +42,8 @@ impl TextureServer {
                 &gb.get_api_base(pools)).unwrap()),
             waiting_list : Arc::new(Mutex::new(vec![])),
             api_base : gb.get_api_base(pools),
-            update_count : 0
+            update_count : 0,
+            task_server
         }
     }
 
@@ -52,18 +55,18 @@ impl TextureServer {
 
         let copy_index = self.index;
         let wait_list = self.waiting_list.clone();
-        rayon::spawn_fifo(move || {
+        self.task_server.spawn(&format!("Loading {}", path).to_string(),move || {
 
             let image = image::open(path)
             .map(|img| img.to_rgba())
             .expect("unable to open image");
             let (width, height) = image.dimensions();
 
-            wait_list.lock().as_mut().unwrap().push(TexFormTask { 
-                data: image.to_vec(), 
-                index: copy_index, 
-                width, 
-                height 
+            wait_list.lock().as_mut().unwrap().push(TexFormTask {
+                data: image.to_vec(),
+                index: copy_index,
+                width,
+                height
             } );
         });
 

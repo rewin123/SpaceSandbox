@@ -6,7 +6,7 @@ use crate::{DeviceSafe, AllocatorSafe, BufferSafe, Pools, GraphicBase, CommandBu
 
 use log::*;
 
-static GLOBAL_TEXTURE_INDEXER : Mutex<usize> = Mutex::new(0);
+static mut GLOBAL_TEXTURE_INDEXER : usize = 0;
 
 pub struct TextureSafe {
     pub image : vk::Image,
@@ -218,8 +218,7 @@ impl TextureSafe {
             gb
                 .device
                 .allocate_command_buffers(&commandbuf_allocate_info)
-        }
-            .unwrap()[0];
+        }.unwrap()[0];
 
         let cmdbegininfo = vk::CommandBufferBeginInfo::builder()
             .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
@@ -512,6 +511,7 @@ impl TextureSafe {
                 .aspect_mask(vk::ImageAspectFlags::COLOR)
                 .base_mip_level(0)
                 .level_count(mipmap_count)
+                .layer_count(1)
                 .build());
         let imageview = unsafe {
             device.create_image_view(&view_create_info, None).expect("image view creaton")
@@ -526,10 +526,10 @@ impl TextureSafe {
         let sampler =
             unsafe { device.create_sampler(&sampler_info, None) }.expect("sampler creation");
 
-        let mut global_index = GLOBAL_TEXTURE_INDEXER.lock().unwrap();
-        let index = *global_index;
-        *global_index += 1;
-
+        let index = unsafe {
+            GLOBAL_TEXTURE_INDEXER += 1;
+            GLOBAL_TEXTURE_INDEXER
+        };
         Self {
             image : vk_image,
             allocation,

@@ -29,6 +29,7 @@ pub mod graphic_base;
 pub mod assets;
 pub mod render_server;
 pub mod pipelines;
+pub mod task_server;
 
 pub use debug_layer::*;
 pub use vulkan_init_utils::*;

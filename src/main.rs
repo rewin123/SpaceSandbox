@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::Read;
 use std::ops::Deref;
+use std::os::linux::raw::stat;
 use std::os::raw::c_char;
 use std::sync::Arc;
 use ash::{Device, Entry, Instance, vk};
@@ -24,12 +25,19 @@ use vk_mem::MemoryUsage;
 use winit::window::Window;
 
 use SpaceSandbox::*;
+use SpaceSandbox::task_server::{TaskServer, TaskState};
 
 // for time measure wolfpld/tracy
 
+fn init_rayon() {
+    rayon::ThreadPoolBuilder::default()
+        .num_threads(3)
+        .build_global().unwrap();
+}
 
 fn main() {
     init_logger();
+    init_rayon();
 
     let eventloop = winit::event_loop::EventLoop::new();
     let window = winit::window::Window::new(&eventloop).unwrap();
@@ -70,7 +78,10 @@ fn main() {
         }
     }
 
-    let mut texture_server = TextureServer::new(&graphic_base, &pools);
+    info!("Initiating task server...");
+    let mut task_server = Arc::new(TaskServer::new());
+    info!("Initiating texture servers...");
+    let mut texture_server = TextureServer::new(&graphic_base, &pools, task_server.clone());
 
     let mut images = vec![];
 
@@ -221,6 +232,8 @@ fn main() {
         &graphic_base
     );
 
+    let mut show_task_list = false;
+
     use winit::event::{Event, WindowEvent};
     eventloop.run(move |event, _, controlflow| {
 
@@ -300,30 +313,37 @@ fn main() {
 
                     gui.integration.begin_frame();
 
+                    egui::TopBottomPanel::top(0).show(&gui.integration.context(), |ui| {
+                        if ui.button(format!("{} tasks running", task_server.get_task_count())).clicked() {
+                            show_task_list = true;
+                        }
+                    });
 
-                    egui::Window::new("Loaded meshes")
-                        .hscroll(true)
-                        .resizable(true)
-                        .show(&gui.integration.context(), |ui| {
+                    if show_task_list {
+                        let win_res = egui::Window::new("Task list")
+                            .show(&gui.integration.context(), |ui| {
 
-                            let mut del_mesh = None;
-                            for (idx, m) in scene.iter().enumerate() {
-                                ui.horizontal(|ui| {
-                                    ui.label(format!("{} : {} verts", m.mesh.name.clone(), m.mesh.vertex_count));
-                                    if ui.button("Delete").clicked() {
-                                        del_mesh = Some(idx);
+                            if ui.button("Close").clicked() {
+                                show_task_list = false;
+                            }
+                            let tasks = task_server.clone_task_list();
+                            for t in tasks {
+                                let state = t.get_state();
+                                match state {
+                                    TaskState::Created => {
+                                        ui.label(t.get_name());
                                     }
-                                });
-                            }
-                            match del_mesh {
-                                Some(idx) => {
-                                    scene.remove(idx);
+                                    TaskState::Running => {
+                                        ui.colored_label(egui::color::Color32::GREEN, t.get_name());
+                                    }
+                                    TaskState::Finished => {
+                                        ui.colored_label(egui::color::Color32::RED, t.get_name());
+                                    }
                                 }
-                                None => {}
                             }
-
-
                         });
+                    }
+
                     let (_, shapes) = gui.integration.end_frame(&mut graphic_base.window);
                     let clipped_meshes = gui.integration.context().tessellate(shapes);
 
@@ -345,6 +365,8 @@ fn main() {
                         &scene,
                         image_index as usize
                     ).unwrap();
+
+                    gui.integration.paint(command_buffers[image_index as usize], image_index as usize, clipped_meshes);
 
                     unsafe {
                         graphic_base.device.end_command_buffer(command_buffers[image_index as usize]).unwrap();
