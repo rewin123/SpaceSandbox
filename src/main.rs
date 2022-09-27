@@ -70,6 +70,8 @@ fn main() {
         }
     }
 
+    let mut texture_server = TextureServer::new(&graphic_base, &pools);
+
     let mut images = vec![];
 
     for img_meta in sponza.images() {
@@ -78,9 +80,10 @@ fn main() {
                 let path = format!("{}/{}", base, uri);
                 info!("Loading texture {} ...", path);
                 images.push(
-                  Arc::new(
-                      TextureSafe::from_file(path, &graphic_base, &pools).unwrap()
-                  )
+                //   Arc::new(
+                //       TextureSafe::from_file(path, &graphic_base, &pools).unwrap()
+                //   )
+                    texture_server.load_new_texture(path)
                 );
             }
             _ => {
@@ -348,6 +351,12 @@ fn main() {
                     }
 
                     graphic_base.end_frame(&command_buffers, image_index);
+
+                    texture_server.sync_tick();
+
+                    for model in &mut scene {
+                        model.material.color.texture = texture_server.textures.get(&model.material.color.server_index).unwrap().clone();
+                    }
 
                     unsafe {
                         // info!("Wait device");

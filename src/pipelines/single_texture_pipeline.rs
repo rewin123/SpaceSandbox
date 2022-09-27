@@ -363,11 +363,11 @@ impl SingleTexturePipeline {
 
 
             for model in models {
-                if self.descriptor_sets_texture.contains_key(&model.material.color.index) == false {
+                if self.descriptor_sets_texture.contains_key(&model.material.color.texture.index) == false {
                     let imageinfo = vk::DescriptorImageInfo::builder()
                     .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
-                    .image_view(model.material.color.imageview)
-                    .sampler(model.material.color.sampler)
+                    .image_view(model.material.color.texture.imageview)
+                    .sampler(model.material.color.texture.sampler)
                     .build();
 
                     let desc_layouts_texture =
@@ -375,11 +375,11 @@ impl SingleTexturePipeline {
                     let descriptor_set_allocate_info_texture = vk::DescriptorSetAllocateInfo::builder()
                         .descriptor_pool(self.descriptor_pool.pool)
                         .set_layouts(&desc_layouts_texture);
-                    self.descriptor_sets_texture.insert(model.material.color.index,  self.device.allocate_descriptor_sets(
+                    self.descriptor_sets_texture.insert(model.material.color.texture.index,  self.device.allocate_descriptor_sets(
                         &descriptor_set_allocate_info_texture).unwrap()[0]);
 
                     let mut descriptorwrite_image = vk::WriteDescriptorSet::builder()
-                        .dst_set(self.descriptor_sets_texture[&model.material.color.index])
+                        .dst_set(self.descriptor_sets_texture[&model.material.color.texture.index])
                         .dst_binding(0)
                         .dst_array_element(0)
                         .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
@@ -400,7 +400,7 @@ impl SingleTexturePipeline {
                     vk::PipelineBindPoint::GRAPHICS,
                     self.pipeline.layout,
                     0,
-                    &[self.descriptor_sets[i], self.descriptor_sets_texture[&model.material.color.index]],
+                    &[self.descriptor_sets[i], self.descriptor_sets_texture[&model.material.color.texture.index]],
                     &[]
                 );
 

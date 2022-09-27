@@ -68,11 +68,13 @@ impl Drop for GraphicBase {
     }
 }
 
+#[derive(Clone)]
 pub struct QueueFamilies {
     graphics_q_index: u32,
     transfer_q_index: u32,
 }
 
+#[derive(Clone)]
 pub struct Queues {
     pub graphics_queue: vk::Queue,
     pub transfer_queue: vk::Queue,
@@ -207,6 +209,7 @@ impl Drop for Pool {
     }
 }
 
+#[derive(Clone)]
 pub struct Pools {
     pub graphics: Arc<Pool>,
     pub transfer: Arc<Pool>
@@ -280,7 +283,7 @@ pub struct GPUMesh {
 }
 
 pub struct Material {
-    pub color : Arc<TextureSafe>
+    pub color : ServerTexture
 }
 
 pub struct RenderModel {

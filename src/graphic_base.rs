@@ -4,7 +4,16 @@ use ash::{Entry, vk};
 use ash::vk::{CommandBuffer, PhysicalDevice, RenderPass};
 use log::info;
 use winit::window::Window;
-use crate::{AllocatorSafe, DebugDongXi, DeviceSafe, GetDefaultPhysicalDevice, GetGraphicQueue, GetLogicalDevice, init_instance, InstanceSafe, QueueFamilies, Queues, RenderPassSafe, SurfaceSafe, SwapchainSafe};
+use crate::{AllocatorSafe, DebugDongXi, DeviceSafe, GetDefaultPhysicalDevice, GetGraphicQueue, GetLogicalDevice, init_instance, InstanceSafe, QueueFamilies, Queues, RenderPassSafe, SurfaceSafe, SwapchainSafe, Pools};
+
+#[derive(Clone)]
+pub struct ApiBase {
+    pub device : Arc<DeviceSafe>,
+    pub allocator : Arc<AllocatorSafe>,
+    pub queues : Queues,
+    pub queue_families : QueueFamilies,
+    pub pools : Pools
+}
 
 pub struct GraphicBase {
     pub instance : Arc<InstanceSafe>,
@@ -93,6 +102,16 @@ impl GraphicBase {
             device,
             swapchain,
             allocator
+        }
+    }
+
+    pub fn get_api_base(&self, pools : &Pools) -> ApiBase {
+        ApiBase { 
+            device: self.device.clone(), 
+            allocator: self.allocator.clone(), 
+            queues: self.queues.clone(),
+            pools : pools.clone(),
+            queue_families : self.queue_families.clone()
         }
     }
 
