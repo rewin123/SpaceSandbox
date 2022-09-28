@@ -288,8 +288,58 @@ pub struct Material {
 }
 
 pub struct RenderModel {
-    pub mesh : GPUMesh,
-    pub material : Material
+    pub mesh : Arc<GPUMesh>,
+    pub instances : BufferSafe,
+    pub material : Material,
+    pub cache_size : usize,
+    pub model_count : usize,
+    pub cpu_cache : Vec<f32>
+}
+
+impl RenderModel {
+    pub fn new(
+        allocator : &Arc<AllocatorSafe>,
+        mesh : Arc<GPUMesh>,
+        material : Material
+    ) -> Self {
+        let cache_size = 10;
+
+        let instances = BufferSafe::new(
+            allocator,
+            (cache_size * 4 * 16) as u64,
+            vk::BufferUsageFlags::VERTEX_BUFFER,
+            vk_mem::MemoryUsage::CpuToGpu
+        ).unwrap();
+
+        Self {
+            mesh,
+            material,
+            cache_size,
+            model_count : 0,
+            instances,
+            cpu_cache : vec![]
+        }
+    }
+
+    pub fn update_instance_buffer(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        self.instances.fill(&self.cpu_cache)?;
+
+        Ok(())
+    }
+
+    pub fn add_matrix(&mut self, matrix : &[[f32; 4]; 4]) {
+        for y in 0..4 {
+            for x in 0..4 {
+                self.cpu_cache.push(matrix[y][x]);
+            }
+        }
+        self.model_count += 1;
+    }
+
+    pub fn clear_cache(&mut self) {
+        self.cpu_cache.clear();
+        self.model_count = 0;
+    }
 }
 
 pub fn init_logger() {

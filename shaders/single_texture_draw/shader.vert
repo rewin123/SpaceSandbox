@@ -3,6 +3,7 @@
 layout (location=0) in vec3 position;
 layout (location=1) in vec3 normal;
 layout (location=2) in vec2 uv;
+layout (location=3) in mat4 model_matrix;
 
 layout (set=0, binding=0) uniform UniformBufferObject {
     mat4 view_matrix;
@@ -15,5 +16,5 @@ layout (location=1) out vec2 out_uv;
 void main() {
     out_normal = normal;
     out_uv = uv;
-    gl_Position = ubo.projection_matrix * ubo.view_matrix * vec4(position, 1.0);
+    gl_Position = ubo.projection_matrix * ubo.view_matrix * model_matrix * vec4(position, 1.0);
 }

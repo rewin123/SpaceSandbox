@@ -24,9 +24,10 @@ nalgebra-glm = "0.17.0"
 egui-winit-ash-integration = {path = "egui-winit-ash-integration"}
 gpu-allocator = "0.17.0"
 egui = "0.16.1"
-gltf = "1.0.0"
+gltf = { version = "1.0.0", features = ["KHR_materials_pbrSpecularGlossiness"] }
 byteorder = "1.4.3"
 rayon = "1.5.3"
+
 
 [workspace]
 members = [

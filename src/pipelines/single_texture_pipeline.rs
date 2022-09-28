@@ -71,7 +71,33 @@ impl SingTextPipeline {
                 location: 2,
                 offset: 0,
                 format: vk::Format::R32G32_SFLOAT
-            }];
+            },
+
+            //define instance buffer
+            vk::VertexInputAttributeDescription {
+                binding: 3,
+                location: 3,
+                offset: 0,
+                format: vk::Format::R32G32B32A32_SFLOAT
+            },
+            vk::VertexInputAttributeDescription {
+                binding: 3,
+                location: 4,
+                offset: 16,
+                format: vk::Format::R32G32B32A32_SFLOAT
+            },
+            vk::VertexInputAttributeDescription {
+                binding: 3,
+                location: 5,
+                offset: 32,
+                format: vk::Format::R32G32B32A32_SFLOAT
+            },
+            vk::VertexInputAttributeDescription {
+                binding: 3,
+                location: 6,
+                offset: 48,
+                format: vk::Format::R32G32B32A32_SFLOAT
+            },];
 
         let vertex_binding_descs = [vk::VertexInputBindingDescription {
             binding: 0,
@@ -87,6 +113,11 @@ impl SingTextPipeline {
                 binding: 2,
                 stride: 4 * 2,
                 input_rate: vk::VertexInputRate::VERTEX
+            },
+            vk::VertexInputBindingDescription {
+                binding: 3,
+                stride: 4 * 16,
+                input_rate: vk::VertexInputRate::INSTANCE
             }];
 
         let vertex_input_info = vk::PipelineVertexInputStateCreateInfo::builder()
@@ -333,7 +364,7 @@ impl SingleTexturePipeline {
 
         let clearvalues = [vk::ClearValue {
             color: vk::ClearColorValue {
-                float32: [0.0, 0.0, 0.08, 1.0],
+                float32: [0.5, 0.5, 0.5, 1.0],
             },
         },
             vk::ClearValue {
@@ -415,10 +446,11 @@ impl SingleTexturePipeline {
                     0,
                     &[model.mesh.pos_data.buffer,
                         model.mesh.normal_data.buffer,
-                        model.mesh.uv_data.buffer],
-                    &[0, 0, 0]);
+                        model.mesh.uv_data.buffer,
+                        model.instances.buffer],
+                    &[0, 0, 0, 0]);
                 logical_device.cmd_bind_index_buffer(commandbuffer, model.mesh.index_data.buffer, 0, vk::IndexType::UINT32);
-                logical_device.cmd_draw_indexed(commandbuffer, model.mesh.vertex_count, 1, 0, 0, 0);
+                logical_device.cmd_draw_indexed(commandbuffer, model.mesh.vertex_count, model.model_count as u32, 0, 0, 0);
             
             }
 

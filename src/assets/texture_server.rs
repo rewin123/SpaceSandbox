@@ -98,4 +98,16 @@ impl TextureServer {
 
         // waiting_lock.clear();
     }
+
+    pub fn get_default_color_texture(&mut self) -> ServerTexture {
+        let copy_index = self.index;
+        self.index += 1;
+
+        self.textures.insert(self.index, self.default_texture.clone());
+
+        ServerTexture {
+            server_index: self.index,
+            texture: self.default_texture.clone()
+        }
+    }
 }

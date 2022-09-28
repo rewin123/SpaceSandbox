@@ -14,6 +14,7 @@ use gltf::{Attribute, Semantic};
 use gltf::accessor::DataType;
 use gltf::buffer::{Source, Target};
 use gltf::json::accessor::ComponentType;
+use gltf::material::PbrMetallicRoughness;
 
 
 use log::*;
@@ -56,6 +57,9 @@ fn main() {
     ).unwrap();
 
     let mut scene : Vec<RenderModel> = vec![];
+
+    // let sponza = gltf::Gltf::open("res/test_res/models/xian_spaceship/scene.gltf").unwrap();
+    // let base = "res/test_res/models/xian_spaceship";
 
     let sponza = gltf::Gltf::open("res/test_res/models/sponza/glTF/Sponza.gltf").unwrap();
     let base = "res/test_res/models/sponza/glTF";
@@ -102,7 +106,10 @@ fn main() {
         }
     }
 
+    let mut meshes = vec![];
+
     for m in sponza.meshes() {
+        let mut sub_models = vec![];
         for p in m.primitives() {
             let mut pos : Vec<f32> = vec![];
             let mut normals : Vec<f32> = vec![];
@@ -116,11 +123,21 @@ fn main() {
 
             match indices_acc.data_type() {
                 ComponentType::U16 => {
-                    indices = vec![0; indices_view.length() / 2];
+                    indices = vec![0; indices_acc.count()];
                     let buf = &buffers[indices_view.buffer().index()];
+                    info!("indices stride: {:?}", indices_view.stride());
                     for idx in 0..indices.len() {
-                        let global_idx = idx * indices_view.stride().unwrap_or(2) + indices_view.offset();
+                        let global_idx = idx * indices_view.stride().unwrap_or(2) + indices_view.offset() + indices_acc.offset();
                         indices[idx] = byteorder::LittleEndian::read_u16(&buf[global_idx..(global_idx + 2)]) as u32;
+                    }
+                }
+                ComponentType::U32 => {
+                    indices = vec![0; indices_acc.count()];
+                    let buf = &buffers[indices_view.buffer().index()];
+                    info!("indices stride: {:?}", indices_view.stride());
+                    for idx in 0..indices.len() {
+                        let global_idx = idx * indices_view.stride().unwrap_or(4) + indices_view.offset() + indices_acc.offset();
+                        indices[idx] = byteorder::LittleEndian::read_u32(&buf[global_idx..(global_idx + 4)]) as u32;
                     }
                 }
                 _ => {panic!("Unsupported index type!");}
@@ -131,19 +148,26 @@ fn main() {
             for (sem, acc) in p.attributes() {
                 // match  { }
                 let view = acc.view().unwrap();
-                let mut data = vec![0.0f32; view.length() / 4];
+                let mut data = vec![0.0f32; acc.count() * acc.dimensions().multiplicity()];
+
+                let stride = view.stride().unwrap_or(acc.data_type().size() * acc.dimensions().multiplicity());
+
 
                 let buf = &buffers[view.buffer().index()];
 
-                for idx in 0..data.len() {
-                    let global_idx = idx * view.stride().unwrap_or(4) + view.offset();
-                    data[idx] = byteorder::LittleEndian::read_f32(&buf[global_idx..(global_idx+4)]);
+                for c in 0..acc.count() {
+                    for d in 0..acc.dimensions().multiplicity() {
+                        let idx = c * acc.dimensions().multiplicity() + d;
+                        let global_idx = c * stride + acc.offset() + view.offset() + d * acc.data_type().size();
+                        data[idx] = byteorder::LittleEndian::read_f32(&buf[global_idx..(global_idx + 4)]);
+                    }
                 }
 
                 match sem {
                     Semantic::Positions => {
                         pos.extend(data.iter());
-
+                        info!("Pos {}", acc.dimensions().multiplicity());
+                        info!("Stride: {}", stride);
                     }
                     Semantic::Normals => {
                         normals.extend(data.iter());
@@ -180,6 +204,10 @@ fn main() {
                 MemoryUsage::CpuToGpu
             ).unwrap();
 
+            if uv.len() == 0 {
+                uv = vec![0.0f32; pos.len() / 3 * 2];
+            }
+
             let mut uv_buffer = BufferSafe::new(
                 &graphic_base.allocator,
                 uv.len() as u64 * 4,
@@ -198,21 +226,63 @@ fn main() {
                 index_data: index_buffer,
                 uv_data : uv_buffer,
                 vertex_count: indices.len() as u32,
-                name: "".to_string()
+                name: m.name().unwrap_or("").to_string()
             };
 
-            let material = Material {
-                color : images[p.material().pbr_metallic_roughness().base_color_texture().unwrap().texture().index()].clone()
+            let material = {
+                match p.material().pbr_specular_glossiness() {
+                    Some(v) => {
+
+                        let color;
+                        if let Some(tex) = v.diffuse_texture() {
+                            color = images[tex.texture().index()].clone()
+                        } else {
+                            color = texture_server.get_default_color_texture();
+                        }
+
+                        Material {
+                            color
+                        }
+                    }
+                    None => {
+                        Material {
+                            color : images[p.material().pbr_metallic_roughness().base_color_texture().unwrap().texture().index()].clone()
+                        }
+                    }
+                }
             };
 
-            let model = RenderModel {
-                mesh,
-                material
-            };
+            let model = RenderModel::new(&graphic_base.allocator,
+                Arc::new(mesh),
+                material);
 
-            scene.push(model);
+            sub_models.push(model);
             // break;
         }
+        meshes.push(sub_models);
+    }
+
+    for n in sponza.nodes() {
+        let matrix = n.transform().matrix();
+        if let Some(mesh) = n.mesh() {
+            for rm in &mut meshes[mesh.index()] {
+                rm.add_matrix(&matrix);
+            }
+        } else {
+            for child in n.children() {
+                if let Some(mesh) = child.mesh() {
+                    for rm in &mut meshes[mesh.index()] {
+                        rm.add_matrix(&matrix);
+                    }
+                }
+            }
+        }
+    }
+
+    scene = meshes.into_iter().flatten().collect();
+
+    for rm in &mut scene {
+        rm.update_instance_buffer().unwrap();
     }
 
     info!("Finish loading");
