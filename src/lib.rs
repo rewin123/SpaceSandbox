@@ -285,7 +285,8 @@ pub struct GPUMesh {
 
 pub struct Material {
     pub color : ServerTexture,
-    pub normal : ServerTexture
+    pub normal : ServerTexture,
+    pub metallicRoughness : ServerTexture
 }
 
 pub struct RenderModel {

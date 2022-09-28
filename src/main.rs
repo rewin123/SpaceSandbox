@@ -25,7 +25,7 @@ use vk_mem::MemoryUsage;
 use winit::window::Window;
 
 use SpaceSandbox::*;
-use SpaceSandbox::MaterialTexture::{Diffuse, Normal};
+use SpaceSandbox::MaterialTexture::{Diffuse, MetallicRoughness, Normal};
 use SpaceSandbox::task_server::{TaskServer, TaskState};
 
 // for time measure wolfpld/tracy
@@ -94,12 +94,7 @@ fn main() {
             gltf::image::Source::Uri {uri, mime_type} => {
                 let path = format!("{}/{}", base, uri);
                 info!("Loading texture {} ...", path);
-                images.push(
-                //   Arc::new(
-                //       TextureSafe::from_file(path, &graphic_base, &pools).unwrap()
-                //   )
-                    texture_server.load_new_texture(path)
-                );
+                images.push(texture_server.load_new_texture(path));
             }
             _ => {
                 panic!("Not supported source for texture");
@@ -237,6 +232,13 @@ fn main() {
                 normal_tex = texture_server.get_default_color_texture();
             }
 
+            let metallicRoughness;
+            if let Some(tex) = p.material().pbr_metallic_roughness().metallic_roughness_texture() {
+                metallicRoughness = images[tex.texture().index()].clone();
+            } else {
+                metallicRoughness = texture_server.get_default_color_texture();
+            }
+
             let material = {
                 match p.material().pbr_specular_glossiness() {
                     Some(v) => {
@@ -250,13 +252,15 @@ fn main() {
 
                         Material {
                             color,
-                            normal : normal_tex
+                            normal : normal_tex,
+                            metallicRoughness
                         }
                     }
                     None => {
                         Material {
                             color : images[p.material().pbr_metallic_roughness().base_color_texture().unwrap().texture().index()].clone(),
-                            normal : normal_tex
+                            normal : normal_tex,
+                            metallicRoughness
                         }
                     }
                 }
@@ -403,6 +407,9 @@ fn main() {
                                         gray_draw.mode = Normal;
                                     }
                                     MaterialTexture::Normal => {
+                                        gray_draw.mode = MetallicRoughness;
+                                    }
+                                    MaterialTexture::MetallicRoughness => {
                                         gray_draw.mode = Diffuse;
                                     }
                                 }
@@ -466,6 +473,8 @@ fn main() {
 
                     for model in &mut scene {
                         model.material.color.texture = texture_server.textures.get(&model.material.color.server_index).unwrap().clone();
+                        model.material.normal.texture = texture_server.textures.get(&model.material.normal.server_index).unwrap().clone();
+                        model.material.metallicRoughness.texture = texture_server.textures.get(&model.material.metallicRoughness.server_index).unwrap().clone();
                     }
 
                     unsafe {

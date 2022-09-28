@@ -10,7 +10,8 @@ use ash::vk::DescriptorSetLayout;
 #[derive(Debug)]
 pub enum MaterialTexture {
     Diffuse,
-    Normal
+    Normal,
+    MetallicRoughness
 }
 
 pub struct SingTextPipeline {
@@ -411,6 +412,9 @@ impl SingleTexturePipeline {
                     MaterialTexture::Normal => {
                         tex = &model.material.normal;
                     }
+                    MaterialTexture::MetallicRoughness => {
+                        tex = &model.material.metallicRoughness
+                    }
                 }
                 if self.descriptor_sets_texture.contains_key(&tex.texture.index) == false {
                     let mut imageinfo = vk::DescriptorImageInfo::builder()
@@ -454,6 +458,9 @@ impl SingleTexturePipeline {
                     }
                     MaterialTexture::Normal => {
                         tex = &model.material.normal;
+                    }
+                    MaterialTexture::MetallicRoughness => {
+                        tex = &model.material.metallicRoughness;
                     }
                 }
 
