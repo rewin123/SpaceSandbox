@@ -1,8 +1,9 @@
 use std::collections::HashMap;
+use std::mem::ManuallyDrop;
 use std::sync::Arc;
 use ash::vk;
 use ash::vk::{DescriptorSet, Framebuffer};
-use log::info;
+use log::*;
 use crate::{AllocatorSafe, DeviceSafe, GPUMesh, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, CommandBufferSafe, Pools, DescriptorPoolSafe};
 use ash::vk::DescriptorSetLayout;
 
@@ -364,11 +365,13 @@ impl SingleTexturePipeline {
 
             for model in models {
                 if self.descriptor_sets_texture.contains_key(&model.material.color.texture.index) == false {
-                    let imageinfo = vk::DescriptorImageInfo::builder()
+                    let mut imageinfo = vk::DescriptorImageInfo::builder()
                     .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
                     .image_view(model.material.color.texture.imageview)
                     .sampler(model.material.color.texture.sampler)
                     .build();
+
+                    info!("image layout {:?}", imageinfo.image_layout);
 
                     let desc_layouts_texture =
                         vec![self.pipeline.descriptor_set_layouts[1]; 1];
@@ -386,10 +389,12 @@ impl SingleTexturePipeline {
                         .build();
                         
                     descriptorwrite_image.descriptor_count = 1;
-                    descriptorwrite_image.p_image_info = [imageinfo].as_ptr();    
+                    descriptorwrite_image.p_image_info = &imageinfo;    
                     unsafe {
                         logical_device.update_descriptor_sets(&[descriptorwrite_image], &[]);
                     }
+
+                    // debug!("Imageinfo holder: {:?}", &imageinfo.image_layout);
                 }
             }
 

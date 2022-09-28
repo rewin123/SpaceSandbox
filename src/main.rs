@@ -2,7 +2,6 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::Read;
 use std::ops::Deref;
-use std::os::linux::raw::stat;
 use std::os::raw::c_char;
 use std::sync::Arc;
 use ash::{Device, Entry, Instance, vk};
