@@ -7,6 +7,12 @@ use log::*;
 use crate::{AllocatorSafe, DeviceSafe, GPUMesh, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, CommandBufferSafe, Pools, DescriptorPoolSafe};
 use ash::vk::DescriptorSetLayout;
 
+#[derive(Debug)]
+pub enum MaterialTexture {
+    Diffuse,
+    Normal
+}
+
 pub struct SingTextPipeline {
     pub pipeline: vk::Pipeline,
     pub layout: vk::PipelineLayout,
@@ -246,7 +252,8 @@ pub struct SingleTexturePipeline {
     device : Arc<DeviceSafe>,
     allocator : Arc<AllocatorSafe>,
     descriptor_pool : Arc<DescriptorPoolSafe>,
-    descriptor_sets_texture : HashMap<usize, DescriptorSet>
+    descriptor_sets_texture : HashMap<usize, DescriptorSet>,
+    pub mode : MaterialTexture
 }
 
 impl Drop for SingleTexturePipeline {
@@ -328,7 +335,8 @@ impl SingleTexturePipeline {
             device : graphic_base.device.clone(),
             allocator : graphic_base.allocator.clone(),
             descriptor_pool : Arc::new(DescriptorPoolSafe { pool: descriptor_pool, device: graphic_base.device.clone() }),
-            descriptor_sets_texture : HashMap::new()
+            descriptor_sets_texture : HashMap::new(),
+            mode : MaterialTexture::Diffuse
         })
     }
 
@@ -395,11 +403,20 @@ impl SingleTexturePipeline {
 
 
             for model in models {
-                if self.descriptor_sets_texture.contains_key(&model.material.color.texture.index) == false {
+                let tex;
+                match self.mode {
+                    MaterialTexture::Diffuse => {
+                        tex = &model.material.color;
+                    }
+                    MaterialTexture::Normal => {
+                        tex = &model.material.normal;
+                    }
+                }
+                if self.descriptor_sets_texture.contains_key(&tex.texture.index) == false {
                     let mut imageinfo = vk::DescriptorImageInfo::builder()
                     .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
-                    .image_view(model.material.color.texture.imageview)
-                    .sampler(model.material.color.texture.sampler)
+                    .image_view(tex.texture.imageview)
+                    .sampler(tex.texture.sampler)
                     .build();
 
                     info!("image layout {:?}", imageinfo.image_layout);
@@ -409,11 +426,11 @@ impl SingleTexturePipeline {
                     let descriptor_set_allocate_info_texture = vk::DescriptorSetAllocateInfo::builder()
                         .descriptor_pool(self.descriptor_pool.pool)
                         .set_layouts(&desc_layouts_texture);
-                    self.descriptor_sets_texture.insert(model.material.color.texture.index,  self.device.allocate_descriptor_sets(
+                    self.descriptor_sets_texture.insert(tex.texture.index,  self.device.allocate_descriptor_sets(
                         &descriptor_set_allocate_info_texture).unwrap()[0]);
 
                     let mut descriptorwrite_image = vk::WriteDescriptorSet::builder()
-                        .dst_set(self.descriptor_sets_texture[&model.material.color.texture.index])
+                        .dst_set(self.descriptor_sets_texture[&tex.texture.index])
                         .dst_binding(0)
                         .dst_array_element(0)
                         .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
@@ -430,13 +447,22 @@ impl SingleTexturePipeline {
             }
 
             for model in models {
+                let tex;
+                match self.mode {
+                    MaterialTexture::Diffuse => {
+                        tex = &model.material.color;
+                    }
+                    MaterialTexture::Normal => {
+                        tex = &model.material.normal;
+                    }
+                }
 
                 logical_device.cmd_bind_descriptor_sets(
                     commandbuffer,
                     vk::PipelineBindPoint::GRAPHICS,
                     self.pipeline.layout,
                     0,
-                    &[self.descriptor_sets[i], self.descriptor_sets_texture[&model.material.color.texture.index]],
+                    &[self.descriptor_sets[i], self.descriptor_sets_texture[&tex.texture.index]],
                     &[]
                 );
 

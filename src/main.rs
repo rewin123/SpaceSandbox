@@ -25,6 +25,7 @@ use vk_mem::MemoryUsage;
 use winit::window::Window;
 
 use SpaceSandbox::*;
+use SpaceSandbox::MaterialTexture::{Diffuse, Normal};
 use SpaceSandbox::task_server::{TaskServer, TaskState};
 
 // for time measure wolfpld/tracy
@@ -229,6 +230,13 @@ fn main() {
                 name: m.name().unwrap_or("").to_string()
             };
 
+            let normal_tex;
+            if let Some(tex) = p.material().normal_texture() {
+                normal_tex = images[tex.texture().index()].clone();
+            } else {
+                normal_tex = texture_server.get_default_color_texture();
+            }
+
             let material = {
                 match p.material().pbr_specular_glossiness() {
                     Some(v) => {
@@ -241,12 +249,14 @@ fn main() {
                         }
 
                         Material {
-                            color
+                            color,
+                            normal : normal_tex
                         }
                     }
                     None => {
                         Material {
-                            color : images[p.material().pbr_metallic_roughness().base_color_texture().unwrap().texture().index()].clone()
+                            color : images[p.material().pbr_metallic_roughness().base_color_texture().unwrap().texture().index()].clone(),
+                            normal : normal_tex
                         }
                     }
                 }
@@ -383,9 +393,21 @@ fn main() {
                     gui.integration.begin_frame();
 
                     egui::TopBottomPanel::top(0).show(&gui.integration.context(), |ui| {
-                        if ui.button(format!("{} tasks running", task_server.get_task_count())).clicked() {
-                            show_task_list = true;
-                        }
+                        ui.horizontal(|ui| {
+                            if ui.button(format!("{} tasks running", task_server.get_task_count())).clicked() {
+                                show_task_list = true;
+                            }
+                            if ui.button(format!("{:?}", &gray_draw.mode)).clicked() {
+                                match gray_draw.mode {
+                                    MaterialTexture::Diffuse => {
+                                        gray_draw.mode = Normal;
+                                    }
+                                    MaterialTexture::Normal => {
+                                        gray_draw.mode = Diffuse;
+                                    }
+                                }
+                            }
+                        });
                     });
 
                     if show_task_list {
@@ -418,9 +440,6 @@ fn main() {
 
                     camera.update_viewmatrix();
                     camera.update_inner_buffer();
-
-                    
-
 
                     unsafe {
                         graphic_base.device.begin_command_buffer(command_buffers[image_index as usize], &vk::CommandBufferBeginInfo::builder());
