@@ -14,6 +14,7 @@ use tobj::LoadError;
 use winit::window::Window;
 
 use SpaceSandbox::*;
+use SpaceSandbox::wavefront::load_gray_obj_now;
 
 // for time measure wolfpld/tracy
 
