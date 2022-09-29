@@ -232,11 +232,11 @@ fn main() {
                 normal_tex = texture_server.get_default_color_texture();
             }
 
-            let metallicRoughness;
+            let metallic_roughness;
             if let Some(tex) = p.material().pbr_metallic_roughness().metallic_roughness_texture() {
-                metallicRoughness = images[tex.texture().index()].clone();
+                metallic_roughness = images[tex.texture().index()].clone();
             } else {
-                metallicRoughness = texture_server.get_default_color_texture();
+                metallic_roughness = texture_server.get_default_color_texture();
             }
 
             let material = {
@@ -253,14 +253,14 @@ fn main() {
                         Material {
                             color,
                             normal : normal_tex,
-                            metallicRoughness
+                            metallic_roughness: metallic_roughness
                         }
                     }
                     None => {
                         Material {
                             color : images[p.material().pbr_metallic_roughness().base_color_texture().unwrap().texture().index()].clone(),
                             normal : normal_tex,
-                            metallicRoughness
+                            metallic_roughness: metallic_roughness
                         }
                     }
                 }
@@ -449,7 +449,7 @@ fn main() {
                     camera.update_inner_buffer();
 
                     unsafe {
-                        graphic_base.device.begin_command_buffer(command_buffers[image_index as usize], &vk::CommandBufferBeginInfo::builder());
+                        graphic_base.device.begin_command_buffer(command_buffers[image_index as usize], &vk::CommandBufferBeginInfo::builder()).unwrap();
                     }
 
                     
@@ -474,7 +474,7 @@ fn main() {
                     for model in &mut scene {
                         model.material.color.texture = texture_server.textures.get(&model.material.color.server_index).unwrap().clone();
                         model.material.normal.texture = texture_server.textures.get(&model.material.normal.server_index).unwrap().clone();
-                        model.material.metallicRoughness.texture = texture_server.textures.get(&model.material.metallicRoughness.server_index).unwrap().clone();
+                        model.material.metallic_roughness.texture = texture_server.textures.get(&model.material.metallic_roughness.server_index).unwrap().clone();
                     }
 
                     unsafe {

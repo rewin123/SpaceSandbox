@@ -1,6 +1,6 @@
 use crate::*;
 
-pub fn GetLogicalDevice(
+pub fn get_logical_device(
     layer_names: &Vec<&str>,
     instance: &InstanceSafe,
     physical_device: PhysicalDevice,
@@ -110,7 +110,7 @@ pub fn init_instance(
     instance
 }
 
-pub fn GetGraphicQueue(instance: &InstanceSafe, physical_device: &PhysicalDevice) -> QueueFamilies {
+pub fn get_graphic_queue(instance: &InstanceSafe, physical_device: &PhysicalDevice) -> QueueFamilies {
     let queuefamilyproperties =
         unsafe { instance.inner.get_physical_device_queue_family_properties(physical_device.clone()) };
     // dbg!(&queuefamilyproperties);
@@ -139,7 +139,7 @@ pub fn GetGraphicQueue(instance: &InstanceSafe, physical_device: &PhysicalDevice
     }
 }
 
-pub fn GetDefaultPhysicalDevice(instance: &InstanceSafe) -> (PhysicalDevice, PhysicalDeviceProperties) {
+pub fn get_default_physical_device(instance: &InstanceSafe) -> (PhysicalDevice, PhysicalDeviceProperties) {
     let phys_devs = unsafe { instance.inner.enumerate_physical_devices().unwrap() };
 
     let mut chosen = None;

@@ -11,7 +11,7 @@ pub struct RenderCamera {
 
 impl RenderCamera {
     pub fn new(allocator : &Arc<AllocatorSafe>) -> Self {
-        let mut camera = Camera::default();
+        let camera = Camera::default();
 
         let mut uniformbuffer = BufferSafe::new(
             &allocator,
@@ -105,10 +105,12 @@ impl Camera {
         );
     }
 
-    pub fn update_buffer(&self, buffer: &mut BufferSafe) {
+    pub fn update_buffer(&self, buffer: &mut BufferSafe) -> Result<(), vk_mem::error::Error> {
         let data: [[[f32; 4]; 4]; 2] = [self.viewmatrix.into(), self.projectionmatrix.into()];
-        buffer.fill(&data);
+        buffer.fill(&data)
     }
+
+
     pub fn update_viewmatrix(&mut self) {
         let right = na::Unit::new_normalize(self.down_direction.cross(&self.view_direction));
         let m = na::Matrix4::new(

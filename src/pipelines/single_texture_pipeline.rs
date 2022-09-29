@@ -1,10 +1,9 @@
 use std::collections::HashMap;
-use std::mem::ManuallyDrop;
 use std::sync::Arc;
 use ash::vk;
 use ash::vk::{DescriptorSet, Framebuffer};
 use log::*;
-use crate::{AllocatorSafe, DeviceSafe, GPUMesh, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, CommandBufferSafe, Pools, DescriptorPoolSafe};
+use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe};
 use ash::vk::DescriptorSetLayout;
 
 #[derive(Debug)]
@@ -251,7 +250,6 @@ pub struct SingleTexturePipeline {
     framebuffers : Vec<Framebuffer>,
     renderpass : RenderPassSafe,
     device : Arc<DeviceSafe>,
-    allocator : Arc<AllocatorSafe>,
     descriptor_pool : Arc<DescriptorPoolSafe>,
     descriptor_sets_texture : HashMap<usize, DescriptorSet>,
     pub mode : MaterialTexture
@@ -273,18 +271,18 @@ impl SingleTexturePipeline {
     pub fn new(
         graphic_base : &GraphicBase,
         camera : &RenderCamera) -> Result<Self, vk::Result> {
-        let mut renderpass = init_renderpass(&graphic_base).unwrap();
+        let renderpass = init_renderpass(&graphic_base).unwrap();
         let framebuffers = SingleTexturePipeline::create_framebuffers(
             &graphic_base.device,
             renderpass.inner,
             &graphic_base.swapchain
         )?;
 
-        let pipeline= unsafe {
+        let pipeline=
              SingTextPipeline::init(
                 &graphic_base.device,
                 &graphic_base.swapchain,
-                &renderpass).unwrap() };
+                &renderpass).unwrap();
 
         let pool_sizes = [
             vk::DescriptorPoolSize {
@@ -313,7 +311,7 @@ impl SingleTexturePipeline {
             unsafe { graphic_base.device.allocate_descriptor_sets(&descriptor_set_allocate_info)
             }?;
 
-        for (i, descset) in descriptor_sets.iter().enumerate() {
+        for (_, descset) in descriptor_sets.iter().enumerate() {
             let buffer_infos = [vk::DescriptorBufferInfo {
                 buffer: camera.uniformbuffer.buffer,
                 offset: 0,
@@ -334,7 +332,6 @@ impl SingleTexturePipeline {
             framebuffers,
             renderpass,
             device : graphic_base.device.clone(),
-            allocator : graphic_base.allocator.clone(),
             descriptor_pool : Arc::new(DescriptorPoolSafe { pool: descriptor_pool, device: graphic_base.device.clone() }),
             descriptor_sets_texture : HashMap::new(),
             mode : MaterialTexture::Diffuse
@@ -413,11 +410,11 @@ impl SingleTexturePipeline {
                         tex = &model.material.normal;
                     }
                     MaterialTexture::MetallicRoughness => {
-                        tex = &model.material.metallicRoughness
+                        tex = &model.material.metallic_roughness
                     }
                 }
                 if self.descriptor_sets_texture.contains_key(&tex.texture.index) == false {
-                    let mut imageinfo = vk::DescriptorImageInfo::builder()
+                    let imageinfo = vk::DescriptorImageInfo::builder()
                     .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
                     .image_view(tex.texture.imageview)
                     .sampler(tex.texture.sampler)
@@ -441,12 +438,8 @@ impl SingleTexturePipeline {
                         .build();
                         
                     descriptorwrite_image.descriptor_count = 1;
-                    descriptorwrite_image.p_image_info = &imageinfo;    
-                    unsafe {
-                        logical_device.update_descriptor_sets(&[descriptorwrite_image], &[]);
-                    }
-
-                    // debug!("Imageinfo holder: {:?}", &imageinfo.image_layout);
+                    descriptorwrite_image.p_image_info = &imageinfo;
+                    logical_device.update_descriptor_sets(&[descriptorwrite_image], &[]);
                 }
             }
 
@@ -460,7 +453,7 @@ impl SingleTexturePipeline {
                         tex = &model.material.normal;
                     }
                     MaterialTexture::MetallicRoughness => {
-                        tex = &model.material.metallicRoughness;
+                        tex = &model.material.metallic_roughness;
                     }
                 }
 

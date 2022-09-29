@@ -1,7 +1,7 @@
 use std::ops::Deref;
 use std::sync::Arc;
 use ash::vk;
-use log::{debug, info};
+use log::*;
 use crate::AllocatorSafe;
 
 pub struct BufferSafe {
@@ -60,7 +60,7 @@ impl BufferSafe {
         }
         let data_ptr = self.allocator.map_memory(&self.allocation)? as *mut T;
         unsafe { data_ptr.copy_from_nonoverlapping(data.as_ptr(), data.len()) };
-        self.allocator.unmap_memory(&self.allocation);
+        self.allocator.unmap_memory(&self.allocation)?;
         Ok(())
     }
 }
@@ -68,8 +68,8 @@ impl BufferSafe {
 impl Drop for BufferSafe {
     fn drop(&mut self) {
         debug!("Destroy buffer");
-        unsafe {
-            self.allocator.destroy_buffer(self.buffer, &self.allocation);
+        if let Err(e) = self.allocator.destroy_buffer(self.buffer, &self.allocation) {
+            error!("Detroy buffer: {:#?}", e);
         }
     }
 }

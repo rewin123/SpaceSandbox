@@ -1,10 +1,9 @@
-use std::os::raw::c_char;
 use std::sync::Arc;
 use ash::{Entry, vk};
 use ash::vk::{CommandBuffer, PhysicalDevice, RenderPass};
 use log::info;
 use winit::window::Window;
-use crate::{AllocatorSafe, DebugDongXi, DeviceSafe, GetDefaultPhysicalDevice, GetGraphicQueue, GetLogicalDevice, init_instance, InstanceSafe, QueueFamilies, Queues, RenderPassSafe, SurfaceSafe, SwapchainSafe, Pools};
+use crate::{AllocatorSafe, DebugDongXi, DeviceSafe, get_default_physical_device, get_graphic_queue, get_logical_device, init_instance, InstanceSafe, QueueFamilies, Queues, RenderPassSafe, SurfaceSafe, SwapchainSafe, Pools};
 
 #[derive(Clone)]
 pub struct ApiBase {
@@ -35,21 +34,21 @@ impl GraphicBase {
     pub fn init(window : Window) -> Self {
         let entry = unsafe {ash::Entry::load().unwrap() };
 
-        let mut extension_name_pointers : Vec<*const c_char> =
-            ash_window::enumerate_required_extensions(&window).unwrap()
-                .iter()
-                .map(|&name| name.as_ptr())
-                .collect();
+        // let mut extension_name_pointers : Vec<*const c_char> =
+        //     ash_window::enumerate_required_extensions(&window).unwrap()
+        //         .iter()
+        //         .map(|&name| name.as_ptr())
+        //         .collect();
 
 
         let layer_names = vec!["VK_LAYER_KHRONOS_validation"];
         let instance = Arc::new(init_instance(&entry, &layer_names, &window));
         let debug = DebugDongXi::init(&entry, &instance).unwrap();
 
-        let (physical_device, physical_device_properties) = GetDefaultPhysicalDevice(&instance);
+        let (physical_device, physical_device_properties) = get_default_physical_device(&instance);
 
-        let qfamindices = GetGraphicQueue(&instance, &physical_device);
-        let (logical_device, queues) = GetLogicalDevice(
+        let qfamindices = get_graphic_queue(&instance, &physical_device);
+        let (logical_device, queues) = get_logical_device(
             &layer_names,
             &instance,
             physical_device,
@@ -71,7 +70,7 @@ impl GraphicBase {
             heap_size_limits: None
         };
         info!("Creating allocator...");
-        let mut allocator =
+        let allocator =
             Arc::new(AllocatorSafe {
                 inner : vk_mem::Allocator::new(&allocator_create_info).unwrap()
             });

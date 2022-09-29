@@ -10,7 +10,7 @@ pub struct DebugDongXi {
 }
 impl DebugDongXi {
     pub fn init(entry: &ash::Entry, instance: &Arc<InstanceSafe>) -> Result<DebugDongXi, vk::Result> {
-        let mut debugcreateinfo = vk::DebugUtilsMessengerCreateInfoEXT::builder()
+        let debugcreateinfo = vk::DebugUtilsMessengerCreateInfoEXT::builder()
             .message_severity(
                 vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
                     | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE

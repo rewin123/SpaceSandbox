@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use ash::vk;
 use ash::vk::{DescriptorSet, Framebuffer};
-use log::info;
-use crate::{AllocatorSafe, DeviceSafe, GPUMesh, GraphicBase, init_renderpass, RenderCamera, RenderPassSafe, SwapchainSafe};
+use log::*;
+use crate::{DeviceSafe, GPUMesh, GraphicBase, init_renderpass, RenderCamera, RenderPassSafe, SwapchainSafe};
 
 use super::example_pipeline::ExamplePipeline;
 
@@ -12,7 +12,6 @@ pub struct GrayscalePipeline {
     framebuffers : Vec<Framebuffer>,
     renderpass : RenderPassSafe,
     device : Arc<DeviceSafe>,
-    allocator : Arc<AllocatorSafe>,
     descriptor_pool : vk::DescriptorPool
 }
 
@@ -33,7 +32,7 @@ impl GrayscalePipeline {
     pub fn new(
         graphic_base : &GraphicBase,
         camera : &RenderCamera) -> Result<Self, vk::Result> {
-        let mut renderpass = init_renderpass(&graphic_base).unwrap();
+        let renderpass = init_renderpass(&graphic_base).unwrap();
         let framebuffers = GrayscalePipeline::create_framebuffers(
             &graphic_base.device,
             renderpass.inner,
@@ -67,7 +66,7 @@ impl GrayscalePipeline {
             unsafe { graphic_base.device.allocate_descriptor_sets(&descriptor_set_allocate_info)
             }?;
 
-        for (i, descset) in descriptor_sets.iter().enumerate() {
+        for (_, descset) in descriptor_sets.iter().enumerate() {
             let buffer_infos = [vk::DescriptorBufferInfo {
                 buffer: camera.uniformbuffer.buffer,
                 offset: 0,
@@ -88,7 +87,6 @@ impl GrayscalePipeline {
             framebuffers,
             renderpass,
             device : graphic_base.device.clone(),
-            allocator : graphic_base.allocator.clone(),
             descriptor_pool
         })
     }

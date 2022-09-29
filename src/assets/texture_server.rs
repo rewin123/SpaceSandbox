@@ -1,9 +1,6 @@
-use std::{collections::HashMap, sync::Weak, sync::{Arc, Mutex}};
+use std::{collections::HashMap, sync::{Arc, Mutex}};
 
-use crate::{TextureSafe, GraphicBase, Pools, ApiBase, Pool};
-use egui::mutex::RwLock;
-use rayon::prelude::*;
-use ash::vk;
+use crate::{TextureSafe, GraphicBase, Pools, ApiBase};
 use crate::task_server::TaskServer;
 
 #[derive(Clone)]
@@ -24,7 +21,6 @@ pub struct TextureServer {
     pub textures : HashMap<usize, Arc<TextureSafe>>,
     default_texture : Arc<TextureSafe>,
     index : usize,
-    update_count : usize,
     waiting_list : Arc<Mutex<Vec<TexFormTask>>>,
     api_base : ApiBase,
     task_server : Arc<TaskServer>
@@ -42,7 +38,6 @@ impl TextureServer {
                 &gb.get_api_base(pools)).unwrap()),
             waiting_list : Arc::new(Mutex::new(vec![])),
             api_base : gb.get_api_base(pools),
-            update_count : 0,
             task_server
         }
     }
@@ -100,7 +95,6 @@ impl TextureServer {
     }
 
     pub fn get_default_color_texture(&mut self) -> ServerTexture {
-        let copy_index = self.index;
         self.index += 1;
 
         self.textures.insert(self.index, self.default_texture.clone());

@@ -43,10 +43,6 @@ impl SwapchainSafe {
         };
         let extent = surface_capabilities.current_extent;
 
-        let surface_present_modes = unsafe {
-            surface.loader.get_physical_device_surface_present_modes(
-                physical_device, surface.inner).unwrap()
-        };
         let surface_formats = unsafe {
             surface.loader.get_physical_device_surface_formats(
                 physical_device, surface.inner).unwrap()

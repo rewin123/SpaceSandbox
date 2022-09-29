@@ -1,17 +1,12 @@
-use std::collections::HashMap;
 use std::fs::File;
-use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::os::raw::c_char;
 use std::sync::Arc;
-use ash::{Device, Entry, Instance, vk};
-use ash::extensions::{ext::DebugUtils, khr::Surface};
+use ash::{Device, Entry, vk};
+use ash::extensions::{khr::Surface};
 use ash::extensions::khr::Swapchain;
-use ash::vk::{BufferUsageFlags, CommandBuffer, DeviceQueueCreateInfo, Handle, PhysicalDevice, PhysicalDeviceProperties, RenderPass, SurfaceKHR, SwapchainKHR, DescriptorPool, DescriptorSet};
+use ash::vk::{PhysicalDevice, PhysicalDeviceProperties, RenderPass, SurfaceKHR, SwapchainKHR, DescriptorPool};
 
-
-
-use egui::plot::Text;
 use log::*;
 use simplelog::*;
 use std::default::Default;
@@ -57,9 +52,7 @@ impl Deref for AllocatorSafe {
 impl Drop for AllocatorSafe {
     fn drop(&mut self) {
         info!("Destroy allocator");
-        unsafe {
-            self.inner.destroy();
-        }
+        self.inner.destroy();
     }
 }
 
@@ -264,12 +257,6 @@ pub fn create_commandbuffers(
     unsafe { logical_device.allocate_command_buffers(&commandbuf_allocate_info) }
 }
 
-
-use nalgebra as na;
-use nalgebra_glm::all;
-use tobj::LoadError;
-use vk_mem::ffi::VkResult;
-use vk_mem::MemoryUsage;
 use winit::window::Window;
 use crate::safe_warp::InstanceSafe;
 
@@ -286,7 +273,7 @@ pub struct GPUMesh {
 pub struct Material {
     pub color : ServerTexture,
     pub normal : ServerTexture,
-    pub metallicRoughness : ServerTexture
+    pub metallic_roughness: ServerTexture
 }
 
 pub struct RenderModel {
@@ -353,75 +340,7 @@ pub fn init_logger() {
     );
 }
 
-pub fn load_gray_obj_now(graphic_base : &GraphicBase, path : String) -> Result<Vec<GPUMesh>, LoadError> {
-    let (models, materials) = tobj::load_obj(path,
-                                             &tobj::GPU_LOAD_OPTIONS)?;
 
-    let mut scene = vec![];
-
-
-    for (i, m) in models.iter().enumerate() {
-        info!("Found model {}!", m.name.clone());
-
-        let mesh = &m.mesh;
-
-        let mut chandeg_pos = vec![];
-        for vertex_idx in 0..(mesh.positions.len() / 3) {
-            chandeg_pos.push(mesh.positions[vertex_idx * 3]);
-            chandeg_pos.push(mesh.positions[vertex_idx * 3 + 1]);
-            chandeg_pos.push(mesh.positions[vertex_idx * 3 + 2]);
-            chandeg_pos.push(1.0);
-        }
-
-
-        let mut pos_data = BufferSafe::new(
-            &graphic_base.allocator,
-            (chandeg_pos.len() * 4) as u64,
-            vk::BufferUsageFlags::VERTEX_BUFFER,
-            vk_mem::MemoryUsage::CpuToGpu
-        ).unwrap();
-
-        let mut index_data = BufferSafe::new(
-            &graphic_base.allocator,
-            (mesh.indices.len() * 4) as u64,
-            vk::BufferUsageFlags::INDEX_BUFFER,
-            vk_mem::MemoryUsage::CpuToGpu
-        ).unwrap();
-
-        let mut normal_data = BufferSafe::new(
-            &graphic_base.allocator,
-            (mesh.normals.len() * 3) as u64,
-            vk::BufferUsageFlags::VERTEX_BUFFER,
-            vk_mem::MemoryUsage::CpuToGpu
-        ).unwrap();
-
-        let mut uv_data = BufferSafe::new(
-            &graphic_base.allocator,
-            (mesh.normals.len() * 4) as u64,
-            BufferUsageFlags::VERTEX_BUFFER,
-            MemoryUsage::CpuToGpu
-        ).unwrap();
-
-
-        pos_data.fill(&chandeg_pos).unwrap();
-        index_data.fill(&mesh.indices).unwrap();
-        normal_data.fill(&mesh.normals).unwrap();
-        uv_data.fill(&vec![0.0f32; mesh.normals.len()]).unwrap();
-
-        scene.push(
-            GPUMesh {
-                pos_data,
-                index_data,
-                normal_data,
-                uv_data,
-                vertex_count: mesh.indices.len() as u32,
-                name : m.name.clone()
-            }
-        );
-    }
-
-    Ok(scene)
-}
 
 pub struct DescriptorPoolSafe {
     pub pool : DescriptorPool,
