@@ -21,6 +21,7 @@ impl BufferSafe {
         usage: vk::BufferUsageFlags,
         memory_usage: vk_mem::MemoryUsage,
     ) -> Result<BufferSafe, vk_mem::error::Error> {
+
         let allocation_create_info = vk_mem::AllocationCreateInfo {
             usage: memory_usage,
             ..Default::default()
