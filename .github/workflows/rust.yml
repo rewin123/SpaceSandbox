@@ -16,8 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Install gcc
-      run: sudo apt install build-essential
+    - name: Install vulkan
+      run: sudo apt install libvulkan1 mesa-vulkan-drivers vulkan-utils
     - name: Build
       run: cargo build --verbose
     - name: Run tests
