@@ -3,7 +3,6 @@ use ash::vk::BufferUsageFlags;
 use tobj::LoadError;
 use crate::{BufferSafe, GPUMesh, GraphicBase};
 use log::*;
-use vk_mem::MemoryUsage;
 
 pub fn load_gray_obj_now(graphic_base : &GraphicBase, path : String) -> Result<Vec<GPUMesh>, LoadError> {
     let (models, _) = tobj::load_obj(path,
@@ -30,28 +29,28 @@ pub fn load_gray_obj_now(graphic_base : &GraphicBase, path : String) -> Result<V
             &graphic_base.allocator,
             (chandeg_pos.len() * 4) as u64,
             vk::BufferUsageFlags::VERTEX_BUFFER,
-            vk_mem::MemoryUsage::CpuToGpu
+            gpu_allocator::MemoryLocation::CpuToGpu
         ).unwrap();
 
         let mut index_data = BufferSafe::new(
             &graphic_base.allocator,
             (mesh.indices.len() * 4) as u64,
             vk::BufferUsageFlags::INDEX_BUFFER,
-            vk_mem::MemoryUsage::CpuToGpu
+            gpu_allocator::MemoryLocation::CpuToGpu
         ).unwrap();
 
         let mut normal_data = BufferSafe::new(
             &graphic_base.allocator,
             (mesh.normals.len() * 3) as u64,
             vk::BufferUsageFlags::VERTEX_BUFFER,
-            vk_mem::MemoryUsage::CpuToGpu
+            gpu_allocator::MemoryLocation::CpuToGpu
         ).unwrap();
 
         let mut uv_data = BufferSafe::new(
             &graphic_base.allocator,
             (mesh.normals.len() * 4) as u64,
             BufferUsageFlags::VERTEX_BUFFER,
-            MemoryUsage::CpuToGpu
+            gpu_allocator::MemoryLocation::CpuToGpu
         ).unwrap();
 
 

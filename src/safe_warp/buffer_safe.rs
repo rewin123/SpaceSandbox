@@ -1,17 +1,17 @@
 use std::ops::Deref;
 use std::sync::Arc;
 use ash::vk;
+use gpu_allocator::vulkan::AllocationCreateDesc;
 use log::*;
 use crate::AllocatorSafe;
 
 pub struct BufferSafe {
     pub buffer : vk::Buffer,
-    pub allocation : vk_mem::Allocation,
-    pub allocation_info : vk_mem::AllocationInfo,
+    pub allocation : Option<gpu_allocator::vulkan::Allocation>,
     pub allocator : Arc<AllocatorSafe>,
     pub size_in_bytes: u64,
     buffer_usage: vk::BufferUsageFlags,
-    memory_usage: vk_mem::MemoryUsage
+    memory_usage: gpu_allocator::MemoryLocation
 }
 
 impl BufferSafe {
@@ -19,24 +19,40 @@ impl BufferSafe {
         allocator: &Arc<AllocatorSafe>,
         size_in_bytes: u64,
         usage: vk::BufferUsageFlags,
-        memory_usage: vk_mem::MemoryUsage,
-    ) -> Result<BufferSafe, vk_mem::error::Error> {
+        memory_usage: gpu_allocator::MemoryLocation,
+    ) -> Result<BufferSafe, Box<dyn std::error::Error>> {
 
-        let allocation_create_info = vk_mem::AllocationCreateInfo {
-            usage: memory_usage,
-            ..Default::default()
+        let buffer = unsafe {
+            allocator.device.create_buffer(
+                &ash::vk::BufferCreateInfo::builder()
+                    .size(size_in_bytes)
+                    .usage(usage)
+                    .build(),
+                None
+            ).unwrap()
         };
-        let (buffer, allocation, allocation_info) = allocator.create_buffer(
-            &ash::vk::BufferCreateInfo::builder()
-                .size(size_in_bytes)
-                .usage(usage)
-                .build(),
-            &allocation_create_info,
-        )?;
+
+        let allocation = unsafe {
+            allocator.allocate(
+                &AllocationCreateDesc {
+                    name : "Buffer",
+                    requirements : allocator.device.get_buffer_memory_requirements(buffer),
+                    location : memory_usage,
+                    linear: true
+                }
+            ).unwrap()
+        };
+
+        unsafe {
+            allocator.device.bind_buffer_memory(
+                buffer,
+                allocation.memory(),
+            allocation.offset()).unwrap();
+        }
+
         Ok(BufferSafe {
             buffer,
-            allocation,
-            allocation_info,
+            allocation : Some(allocation),
             allocator : allocator.clone(),
             size_in_bytes,
             buffer_usage : usage,
@@ -47,7 +63,7 @@ impl BufferSafe {
     pub fn fill<T: Sized>(
         &mut self,
         data: &[T],
-    ) -> Result<(), vk_mem::error::Error> {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let bytes_to_write = (data.len() * std::mem::size_of::<T>()) as u64;
         if bytes_to_write > self.size_in_bytes {
             // self.allocator.destroy_buffer(self.buffer, &self.allocation);
@@ -59,9 +75,10 @@ impl BufferSafe {
             )?;
             *self = newbuffer;
         }
-        let data_ptr = self.allocator.map_memory(&self.allocation)? as *mut T;
+
+        let data_ptr = self.allocation.as_ref().unwrap().mapped_ptr().expect("problem with unwrapping").as_ptr() as *mut T;
         unsafe { data_ptr.copy_from_nonoverlapping(data.as_ptr(), data.len()) };
-        self.allocator.unmap_memory(&self.allocation)?;
+
         Ok(())
     }
 }
@@ -69,8 +86,9 @@ impl BufferSafe {
 impl Drop for BufferSafe {
     fn drop(&mut self) {
         debug!("Destroy buffer");
-        if let Err(e) = self.allocator.destroy_buffer(self.buffer, &self.allocation) {
-            error!("Detroy buffer: {:#?}", e);
+        self.allocator.free(self.allocation.take().unwrap());
+        unsafe {
+            self.allocator.device.destroy_buffer(self.buffer, None);
         }
     }
 }

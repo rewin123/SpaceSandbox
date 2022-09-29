@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::ops::Deref;
 use std::os::raw::c_char;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use ash::{Device, Entry, vk};
 use ash::extensions::{khr::Surface};
 use ash::extensions::khr::Swapchain;
@@ -10,6 +10,7 @@ use ash::vk::{PhysicalDevice, PhysicalDeviceProperties, RenderPass, SurfaceKHR, 
 use log::*;
 use simplelog::*;
 use std::default::Default;
+use gpu_allocator::vulkan::{Allocation, AllocatorCreateDesc};
 // use winit::window::Window;
 
 const EngineName : &str = "Rewin engine";
@@ -38,21 +39,27 @@ pub use pipelines::*;
 
 
 pub struct AllocatorSafe {
-    pub inner : vk_mem::Allocator
+    pub device : Arc<DeviceSafe>,
+    pub inner : Mutex<gpu_allocator::vulkan::Allocator>
 }
 
-impl Deref for AllocatorSafe {
-    type Target = vk_mem::Allocator;
+impl AllocatorSafe {
+    pub fn allocate(&self, desc : &gpu_allocator::vulkan::AllocationCreateDesc)
+            -> gpu_allocator::Result<Allocation> {
+        let mut lock = self.inner.lock().unwrap();
+        lock.allocate(desc)
+    }
 
-    fn deref(&self) -> &Self::Target {
-        &self.inner
+    pub fn free(&self, allocation : gpu_allocator::vulkan::Allocation) {
+        let mut lock = self.inner.lock().unwrap();
+        lock.free(allocation);
     }
 }
+
 
 impl Drop for AllocatorSafe {
     fn drop(&mut self) {
         info!("Destroy allocator");
-        self.inner.destroy();
     }
 }
 
@@ -297,7 +304,7 @@ impl RenderModel {
             allocator,
             (cache_size * 4 * 16) as u64,
             vk::BufferUsageFlags::VERTEX_BUFFER,
-            vk_mem::MemoryUsage::CpuToGpu
+            gpu_allocator::MemoryLocation::CpuToGpu
         ).unwrap();
 
         Self {

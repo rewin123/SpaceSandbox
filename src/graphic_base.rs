@@ -1,6 +1,7 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use ash::{Entry, vk};
 use ash::vk::{CommandBuffer, PhysicalDevice, RenderPass};
+use egui::CursorIcon::Default;
 use log::info;
 use winit::window::Window;
 use crate::{AllocatorSafe, DebugDongXi, DeviceSafe, get_default_physical_device, get_graphic_queue, get_logical_device, init_instance, InstanceSafe, QueueFamilies, Queues, RenderPassSafe, SurfaceSafe, SwapchainSafe, Pools};
@@ -60,19 +61,18 @@ impl GraphicBase {
 
         info!("Creating allocator create info...");
 
-        let allocator_create_info = vk_mem::AllocatorCreateInfo {
+        let allocator_create_info = gpu_allocator::vulkan::AllocatorCreateDesc {
+            instance : instance.inner.clone(),
+            device : device.inner.clone(),
             physical_device,
-            device: logical_device.clone(),
-            instance: instance.inner.clone(),
-            flags: Default::default(),
-            preferred_large_heap_block_size: 0,
-            frame_in_use_count: 0,
-            heap_size_limits: None
+            debug_settings : gpu_allocator::AllocatorDebugSettings::default(),
+            buffer_device_address : true
         };
         info!("Creating allocator...");
         let allocator =
             Arc::new(AllocatorSafe {
-                inner : vk_mem::Allocator::new(&allocator_create_info).unwrap()
+                device : device.clone(),
+                inner : Mutex::new(gpu_allocator::vulkan::Allocator::new(&allocator_create_info).unwrap())
             });
 
         let swapchain = SwapchainSafe::new(
@@ -81,7 +81,7 @@ impl GraphicBase {
             &qfamindices,
             &device,
             &instance,
-            &allocator);
+            allocator.clone());
 
 
 

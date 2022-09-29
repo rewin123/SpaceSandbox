@@ -21,7 +21,6 @@ use log::*;
 use nalgebra::inf;
 use simplelog::*;
 use tobj::LoadError;
-use vk_mem::MemoryUsage;
 use winit::window::Window;
 
 use SpaceSandbox::*;
@@ -187,17 +186,17 @@ fn main() {
                 &graphic_base.allocator,
                 pos.len() as u64 * 4,
                     BufferUsageFlags::VERTEX_BUFFER,
-            MemoryUsage::CpuToGpu).unwrap();
+            gpu_allocator::MemoryLocation::CpuToGpu).unwrap();
             let mut normal_buffer = BufferSafe::new(
                 &graphic_base.allocator,
                 pos.len() as u64 * 4,
                 BufferUsageFlags::VERTEX_BUFFER,
-                MemoryUsage::CpuToGpu).unwrap();
+                gpu_allocator::MemoryLocation::CpuToGpu).unwrap();
             let mut index_buffer = BufferSafe::new(
                 &graphic_base.allocator,
                 indices.len() as u64 * 4,
                 BufferUsageFlags::INDEX_BUFFER,
-                MemoryUsage::CpuToGpu
+                gpu_allocator::MemoryLocation::CpuToGpu
             ).unwrap();
 
             if uv.len() == 0 {
@@ -208,7 +207,7 @@ fn main() {
                 &graphic_base.allocator,
                 uv.len() as u64 * 4,
                 BufferUsageFlags::VERTEX_BUFFER,
-                MemoryUsage::CpuToGpu
+                gpu_allocator::MemoryLocation::CpuToGpu
             ).unwrap();
 
             pos_buffer.fill(&pos).unwrap();

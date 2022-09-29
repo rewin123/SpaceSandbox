@@ -1,6 +1,7 @@
 use std::{sync::{Arc}, mem::ManuallyDrop, ptr};
 
 use ash::vk::{self};
+use gpu_allocator::vulkan::AllocationCreateDesc;
 
 use crate::{DeviceSafe, AllocatorSafe, BufferSafe, ApiBase};
 
@@ -10,8 +11,7 @@ static mut GLOBAL_TEXTURE_INDEXER : usize = 0;
 
 pub struct TextureSafe {
     pub image : vk::Image,
-    pub allocation : vk_mem::Allocation,
-    pub allocation_info : vk_mem::AllocationInfo,
+    pub allocation : Option<gpu_allocator::vulkan::Allocation>,
     pub imageview : vk::ImageView,
     pub sampler : vk::Sampler,
     pub allocator : Arc<AllocatorSafe>,
@@ -26,7 +26,11 @@ impl Drop for TextureSafe {
             debug!("Destroy TextureSafe");
             self.device.destroy_sampler(self.sampler, None);
             self.device.destroy_image_view(self.imageview, None);
-            self.allocator.destroy_image(self.image, &self.allocation).unwrap();
+
+            self.allocator.free(self.allocation.take().unwrap());
+            self.allocator.device.destroy_image(self.image, None);
+
+            //self.allocator.destroy_image(self.image, &self.allocation).unwrap();
         }
     }
 }
@@ -65,7 +69,7 @@ impl TextureSafe {
             &gb.allocator,
             data.len() as u64,
             vk::BufferUsageFlags::TRANSFER_SRC,
-            vk_mem::MemoryUsage::CpuToGpu,
+            gpu_allocator::MemoryLocation::CpuToGpu,
         ).unwrap());
         buffer.fill(&data).unwrap();
 
@@ -352,13 +356,29 @@ impl TextureSafe {
             .format(format)
             .samples(vk::SampleCountFlags::TYPE_1)
             .usage(vk::ImageUsageFlags::TRANSFER_DST | vk::ImageUsageFlags::SAMPLED | vk::ImageUsageFlags::TRANSFER_SRC);
-        let alloc_create_info = vk_mem::AllocationCreateInfo {
-            usage : vk_mem::MemoryUsage::GpuOnly,
-            ..Default::default()
+
+        let vk_image = unsafe {
+            device.create_image(&img_create_info, None).unwrap()
         };
-        let (vk_image, allocation, allocation_info) = allocator
-            .create_image(&img_create_info, &alloc_create_info)
-            .expect("creating vkImage for texture");
+
+        let allocation_info = unsafe {
+            AllocationCreateDesc {
+                name: "depth allocation",
+                requirements: device.get_image_memory_requirements(vk_image),
+                location: gpu_allocator::MemoryLocation::GpuOnly,
+                linear: false
+            }
+        };
+
+        let allocation = allocator.allocate(&allocation_info).unwrap();
+
+        unsafe {
+            device.bind_image_memory(
+                vk_image,
+                allocation.memory(),
+                allocation.offset()).unwrap();
+        }
+
         let view_create_info = vk::ImageViewCreateInfo::builder()
             .image(vk_image)
             .view_type(vk::ImageViewType::TYPE_2D)
@@ -389,8 +409,7 @@ impl TextureSafe {
         };
         Self {
             image : vk_image,
-            allocation,
-            allocation_info,
+            allocation : Some(allocation),
             imageview,
             sampler,
             allocator : allocator.clone(),

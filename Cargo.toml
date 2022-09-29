@@ -18,7 +18,6 @@ log        = "0.4.17"
 simplelog  = "0.10.1"
 ash-window = "0.9.1"
 vk-shader-macros = "0.2.2"
-vk-mem = "0.2.2"
 nalgebra = "0.31.1"
 nalgebra-glm = "0.17.0"
 egui-winit-ash-integration = {path = "ext/egui-winit-ash-integration" }

@@ -17,7 +17,7 @@ impl RenderCamera {
             &allocator,
             64 * 2,
             vk::BufferUsageFlags::UNIFORM_BUFFER,
-            vk_mem::MemoryUsage::CpuToGpu
+            gpu_allocator::MemoryLocation::CpuToGpu
         ).unwrap();
         let cameratransform: [[[f32; 4]; 4]; 2] = [
             nalgebra::Matrix4::identity().into(),
@@ -105,7 +105,7 @@ impl Camera {
         );
     }
 
-    pub fn update_buffer(&self, buffer: &mut BufferSafe) -> Result<(), vk_mem::error::Error> {
+    pub fn update_buffer(&self, buffer: &mut BufferSafe) -> Result<(), Box<dyn std::error::Error>> {
         let data: [[[f32; 4]; 4]; 2] = [self.viewmatrix.into(), self.projectionmatrix.into()];
         buffer.fill(&data)
     }

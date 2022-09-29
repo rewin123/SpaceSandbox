@@ -1,8 +1,12 @@
+use std::borrow::BorrowMut;
 use ash::vk;
 use ash::vk::{Framebuffer, Image, ImageView};
 use log::info;
 use crate::*;
 use std::default::Default;
+use std::pin::Pin;
+use gpu_allocator::vulkan::AllocationCreateDesc;
+use egui_winit_ash_integration::MemoryLocation;
 
 pub struct SwapchainSafe {
     pub inner : SwapchainKHR,
@@ -20,8 +24,7 @@ pub struct SwapchainSafe {
     pub current_image: usize,
 
     pub depth_image: vk::Image,
-    pub depth_image_allocation: vk_mem::Allocation,
-    pub depth_image_allocation_info: vk_mem::AllocationInfo,
+    pub depth_image_allocation: Option<gpu_allocator::vulkan::Allocation>,
     pub depth_imageview: vk::ImageView,
 
     pub allocator : Arc<AllocatorSafe>,
@@ -36,7 +39,7 @@ impl SwapchainSafe {
         qfamindices : &QueueFamilies,
         logical_device : &Arc<DeviceSafe>,
         instance : &InstanceSafe,
-        allocator : &Arc<AllocatorSafe>) -> Self {
+        allocator: Arc<AllocatorSafe>) -> Self {
         let surface_capabilities = unsafe {
             surface.loader.get_physical_device_surface_capabilities(
                 physical_device, surface.inner).unwrap()
@@ -131,13 +134,27 @@ impl SwapchainSafe {
             .sharing_mode(vk::SharingMode::EXCLUSIVE)
             .queue_family_indices(&queuefamilies);
 
-        let allocation_info = vk_mem::AllocationCreateInfo {
-            usage: vk_mem::MemoryUsage::GpuOnly,
-            ..Default::default()
+        let depth_image = unsafe {
+            logical_device.create_image(&depth_image_info, None).unwrap()
         };
-        let (depth_image, depth_image_allocation, depth_image_allocation_info) =
-            allocator.create_image(&depth_image_info, &allocation_info).unwrap();
 
+        let allocation_info = unsafe {
+            AllocationCreateDesc {
+                name: "depth allocation",
+                requirements: logical_device.get_image_memory_requirements(depth_image),
+                location: gpu_allocator::MemoryLocation::GpuOnly,
+                linear: false
+            }
+        };
+
+        let depth_image_allocation = allocator.allocate(&allocation_info).unwrap();
+
+        unsafe {
+            logical_device.bind_image_memory(
+                depth_image,
+                depth_image_allocation.memory(),
+                depth_image_allocation.offset()).unwrap();
+        }
         let subresource_range = vk::ImageSubresourceRange::builder()
             .aspect_mask(vk::ImageAspectFlags::DEPTH)
             .base_mip_level(0)
@@ -168,8 +185,7 @@ impl SwapchainSafe {
             may_begin_drawing,
             depth_image,
             depth_imageview,
-            depth_image_allocation,
-            depth_image_allocation_info,
+            depth_image_allocation : Some(depth_image_allocation),
             allocator : allocator.clone(),
             format
         }
@@ -209,7 +225,10 @@ impl Drop for SwapchainSafe {
         unsafe {
             self.device.device_wait_idle().expect("Waiting problem");
             self.device.destroy_image_view(self.depth_imageview, None);
-            self.allocator.destroy_image(self.depth_image, &self.depth_image_allocation);
+
+            self.allocator.free(self.depth_image_allocation.take().unwrap());
+            self.allocator.device.destroy_image(self.depth_image, None);
+
             for semaphore in &self.image_available {
                 self.device.destroy_semaphore(*semaphore, None);
             }
