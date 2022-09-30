@@ -457,6 +457,7 @@ fn main() {
                         &graphic_base.device,
                         &graphic_base.swapchain,
                         &scene,
+                        &texture_server,
                         image_index as usize
                     ).unwrap();
 
@@ -469,12 +470,6 @@ fn main() {
                     graphic_base.end_frame(&command_buffers, image_index);
 
                     texture_server.sync_tick();
-
-                    for model in &mut scene {
-                        model.material.color.texture = texture_server.textures.get(&model.material.color.server_index).unwrap().clone();
-                        model.material.normal.texture = texture_server.textures.get(&model.material.normal.server_index).unwrap().clone();
-                        model.material.metallic_roughness.texture = texture_server.textures.get(&model.material.metallic_roughness.server_index).unwrap().clone();
-                    }
 
                     unsafe {
                         // info!("Wait device");

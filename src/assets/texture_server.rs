@@ -1,12 +1,42 @@
 use std::{collections::HashMap, sync::{Arc, Mutex}};
+use log::info;
+use winit::event::VirtualKeyCode::Mute;
 
 use crate::{TextureSafe, GraphicBase, Pools, ApiBase};
 use crate::task_server::TaskServer;
 
-#[derive(Clone)]
 pub struct ServerTexture {
     pub server_index : usize,
-    pub texture : Arc<TextureSafe>
+    counter : Arc<Mutex<TextureCounter>>
+}
+
+impl ServerTexture {
+    fn new(idx : usize, counter : &Arc<Mutex<TextureCounter>>) -> Self {
+        counter.lock().unwrap().add_item(idx);
+
+        Self {
+            server_index : idx,
+            counter : counter.clone()
+        }
+    }
+}
+
+impl Clone for ServerTexture {
+    fn clone(&self) -> Self {
+        ServerTexture::new(self.server_index, &self.counter)
+    }
+}
+
+impl Drop for ServerTexture {
+    fn drop(&mut self) {
+        self.counter.lock().unwrap().remove_item(self.server_index);
+    }
+}
+
+impl ServerTexture {
+    pub fn get_texture(&self, server : &TextureServer) -> Arc<TextureSafe> {
+        server.textures[&self.server_index].clone()
+    }
 }
 
 #[derive(Clone)]
@@ -17,13 +47,48 @@ struct TexFormTask {
     height : u32
 }
 
+struct TextureCounter {
+    counter : HashMap<usize, i32>,
+    destroy_list : Vec<usize>
+}
+
+impl TextureCounter {
+    fn new_async() -> Arc<Mutex<Self>> {
+        Arc::new(Mutex::new(
+            Self {
+                counter : HashMap::new(),
+                destroy_list : Vec::new()
+            }
+        ))
+    }
+
+    fn remove_item(&mut self, idx : usize) {
+        *self.counter.get_mut(&idx).unwrap() -= 1;
+        if self.counter[&idx] <= 0 {
+            self.counter.remove(&idx);
+            self.destroy_list.push(idx);
+            info!("Destroy server texture: {}", idx);
+        }
+    }
+
+    fn add_item(&mut self, idx : usize) {
+        if self.counter.contains_key(&idx) {
+            *self.counter.get_mut(&idx).unwrap() += 1;
+        } else {
+            self.counter.insert(idx, 1);
+        }
+    }
+
+}
+
 pub struct TextureServer {
     pub textures : HashMap<usize, Arc<TextureSafe>>,
     default_texture : Arc<TextureSafe>,
     index : usize,
     waiting_list : Arc<Mutex<Vec<TexFormTask>>>,
     api_base : ApiBase,
-    task_server : Arc<TaskServer>
+    task_server : Arc<TaskServer>,
+    counter : Arc<Mutex<TextureCounter>>
 }
 
 impl TextureServer {
@@ -38,7 +103,8 @@ impl TextureServer {
                 &gb.get_api_base(pools)).unwrap()),
             waiting_list : Arc::new(Mutex::new(vec![])),
             api_base : gb.get_api_base(pools),
-            task_server
+            task_server,
+            counter : TextureCounter::new_async()
         }
     }
 
@@ -67,10 +133,7 @@ impl TextureServer {
 
         self.textures.insert(self.index, self.default_texture.clone());
 
-        ServerTexture { 
-            server_index: self.index, 
-            texture: self.default_texture.clone()
-        }
+        ServerTexture::new(self.index, &self.counter)
     }
 
     pub fn sync_tick(&mut self) {
@@ -91,6 +154,12 @@ impl TextureServer {
         waiting_lock.remove(0);
         }
 
+        let mut counter = self.counter.lock().unwrap();
+        for del_idx in &counter.destroy_list {
+            self.textures.remove(del_idx);
+        }
+        counter.destroy_list.clear();
+
         // waiting_lock.clear();
     }
 
@@ -99,9 +168,6 @@ impl TextureServer {
 
         self.textures.insert(self.index, self.default_texture.clone());
 
-        ServerTexture {
-            server_index: self.index,
-            texture: self.default_texture.clone()
-        }
+        ServerTexture::new(self.index, &self.counter)
     }
 }

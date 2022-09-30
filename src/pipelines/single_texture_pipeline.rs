@@ -3,7 +3,7 @@ use std::sync::Arc;
 use ash::vk;
 use ash::vk::{DescriptorSet, Framebuffer};
 use log::*;
-use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe};
+use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe, TextureServer};
 use ash::vk::DescriptorSetLayout;
 
 #[derive(Debug)]
@@ -365,6 +365,7 @@ impl SingleTexturePipeline {
         logical_device: &ash::Device,
         swapchain: &SwapchainSafe,
         models : &Vec<RenderModel>,
+        texture_server : &TextureServer,
         i : usize
     ) -> Result<(), vk::Result> {
 
@@ -413,11 +414,12 @@ impl SingleTexturePipeline {
                         tex = &model.material.metallic_roughness
                     }
                 }
-                if self.descriptor_sets_texture.contains_key(&tex.texture.index) == false {
+                let tex = tex.get_texture(texture_server);
+                if self.descriptor_sets_texture.contains_key(&tex.index) == false {
                     let imageinfo = vk::DescriptorImageInfo::builder()
                     .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
-                    .image_view(tex.texture.imageview)
-                    .sampler(tex.texture.sampler)
+                    .image_view(tex.imageview)
+                    .sampler(tex.sampler)
                     .build();
 
                     info!("image layout {:?}", imageinfo.image_layout);
@@ -427,11 +429,11 @@ impl SingleTexturePipeline {
                     let descriptor_set_allocate_info_texture = vk::DescriptorSetAllocateInfo::builder()
                         .descriptor_pool(self.descriptor_pool.pool)
                         .set_layouts(&desc_layouts_texture);
-                    self.descriptor_sets_texture.insert(tex.texture.index,  self.device.allocate_descriptor_sets(
+                    self.descriptor_sets_texture.insert(tex.index,  self.device.allocate_descriptor_sets(
                         &descriptor_set_allocate_info_texture).unwrap()[0]);
 
                     let mut descriptorwrite_image = vk::WriteDescriptorSet::builder()
-                        .dst_set(self.descriptor_sets_texture[&tex.texture.index])
+                        .dst_set(self.descriptor_sets_texture[&tex.index])
                         .dst_binding(0)
                         .dst_array_element(0)
                         .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
@@ -456,13 +458,14 @@ impl SingleTexturePipeline {
                         tex = &model.material.metallic_roughness;
                     }
                 }
+                let tex = tex.get_texture(texture_server);
 
                 logical_device.cmd_bind_descriptor_sets(
                     commandbuffer,
                     vk::PipelineBindPoint::GRAPHICS,
                     self.pipeline.layout,
                     0,
-                    &[self.descriptor_sets[i], self.descriptor_sets_texture[&tex.texture.index]],
+                    &[self.descriptor_sets[i], self.descriptor_sets_texture[&tex.index]],
                     &[]
                 );
 
