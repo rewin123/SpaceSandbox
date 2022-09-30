@@ -26,6 +26,7 @@ use winit::window::Window;
 use SpaceSandbox::*;
 use SpaceSandbox::MaterialTexture::{Diffuse, MetallicRoughness, Normal};
 use SpaceSandbox::task_server::{TaskServer, TaskState};
+use SpaceSandbox::ui::FpsCounter;
 
 // for time measure wolfpld/tracy
 
@@ -316,6 +317,9 @@ fn main() {
 
     let mut show_task_list = false;
 
+    let mut fps_counter = FpsCounter::default();
+
+
     use winit::event::{Event, WindowEvent};
     eventloop.run(move |event, _, controlflow| {
 
@@ -413,6 +417,7 @@ fn main() {
                                     }
                                 }
                             }
+                            fps_counter.draw(ui);
                         });
                     });
 

@@ -70,7 +70,7 @@ impl SwapchainSafe {
             .queue_family_indices(&queuefamilies)
             .pre_transform(surface_capabilities.current_transform)
             .composite_alpha(vk::CompositeAlphaFlagsKHR::OPAQUE)
-            .present_mode(vk::PresentModeKHR::FIFO)
+            .present_mode(vk::PresentModeKHR::IMMEDIATE)
             .build();
         let swapchain_loader = ash::extensions::khr::Swapchain::new(&instance.inner, &logical_device);
         let swapchain = unsafe {
