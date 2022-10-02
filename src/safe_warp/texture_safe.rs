@@ -97,14 +97,10 @@ impl TextureSafe {
                 &[barrier],
             )
         };
-
-
-
+        
         cur.layout = layout;
         cur.stage = stage;
         cur.access = access;
-
-        log::info!("New layout: {:#?}", cur);
     }
 
     pub fn from_file<P: AsRef<std::path::Path>>(
