@@ -10,6 +10,7 @@ use log::*;
 
 static mut GLOBAL_TEXTURE_INDEXER : usize = 0;
 
+#[derive(Debug)]
 struct TextureBarrierState {
     pub access : vk::AccessFlags,
     pub layout : vk::ImageLayout,
@@ -25,7 +26,7 @@ pub struct TextureSafe {
     pub device : Arc<DeviceSafe>,
     pub index : usize,
     pub miplevel_count : u32,
-    current_state: Mutex<TextureBarrierState>,
+    current_state: Vec<Mutex<TextureBarrierState>>,
 }
 
 impl Drop for TextureSafe {
@@ -61,14 +62,21 @@ impl TextureSafe {
         });
     }
 
-    pub fn barrier_range<'a>(
+    pub fn barrier_range(
         &self,
-        cmd : CommandBufferSafe,
+        cmd : vk::CommandBuffer,
         access : vk::AccessFlags,
         layout : vk::ImageLayout,
         stage : vk::PipelineStageFlags,
         range : vk::ImageSubresourceRange) {
-        let mut cur = self.current_state.lock().unwrap();
+        let mut cur = self.current_state[range.base_mip_level as usize].lock().unwrap();
+
+        // let mut old_layout = cur.layout;
+        // if cur.layout == vk::ImageLayout::TRANSFER_SRC_OPTIMAL {
+        //     old_layout = vk::ImageLayout::UNDEFINED;
+        // } else if cur.layout == vk::ImageLayout::TRANSFER_SRC_OPTIMAL {
+        //     old_layout = vk::ImageLayout::UNDEFINED;
+        // }
 
         let barrier = vk::ImageMemoryBarrier::builder()
             .image(self.image)
@@ -90,9 +98,13 @@ impl TextureSafe {
             )
         };
 
+
+
         cur.layout = layout;
         cur.stage = stage;
         cur.access = access;
+
+        log::info!("New layout: {:#?}", cur);
     }
 
     pub fn from_file<P: AsRef<std::path::Path>>(
@@ -325,9 +337,9 @@ impl TextureSafe {
             texture.barrier_range(
                 command_buffer,
                 vk::AccessFlags::SHADER_READ,
-                vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
-                vk::PipelineStageFlags::FRAGMENT_SHADER,
-                range.clone());
+                vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL, 
+                vk::PipelineStageFlags::FRAGMENT_SHADER, 
+                range);
         }
     }
 
@@ -408,6 +420,16 @@ impl TextureSafe {
             GLOBAL_TEXTURE_INDEXER += 1;
             GLOBAL_TEXTURE_INDEXER
         };
+
+        let mut states = vec![];
+        for i in 0..mipmap_count {
+            states.push(Mutex::new(TextureBarrierState {
+                access : vk::AccessFlags::empty(),
+                stage : vk::PipelineStageFlags::TOP_OF_PIPE,
+                layout : vk::ImageLayout::UNDEFINED
+            }));
+        }
+
         Self {
             image : vk_image,
             allocation : Some(allocation),
@@ -417,11 +439,7 @@ impl TextureSafe {
             device : device.clone(),
             index,
             miplevel_count : mipmap_count,
-            current_state : Mutex::new(TextureBarrierState {
-                access : vk::AccessFlags::empty(),
-                stage : vk::PipelineStageFlags::TOP_OF_PIPE,
-                layout : vk::ImageLayout::UNDEFINED
-            }),
+            current_state : states,
         }
     }
 
