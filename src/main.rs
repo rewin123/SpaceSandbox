@@ -1,32 +1,19 @@
-use std::cell::RefCell;
-use std::fs::File;
 use std::io::Read;
-use std::ops::Deref;
-use std::os::raw::c_char;
 use std::sync::Arc;
-use ash::{Device, Entry, Instance, vk};
-use ash::extensions::{ext::DebugUtils, khr::Surface};
-use ash::extensions::khr::Swapchain;
-use ash::vk::{BufferUsageFlags, CommandBuffer, DeviceQueueCreateInfo, Handle, PhysicalDevice, PhysicalDeviceProperties, SurfaceKHR, SwapchainKHR};
+use ash::{vk};
+use ash::vk::{BufferUsageFlags};
 use byteorder::ByteOrder;
-use egui::panel::TopBottomSide;
-use gltf::{Attribute, Semantic};
-use gltf::accessor::DataType;
-use gltf::buffer::{Source, Target};
+use gltf::{Semantic};
+use gltf::buffer::{Source};
 use gltf::json::accessor::ComponentType;
-use gltf::material::PbrMetallicRoughness;
 
 
 use log::*;
-use nalgebra::inf;
-use simplelog::*;
-use tobj::LoadError;
-use winit::window::Window;
 
 use SpaceSandbox::*;
 use SpaceSandbox::MaterialTexture::{Diffuse, MetallicRoughness, Normal};
 use SpaceSandbox::task_server::{TaskServer, TaskState};
-use SpaceSandbox::ui::FpsCounter;
+use SpaceSandbox::ui::*;
 
 // for time measure wolfpld/tracy
 
@@ -83,7 +70,7 @@ fn main() {
     }
 
     info!("Initiating task server...");
-    let mut task_server = Arc::new(TaskServer::new());
+    let task_server = Arc::new(TaskServer::new());
     info!("Initiating texture servers...");
     let mut texture_server = TextureServer::new(&graphic_base, &pools, task_server.clone());
 
@@ -318,6 +305,7 @@ fn main() {
     let mut show_task_list = false;
 
     let mut fps_counter = FpsCounter::default();
+    let mut api_window = ApiInfoWindow::new(&graphic_base);
 
 
     use winit::event::{Event, WindowEvent};
@@ -418,6 +406,7 @@ fn main() {
                                 }
                             }
                             fps_counter.draw(ui);
+                            api_window.draw(ui);
                         });
                     });
 
