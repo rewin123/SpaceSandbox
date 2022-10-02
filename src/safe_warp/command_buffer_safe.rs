@@ -7,7 +7,8 @@ use log::*;
 pub struct CommandBufferSafe {
     pub cmd : vk::CommandBuffer,
     device : Arc<DeviceSafe>,
-    pool : Arc<Pool>
+    pool : Arc<Pool>,
+    depends : Vec<Box<dyn std::any::Any>>
 }
 
 impl Drop for CommandBufferSafe {
@@ -45,7 +46,8 @@ impl CommandBufferSafe {
             Self {
                 cmd : copycmdbuffer,
                 device : device.clone(),
-                pool : pool.clone()
+                pool : pool.clone(),
+                depends : vec![]
             }
         )
     }

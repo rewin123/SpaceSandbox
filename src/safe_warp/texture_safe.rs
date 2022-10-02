@@ -1,13 +1,20 @@
 use std::{sync::{Arc}, mem::ManuallyDrop, ptr};
+use std::sync::Mutex;
 
 use ash::vk::{self};
 use gpu_allocator::vulkan::AllocationCreateDesc;
 
-use crate::{DeviceSafe, AllocatorSafe, BufferSafe, ApiBase};
+use crate::{DeviceSafe, AllocatorSafe, BufferSafe, ApiBase, CommandBufferSafe};
 
 use log::*;
 
 static mut GLOBAL_TEXTURE_INDEXER : usize = 0;
+
+struct TextureBarrierState {
+    pub access : vk::AccessFlags,
+    pub layout : vk::ImageLayout,
+    pub stage : vk::PipelineStageFlags
+}
 
 pub struct TextureSafe {
     pub image : vk::Image,
@@ -18,6 +25,7 @@ pub struct TextureSafe {
     pub device : Arc<DeviceSafe>,
     pub index : usize,
     pub miplevel_count : u32,
+    current_state: Mutex<TextureBarrierState>,
 }
 
 impl Drop for TextureSafe {
@@ -36,6 +44,56 @@ impl Drop for TextureSafe {
 }
 
 impl TextureSafe {
+
+    pub fn barrier(
+        &self,
+        cmd : vk::CommandBuffer,
+        access : vk::AccessFlags,
+        layout : vk::ImageLayout,
+        stage : vk::PipelineStageFlags) {
+
+        self.barrier_range(cmd, access, layout, stage, vk::ImageSubresourceRange {
+            aspect_mask: vk::ImageAspectFlags::COLOR,
+            base_mip_level: 0,
+            level_count: 1,
+            base_array_layer: 0,
+            layer_count: 1,
+        });
+    }
+
+    pub fn barrier_range<'a>(
+        &self,
+        cmd : CommandBufferSafe,
+        access : vk::AccessFlags,
+        layout : vk::ImageLayout,
+        stage : vk::PipelineStageFlags,
+        range : vk::ImageSubresourceRange) {
+        let mut cur = self.current_state.lock().unwrap();
+
+        let barrier = vk::ImageMemoryBarrier::builder()
+            .image(self.image)
+            .src_access_mask(cur.access)
+            .dst_access_mask(access)
+            .old_layout(cur.layout)
+            .new_layout(layout)
+            .subresource_range(range)
+            .build();
+        unsafe {
+            self.device.cmd_pipeline_barrier(
+                cmd,
+                cur.stage,
+                stage,
+                vk::DependencyFlags::empty(),
+                &[],
+                &[],
+                &[barrier],
+            )
+        };
+
+        cur.layout = layout;
+        cur.stage = stage;
+        cur.access = access;
+    }
 
     pub fn from_file<P: AsRef<std::path::Path>>(
         path: P,
@@ -91,31 +149,11 @@ impl TextureSafe {
         }?;
 
 
-        let barrier = vk::ImageMemoryBarrier::builder()
-            .image(res.image)
-            .src_access_mask(vk::AccessFlags::empty())
-            .dst_access_mask(vk::AccessFlags::TRANSFER_WRITE)
-            .old_layout(vk::ImageLayout::UNDEFINED)
-            .new_layout(vk::ImageLayout::TRANSFER_DST_OPTIMAL)
-            .subresource_range(vk::ImageSubresourceRange {
-                aspect_mask: vk::ImageAspectFlags::COLOR,
-                base_mip_level: 0,
-                level_count: 1,
-                base_array_layer: 0,
-                layer_count: 1,
-            })
-            .build();
-        unsafe {
-            gb.device.cmd_pipeline_barrier(
-                copycmdbuffer,
-                vk::PipelineStageFlags::TOP_OF_PIPE,
-                vk::PipelineStageFlags::TRANSFER,
-                vk::DependencyFlags::empty(),
-                &[],
-                &[],
-                &[barrier],
-            )
-        };
+        res.barrier(
+            copycmdbuffer,
+                vk::AccessFlags::TRANSFER_WRITE,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+        vk::PipelineStageFlags::TRANSFER);
 
         //Insert commands here.
         let image_subresource = vk::ImageSubresourceLayers {
@@ -149,9 +187,9 @@ impl TextureSafe {
 
         // then mipmap generating
         TextureSafe::generate_mipmaps(
+            &res,
             copycmdbuffer, 
-            &gb.device, 
-            res.image, 
+            &gb.device,
             width, 
             height, 
             res.miplevel_count);
@@ -197,54 +235,43 @@ impl TextureSafe {
     }
 
     fn generate_mipmaps(
+        texture : &TextureSafe,
         command_buffer : vk::CommandBuffer,
         device: &Arc<DeviceSafe>,
-        image: vk::Image,
         tex_width: u32,
         tex_height: u32,
         mip_levels: u32,
     ) {
 
-        let mut image_barrier = vk::ImageMemoryBarrier {
-            s_type: vk::StructureType::IMAGE_MEMORY_BARRIER,
-            p_next: ptr::null(),
-            src_access_mask: vk::AccessFlags::empty(),
-            dst_access_mask: vk::AccessFlags::empty(),
-            old_layout: vk::ImageLayout::UNDEFINED,
-            new_layout: vk::ImageLayout::UNDEFINED,
-            src_queue_family_index: vk::QUEUE_FAMILY_IGNORED,
-            dst_queue_family_index: vk::QUEUE_FAMILY_IGNORED,
-            image,
-            subresource_range: vk::ImageSubresourceRange {
-                aspect_mask: vk::ImageAspectFlags::COLOR,
-                base_mip_level: 0,
-                level_count: 1,
-                base_array_layer: 0,
-                layer_count: 1,
-            },
+        let image = texture.image;
+
+        let mut range = vk::ImageSubresourceRange {
+            aspect_mask: vk::ImageAspectFlags::COLOR,
+            base_mip_level: 0,
+            level_count: 1,
+            base_array_layer: 0,
+            layer_count: 1,
         };
 
         let mut mip_width = tex_width as i32;
         let mut mip_height = tex_height as i32;
 
         for i in 1..mip_levels {
-            image_barrier.subresource_range.base_mip_level = i - 1;
-            image_barrier.old_layout = vk::ImageLayout::TRANSFER_DST_OPTIMAL;
-            image_barrier.new_layout = vk::ImageLayout::TRANSFER_SRC_OPTIMAL;
-            image_barrier.src_access_mask = vk::AccessFlags::TRANSFER_WRITE;
-            image_barrier.dst_access_mask = vk::AccessFlags::TRANSFER_READ;
+            range.base_mip_level = i - 1;
+            texture.barrier_range(
+                command_buffer,
+                vk::AccessFlags::TRANSFER_READ,
+                vk::ImageLayout::TRANSFER_SRC_OPTIMAL,
+                vk::PipelineStageFlags::TRANSFER,
+            range.clone());
 
-            unsafe {
-                device.cmd_pipeline_barrier(
-                    command_buffer,
-                    vk::PipelineStageFlags::TRANSFER,
-                    vk::PipelineStageFlags::TRANSFER,
-                    vk::DependencyFlags::empty(),
-                    &[],
-                    &[],
-                    &[image_barrier.clone()],
-                );
-            }
+            range.base_mip_level = i;
+            texture.barrier_range(
+                command_buffer,
+                vk::AccessFlags::TRANSFER_WRITE,
+                vk::ImageLayout::TRANSFER_DST_OPTIMAL,
+                vk::PipelineStageFlags::TRANSFER,
+                range.clone());
 
             let blits = [vk::ImageBlit {
                 src_subresource: vk::ImageSubresourceLayers {
@@ -289,45 +316,19 @@ impl TextureSafe {
                 );
             }
 
-            image_barrier.old_layout = vk::ImageLayout::TRANSFER_SRC_OPTIMAL;
-            image_barrier.new_layout = vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL;
-            image_barrier.src_access_mask = vk::AccessFlags::TRANSFER_READ;
-            image_barrier.dst_access_mask = vk::AccessFlags::SHADER_READ;
-
-            unsafe {
-                device.cmd_pipeline_barrier(
-                    command_buffer,
-                    vk::PipelineStageFlags::TRANSFER,
-                    vk::PipelineStageFlags::FRAGMENT_SHADER,
-                    vk::DependencyFlags::empty(),
-                    &[],
-                    &[],
-                    &[image_barrier.clone()],
-                );
-            }
-
             mip_width = std::cmp::max(mip_width / 2, 1);
             mip_height = std::cmp::max(mip_height / 2, 1);
         }
 
-        image_barrier.subresource_range.base_mip_level = mip_levels - 1;
-        image_barrier.old_layout = vk::ImageLayout::TRANSFER_DST_OPTIMAL;
-        image_barrier.new_layout = vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL;
-        image_barrier.src_access_mask = vk::AccessFlags::TRANSFER_WRITE;
-        image_barrier.dst_access_mask = vk::AccessFlags::SHADER_READ;
-
-        unsafe {
-            device.cmd_pipeline_barrier(
+        for i in 0..mip_levels {
+            range.base_mip_level = i;
+            texture.barrier_range(
                 command_buffer,
-                vk::PipelineStageFlags::TRANSFER,
+                vk::AccessFlags::SHADER_READ,
+                vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
                 vk::PipelineStageFlags::FRAGMENT_SHADER,
-                vk::DependencyFlags::empty(),
-                &[],
-                &[],
-                &[image_barrier.clone()],
-            );
+                range.clone());
         }
-
     }
 
     fn new(
@@ -415,7 +416,12 @@ impl TextureSafe {
             allocator : allocator.clone(),
             device : device.clone(),
             index,
-            miplevel_count : mipmap_count
+            miplevel_count : mipmap_count,
+            current_state : Mutex::new(TextureBarrierState {
+                access : vk::AccessFlags::empty(),
+                stage : vk::PipelineStageFlags::TOP_OF_PIPE,
+                layout : vk::ImageLayout::UNDEFINED
+            }),
         }
     }
 
