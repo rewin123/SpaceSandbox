@@ -4,6 +4,10 @@
 3. https://crates.io/crates/texture-synthesis - интересный генератор текстур
 4. 
 
+Полезные ссылки про визуализацию:
+
+1. Voxel based near-field global illumination (2011) - https://dl.acm.org/doi/pdf/10.1145/1944745.1944763
+
 Разработка ведется в стиле функционал-рефакторинг
 
 "Функционал" - увеличиваем функционал кода

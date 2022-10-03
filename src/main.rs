@@ -14,6 +14,7 @@ use SpaceSandbox::*;
 use SpaceSandbox::MaterialTexture::{Diffuse, MetallicRoughness, Normal};
 use SpaceSandbox::task_server::{TaskServer, TaskState};
 use SpaceSandbox::ui::*;
+use SpaceSandbox::game::*;
 
 // for time measure wolfpld/tracy
 
@@ -27,22 +28,13 @@ fn main() {
     init_logger();
     init_rayon();
 
-    let eventloop = winit::event_loop::EventLoop::new();
-    let window = winit::window::Window::new(&eventloop).unwrap();
-    info!("Created window");
+    let mut game = Game::default();
 
-    let mut graphic_base = GraphicBase::init(window);
-
-    let mut camera = RenderCamera::new(&graphic_base.allocator);
-    camera.aspect = (graphic_base.swapchain.extent.width as f32) / (graphic_base.swapchain.extent.height as f32);
+    let mut camera = RenderCamera::new(&game.gb.allocator);
+    camera.aspect = (game.gb.swapchain.extent.width as f32) / (game.gb.swapchain.extent.height as f32);
     camera.update_projectionmatrix();
 
-    let mut gray_draw = SingleTexturePipeline::new(&graphic_base, &camera).unwrap();
-
-    let pools = Pools::init(
-        &graphic_base.device,
-        &graphic_base.queue_families
-    ).unwrap();
+    let mut gray_draw = SingleTexturePipeline::new(&game.gb, &camera).unwrap();
 
     let mut scene : Vec<RenderModel> = vec![];
 
@@ -68,12 +60,7 @@ fn main() {
             }
         }
     }
-
-    info!("Initiating task server...");
-    let task_server = Arc::new(TaskServer::new());
-    info!("Initiating texture servers...");
-    let mut texture_server = TextureServer::new(&graphic_base, &pools, task_server.clone());
-
+    
     let mut images = vec![];
 
     for img_meta in sponza.images() {
@@ -81,7 +68,7 @@ fn main() {
             gltf::image::Source::Uri {uri, mime_type} => {
                 let path = format!("{}/{}", base, uri);
                 info!("Loading texture {} ...", path);
-                images.push(texture_server.load_new_texture(path));
+                images.push(game.textures.load_new_texture(path));
             }
             _ => {
                 panic!("Not supported source for texture");
@@ -171,17 +158,17 @@ fn main() {
 
 
             let mut pos_buffer = BufferSafe::new(
-                &graphic_base.allocator,
+                &game.gb.allocator,
                 pos.len() as u64 * 4,
                     BufferUsageFlags::VERTEX_BUFFER,
             gpu_allocator::MemoryLocation::CpuToGpu).unwrap();
             let mut normal_buffer = BufferSafe::new(
-                &graphic_base.allocator,
+                &game.gb.allocator,
                 pos.len() as u64 * 4,
                 BufferUsageFlags::VERTEX_BUFFER,
                 gpu_allocator::MemoryLocation::CpuToGpu).unwrap();
             let mut index_buffer = BufferSafe::new(
-                &graphic_base.allocator,
+                &game.gb.allocator,
                 indices.len() as u64 * 4,
                 BufferUsageFlags::INDEX_BUFFER,
                 gpu_allocator::MemoryLocation::CpuToGpu
@@ -192,7 +179,7 @@ fn main() {
             }
 
             let mut uv_buffer = BufferSafe::new(
-                &graphic_base.allocator,
+                &game.gb.allocator,
                 uv.len() as u64 * 4,
                 BufferUsageFlags::VERTEX_BUFFER,
                 gpu_allocator::MemoryLocation::CpuToGpu
@@ -216,14 +203,14 @@ fn main() {
             if let Some(tex) = p.material().normal_texture() {
                 normal_tex = images[tex.texture().index()].clone();
             } else {
-                normal_tex = texture_server.get_default_color_texture();
+                normal_tex = game.textures.get_default_color_texture();
             }
 
             let metallic_roughness;
             if let Some(tex) = p.material().pbr_metallic_roughness().metallic_roughness_texture() {
                 metallic_roughness = images[tex.texture().index()].clone();
             } else {
-                metallic_roughness = texture_server.get_default_color_texture();
+                metallic_roughness = game.textures.get_default_color_texture();
             }
 
             let material = {
@@ -234,7 +221,7 @@ fn main() {
                         if let Some(tex) = v.diffuse_texture() {
                             color = images[tex.texture().index()].clone()
                         } else {
-                            color = texture_server.get_default_color_texture();
+                            color = game.textures.get_default_color_texture();
                         }
 
                         Material {
@@ -253,7 +240,7 @@ fn main() {
                 }
             };
 
-            let model = RenderModel::new(&graphic_base.allocator,
+            let model = RenderModel::new(&game.gb.allocator,
                 Arc::new(mesh),
                 material);
 
@@ -289,27 +276,29 @@ fn main() {
     info!("Finish loading");
 
     unsafe {
-        graphic_base.device.device_wait_idle().unwrap();
+        game.gb.device.device_wait_idle().unwrap();
     }
 
     let command_buffers = create_commandbuffers(
-        &graphic_base.device,
-        &pools,
-        graphic_base.swapchain.imageviews.len()
+        &game.gb.device,
+        &game.pools,
+        game.gb.swapchain.imageviews.len()
     ).unwrap();
 
     let mut gui = EguiWrapper::new(
-        &graphic_base
+        &game.gb
     );
 
     let mut show_task_list = false;
 
     let mut fps_counter = FpsCounter::default();
-    let mut api_window = ApiInfoWindow::new(&graphic_base);
+    let mut api_window = ApiInfoWindow::new(&game.gb);
 
 
     use winit::event::{Event, WindowEvent};
-    eventloop.run(move |event, _, controlflow| {
+
+    game.simple_loop(
+     move |game, event, _, controlflow| {
 
       gui.integration.handle_event(&event);
 
@@ -320,14 +309,14 @@ fn main() {
             } => {
                 unsafe {
                     info!("Finishing.....");
-                    graphic_base.device.device_wait_idle().expect("Waiting problem");
+                    game.gb.device.device_wait_idle().expect("Waiting problem");
                 }
 
                 *controlflow = winit::event_loop::ControlFlow::Exit;
             }
             Event::MainEventsCleared => {
                 // doing the work here (later)
-                graphic_base.window.request_redraw();
+                game.gb.window.request_redraw();
             }
             Event::WindowEvent {
                 event: WindowEvent::KeyboardInput { input, .. },
@@ -381,7 +370,7 @@ fn main() {
             Event::RedrawRequested(_) => {
                 //render here (later)
                 // info!("Start frame!");
-                let image_index = graphic_base.next_frame();
+                let image_index = game.gb.next_frame();
 
                 unsafe {
 
@@ -389,7 +378,7 @@ fn main() {
 
                     egui::TopBottomPanel::top(0).show(&gui.integration.context(), |ui| {
                         ui.horizontal(|ui| {
-                            if ui.button(format!("{} tasks running", task_server.get_task_count())).clicked() {
+                            if ui.button(format!("{} tasks running", game.task_server.get_task_count())).clicked() {
                                 show_task_list = true;
                             }
                             if ui.button(format!("{:?}", &gray_draw.mode)).clicked() {
@@ -417,7 +406,7 @@ fn main() {
                             if ui.button("Close").clicked() {
                                 show_task_list = false;
                             }
-                            let tasks = task_server.clone_task_list();
+                            let tasks = game.task_server.clone_task_list();
                             for t in tasks {
                                 let state = t.get_state();
                                 match state {
@@ -435,39 +424,39 @@ fn main() {
                         });
                     }
 
-                    let (_, shapes) = gui.integration.end_frame(&mut graphic_base.window);
+                    let (_, shapes) = gui.integration.end_frame(&mut game.gb.window);
                     let clipped_meshes = gui.integration.context().tessellate(shapes);
 
                     camera.update_viewmatrix();
                     camera.update_inner_buffer();
 
                     unsafe {
-                        graphic_base.device.begin_command_buffer(command_buffers[image_index as usize], &vk::CommandBufferBeginInfo::builder()).unwrap();
+                        game.gb.device.begin_command_buffer(command_buffers[image_index as usize], &vk::CommandBufferBeginInfo::builder()).unwrap();
                     }
 
                     
                     gray_draw.update_commandbuffer(
                         command_buffers[image_index as usize],
-                        &graphic_base.device,
-                        &graphic_base.swapchain,
+                        &game.gb.device,
+                        &game.gb.swapchain,
                         &scene,
-                        &texture_server,
+                        &game.textures,
                         image_index as usize
                     ).unwrap();
 
                     gui.integration.paint(command_buffers[image_index as usize], image_index as usize, clipped_meshes);
 
                     unsafe {
-                        graphic_base.device.end_command_buffer(command_buffers[image_index as usize]).unwrap();
+                        game.gb.device.end_command_buffer(command_buffers[image_index as usize]).unwrap();
                     }
 
-                    graphic_base.end_frame(&command_buffers, image_index);
+                    game.gb.end_frame(&command_buffers, image_index);
 
-                    texture_server.sync_tick();
+                    game.textures.sync_tick();
 
                     unsafe {
                         // info!("Wait device");
-                        // graphic_base.device.device_wait_idle().unwrap();
+                        // game.gb.device.device_wait_idle().unwrap();
                     }
                 };
             }

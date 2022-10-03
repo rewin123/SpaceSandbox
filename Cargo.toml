@@ -26,6 +26,7 @@ egui = "0.16.1"
 gltf = { version = "1.0.0", features = ["KHR_materials_pbrSpecularGlossiness"] }
 byteorder = "1.4.3"
 rayon = "1.5.3"
+specs = "0.18.0"
 
 
 [workspace]

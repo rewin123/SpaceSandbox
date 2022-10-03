@@ -23,10 +23,10 @@ pub mod gui;
 pub mod camera;
 pub mod graphic_base;
 pub mod assets;
-pub mod render_server;
 pub mod pipelines;
 pub mod task_server;
 pub mod ui;
+pub mod game;
 
 pub use debug_layer::*;
 pub use vulkan_init_utils::*;
@@ -37,6 +37,7 @@ pub use graphic_base::*;
 pub use assets::runtime_gpu_assets::*;
 pub use assets::*;
 pub use pipelines::*;
+pub use game::*;
 
 
 pub struct AllocatorSafe {
