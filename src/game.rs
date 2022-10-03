@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use winit::event_loop::EventLoopWindowTarget;
 use crate::{EguiWrapper, GraphicBase, Pools, RenderModel, TextureServer};
+use crate::asset_server::AssetServer;
 use crate::task_server::TaskServer;
 
 pub struct RenderServer {
@@ -15,7 +16,8 @@ pub struct Game {
     pub gb : GraphicBase,
     pub pools : Arc<Pools>,
     pub gui : EguiWrapper,
-    pub event_loop : Option<winit::event_loop::EventLoop<()>>
+    pub event_loop : Option<winit::event_loop::EventLoop<()>>,
+    pub render_server : RenderServer
 }
 
 
@@ -46,7 +48,8 @@ impl Default for Game {
             gb: graphic_base,
             pools,
             gui,
-            event_loop: Some(eventloop)
+            event_loop: Some(eventloop),
+            render_server : RenderServer {render_models : vec![]}
         }
     }
 }
