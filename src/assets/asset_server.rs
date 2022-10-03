@@ -22,6 +22,41 @@ impl Default for AssetServer {
 }
 
 impl AssetServer {
+
+    pub fn get_files_by_ext(&self, ext : String) -> Vec<String> {
+        let path = PathBuf::from(self.root_path.clone());
+        self.get_files_by_ext_from_folder(path, ext)
+    }
+
+    pub fn get_files_by_ext_from_folder(&self, path : PathBuf, ext : String) -> Vec<String> {
+        if path.is_dir() {
+            let mut res = vec![];
+            for file in path.read_dir().unwrap() {
+                if let Ok(entry) = file {
+                    if entry.path().is_file() {
+                        if let Some(entry_ext) = entry.path().extension() {
+                            if entry_ext.to_str().unwrap().to_string() == ext {
+                                res.push(entry.path().to_str().unwrap().to_string());
+                            }
+                        }
+                    } else if entry.path().is_dir() {
+                        res.extend(self.get_files_by_ext_from_folder(entry.path(), ext.clone()));
+                    }
+                }
+            }
+            res
+        } else {
+            if path.is_file() {
+                if let Some(entry_ext) =path.extension() {
+                    if entry_ext.to_str().unwrap().to_string() == ext {
+                        return vec![path.to_str().unwrap().to_string()];
+                    }
+                }
+            }
+            vec![]
+        }
+    }
+
     pub fn load_static_gltf(&self, game : &mut Game, path : String) {
 
         let mut scene = vec![];

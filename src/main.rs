@@ -38,13 +38,6 @@ fn main() {
 
     let mut gray_draw = SingleTexturePipeline::new(&game.gb, &camera).unwrap();
 
-    // let sponza = gltf::Gltf::open("res/test_res/models/xian_spaceship/scene.gltf").unwrap();
-    // let base = "res/test_res/models/xian_spaceship";
-
-    let sponza = "res/test_res/models/sponza/glTF/Sponza.gltf".to_string();
-
-    assets.load_static_gltf(&mut game, sponza);
-
     info!("Finish loading");
 
     unsafe {
@@ -57,15 +50,12 @@ fn main() {
         game.gb.swapchain.imageviews.len()
     ).unwrap();
 
-    let mut gui = EguiWrapper::new(
-        &game.gb
-    );
-
     let mut show_task_list = false;
+    let mut show_gltf = true;
 
     let mut fps_counter = FpsCounter::default();
     let mut api_window = ApiInfoWindow::new(&game.gb);
-
+    let mut gltf_select = SelectGltfWindow::new(&assets);
 
     use winit::event::{Event, WindowEvent};
 
@@ -143,9 +133,9 @@ fn main() {
 
                 unsafe {
 
-                    gui.integration.begin_frame();
+                    game.gui.integration.begin_frame();
 
-                    egui::TopBottomPanel::top(0).show(&gui.integration.context(), |ui| {
+                    egui::TopBottomPanel::top(0).show(&game.gui.integration.context(), |ui| {
                         ui.horizontal(|ui| {
                             if ui.button(format!("{} tasks running", game.task_server.get_task_count())).clicked() {
                                 show_task_list = true;
@@ -168,9 +158,19 @@ fn main() {
                         });
                     });
 
+                    if show_gltf {
+                        egui::Window::new("Select gltf").show(
+                            &game.gui.integration.context(), |ui| {
+                                if gltf_select.draw(ui, &assets, game) {
+                                    show_gltf = false;
+                                }
+                            }
+                        );
+                    }
+
                     if show_task_list {
                         let win_res = egui::Window::new("Task list")
-                            .show(&gui.integration.context(), |ui| {
+                            .show(&game.gui.integration.context(), |ui| {
 
                             if ui.button("Close").clicked() {
                                 show_task_list = false;
@@ -193,8 +193,8 @@ fn main() {
                         });
                     }
 
-                    let (_, shapes) = gui.integration.end_frame(&mut game.gb.window);
-                    let clipped_meshes = gui.integration.context().tessellate(shapes);
+                    let (_, shapes) = game.gui.integration.end_frame(&mut game.gb.window);
+                    let clipped_meshes = game.gui.integration.context().tessellate(shapes);
 
                     camera.update_viewmatrix();
                     camera.update_inner_buffer();
@@ -213,7 +213,7 @@ fn main() {
                         image_index as usize
                     ).unwrap();
 
-                    gui.integration.paint(command_buffers[image_index as usize], image_index as usize, clipped_meshes);
+                    game.gui.integration.paint(command_buffers[image_index as usize], image_index as usize, clipped_meshes);
 
                     unsafe {
                         game.gb.device.end_command_buffer(command_buffers[image_index as usize]).unwrap();

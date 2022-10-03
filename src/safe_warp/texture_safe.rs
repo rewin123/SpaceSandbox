@@ -10,8 +10,8 @@ use log::*;
 
 static mut GLOBAL_TEXTURE_INDEXER : usize = 0;
 
-#[derive(Debug)]
-struct TextureBarrierState {
+#[derive(Debug, Clone)]
+pub struct TextureBarrierState {
     pub access : vk::AccessFlags,
     pub layout : vk::ImageLayout,
     pub stage : vk::PipelineStageFlags
@@ -27,6 +27,8 @@ pub struct TextureSafe {
     pub index : usize,
     pub miplevel_count : u32,
     current_state: Vec<Mutex<TextureBarrierState>>,
+    width : u32,
+    height : u32
 }
 
 impl Drop for TextureSafe {
@@ -62,6 +64,11 @@ impl TextureSafe {
         });
     }
 
+    pub fn get_barrier_state(&self, mip_lvl: usize) -> TextureBarrierState {
+
+        self.current_state[mip_lvl].lock().unwrap().clone()
+    }
+
     pub fn barrier_range(
         &self,
         cmd : vk::CommandBuffer,
@@ -70,13 +77,6 @@ impl TextureSafe {
         stage : vk::PipelineStageFlags,
         range : vk::ImageSubresourceRange) {
         let mut cur = self.current_state[range.base_mip_level as usize].lock().unwrap();
-
-        // let mut old_layout = cur.layout;
-        // if cur.layout == vk::ImageLayout::TRANSFER_SRC_OPTIMAL {
-        //     old_layout = vk::ImageLayout::UNDEFINED;
-        // } else if cur.layout == vk::ImageLayout::TRANSFER_SRC_OPTIMAL {
-        //     old_layout = vk::ImageLayout::UNDEFINED;
-        // }
 
         let barrier = vk::ImageMemoryBarrier::builder()
             .image(self.image)
@@ -201,7 +201,6 @@ impl TextureSafe {
             width, 
             height, 
             res.miplevel_count);
-
 
         unsafe { gb.device.end_command_buffer(copycmdbuffer) }?;
         let submit_infos = [vk::SubmitInfo::builder()
@@ -436,8 +435,16 @@ impl TextureSafe {
             index,
             miplevel_count : mipmap_count,
             current_state : states,
+            width : extent.width,
+            height : extent.height
         }
     }
 
+    pub fn get_width(&self) -> u32 {
+        self.width
+    }
 
+    pub fn get_height(&self) -> u32 {
+        self.height
+    }
 }
