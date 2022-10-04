@@ -1,21 +1,7 @@
 use std::{sync::Arc, collections::HashMap};
 
 use ash::vk::{self, ImageView};
-use crate::{TextureSafe, DeviceSafe};
-
-pub struct RenderPassSafe {
-    pub renderpass : vk::RenderPass,
-    pub device : Arc<DeviceSafe>
-}
-
-impl Drop for RenderPassSafe {
-    fn drop(&mut self) {
-        unsafe {
-            self.device.destroy_render_pass(self.renderpass, None);
-        }
-    }
-}
-
+use crate::{TextureSafe, DeviceSafe, RenderPassSafe};
 
 pub struct FramebufferSafe {
     pub franebuffer : vk::Framebuffer,
@@ -33,13 +19,13 @@ impl Drop for FramebufferSafe {
 }
 
 impl FramebufferSafe {
-    pub fn new<'a>(renderpass : &Arc<RenderPassSafe>, attachments : &'a [Arc<TextureSafe>]) -> Self {
+    pub fn new(renderpass : &Arc<RenderPassSafe>, attachments : &[Arc<TextureSafe>]) -> Self {
         let mut iview_vec = vec![];
         for a in attachments {
             iview_vec.push(a.imageview);
         }
         let framebuffer_info = vk::FramebufferCreateInfo::builder()
-            .render_pass(renderpass.renderpass)
+            .render_pass(renderpass.inner)
             .attachments(&iview_vec)
             .width(attachments[0].get_width())
             .height(attachments[0].get_height())

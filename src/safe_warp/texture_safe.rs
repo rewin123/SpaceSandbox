@@ -447,4 +447,11 @@ impl TextureSafe {
     pub fn get_height(&self) -> u32 {
         self.height
     }
+
+    pub fn get_extent2d(&self) -> vk::Extent2D {
+        vk::Extent2D {
+            width : self.width,
+            height : self.height
+        }
+    }
 }

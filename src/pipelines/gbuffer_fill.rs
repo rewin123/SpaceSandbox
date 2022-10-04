@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use ash::vk;
-use ash::vk::{DescriptorSet, Framebuffer};
+use ash::vk::{CommandBuffer, DescriptorSet, Framebuffer};
 use log::*;
-use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe, TextureServer, MaterialTexture, FramebufferStorage};
+use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe, TextureServer, MaterialTexture, FramebufferStorage, InstancesDrawer, TextureSafe, RenderServer, ServerTexture};
 use ash::vk::DescriptorSetLayout;
 
 
@@ -34,6 +34,7 @@ pub struct GBufferFillPipeline {
     pub descriptor_set_layouts : Vec<DescriptorSetLayout>
 }
 
+
 impl Drop for GBufferFillPipeline {
     fn drop(&mut self) {
         unsafe {
@@ -42,6 +43,7 @@ impl Drop for GBufferFillPipeline {
         }
     }
 }
+
 
 impl GBufferFillPipeline {
 
@@ -382,46 +384,88 @@ impl GBufferFillPipeline {
         })
     }
 
-    pub fn update_commandbuffer(
-        &mut self,
-        commandbuffer : vk::CommandBuffer,
-        logical_device: &ash::Device,
-        models : &Vec<RenderModel>,
-        texture_server : &TextureServer
-    ) -> Result<(), vk::Result> {
+    fn update_tex_desc(&mut self, tex: &ServerTexture, texture_server : &TextureServer) {
+        unsafe {
+            let tex = tex.get_texture(texture_server);
+            if self.descriptor_sets_texture.contains_key(&tex.index) == false {
+                let imageinfo = vk::DescriptorImageInfo::builder()
+                    .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
+                    .image_view(tex.imageview)
+                    .sampler(tex.sampler)
+                    .build();
 
+                info!("image layout {:?}", imageinfo.image_layout);
+
+                let desc_layouts_texture =
+                    vec![self.pipeline.descriptor_set_layouts[1]; 1];
+                let descriptor_set_allocate_info_texture = vk::DescriptorSetAllocateInfo::builder()
+                    .descriptor_pool(self.descriptor_pool.pool)
+                    .set_layouts(&desc_layouts_texture);
+                self.descriptor_sets_texture.insert(tex.index, self.device.allocate_descriptor_sets(
+                    &descriptor_set_allocate_info_texture).unwrap()[0]);
+
+                let mut descriptorwrite_image = vk::WriteDescriptorSet::builder()
+                    .dst_set(self.descriptor_sets_texture[&tex.index])
+                    .dst_binding(0)
+                    .dst_array_element(0)
+                    .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
+                    .build();
+
+                descriptorwrite_image.descriptor_count = 1;
+                descriptorwrite_image.p_image_info = &imageinfo;
+                self.device.update_descriptor_sets(&[descriptorwrite_image], &[]);
+            }
+        }
+    }
+}
+
+impl InstancesDrawer for GBufferFillPipeline {
+    fn process(&mut self, cmd: CommandBuffer, dst: &Vec<Arc<TextureSafe>>, server: &RenderServer) {
         let clearvalues = [vk::ClearValue {
             color: vk::ClearColorValue {
-                float32: [0.5, 0.5, 0.5, 1.0],
+                float32: [0.0, 0.0, 0.0, 0.0],
             },
         },
-            vk::ClearValue {
-                depth_stencil: vk::ClearDepthStencilValue {
-                    depth: 1.0,
-                    stencil: 0,
-                }
-            }];
+        vk::ClearValue {
+            color: vk::ClearColorValue {
+                float32: [0.0, 0.0, 0.0, 0.0]
+            }
+        },
+        vk::ClearValue {
+            color: vk::ClearColorValue {
+                float32: [0.0, 0.0, 0.0, 0.0]
+            }
+        },
+        vk::ClearValue {
+            color: vk::ClearColorValue {
+                float32: [0.0, 0.0, 0.0, 0.0]
+            }
+        },];
+
+        let fb = self.framebuffers.get_framebuffer(dst);
+
         let renderpass_begininfo = vk::RenderPassBeginInfo::builder()
             .render_pass(self.renderpass.inner)
-            .framebuffer(self.framebuffers[i])
+            .framebuffer(fb.franebuffer)
             .render_area(vk::Rect2D {
                 offset: vk::Offset2D { x: 0, y: 0 },
-                extent: swapchain.extent,
+                extent: dst[0].get_extent2d()
             })
             .clear_values(&clearvalues);
+
         unsafe {
-            logical_device.cmd_begin_render_pass(
-                commandbuffer,
+            self.device.cmd_begin_render_pass(
+                cmd,
                 &renderpass_begininfo,
                 vk::SubpassContents::INLINE,
             );
-            logical_device.cmd_bind_pipeline(
-                commandbuffer,
+            self.device.cmd_bind_pipeline(
+                cmd,
                 vk::PipelineBindPoint::GRAPHICS,
                 self.pipeline,
             );
 
-            for model in models {
+            for model in &server.render_models {
                 let tex;
                 match self.mode {
                     MaterialTexture::Diffuse => {
@@ -434,35 +478,7 @@ impl GBufferFillPipeline {
                         tex = &model.material.metallic_roughness
                     }
                 }
-                let tex = tex.get_texture(texture_server);
-                if self.descriptor_sets_texture.contains_key(&tex.index) == false {
-                    let imageinfo = vk::DescriptorImageInfo::builder()
-                    .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
-                    .image_view(tex.imageview)
-                    .sampler(tex.sampler)
-                    .build();
-
-                    info!("image layout {:?}", imageinfo.image_layout);
-
-                    let desc_layouts_texture =
-                        vec![self.descriptor_set_layouts[1]; 1];
-                    let descriptor_set_allocate_info_texture = vk::DescriptorSetAllocateInfo::builder()
-                        .descriptor_pool(self.descriptor_pool.pool)
-                        .set_layouts(&desc_layouts_texture);
-                    self.descriptor_sets_texture.insert(tex.index,  self.device.allocate_descriptor_sets(
-                        &descriptor_set_allocate_info_texture).unwrap()[0]);
-
-                    let mut descriptorwrite_image = vk::WriteDescriptorSet::builder()
-                        .dst_set(self.descriptor_sets_texture[&tex.index])
-                        .dst_binding(0)
-                        .dst_array_element(0)
-                        .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
-                        .build();
-                        
-                    descriptorwrite_image.descriptor_count = 1;
-                    descriptorwrite_image.p_image_info = &imageinfo;
-                    logical_device.update_descriptor_sets(&[descriptorwrite_image], &[]);
-                }
+                self.update_tex_desc(tex, texture_server);
             }
 
             for model in models {
@@ -483,7 +499,7 @@ impl GBufferFillPipeline {
                 logical_device.cmd_bind_descriptor_sets(
                     commandbuffer,
                     vk::PipelineBindPoint::GRAPHICS,
-                    self.layout,
+                    self.pipeline.layout,
                     0,
                     &[self.descriptor_sets[i], self.descriptor_sets_texture[&tex.index]],
                     &[]
@@ -500,13 +516,15 @@ impl GBufferFillPipeline {
                     &[0, 0, 0, 0]);
                 logical_device.cmd_bind_index_buffer(commandbuffer, model.mesh.index_data.buffer, 0, vk::IndexType::UINT32);
                 logical_device.cmd_draw_indexed(commandbuffer, model.mesh.vertex_count, model.model_count as u32, 0, 0, 0);
-            
+
             }
 
             logical_device.cmd_end_render_pass(commandbuffer);
             // logical_device.end_command_buffer(commandbuffer)?;
         }
+    }
 
-        Ok(())
+    fn get_output_count(&self) -> usize {
+        4
     }
 }
