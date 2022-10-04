@@ -5,6 +5,7 @@ use ash::vk::{CommandBuffer, DescriptorSet, Framebuffer};
 use log::*;
 use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe, TextureServer, MaterialTexture, FramebufferStorage, InstancesDrawer, TextureSafe, RenderServer, ServerTexture};
 use ash::vk::DescriptorSetLayout;
+use crate::asset_server::AssetServer;
 
 
 // impl Drop for SingTextPipeline {
@@ -420,7 +421,7 @@ impl GBufferFillPipeline {
 }
 
 impl InstancesDrawer for GBufferFillPipeline {
-    fn process(&mut self, cmd: CommandBuffer, dst: &Vec<Arc<TextureSafe>>, server: &RenderServer) {
+    fn process(&mut self, cmd: CommandBuffer, dst: &Vec<Arc<TextureSafe>>, server: &RenderServer, assets : &AssetServer) {
         let clearvalues = [vk::ClearValue {
             color: vk::ClearColorValue {
                 float32: [0.0, 0.0, 0.0, 0.0],
@@ -478,10 +479,10 @@ impl InstancesDrawer for GBufferFillPipeline {
                         tex = &model.material.metallic_roughness
                     }
                 }
-                self.update_tex_desc(tex, texture_server);
+                self.update_tex_desc(tex, &assets.texture_server);
             }
 
-            for model in models {
+            for model in server.models {
                 let tex;
                 match self.mode {
                     MaterialTexture::Diffuse => {
@@ -494,10 +495,10 @@ impl InstancesDrawer for GBufferFillPipeline {
                         tex = &model.material.metallic_roughness;
                     }
                 }
-                let tex = tex.get_texture(texture_server);
+                let tex = tex.get_texture(&assets.texture_server);
 
-                logical_device.cmd_bind_descriptor_sets(
-                    commandbuffer,
+                self.device.cmd_bind_descriptor_sets(
+                    cmd,
                     vk::PipelineBindPoint::GRAPHICS,
                     self.pipeline.layout,
                     0,

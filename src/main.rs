@@ -29,8 +29,8 @@ fn main() {
     init_logger();
     init_rayon();
 
-    let mut assets = AssetServer::default();
     let mut game = Game::default();
+    let mut assets = AssetServer::new(&game);
 
     let mut camera = RenderCamera::new(&game.gb.allocator);
     camera.aspect = (game.gb.swapchain.extent.width as f32) / (game.gb.swapchain.extent.height as f32);

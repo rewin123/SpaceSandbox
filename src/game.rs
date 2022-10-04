@@ -10,7 +10,6 @@ pub struct RenderServer {
 }
 
 pub struct Game {
-    pub textures : TextureServer,
     pub world : specs::World,
     pub task_server : Arc<TaskServer>,
     pub gb : GraphicBase,
@@ -38,11 +37,8 @@ impl Default for Game {
         );
 
         let mut task_server = Arc::new(TaskServer::new());
-        let mut texture_server = TextureServer::new(
-            &graphic_base, &pools, task_server.clone());
 
         Self {
-            textures: texture_server,
             world: Default::default(),
             task_server: task_server,
             gb: graphic_base,

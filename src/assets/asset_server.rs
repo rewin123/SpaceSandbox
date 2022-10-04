@@ -6,22 +6,24 @@ use byteorder::ByteOrder;
 use gltf::buffer::Source;
 use gltf::json::accessor::ComponentType;
 use gltf::Semantic;
-use crate::{BufferSafe, Game, GPUMesh, Material, RenderModel};
+use crate::{BufferSafe, Game, GPUMesh, Material, RenderModel, TextureServer};
 use log::*;
 
 pub struct AssetServer {
-    root_path : String
-}
-
-impl Default for AssetServer {
-    fn default() -> Self {
-        Self {
-            root_path : "res".to_string()
-        }
-    }
+    root_path : String,
+    pub texture_server : TextureServer
 }
 
 impl AssetServer {
+    pub fn new(game : &Game) -> AssetServer {
+        let mut texture_server = TextureServer::new(
+            &game.gb, &game.pools, game.task_server.clone());
+
+        Self {
+            root_path : "res".to_string(),
+            texture_server
+        }
+    }
 
     pub fn get_files_by_ext(&self, ext : String) -> Vec<String> {
         let path = PathBuf::from(self.root_path.clone());
