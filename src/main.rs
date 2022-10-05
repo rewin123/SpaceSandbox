@@ -38,6 +38,32 @@ fn main() {
 
     let mut gray_draw = SingleTexturePipeline::new(&game.gb, &camera).unwrap();
 
+    let mut gbuffer_draw = GBufferFillPipeline::new(&game.gb, &camera).unwrap();
+
+    let mut gbuffer_buf = vec![];
+    for i in 0..3 {
+        let tex = Arc::new(TextureSafe::new(
+            &game.gb.allocator,
+            &game.gb.device,
+        vk::Extent2D {
+                width : 1024,
+                height : 1024
+            },
+            vk::Format::R32G32B32A32_SFLOAT,
+            false));
+        gbuffer_buf.push(tex);
+    }
+    {
+        let tex = Arc::new(TextureSafe::new_depth(
+            &game.gb.allocator,
+            &game.gb.device,
+            vk::Extent2D {
+                width : 1024,
+                height : 1024
+            }));
+        gbuffer_buf.push(tex);
+    }
+
     info!("Finish loading");
 
     unsafe {
@@ -161,7 +187,7 @@ fn main() {
                     if show_gltf {
                         egui::Window::new("Select gltf").show(
                             &game.gui.integration.context(), |ui| {
-                                if gltf_select.draw(ui, &assets, game) {
+                                if gltf_select.draw(ui, &mut assets, game) {
                                     show_gltf = false;
                                 }
                             }
@@ -209,9 +235,15 @@ fn main() {
                         &game.gb.device,
                         &game.gb.swapchain,
                         &game.render_server.render_models,
-                        &game.textures,
+                        &assets.texture_server,
                         image_index as usize
                     ).unwrap();
+
+                    gbuffer_draw.process(
+                        command_buffers[image_index as usize],
+                        &gbuffer_buf,
+                            &game.render_server,
+                            &assets);
 
                     game.gui.integration.paint(command_buffers[image_index as usize], image_index as usize, clipped_meshes);
 
@@ -221,7 +253,7 @@ fn main() {
 
                     game.gb.end_frame(&command_buffers, image_index);
 
-                    game.textures.sync_tick();
+                    assets.texture_server.sync_tick();
 
                     unsafe {
                         // info!("Wait device");

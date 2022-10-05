@@ -13,7 +13,7 @@ impl SelectGltfWindow {
         }
     }
 
-    pub fn draw(&self, ui : &mut Ui, assets : &AssetServer, game : &mut Game) -> bool {
+    pub fn draw(&self, ui : &mut Ui, assets : &mut AssetServer, game : &mut Game) -> bool {
         for file in &self.files {
             if ui.button(file).clicked() {
                 assets.load_static_gltf(game, file.to_string());

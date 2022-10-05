@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::{CommandBuffer, DescriptorSet, Framebuffer};
 use log::*;
@@ -7,19 +8,6 @@ use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamer
 use ash::vk::DescriptorSetLayout;
 use crate::asset_server::AssetServer;
 
-
-// impl Drop for SingTextPipeline {
-//     fn drop(&mut self) {
-//         info!("Destroy pipeline");
-//         unsafe {
-//             for dsl in &self.descriptor_set_layouts {
-//                 self.device.destroy_descriptor_set_layout(*dsl, None);
-//             }
-//             self.device.destroy_pipeline(self.pipeline, None);
-//             self.device.destroy_pipeline_layout(self.layout, None);
-//         }
-//     }
-// }
 
 pub struct GBufferFillPipeline {
     descriptor_sets : Vec<DescriptorSet>,
@@ -32,7 +20,7 @@ pub struct GBufferFillPipeline {
     
     pub pipeline: vk::Pipeline,
     pub layout: vk::PipelineLayout,
-    pub descriptor_set_layouts : Vec<DescriptorSetLayout>
+    pub descriptor_set_layouts : Vec<DescriptorSetLayout>,
 }
 
 
@@ -41,6 +29,14 @@ impl Drop for GBufferFillPipeline {
         unsafe {
             info!("Destroying grayscale pipeline...");
             self.device.device_wait_idle();
+
+            unsafe {
+                for dsl in &self.descriptor_set_layouts {
+                    self.device.destroy_descriptor_set_layout(*dsl, None);
+                }
+                self.device.destroy_pipeline(self.pipeline, None);
+                self.device.destroy_pipeline_layout(self.layout, None);
+            }
         }
     }
 }
@@ -48,17 +44,32 @@ impl Drop for GBufferFillPipeline {
 
 impl GBufferFillPipeline {
 
+    fn get_img_desc_set(logical_device : Arc<DeviceSafe>) -> vk::DescriptorSetLayout {
+        let descriptorset_layout_binding_descs = [vk::DescriptorSetLayoutBinding::builder()
+            .binding(0)
+            .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
+            .descriptor_count(1)
+            .stage_flags(vk::ShaderStageFlags::FRAGMENT)
+            .build()];
+        let descriptorset_layout_info = vk::DescriptorSetLayoutCreateInfo::builder()
+            .bindings(&descriptorset_layout_binding_descs);
+        let descriptorsetlayout = unsafe {
+            logical_device.create_descriptor_set_layout(&descriptorset_layout_info, None)
+        }.unwrap();
+        descriptorsetlayout
+    }
+
     fn init_base_pipeline(
         logical_device: &Arc<DeviceSafe>,
         swapchain: &SwapchainSafe,
         renderpass: &RenderPassSafe) -> Result<(vk::Pipeline, vk::PipelineLayout, Vec<vk::DescriptorSetLayout>), Box<dyn std::error::Error>> {
             let vertexshader_createinfo = vk::ShaderModuleCreateInfo::builder().code(
-                vk_shader_macros::include_glsl!("./shaders/single_texture_draw/shader.vert", kind: vert),
+                vk_shader_macros::include_glsl!("./shaders/gbuffer_fill/shader.vert", kind: vert),
             );
             let vertexshader_module =
                 unsafe { logical_device.create_shader_module(&vertexshader_createinfo, None)? };
             let fragmentshader_createinfo = vk::ShaderModuleCreateInfo::builder()
-                .code(vk_shader_macros::include_glsl!("./shaders/single_texture_draw/shader.frag"));
+                .code(vk_shader_macros::include_glsl!("./shaders/gbuffer_fill/shader.frag"));
             let fragmentshader_module =
                 unsafe { logical_device.create_shader_module(&fragmentshader_createinfo, None)? };
             let mainfunctionname = std::ffi::CString::new("main").unwrap();
@@ -181,7 +192,37 @@ impl GBufferFillPipeline {
                         | vk::ColorComponentFlags::B
                         | vk::ColorComponentFlags::A,
                 )
-                .build()];
+                .build(),
+                vk::PipelineColorBlendAttachmentState::builder()
+                    .blend_enable(true)
+                    .src_color_blend_factor(vk::BlendFactor::SRC_ALPHA)
+                    .dst_color_blend_factor(vk::BlendFactor::ONE_MINUS_SRC_ALPHA)
+                    .color_blend_op(vk::BlendOp::ADD)
+                    .src_alpha_blend_factor(vk::BlendFactor::SRC_ALPHA)
+                    .dst_alpha_blend_factor(vk::BlendFactor::ONE_MINUS_SRC_ALPHA)
+                    .alpha_blend_op(vk::BlendOp::ADD)
+                    .color_write_mask(
+                        vk::ColorComponentFlags::R
+                            | vk::ColorComponentFlags::G
+                            | vk::ColorComponentFlags::B
+                            | vk::ColorComponentFlags::A,
+                    )
+                    .build(),
+                vk::PipelineColorBlendAttachmentState::builder()
+                    .blend_enable(true)
+                    .src_color_blend_factor(vk::BlendFactor::SRC_ALPHA)
+                    .dst_color_blend_factor(vk::BlendFactor::ONE_MINUS_SRC_ALPHA)
+                    .color_blend_op(vk::BlendOp::ADD)
+                    .src_alpha_blend_factor(vk::BlendFactor::SRC_ALPHA)
+                    .dst_alpha_blend_factor(vk::BlendFactor::ONE_MINUS_SRC_ALPHA)
+                    .alpha_blend_op(vk::BlendOp::ADD)
+                    .color_write_mask(
+                        vk::ColorComponentFlags::R
+                            | vk::ColorComponentFlags::G
+                            | vk::ColorComponentFlags::B
+                            | vk::ColorComponentFlags::A,
+                    )
+                    .build(),];
             let colourblend_info =
                 vk::PipelineColorBlendStateCreateInfo::builder().attachments(&colourblend_attachments);
     
@@ -197,22 +238,11 @@ impl GBufferFillPipeline {
                 logical_device.create_descriptor_set_layout(&descriptorset_layout_info, None)
             }?;
     
-            let descriptorsetlayout_img = {
-                let descriptorset_layout_binding_descs = [vk::DescriptorSetLayoutBinding::builder()
-                    .binding(0)
-                    .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
-                    .descriptor_count(1)
-                    .stage_flags(vk::ShaderStageFlags::FRAGMENT)
-                    .build()];
-                let descriptorset_layout_info = vk::DescriptorSetLayoutCreateInfo::builder()
-                    .bindings(&descriptorset_layout_binding_descs);
-                let descriptorsetlayout = unsafe {
-                    logical_device.create_descriptor_set_layout(&descriptorset_layout_info, None)
-                }?;
-                descriptorsetlayout
-            };
+            let desc_set_color = GBufferFillPipeline::get_img_desc_set(logical_device.clone());
+            let desc_set_normal = GBufferFillPipeline::get_img_desc_set(logical_device.clone());
+            let desc_set_met_roug = GBufferFillPipeline::get_img_desc_set(logical_device.clone());
     
-            let desclayouts = vec![descriptorsetlayout, descriptorsetlayout_img];
+            let desclayouts = vec![descriptorsetlayout, desc_set_color, desc_set_normal, desc_set_met_roug];
             let pipelinelayout_info = vk::PipelineLayoutCreateInfo::builder().set_layouts(&desclayouts);
     
             let depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo::builder()
@@ -259,13 +289,6 @@ impl GBufferFillPipeline {
         base : &GraphicBase
         ) -> Result<RenderPassSafe, vk::Result> {
             let attachments = [vk::AttachmentDescription::builder()
-                .format(
-                    base.surfaces
-                        .get_formats(base.physical_device)?
-                        .first()
-                        .unwrap()
-                        .format,
-                )
                 .load_op(vk::AttachmentLoadOp::CLEAR)
                 .store_op(vk::AttachmentStoreOp::STORE)
                 .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
@@ -273,7 +296,28 @@ impl GBufferFillPipeline {
                 .initial_layout(vk::ImageLayout::UNDEFINED)
                 .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
                 .samples(vk::SampleCountFlags::TYPE_1)
+                .format(vk::Format::R32G32B32A32_SFLOAT)
                 .build(),
+                vk::AttachmentDescription::builder()
+                    .load_op(vk::AttachmentLoadOp::CLEAR)
+                    .store_op(vk::AttachmentStoreOp::STORE)
+                    .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
+                    .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
+                    .initial_layout(vk::ImageLayout::UNDEFINED)
+                    .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
+                    .samples(vk::SampleCountFlags::TYPE_1)
+                    .format(vk::Format::R32G32B32A32_SFLOAT)
+                    .build(),
+                vk::AttachmentDescription::builder()
+                    .load_op(vk::AttachmentLoadOp::CLEAR)
+                    .store_op(vk::AttachmentStoreOp::STORE)
+                    .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
+                    .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
+                    .initial_layout(vk::ImageLayout::UNDEFINED)
+                    .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
+                    .samples(vk::SampleCountFlags::TYPE_1)
+                    .format(vk::Format::R32G32B32A32_SFLOAT)
+                    .build(),
                 vk::AttachmentDescription::builder()
                     .format(vk::Format::D32_SFLOAT)
                     .load_op(vk::AttachmentLoadOp::CLEAR)
@@ -287,9 +331,17 @@ impl GBufferFillPipeline {
             let color_attachment_references = [vk::AttachmentReference {
                 attachment: 0,
                 layout: vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-            }];
+            },
+                vk::AttachmentReference {
+                    attachment: 1,
+                    layout: vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+                },
+                vk::AttachmentReference {
+                    attachment: 2,
+                    layout: vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
+                }];
             let depth_attachment_reference = vk::AttachmentReference {
-                attachment: 1,
+                attachment: 3,
                 layout: vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             };
             let subpasses = [vk::SubpassDescription::builder()
@@ -345,7 +397,7 @@ impl GBufferFillPipeline {
         }.unwrap();
 
         let desc_layouts =
-            vec![descriptor_set_layouts[0]; graphic_base.swapchain.amount_of_images as usize];
+            vec![descriptor_set_layouts[0]; 1];
         let descriptor_set_allocate_info = vk::DescriptorSetAllocateInfo::builder()
             .descriptor_pool(descriptor_pool)
             .set_layouts(&desc_layouts);
@@ -381,7 +433,7 @@ impl GBufferFillPipeline {
             mode : MaterialTexture::Diffuse,
             framebuffers: framebuffer_storage,
             layout: pipeline_layout,
-            descriptor_set_layouts: desc_layouts,
+            descriptor_set_layouts,
         })
     }
 
@@ -398,7 +450,7 @@ impl GBufferFillPipeline {
                 info!("image layout {:?}", imageinfo.image_layout);
 
                 let desc_layouts_texture =
-                    vec![self.pipeline.descriptor_set_layouts[1]; 1];
+                    vec![self.descriptor_set_layouts[1]; 1];
                 let descriptor_set_allocate_info_texture = vk::DescriptorSetAllocateInfo::builder()
                     .descriptor_pool(self.descriptor_pool.pool)
                     .set_layouts(&desc_layouts_texture);
@@ -438,8 +490,9 @@ impl InstancesDrawer for GBufferFillPipeline {
             }
         },
         vk::ClearValue {
-            color: vk::ClearColorValue {
-                float32: [0.0, 0.0, 0.0, 0.0]
+            depth_stencil: vk::ClearDepthStencilValue {
+                depth: 1.0,
+                stencil: 0,
             }
         },];
 
@@ -467,61 +520,41 @@ impl InstancesDrawer for GBufferFillPipeline {
             );
 
             for model in &server.render_models {
-                let tex;
-                match self.mode {
-                    MaterialTexture::Diffuse => {
-                        tex = &model.material.color;
-                    }
-                    MaterialTexture::Normal => {
-                        tex = &model.material.normal;
-                    }
-                    MaterialTexture::MetallicRoughness => {
-                        tex = &model.material.metallic_roughness
-                    }
-                }
-                self.update_tex_desc(tex, &assets.texture_server);
+                self.update_tex_desc(&model.material.color, &assets.texture_server);
+                self.update_tex_desc(&model.material.normal, &assets.texture_server);
+                self.update_tex_desc(&model.material.metallic_roughness, &assets.texture_server);
             }
 
-            for model in server.models {
-                let tex;
-                match self.mode {
-                    MaterialTexture::Diffuse => {
-                        tex = &model.material.color;
-                    }
-                    MaterialTexture::Normal => {
-                        tex = &model.material.normal;
-                    }
-                    MaterialTexture::MetallicRoughness => {
-                        tex = &model.material.metallic_roughness;
-                    }
-                }
-                let tex = tex.get_texture(&assets.texture_server);
+            for model in &server.render_models {
+                let color = model.material.color.get_texture(&assets.texture_server);
+                let normal = model.material.normal.get_texture(&assets.texture_server);
+                let metallic_roughness = model.material.metallic_roughness.get_texture(&assets.texture_server);
 
                 self.device.cmd_bind_descriptor_sets(
                     cmd,
                     vk::PipelineBindPoint::GRAPHICS,
-                    self.pipeline.layout,
+                    self.layout,
                     0,
-                    &[self.descriptor_sets[i], self.descriptor_sets_texture[&tex.index]],
+                    &[self.descriptor_sets[0],
+                        self.descriptor_sets_texture[&color.index],
+                        self.descriptor_sets_texture[&normal.index],
+                        self.descriptor_sets_texture[&metallic_roughness.index],],
                     &[]
                 );
 
-
-                logical_device.cmd_bind_vertex_buffers(
-                    commandbuffer,
+                self.device.cmd_bind_vertex_buffers(
+                    cmd,
                     0,
                     &[model.mesh.pos_data.buffer,
                         model.mesh.normal_data.buffer,
                         model.mesh.uv_data.buffer,
                         model.instances.buffer],
                     &[0, 0, 0, 0]);
-                logical_device.cmd_bind_index_buffer(commandbuffer, model.mesh.index_data.buffer, 0, vk::IndexType::UINT32);
-                logical_device.cmd_draw_indexed(commandbuffer, model.mesh.vertex_count, model.model_count as u32, 0, 0, 0);
-
+                self.device.cmd_bind_index_buffer(cmd, model.mesh.index_data.buffer, 0, vk::IndexType::UINT32);
+                self.device.cmd_draw_indexed(cmd, model.mesh.vertex_count, model.model_count as u32, 0, 0, 0);
             }
 
-            logical_device.cmd_end_render_pass(commandbuffer);
-            // logical_device.end_command_buffer(commandbuffer)?;
+            self.device.cmd_end_render_pass(cmd);
         }
     }
 

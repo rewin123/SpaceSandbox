@@ -66,7 +66,7 @@ impl GraphicBase {
             device : device.inner.clone(),
             physical_device,
             debug_settings : gpu_allocator::AllocatorDebugSettings::default(),
-            buffer_device_address : true
+            buffer_device_address : false
         };
         info!("Creating allocator...");
         let allocator =
@@ -82,9 +82,6 @@ impl GraphicBase {
             &device,
             &instance,
             allocator.clone());
-
-
-
 
         info!("Finished creating GraphicBase");
 

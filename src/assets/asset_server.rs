@@ -59,7 +59,7 @@ impl AssetServer {
         }
     }
 
-    pub fn load_static_gltf(&self, game : &mut Game, path : String) {
+    pub fn load_static_gltf(&mut self, game : &mut Game, path : String) {
 
         let mut scene = vec![];
 
@@ -90,7 +90,7 @@ impl AssetServer {
                 gltf::image::Source::Uri {uri, mime_type} => {
                     let path = format!("{}/{}", base, uri);
                     info!("Loading texture {} ...", path);
-                    images.push(game.textures.load_new_texture(path));
+                    images.push(self.texture_server.load_new_texture(path));
                 }
                 _ => {
                     panic!("Not supported source for texture");
@@ -225,14 +225,14 @@ impl AssetServer {
                 if let Some(tex) = p.material().normal_texture() {
                     normal_tex = images[tex.texture().index()].clone();
                 } else {
-                    normal_tex = game.textures.get_default_color_texture();
+                    normal_tex = self.texture_server.get_default_color_texture();
                 }
 
                 let metallic_roughness;
                 if let Some(tex) = p.material().pbr_metallic_roughness().metallic_roughness_texture() {
                     metallic_roughness = images[tex.texture().index()].clone();
                 } else {
-                    metallic_roughness = game.textures.get_default_color_texture();
+                    metallic_roughness = self.texture_server.get_default_color_texture();
                 }
 
                 let material = {
@@ -243,7 +243,7 @@ impl AssetServer {
                             if let Some(tex) = v.diffuse_texture() {
                                 color = images[tex.texture().index()].clone()
                             } else {
-                                color = game.textures.get_default_color_texture();
+                                color = self.texture_server.get_default_color_texture();
                             }
 
                             Material {

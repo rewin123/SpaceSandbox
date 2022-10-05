@@ -65,7 +65,6 @@ impl TextureSafe {
     }
 
     pub fn get_barrier_state(&self, mip_lvl: usize) -> TextureBarrierState {
-
         self.current_state[mip_lvl].lock().unwrap().clone()
     }
 
@@ -338,7 +337,101 @@ impl TextureSafe {
         }
     }
 
-    fn new(
+    pub fn new_depth(
+        allocator : &Arc<AllocatorSafe>,
+        device : &Arc<DeviceSafe>,
+        extent : vk::Extent2D) -> Self {
+        let mipmap_count = 1;
+        let format = vk::Format::D32_SFLOAT;
+        let img_create_info = vk::ImageCreateInfo::builder()
+            .image_type(vk::ImageType::TYPE_2D)
+            .extent(vk::Extent3D {
+                width : extent.width,
+                height : extent.height,
+                depth : 1
+            })
+            .mip_levels(mipmap_count)
+            .array_layers(1)
+            .format(format)
+            .samples(vk::SampleCountFlags::TYPE_1)
+            .usage(vk::ImageUsageFlags::TRANSFER_DST | vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT | vk::ImageUsageFlags::TRANSFER_SRC);
+
+        let vk_image = unsafe {
+            device.create_image(&img_create_info, None).unwrap()
+        };
+
+        let allocation_info = unsafe {
+            AllocationCreateDesc {
+                name: "depth allocation",
+                requirements: device.get_image_memory_requirements(vk_image),
+                location: gpu_allocator::MemoryLocation::GpuOnly,
+                linear: false
+            }
+        };
+
+        let allocation = allocator.allocate(&allocation_info).unwrap();
+
+        unsafe {
+            device.bind_image_memory(
+                vk_image,
+                allocation.memory(),
+                allocation.offset()).unwrap();
+        }
+
+        let view_create_info = vk::ImageViewCreateInfo::builder()
+            .image(vk_image)
+            .view_type(vk::ImageViewType::TYPE_2D)
+            .format(format)
+            .subresource_range(vk::ImageSubresourceRange::builder()
+                .base_array_layer(0)
+                .aspect_mask(vk::ImageAspectFlags::DEPTH)
+                .base_mip_level(0)
+                .level_count(mipmap_count)
+                .layer_count(1)
+                .build());
+        let imageview = unsafe {
+            device.create_image_view(&view_create_info, None).expect("image view creaton")
+        };
+        let sampler_info = vk::SamplerCreateInfo::builder()
+            .mag_filter(vk::Filter::LINEAR)
+            .min_filter(vk::Filter::LINEAR)
+            .mipmap_mode(vk::SamplerMipmapMode::LINEAR)
+            .mip_lod_bias(0.0f32)
+            .max_lod(mipmap_count as f32)
+            .min_lod(0.0f32);
+        let sampler =
+            unsafe { device.create_sampler(&sampler_info, None) }.expect("sampler creation");
+
+        let index = unsafe {
+            GLOBAL_TEXTURE_INDEXER += 1;
+            GLOBAL_TEXTURE_INDEXER
+        };
+
+        let mut states = vec![];
+        for i in 0..mipmap_count {
+            states.push(Mutex::new(TextureBarrierState {
+                access : vk::AccessFlags::empty(),
+                stage : vk::PipelineStageFlags::TOP_OF_PIPE,
+                layout : vk::ImageLayout::UNDEFINED
+            }));
+        }
+
+        Self {
+            image : vk_image,
+            allocation : Some(allocation),
+            imageview,
+            sampler,
+            allocator : allocator.clone(),
+            device : device.clone(),
+            index,
+            miplevel_count : mipmap_count,
+            current_state : states,
+            width : extent.width,
+            height : extent.height
+        }
+    }
+
+    pub fn new(
         allocator : &Arc<AllocatorSafe>,
         device : &Arc<DeviceSafe>,
         extent : vk::Extent2D,
@@ -363,7 +456,7 @@ impl TextureSafe {
             .array_layers(1)
             .format(format)
             .samples(vk::SampleCountFlags::TYPE_1)
-            .usage(vk::ImageUsageFlags::TRANSFER_DST | vk::ImageUsageFlags::SAMPLED | vk::ImageUsageFlags::TRANSFER_SRC);
+            .usage(vk::ImageUsageFlags::COLOR_ATTACHMENT | vk::ImageUsageFlags::TRANSFER_DST | vk::ImageUsageFlags::SAMPLED | vk::ImageUsageFlags::TRANSFER_SRC);
 
         let vk_image = unsafe {
             device.create_image(&img_create_info, None).unwrap()
