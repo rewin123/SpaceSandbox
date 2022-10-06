@@ -4,6 +4,7 @@ layout (location=0) out vec4 out_color;
 
 layout (location=0) in vec4 screen_pos;
 layout (location=1) in vec3 light_pos;
+layout (location=2) in float intensity;
 
 layout(set=2,binding=0) uniform sampler2D color;
 layout(set=3,binding=0) uniform sampler2D normal_tex;
@@ -21,9 +22,12 @@ void main() {
     vec3 pos = texture(global_pos, uv).rgb;
     vec3 normal = texture(normal_tex, uv).rgb;
 
+    float dist = length(light_pos - pos);
+
     vec3 light_dir = normalize(light_pos - pos);
     float k = dot(light_dir, normal);
     k = max(0.0, k);
+    k = k * intensity / dist;
     k = 0.2 + 0.8 * k;
 
     out_color = vec4(tex_color * k, 1.0);

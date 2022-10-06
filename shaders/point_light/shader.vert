@@ -18,10 +18,13 @@ layout (set=1, binding=0) uniform LightInfo {
 
 layout (location=0) out vec4 out_pos;
 layout (location=1) out vec3 light_pos;
+layout (location=2) out float out_intensity;
 
 void main() {
-    vec4 screen_pos = ubo.projection_matrix * ubo.view_matrix * vec4(position * intensity + pos, 1.0);
+    float scale = intensity * 100;
+    vec4 screen_pos = ubo.projection_matrix * ubo.view_matrix * vec4(position * scale + pos, 1.0);
     gl_Position = screen_pos;
     out_pos = screen_pos;
     light_pos = pos;
+    out_intensity = intensity;
 }

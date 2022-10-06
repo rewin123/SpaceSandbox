@@ -78,7 +78,7 @@ fn main() {
 
     game.render_server.point_lights.push(PointLight {
         intensity: 100.0,
-        position: [10.0, 10.0, 10.0],
+        position: [0.0, 1.0, 0.0],
         color: [1.0, 1.0, 1.0],
         instance: BufferSafe::new(
             &game.gb.allocator,
@@ -104,6 +104,7 @@ fn main() {
 
     let mut show_task_list = false;
     let mut show_gltf = true;
+    let mut show_light_window = false;
 
     let mut fps_counter = FpsCounter::default();
     let mut api_window = ApiInfoWindow::new(&game.gb);
@@ -190,6 +191,10 @@ fn main() {
 
                 unsafe {
 
+                    for light in &mut game.render_server.point_lights {
+                        light.fill_instanse();
+                    }
+
                     game.gui.integration.begin_frame();
 
                     egui::TopBottomPanel::top(0).show(&game.gui.integration.context(), |ui| {
@@ -197,23 +202,28 @@ fn main() {
                             if ui.button(format!("{} tasks running", game.task_server.get_task_count())).clicked() {
                                 show_task_list = true;
                             }
-                            if ui.button(format!("{:?}", &gray_draw.mode)).clicked() {
-                                match gray_draw.mode {
-                                    MaterialTexture::Diffuse => {
-                                        gray_draw.mode = Normal;
-                                    }
-                                    MaterialTexture::Normal => {
-                                        gray_draw.mode = MetallicRoughness;
-                                    }
-                                    MaterialTexture::MetallicRoughness => {
-                                        gray_draw.mode = Diffuse;
-                                    }
-                                }
+                            if ui.button("Lights").clicked() {
+                                show_light_window = true;
                             }
                             fps_counter.draw(ui);
                             api_window.draw(ui);
                         });
                     });
+
+                    if show_light_window {
+                        egui::Window::new("Lights").show(
+                            &game.gui.integration.context(), |ui| {
+                                for light in &mut game.render_server.point_lights {
+
+                                    ui.add(egui::Slider::new(&mut light.intensity, 0.0f32..=10.0f32));
+                                    ui.add(egui::Slider::new(&mut light.position[1], 0.0..=10.0));
+                                    ui.add(egui::Slider::new(&mut light.position[0], -10.0..=10.0));
+
+                                    ui.separator();
+                                }
+                            }
+                        );
+                    }
 
                     if show_gltf {
                         egui::Window::new("Select gltf").show(
@@ -260,7 +270,7 @@ fn main() {
                         game.gb.device.begin_command_buffer(command_buffers[image_index as usize], &vk::CommandBufferBeginInfo::builder()).unwrap();
                     }
 
-                    
+
                     // gray_draw.update_commandbuffer(
                     //     command_buffers[image_index as usize],
                     //     &game.gb.device,
