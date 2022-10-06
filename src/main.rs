@@ -11,7 +11,7 @@ use gltf::json::accessor::ComponentType;
 use log::*;
 
 use SpaceSandbox::*;
-use SpaceSandbox::asset_server::AssetServer;
+use SpaceSandbox::asset_server::{AssetServer, BaseModels};
 use SpaceSandbox::MaterialTexture::{Diffuse, MetallicRoughness, Normal};
 use SpaceSandbox::task_server::{TaskServer, TaskState};
 use SpaceSandbox::ui::*;
@@ -39,30 +39,56 @@ fn main() {
     let mut gray_draw = SingleTexturePipeline::new(&game.gb, &camera).unwrap();
 
     let mut gbuffer_draw = GBufferFillPipeline::new(&game.gb, &camera).unwrap();
+    let mut light_draw = MeshLightPipeline::new(&game.gb, &camera).unwrap();
+    let mut copy_pipe = TextureDemonstratePipeline::new(&game.gb.get_api_base(&game.pools));
 
-    let mut gbuffer_buf = vec![];
-    for i in 0..3 {
-        let tex = Arc::new(TextureSafe::new(
-            &game.gb.allocator,
-            &game.gb.device,
-        vk::Extent2D {
-                width : 1024,
-                height : 1024
-            },
-            vk::Format::R32G32B32A32_SFLOAT,
-            false));
-        gbuffer_buf.push(tex);
+    let mut fbs = vec![];
+    for image in &game.gb.swapchain.images {
+
+        let subresource_range = vk::ImageSubresourceRange::builder()
+            .aspect_mask(vk::ImageAspectFlags::COLOR)
+            .base_mip_level(0)
+            .level_count(1)
+            .base_array_layer(0)
+            .layer_count(1);
+        let imageview_create_info = vk::ImageViewCreateInfo::builder()
+            .image(*image)
+            .view_type(vk::ImageViewType::TYPE_2D)
+            .format(vk::Format::B8G8R8A8_UNORM)
+            .subresource_range(*subresource_range);
+        let imageview = unsafe {
+            game.gb.device.create_image_view(&imageview_create_info, None).unwrap()
+        };
+
+        let iview = [imageview];
+        let framebuffer_info = vk::FramebufferCreateInfo::builder()
+            .render_pass(light_draw.renderpass.inner)
+            .attachments(&iview)
+            .width(game.gb.swapchain.extent.width)
+            .height(game.gb.swapchain.extent.height)
+            .layers(1);
+        let fb = unsafe { game.gb.device.create_framebuffer(&framebuffer_info, None) }.unwrap();
+        fbs.push(Arc::new(FramebufferSafe {
+            franebuffer: fb,
+            images: vec![],
+            renderpass: light_draw.renderpass.clone(),
+            device: game.gb.device.clone()
+        }));
     }
-    {
-        let tex = Arc::new(TextureSafe::new_depth(
+
+    game.render_server.point_lights.push(PointLight {
+        intensity: 100.0,
+        position: [10.0, 10.0, 10.0],
+        color: [1.0, 1.0, 1.0],
+        instance: BufferSafe::new(
             &game.gb.allocator,
-            &game.gb.device,
-            vk::Extent2D {
-                width : 1024,
-                height : 1024
-            }));
-        gbuffer_buf.push(tex);
-    }
+            PointLight::get_instance_stride() as u64,
+        BufferUsageFlags::VERTEX_BUFFER,
+        gpu_allocator::MemoryLocation::CpuToGpu).unwrap()
+    });
+
+    let gbuffer = gbuffer_draw.create_framebuffer();
+    // let light_buffer = light_draw.create_framebuffer();
 
     info!("Finish loading");
 
@@ -84,6 +110,11 @@ fn main() {
     let mut gltf_select = SelectGltfWindow::new(&assets);
 
     use winit::event::{Event, WindowEvent};
+
+    for light in &mut game.render_server.point_lights {
+        light.fill_instanse();
+    }
+
 
     game.simple_loop(
      move |game, event, _, controlflow| {
@@ -230,20 +261,31 @@ fn main() {
                     }
 
                     
-                    gray_draw.update_commandbuffer(
-                        command_buffers[image_index as usize],
-                        &game.gb.device,
-                        &game.gb.swapchain,
-                        &game.render_server.render_models,
-                        &assets.texture_server,
-                        image_index as usize
-                    ).unwrap();
+                    // gray_draw.update_commandbuffer(
+                    //     command_buffers[image_index as usize],
+                    //     &game.gb.device,
+                    //     &game.gb.swapchain,
+                    //     &game.render_server.render_models,
+                    //     &assets.texture_server,
+                    //     image_index as usize
+                    // ).unwrap();
+
+                    light_draw.set_camera(&camera);
 
                     gbuffer_draw.process(
                         command_buffers[image_index as usize],
-                        &gbuffer_buf,
+                            &[],
+                        &gbuffer,
                             &game.render_server,
                             &assets);
+
+                    light_draw.process(
+                        command_buffers[image_index as usize],
+                        &gbuffer.images[0..4],
+                        &fbs[image_index as usize],
+                        &game.render_server,
+                        &assets
+                    );
 
                     game.gui.integration.paint(command_buffers[image_index as usize], image_index as usize, clipped_meshes);
 

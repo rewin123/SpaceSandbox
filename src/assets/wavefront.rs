@@ -1,10 +1,11 @@
+use std::sync::Arc;
 use ash::vk;
 use ash::vk::BufferUsageFlags;
 use tobj::LoadError;
 use crate::{BufferSafe, GPUMesh, GraphicBase};
 use log::*;
 
-pub fn load_gray_obj_now(graphic_base : &GraphicBase, path : String) -> Result<Vec<GPUMesh>, LoadError> {
+pub fn load_gray_obj_now(graphic_base : &GraphicBase, path : String) -> Result<Vec<Arc<GPUMesh>>, LoadError> {
     let (models, _) = tobj::load_obj(path,
                                              &tobj::GPU_LOAD_OPTIONS)?;
 
@@ -21,7 +22,6 @@ pub fn load_gray_obj_now(graphic_base : &GraphicBase, path : String) -> Result<V
             chandeg_pos.push(mesh.positions[vertex_idx * 3]);
             chandeg_pos.push(mesh.positions[vertex_idx * 3 + 1]);
             chandeg_pos.push(mesh.positions[vertex_idx * 3 + 2]);
-            chandeg_pos.push(1.0);
         }
 
 
@@ -60,14 +60,14 @@ pub fn load_gray_obj_now(graphic_base : &GraphicBase, path : String) -> Result<V
         uv_data.fill(&vec![0.0f32; mesh.normals.len()]).unwrap();
 
         scene.push(
-            GPUMesh {
+            Arc::new(GPUMesh {
                 pos_data,
                 index_data,
                 normal_data,
                 uv_data,
                 vertex_count: mesh.indices.len() as u32,
                 name : m.name.clone()
-            }
+            })
         );
     }
 

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use ash::vk;
-use crate::{ApiBase, TextureSafe, TextureTransform};
+use crate::{ApiBase, FramebufferSafe, TextureSafe, TextureTransform};
 
 pub struct TextureDemonstratePipeline {
     api : ApiBase,
@@ -107,7 +107,7 @@ impl TextureTransform for TextureDemonstratePipeline {
         );
     }
 
-    fn get_output_count(&self) -> usize {
-        1
+    fn create_framebuffer(&mut self) -> Arc<FramebufferSafe> {
+        todo!()
     }
 }

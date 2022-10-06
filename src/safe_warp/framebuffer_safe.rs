@@ -7,7 +7,7 @@ pub struct FramebufferSafe {
     pub franebuffer : vk::Framebuffer,
     pub images : Vec<Arc<TextureSafe>>,
     pub renderpass : Arc<RenderPassSafe>,
-    device : Arc<DeviceSafe>
+    pub device : Arc<DeviceSafe>
 }
 
 impl Drop for FramebufferSafe {

@@ -4,15 +4,17 @@ use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::{CommandBuffer, DescriptorSet, Framebuffer};
 use log::*;
-use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe, TextureServer, MaterialTexture, FramebufferStorage, InstancesDrawer, TextureSafe, RenderServer, ServerTexture, FramebufferSafe};
+use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe, TextureServer, MaterialTexture, FramebufferStorage, InstancesDrawer, TextureSafe, RenderServer, ServerTexture, FramebufferSafe, PointLight, BufferSafe};
 use ash::vk::DescriptorSetLayout;
 use crate::asset_server::AssetServer;
 
 
-pub struct GBufferFillPipeline {
-    descriptor_sets : Vec<DescriptorSet>,
+pub struct MeshLightPipeline {
+    camera_set : DescriptorSet,
+    light_info_buffer : BufferSafe,
+    light_info_set : DescriptorSet,
     framebuffers : FramebufferStorage,
-    renderpass : Arc<RenderPassSafe>,
+    pub renderpass : Arc<RenderPassSafe>,
     device : Arc<DeviceSafe>,
     allocator : Arc<AllocatorSafe>,
     descriptor_pool : Arc<DescriptorPoolSafe>,
@@ -22,12 +24,13 @@ pub struct GBufferFillPipeline {
     pub pipeline: vk::Pipeline,
     pub layout: vk::PipelineLayout,
     pub descriptor_set_layouts : Vec<DescriptorSetLayout>,
+    pub size : vk::Extent2D,
 
-    extent : vk::Extent2D
+
 }
 
 
-impl Drop for GBufferFillPipeline {
+impl Drop for MeshLightPipeline {
     fn drop(&mut self) {
         unsafe {
             info!("Destroying grayscale pipeline...");
@@ -45,7 +48,7 @@ impl Drop for GBufferFillPipeline {
 }
 
 
-impl GBufferFillPipeline {
+impl MeshLightPipeline {
 
     fn get_img_desc_set(logical_device : Arc<DeviceSafe>) -> vk::DescriptorSetLayout {
         let descriptorset_layout_binding_descs = [vk::DescriptorSetLayoutBinding::builder()
@@ -67,12 +70,12 @@ impl GBufferFillPipeline {
         swapchain: &SwapchainSafe,
         renderpass: &RenderPassSafe) -> Result<(vk::Pipeline, vk::PipelineLayout, Vec<vk::DescriptorSetLayout>), Box<dyn std::error::Error>> {
             let vertexshader_createinfo = vk::ShaderModuleCreateInfo::builder().code(
-                vk_shader_macros::include_glsl!("./shaders/gbuffer_fill/shader.vert", kind: vert),
+                vk_shader_macros::include_glsl!("./shaders/point_light/shader.vert", kind: vert),
             );
             let vertexshader_module =
                 unsafe { logical_device.create_shader_module(&vertexshader_createinfo, None)? };
             let fragmentshader_createinfo = vk::ShaderModuleCreateInfo::builder()
-                .code(vk_shader_macros::include_glsl!("./shaders/gbuffer_fill/shader.frag"));
+                .code(vk_shader_macros::include_glsl!("./shaders/point_light/shader.frag"));
             let fragmentshader_module =
                 unsafe { logical_device.create_shader_module(&fragmentshader_createinfo, None)? };
             let mainfunctionname = std::ffi::CString::new("main").unwrap();
@@ -86,7 +89,7 @@ impl GBufferFillPipeline {
                 .name(&mainfunctionname);
             let shader_stages = vec![vertexshader_stage.build(), fragmentshader_stage.build()];
     
-            let vertex_attrib_descs = [vk::VertexInputAttributeDescription {
+            let mut vertex_attrib_descs  = vec![vk::VertexInputAttributeDescription {
                     binding: 0,
                     location: 0,
                     offset: 0,
@@ -103,33 +106,9 @@ impl GBufferFillPipeline {
                     location: 2,
                     offset: 0,
                     format: vk::Format::R32G32_SFLOAT
-                },
-    
-                //define instance buffer
-                vk::VertexInputAttributeDescription {
-                    binding: 3,
-                    location: 3,
-                    offset: 0,
-                    format: vk::Format::R32G32B32A32_SFLOAT
-                },
-                vk::VertexInputAttributeDescription {
-                    binding: 3,
-                    location: 4,
-                    offset: 16,
-                    format: vk::Format::R32G32B32A32_SFLOAT
-                },
-                vk::VertexInputAttributeDescription {
-                    binding: 3,
-                    location: 5,
-                    offset: 32,
-                    format: vk::Format::R32G32B32A32_SFLOAT
-                },
-                vk::VertexInputAttributeDescription {
-                    binding: 3,
-                    location: 6,
-                    offset: 48,
-                    format: vk::Format::R32G32B32A32_SFLOAT
                 },];
+            vertex_attrib_descs.extend(PointLight::get_instance_vertex_attribs());
+
     
             let vertex_binding_descs = [vk::VertexInputBindingDescription {
                 binding: 0,
@@ -148,7 +127,7 @@ impl GBufferFillPipeline {
                 },
                 vk::VertexInputBindingDescription {
                     binding: 3,
-                    stride: 4 * 16,
+                    stride: PointLight::get_instance_stride(),
                     input_rate: vk::VertexInputRate::INSTANCE
                 }];
     
@@ -177,17 +156,17 @@ impl GBufferFillPipeline {
             let rasterizer_info = vk::PipelineRasterizationStateCreateInfo::builder()
                 .line_width(1.0)
                 .front_face(vk::FrontFace::COUNTER_CLOCKWISE)
-                .cull_mode(vk::CullModeFlags::NONE)
+                .cull_mode(vk::CullModeFlags::FRONT)
                 .polygon_mode(vk::PolygonMode::FILL);
             let multisampler_info = vk::PipelineMultisampleStateCreateInfo::builder()
                 .rasterization_samples(vk::SampleCountFlags::TYPE_1);
             let colourblend_attachments = [vk::PipelineColorBlendAttachmentState::builder()
                 .blend_enable(true)
-                .src_color_blend_factor(vk::BlendFactor::SRC_ALPHA)
-                .dst_color_blend_factor(vk::BlendFactor::ONE_MINUS_SRC_ALPHA)
+                .src_color_blend_factor(vk::BlendFactor::ONE)
+                .dst_color_blend_factor(vk::BlendFactor::ONE)
                 .color_blend_op(vk::BlendOp::ADD)
-                .src_alpha_blend_factor(vk::BlendFactor::SRC_ALPHA)
-                .dst_alpha_blend_factor(vk::BlendFactor::ONE_MINUS_SRC_ALPHA)
+                .src_alpha_blend_factor(vk::BlendFactor::ONE)
+                .dst_alpha_blend_factor(vk::BlendFactor::ONE)
                 .alpha_blend_op(vk::BlendOp::ADD)
                 .color_write_mask(
                     vk::ColorComponentFlags::R
@@ -195,7 +174,7 @@ impl GBufferFillPipeline {
                         | vk::ColorComponentFlags::B
                         | vk::ColorComponentFlags::A,
                 )
-                .build(); 4];
+                .build(); 1];
             let colourblend_info =
                 vk::PipelineColorBlendStateCreateInfo::builder().attachments(&colourblend_attachments);
     
@@ -210,15 +189,30 @@ impl GBufferFillPipeline {
             let descriptorsetlayout = unsafe {
                 logical_device.create_descriptor_set_layout(&descriptorset_layout_info, None)
             }?;
-    
-            let desc_set_color = GBufferFillPipeline::get_img_desc_set(logical_device.clone());
-            let desc_set_normal = GBufferFillPipeline::get_img_desc_set(logical_device.clone());
-            let desc_set_met_roug = GBufferFillPipeline::get_img_desc_set(logical_device.clone());
-    
-            let desclayouts = vec![descriptorsetlayout, desc_set_color, desc_set_normal, desc_set_met_roug];
+
+            let light_layout = {
+                let descriptorset_layout_binding_descs = [vk::DescriptorSetLayoutBinding::builder()
+                    .binding(0)
+                    .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
+                    .descriptor_count(1)
+                    .stage_flags(vk::ShaderStageFlags::VERTEX)
+                    .build()];
+                let descriptorset_layout_info = vk::DescriptorSetLayoutCreateInfo::builder()
+                    .bindings(&descriptorset_layout_binding_descs);
+                unsafe {
+                    logical_device.create_descriptor_set_layout(&descriptorset_layout_info, None)
+                }.unwrap()
+            };
+
+            let desc_set_color = MeshLightPipeline::get_img_desc_set(logical_device.clone());
+            let desc_set_normal = MeshLightPipeline::get_img_desc_set(logical_device.clone());
+            let desc_set_met_roug = MeshLightPipeline::get_img_desc_set(logical_device.clone());
+            let desc_set_pos = MeshLightPipeline::get_img_desc_set(logical_device.clone());
+
+            let desclayouts = vec![descriptorsetlayout, light_layout, desc_set_color, desc_set_normal, desc_set_met_roug, desc_set_pos];
             let pipelinelayout_info = vk::PipelineLayoutCreateInfo::builder().set_layouts(&desclayouts);
-    
-            let depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo::builder()
+
+        let depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo::builder()
                 .depth_test_enable(true)
                 .depth_write_enable(true)
                 .depth_compare_op(vk::CompareOp::LESS_OR_EQUAL);
@@ -269,71 +263,14 @@ impl GBufferFillPipeline {
                 .initial_layout(vk::ImageLayout::UNDEFINED)
                 .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
                 .samples(vk::SampleCountFlags::TYPE_1)
-                .format(vk::Format::R32G32B32A32_SFLOAT)
-                .build(),
-                vk::AttachmentDescription::builder()
-                    .load_op(vk::AttachmentLoadOp::CLEAR)
-                    .store_op(vk::AttachmentStoreOp::STORE)
-                    .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
-                    .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
-                    .initial_layout(vk::ImageLayout::UNDEFINED)
-                    .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
-                    .samples(vk::SampleCountFlags::TYPE_1)
-                    .format(vk::Format::R32G32B32A32_SFLOAT)
-                    .build(),
-                vk::AttachmentDescription::builder()
-                    .load_op(vk::AttachmentLoadOp::CLEAR)
-                    .store_op(vk::AttachmentStoreOp::STORE)
-                    .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
-                    .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
-                    .initial_layout(vk::ImageLayout::UNDEFINED)
-                    .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
-                    .samples(vk::SampleCountFlags::TYPE_1)
-                    .format(vk::Format::R32G32B32A32_SFLOAT)
-                    .build(),
-                vk::AttachmentDescription::builder()
-                    .load_op(vk::AttachmentLoadOp::CLEAR)
-                    .store_op(vk::AttachmentStoreOp::STORE)
-                    .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
-                    .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
-                    .initial_layout(vk::ImageLayout::UNDEFINED)
-                    .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
-                    .samples(vk::SampleCountFlags::TYPE_1)
-                    .format(vk::Format::R32G32B32A32_SFLOAT)
-                    .build(),
-                vk::AttachmentDescription::builder()
-                    .format(vk::Format::D32_SFLOAT)
-                    .load_op(vk::AttachmentLoadOp::CLEAR)
-                    .store_op(vk::AttachmentStoreOp::DONT_CARE)
-                    .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
-                    .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
-                    .initial_layout(vk::ImageLayout::UNDEFINED)
-                    .final_layout(vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-                    .samples(vk::SampleCountFlags::TYPE_1)
-                    .build(),];
+                .format(vk::Format::B8G8R8A8_UNORM)
+                .build(),];
             let color_attachment_references = [vk::AttachmentReference {
                 attachment: 0,
                 layout: vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-            },
-                vk::AttachmentReference {
-                    attachment: 1,
-                    layout: vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-                },
-                vk::AttachmentReference {
-                    attachment: 2,
-                    layout: vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-                },
-                vk::AttachmentReference {
-                    attachment: 3,
-                    layout: vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-                }];
-            let depth_attachment_reference = vk::AttachmentReference {
-                attachment: 4,
-                layout: vk::ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            };
+            }];
             let subpasses = [vk::SubpassDescription::builder()
                 .color_attachments(&color_attachment_references)
-                .depth_stencil_attachment(&depth_attachment_reference)
                 .pipeline_bind_point(vk::PipelineBindPoint::GRAPHICS)
                 .build()];
             let subpass_dependencies = [vk::SubpassDependency::builder()
@@ -354,13 +291,46 @@ impl GBufferFillPipeline {
             Ok(base.wrap_render_pass(renderpass))
         }
 
+    fn generate_set(
+            gb : &GraphicBase,
+            layout : DescriptorSetLayout,
+            pool : vk::DescriptorPool,
+            buffer : vk::Buffer,
+            range : u64) -> DescriptorSet {
+        let desc_layouts =
+            vec![layout; 1];
+        let descriptor_set_allocate_info = vk::DescriptorSetAllocateInfo::builder()
+            .descriptor_pool(pool)
+            .set_layouts(&desc_layouts);
+        let descriptor_sets =
+            unsafe { gb.device.allocate_descriptor_sets(&descriptor_set_allocate_info)
+            }.unwrap();
+
+        for (_, descset) in descriptor_sets.iter().enumerate() {
+            let buffer_infos = [vk::DescriptorBufferInfo {
+                buffer,
+                offset: 0,
+                range : range as vk::DeviceSize,
+            }];
+            let desc_sets_write = [vk::WriteDescriptorSet::builder()
+                .dst_set(*descset)
+                .dst_binding(0)
+                .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
+                .buffer_info(&buffer_infos)
+                .build()];
+            unsafe { gb.device.update_descriptor_sets(&desc_sets_write, &[]) };
+        }
+
+        descriptor_sets[0]
+    }
+
     pub fn new(
         graphic_base : &GraphicBase,
         camera : &RenderCamera) -> Result<Self, vk::Result> {
-        let renderpass = GBufferFillPipeline::init_renderpass(&graphic_base).unwrap();
+        let renderpass = MeshLightPipeline::init_renderpass(&graphic_base).unwrap();
 
         let (pipeline, pipeline_layout, descriptor_set_layouts) =
-             GBufferFillPipeline::init_base_pipeline(
+             MeshLightPipeline::init_base_pipeline(
                 &graphic_base.device,
                 &graphic_base.swapchain,
                 &renderpass).unwrap();
@@ -383,37 +353,41 @@ impl GBufferFillPipeline {
             graphic_base.device.create_descriptor_pool(&descriptor_pool_info, None)
         }.unwrap();
 
-        let desc_layouts =
-            vec![descriptor_set_layouts[0]; 1];
-        let descriptor_set_allocate_info = vk::DescriptorSetAllocateInfo::builder()
-            .descriptor_pool(descriptor_pool)
-            .set_layouts(&desc_layouts);
-        let descriptor_sets =
-            unsafe { graphic_base.device.allocate_descriptor_sets(&descriptor_set_allocate_info)
-            }?;
-
-        for (_, descset) in descriptor_sets.iter().enumerate() {
-            let buffer_infos = [vk::DescriptorBufferInfo {
-                buffer: camera.uniformbuffer.buffer,
-                offset: 0,
-                range: 128,
-            }];
-            let desc_sets_write = [vk::WriteDescriptorSet::builder()
-                .dst_set(*descset)
-                .dst_binding(0)
-                .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
-                .buffer_info(&buffer_infos)
-                .build()];
-            unsafe { graphic_base.device.update_descriptor_sets(&desc_sets_write, &[]) };
-        }
-
         let renderpass = Arc::new(renderpass);
         let framebuffer_storage = FramebufferStorage::new(&renderpass);
 
+        let camera_set = MeshLightPipeline::generate_set(
+            graphic_base,
+            descriptor_set_layouts[0],
+            descriptor_pool,
+            camera.uniformbuffer.buffer,
+            128
+        );
+
+        let mut light_info_buffer = BufferSafe::new(
+            &graphic_base.allocator,
+            4 * 2,
+            vk::BufferUsageFlags::UNIFORM_BUFFER,
+            gpu_allocator::MemoryLocation::CpuToGpu).unwrap();
+
+        light_info_buffer.fill(
+            &[graphic_base.swapchain.extent.width as f32,
+                graphic_base.swapchain.extent.height as f32]);
+
+        let light_set = MeshLightPipeline::generate_set(
+            graphic_base,
+            descriptor_set_layouts[1],
+            descriptor_pool,
+            light_info_buffer.buffer,
+            4 * 2
+        );
+
         Ok(Self {
             pipeline,
-            descriptor_sets,
+            camera_set,
             renderpass,
+            light_info_buffer,
+            light_info_set : light_set,
             device : graphic_base.device.clone(),
             descriptor_pool : Arc::new(DescriptorPoolSafe { pool: descriptor_pool, device: graphic_base.device.clone() }),
             descriptor_sets_texture : HashMap::new(),
@@ -422,13 +396,12 @@ impl GBufferFillPipeline {
             layout: pipeline_layout,
             descriptor_set_layouts,
             allocator : graphic_base.allocator.clone(),
-            extent : graphic_base.swapchain.extent
+            size : graphic_base.swapchain.extent
         })
     }
 
-    fn update_tex_desc(&mut self, tex: &ServerTexture, texture_server : &TextureServer) {
+    fn update_tex_desc(&mut self, tex: &Arc<TextureSafe>) {
         unsafe {
-            let tex = tex.get_texture(texture_server);
             if self.descriptor_sets_texture.contains_key(&tex.index) == false {
                 let imageinfo = vk::DescriptorImageInfo::builder()
                     .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
@@ -439,7 +412,7 @@ impl GBufferFillPipeline {
                 info!("image layout {:?}", imageinfo.image_layout);
 
                 let desc_layouts_texture =
-                    vec![self.descriptor_set_layouts[1]; 1];
+                    vec![self.descriptor_set_layouts[2]; 1];
                 let descriptor_set_allocate_info_texture = vk::DescriptorSetAllocateInfo::builder()
                     .descriptor_pool(self.descriptor_pool.pool)
                     .set_layouts(&desc_layouts_texture);
@@ -461,7 +434,7 @@ impl GBufferFillPipeline {
     }
 }
 
-impl InstancesDrawer for GBufferFillPipeline {
+impl InstancesDrawer for MeshLightPipeline {
     fn process(
             &mut self,
             cmd: CommandBuffer,
@@ -473,27 +446,6 @@ impl InstancesDrawer for GBufferFillPipeline {
             color: vk::ClearColorValue {
                 float32: [0.0, 0.0, 0.0, 0.0],
             },
-        },
-        vk::ClearValue {
-            color: vk::ClearColorValue {
-                float32: [0.0, 0.0, 0.0, 0.0]
-            }
-        },
-        vk::ClearValue {
-            color: vk::ClearColorValue {
-                float32: [0.0, 0.0, 0.0, 0.0]
-            }
-        },
-        vk::ClearValue {
-            color: vk::ClearColorValue {
-                float32: [0.0, 0.0, 0.0, 0.0]
-            }
-        },
-        vk::ClearValue {
-            depth_stencil: vk::ClearDepthStencilValue {
-                depth: 1.0,
-                stencil: 0,
-            }
         },];
 
         let renderpass_begininfo = vk::RenderPassBeginInfo::builder()
@@ -501,14 +453,18 @@ impl InstancesDrawer for GBufferFillPipeline {
             .framebuffer(fb.franebuffer)
             .render_area(vk::Rect2D {
                 offset: vk::Offset2D { x: 0, y: 0 },
-                extent: fb.images[0].get_extent2d()
+                extent: self.size
             })
             .clear_values(&clearvalues);
 
         unsafe {
 
-            for tex in &fb.images {
-                tex.current_state[0].lock().unwrap().layout = vk::ImageLayout::PRESENT_SRC_KHR;
+            for tex in input {
+                self.update_tex_desc(tex);
+                tex.barrier(cmd,
+                            vk::AccessFlags::SHADER_READ,
+                            vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+                            vk::PipelineStageFlags::FRAGMENT_SHADER);
             }
 
             self.device.cmd_begin_render_pass(
@@ -522,39 +478,35 @@ impl InstancesDrawer for GBufferFillPipeline {
                 self.pipeline,
             );
 
-            for model in &server.render_models {
-                self.update_tex_desc(&model.material.color, &assets.texture_server);
-                self.update_tex_desc(&model.material.normal, &assets.texture_server);
-                self.update_tex_desc(&model.material.metallic_roughness, &assets.texture_server);
-            }
 
-            for model in &server.render_models {
-                let color = model.material.color.get_texture(&assets.texture_server);
-                let normal = model.material.normal.get_texture(&assets.texture_server);
-                let metallic_roughness = model.material.metallic_roughness.get_texture(&assets.texture_server);
 
+            let base_mesh = assets.base_models.sphere.clone();
+
+            for light in &server.point_lights {
                 self.device.cmd_bind_descriptor_sets(
                     cmd,
                     vk::PipelineBindPoint::GRAPHICS,
                     self.layout,
                     0,
-                    &[self.descriptor_sets[0],
-                        self.descriptor_sets_texture[&color.index],
-                        self.descriptor_sets_texture[&normal.index],
-                        self.descriptor_sets_texture[&metallic_roughness.index],],
+                    &[self.camera_set,
+                        self.light_info_set,
+                        self.descriptor_sets_texture[&input[0].index],
+                        self.descriptor_sets_texture[&input[1].index],
+                        self.descriptor_sets_texture[&input[2].index],
+                        self.descriptor_sets_texture[&input[3].index]],
                     &[]
                 );
 
                 self.device.cmd_bind_vertex_buffers(
                     cmd,
                     0,
-                    &[model.mesh.pos_data.buffer,
-                        model.mesh.normal_data.buffer,
-                        model.mesh.uv_data.buffer,
-                        model.instances.buffer],
+                    &[base_mesh.pos_data.buffer,
+                        base_mesh.normal_data.buffer,
+                        base_mesh.uv_data.buffer,
+                        light.instance.buffer],
                     &[0, 0, 0, 0]);
-                self.device.cmd_bind_index_buffer(cmd, model.mesh.index_data.buffer, 0, vk::IndexType::UINT32);
-                self.device.cmd_draw_indexed(cmd, model.mesh.vertex_count, model.model_count as u32, 0, 0, 0);
+                self.device.cmd_bind_index_buffer(cmd, base_mesh.index_data.buffer, 0, vk::IndexType::UINT32);
+                self.device.cmd_draw_indexed(cmd, base_mesh.vertex_count, 1, 0, 0, 0);
             }
 
             self.device.cmd_end_render_pass(cmd);
@@ -563,22 +515,16 @@ impl InstancesDrawer for GBufferFillPipeline {
 
     fn create_framebuffer(&mut self) -> Arc<FramebufferSafe> {
         let mut gbuffer_buf = vec![];
-        for i in 0..4 {
-            let tex = Arc::new(TextureSafe::new(
-                &self.allocator,
-                &self.device,
-                self.extent,
-                vk::Format::R32G32B32A32_SFLOAT,
-                false));
-            gbuffer_buf.push(tex);
-        }
-        {
-            let tex = Arc::new(TextureSafe::new_depth(
-                &self.allocator,
-                &self.device,
-                self.extent));
-            gbuffer_buf.push(tex);
-        }
+        let tex = Arc::new(TextureSafe::new(
+            &self.allocator,
+            &self.device,
+            vk::Extent2D {
+                width : 1024,
+                height : 1024
+            },
+            vk::Format::R32G32B32A32_SFLOAT,
+            false));
+        gbuffer_buf.push(tex);
         self.framebuffers.get_framebuffer(&gbuffer_buf)
     }
 

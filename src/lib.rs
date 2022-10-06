@@ -294,6 +294,10 @@ pub struct RenderModel {
     pub cpu_cache : Vec<f32>
 }
 
+pub struct MeshLight {
+    pub mesh : Arc<GPUMesh>,
+}
+
 impl RenderModel {
     pub fn new(
         allocator : &Arc<AllocatorSafe>,

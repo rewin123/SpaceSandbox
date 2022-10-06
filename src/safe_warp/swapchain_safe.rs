@@ -15,7 +15,7 @@ pub struct SwapchainSafe {
     pub surface : Arc<SurfaceSafe>,
     pub images : Vec<Image>,
     pub imageviews: Vec<ImageView>,
-    pub framebuffers : Vec<Framebuffer>,
+    pub framebuffers : Vec<vk::Framebuffer>,
     pub extent: vk::Extent2D,
     pub image_available: Vec<vk::Semaphore>,
     pub rendering_finished: Vec<vk::Semaphore>,

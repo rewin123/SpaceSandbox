@@ -26,7 +26,7 @@ pub struct TextureSafe {
     pub device : Arc<DeviceSafe>,
     pub index : usize,
     pub miplevel_count : u32,
-    current_state: Vec<Mutex<TextureBarrierState>>,
+    pub current_state: Vec<Mutex<TextureBarrierState>>,
     width : u32,
     height : u32
 }

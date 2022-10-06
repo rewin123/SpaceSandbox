@@ -1,13 +1,62 @@
 use std::collections::HashMap;
 use std::sync::Arc;
+use ash::vk;
 use winit::event_loop::EventLoopWindowTarget;
-use crate::{EguiWrapper, GraphicBase, Pools, RenderModel, TextureServer};
-use crate::asset_server::AssetServer;
+use crate::{BufferSafe, EguiWrapper, GraphicBase, Pools, RenderModel, TextureServer};
+use crate::asset_server::{AssetServer, BaseModels};
 use crate::task_server::TaskServer;
 
-pub struct RenderServer {
-    pub render_models : Vec<RenderModel>
+pub struct PointLight {
+    pub intensity : f32,
+    pub position : [f32;3],
+    pub color : [f32;3],
+    pub instance : BufferSafe
 }
+
+impl PointLight {
+    pub fn get_instance_stride() -> u32 {
+        (1 + 3 + 3) * 4
+    }
+
+    pub fn get_instance_vertex_attribs() ->
+         Vec<vk::VertexInputAttributeDescription> {
+        vec![
+            vk::VertexInputAttributeDescription {
+                binding : 3,
+                location : 3,
+                offset : 0,
+                format: vk::Format::R32_SFLOAT
+            },
+            vk::VertexInputAttributeDescription {
+                binding : 3,
+                location : 4,
+                offset : 4,
+                format: vk::Format::R32G32B32_SFLOAT
+            },
+            vk::VertexInputAttributeDescription {
+                binding : 3,
+                location : 5,
+                offset : 4 + 4 * 3,
+                format: vk::Format::R32G32B32_SFLOAT
+            },
+        ]
+    }
+
+    pub fn fill_instanse(&mut self) {
+        let mut data = vec![];
+        data.push(self.intensity);
+        data.extend(self.color);
+        data.extend(self.position);
+        self.instance.fill(&data);
+    }
+}
+
+
+pub struct RenderServer {
+    pub render_models : Vec<RenderModel>,
+    pub point_lights : Vec<PointLight>
+}
+
 
 pub struct Game {
     pub world : specs::World,
@@ -45,7 +94,10 @@ impl Default for Game {
             pools,
             gui,
             event_loop: Some(eventloop),
-            render_server : RenderServer {render_models : vec![]}
+            render_server : RenderServer {
+                render_models : vec![],
+                point_lights : vec![]
+            }
         }
     }
 }

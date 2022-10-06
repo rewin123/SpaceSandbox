@@ -84,6 +84,7 @@ impl Default for Camera {
 impl Camera {
 
     pub fn update_projectionmatrix(&mut self) {
+
         let d = 1.0 / (0.5 * self.fovy).tan();
         self.projectionmatrix = na::Matrix4::new(
             d / self.aspect,

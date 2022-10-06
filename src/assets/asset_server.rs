@@ -8,10 +8,16 @@ use gltf::json::accessor::ComponentType;
 use gltf::Semantic;
 use crate::{BufferSafe, Game, GPUMesh, Material, RenderModel, TextureServer};
 use log::*;
+use crate::wavefront::load_gray_obj_now;
+
+pub struct BaseModels {
+    pub sphere : Arc<GPUMesh>
+}
 
 pub struct AssetServer {
     root_path : String,
-    pub texture_server : TextureServer
+    pub texture_server : TextureServer,
+    pub base_models : BaseModels
 }
 
 impl AssetServer {
@@ -19,9 +25,17 @@ impl AssetServer {
         let mut texture_server = TextureServer::new(
             &game.gb, &game.pools, game.task_server.clone());
 
+        let base_models = BaseModels {
+            sphere : load_gray_obj_now(
+                &game.gb,
+                "res/base_models/sphere.obj".to_string())
+                .unwrap()[0].clone()
+        };
+
         Self {
             root_path : "res".to_string(),
-            texture_server
+            texture_server,
+            base_models
         }
     }
 
@@ -134,8 +148,6 @@ impl AssetServer {
                     }
                     _ => {panic!("Unsupported index type!");}
                 }
-
-
 
                 for (sem, acc) in p.attributes() {
                     // match  { }
