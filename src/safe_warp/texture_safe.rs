@@ -126,7 +126,7 @@ impl TextureSafe {
                 width,
                 height
             },
-            vk::Format::R8G8B8A8_SRGB,
+            vk::Format::R8G8B8A8_UNORM,
             true
         );
         info!("data len {}", data.len());

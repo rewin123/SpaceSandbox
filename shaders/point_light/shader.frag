@@ -51,6 +51,7 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 }
 
 void main() {
+    float gamma = 2.2;
     //define ev
     vec2 uv_screen = vec2(screen_pos.x, screen_pos.y) / screen_pos.w;
     vec2 uv = (uv_screen + 1.0) / 2.0;
@@ -60,6 +61,12 @@ void main() {
     vec3 pos = texture(global_pos, uv).rgb;
     vec3 N = texture(normal_tex, uv).rgb;
     vec3 mr = texture(metal_rough, uv).rgb;
+
+    tex_color = pow(tex_color, vec3(gamma));
+//    tex_color = pow(tex_color, vec3(gamme));
+    mr = pow(mr, vec3(gamma));
+
+//    mr.g = pow(mr.g, gamma);
 
     //get radiance
     float distance = length(light_pos - pos);
@@ -88,6 +95,7 @@ void main() {
     float NdotL = max(dot(N, L), 0.0);
 
     vec3 Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
+    Lo = pow(Lo, vec3(1.0 / gamma));
 
     out_color = vec4(Lo, 1.0);
 }

@@ -255,6 +255,7 @@ impl MeshLightPipeline {
     pub fn init_renderpass(
         base : &GraphicBase
         ) -> Result<RenderPassSafe, vk::Result> {
+            info!("Swapchain format: {:?}", base.swapchain.format.format);
             let attachments = [vk::AttachmentDescription::builder()
                 .load_op(vk::AttachmentLoadOp::CLEAR)
                 .store_op(vk::AttachmentStoreOp::STORE)
@@ -263,7 +264,7 @@ impl MeshLightPipeline {
                 .initial_layout(vk::ImageLayout::UNDEFINED)
                 .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
                 .samples(vk::SampleCountFlags::TYPE_1)
-                .format(vk::Format::B8G8R8A8_UNORM)
+                .format(base.swapchain.format.format)
                 .build(),];
             let color_attachment_references = [vk::AttachmentReference {
                 attachment: 0,

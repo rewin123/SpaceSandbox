@@ -118,6 +118,7 @@ impl TextureServer {
         self.task_server.spawn(&format!("Loading {}", path).to_string(),move || {
 
             let image = image::open(path)
+
             .map(|img| img.to_rgba())
             .expect("unable to open image");
             let (width, height) = image.dimensions();
