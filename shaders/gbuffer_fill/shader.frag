@@ -14,11 +14,15 @@ layout(set=2,binding=0) uniform sampler2D normal_tex;
 layout(set=3,binding=0) uniform sampler2D metal_rough;
 
 void main() {
-    vec3 tex_color = texture(color, uv).rgb;
+    vec4 tex_color = texture(color, uv);
     vec3 tex_normal = texture(normal_tex, uv).rgb;
     vec3 tex_metal_rough = texture(metal_rough, uv).rgb;
 
-    out_color = vec4(tex_color, 1.0);
+    if (tex_color.a < 0.5) {
+        discard;
+    }
+
+    out_color = vec4(tex_color.rgb, 1.0);
     out_normal = vec4(normal, 1.0);
     out_metal_rough = vec4(tex_metal_rough, 1.0);
     out_pos = vec4(in_pos.rgb, 1.0);
