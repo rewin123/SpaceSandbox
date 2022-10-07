@@ -10,6 +10,7 @@ layout (location=5) in vec3 pos;
 layout (set=0, binding=0) uniform UniformBufferObject {
     mat4 view_matrix;
     mat4 projection_matrix;
+    vec3 camera_pos;
 } ubo;
 
 layout (set=1, binding=0) uniform LightInfo {
@@ -19,6 +20,7 @@ layout (set=1, binding=0) uniform LightInfo {
 layout (location=0) out vec4 out_pos;
 layout (location=1) out vec3 light_pos;
 layout (location=2) out float out_intensity;
+layout (location=3) out vec3 out_camera_pos;
 
 void main() {
     float scale = intensity * 100;
@@ -27,4 +29,5 @@ void main() {
     out_pos = screen_pos;
     light_pos = pos;
     out_intensity = intensity;
+    out_camera_pos = ubo.camera_pos;
 }

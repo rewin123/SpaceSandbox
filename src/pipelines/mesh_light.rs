@@ -361,7 +361,7 @@ impl MeshLightPipeline {
             descriptor_set_layouts[0],
             descriptor_pool,
             camera.uniformbuffer.buffer,
-            128
+            64 * 2 + 4
         );
 
         let mut light_info_buffer = BufferSafe::new(

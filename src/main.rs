@@ -77,7 +77,7 @@ fn main() {
     }
 
     game.render_server.point_lights.push(PointLight {
-        intensity: 100.0,
+        intensity: 5.0,
         position: [0.0, 1.0, 0.0],
         color: [1.0, 1.0, 1.0],
         instance: BufferSafe::new(
@@ -215,9 +215,9 @@ fn main() {
                             &game.gui.integration.context(), |ui| {
                                 for light in &mut game.render_server.point_lights {
 
-                                    ui.add(egui::Slider::new(&mut light.intensity, 0.0f32..=10.0f32));
-                                    ui.add(egui::Slider::new(&mut light.position[1], 0.0..=10.0));
-                                    ui.add(egui::Slider::new(&mut light.position[0], -10.0..=10.0));
+                                    ui.add(egui::DragValue::new(&mut light.intensity));
+                                    ui.add(egui::DragValue::new(&mut light.position[1]));
+                                    ui.add(egui::DragValue::new(&mut light.position[0]));
 
                                     ui.separator();
                                 }

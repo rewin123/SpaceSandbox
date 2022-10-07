@@ -3,6 +3,14 @@ use std::sync::Arc;
 use ash::vk;
 use nalgebra as na;
 use crate::{AllocatorSafe, BufferSafe};
+use crevice::std140::AsStd140;
+
+#[derive(AsStd140)]
+struct CameraUniform {
+    pub viewmatrix : na::Matrix4<f32>,
+    pub projectionmatrix: na::Matrix4<f32>,
+    pub position: na::Vector3<f32>,
+}
 
 pub struct RenderCamera {
     pub camera : Camera,
@@ -15,20 +23,18 @@ impl RenderCamera {
 
         let mut uniformbuffer = BufferSafe::new(
             &allocator,
-            64 * 2,
+            64 * 2 + 4,
             vk::BufferUsageFlags::UNIFORM_BUFFER,
             gpu_allocator::MemoryLocation::CpuToGpu
         ).unwrap();
-        let cameratransform: [[[f32; 4]; 4]; 2] = [
-            nalgebra::Matrix4::identity().into(),
-            nalgebra::Matrix4::identity().into()
-        ];
-        uniformbuffer.fill(&cameratransform).unwrap();
 
-        Self {
+        let mut res =Self {
             camera,
             uniformbuffer
-        }
+        };
+        res.update_inner_buffer();
+
+        res
     }
 
     pub fn update_inner_buffer(&mut self) {
@@ -66,8 +72,8 @@ impl Default for Camera {
     fn default() -> Self {
         let mut camera = Camera {
             viewmatrix: na::Matrix4::identity(),
-            position: na::Vector3::new(0.0, 25.0, -100.0),
-            view_direction: na::Vector3::new(0.0, 0.0, 1.0),
+            position: na::Vector3::new(6.0, 1.2, -0.0),
+            view_direction: na::Vector3::new(-1.0, 0.0, 0.0),
             down_direction: na::Vector3::new(0.0, -1.0, 0.0),
             fovy : std::f32::consts::FRAC_PI_3,
             aspect : 800.0 / 600.0,
@@ -107,7 +113,13 @@ impl Camera {
     }
 
     pub fn update_buffer(&self, buffer: &mut BufferSafe) -> Result<(), Box<dyn std::error::Error>> {
-        let data: [[[f32; 4]; 4]; 2] = [self.viewmatrix.into(), self.projectionmatrix.into()];
+        let inner = CameraUniform {
+            viewmatrix: self.viewmatrix,
+            projectionmatrix: self.projectionmatrix,
+            position: self.position
+        };
+        let value_std = inner.as_std140();
+        let data = value_std.as_bytes();
         buffer.fill(&data)
     }
 
