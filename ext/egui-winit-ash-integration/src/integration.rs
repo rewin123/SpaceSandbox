@@ -7,11 +7,8 @@ use std::time::Instant;
 use ash::{extensions::khr::Swapchain, vk, Device};
 use bytemuck::bytes_of;
 use copypasta::{ClipboardContext, ClipboardProvider};
-use egui::{
-    emath::{pos2, vec2},
-    epaint::ClippedShape,
-    CtxRef, Key,
-};
+use egui::{ClippedPrimitive, Context, CursorIcon, emath::{pos2, vec2}, epaint::ClippedShape, FullOutput, ImageData, Key, TextureId};
+use egui::epaint::{ImageDelta, Primitive};
 use winit::event::{Event, ModifiersState, VirtualKeyCode, WindowEvent};
 use winit::window::Window;
 
@@ -24,7 +21,7 @@ pub struct Integration<A: AllocatorTrait> {
     physical_width: u32,
     physical_height: u32,
     scale_factor: f64,
-    context: CtxRef,
+    context: Context,
     raw_input: egui::RawInput,
     mouse_pos: egui::Pos2,
     modifiers_state: ModifiersState,
@@ -76,7 +73,7 @@ impl<A: AllocatorTrait> Integration<A> {
         let start_time = None;
 
         // Create context
-        let context = CtxRef::default();
+        let context = Context::default();
         context.set_fonts(font_definitions);
         context.set_style(style);
 
@@ -789,6 +786,17 @@ impl<A: AllocatorTrait> Integration<A> {
             egui::CursorIcon::AllScroll => winit::window::CursorIcon::AllScroll,
             egui::CursorIcon::ZoomIn => winit::window::CursorIcon::ZoomIn,
             egui::CursorIcon::ZoomOut => winit::window::CursorIcon::ZoomOut,
+
+            CursorIcon::ResizeEast => {winit::window::CursorIcon::EResize}
+            CursorIcon::ResizeSouthEast => {winit::window::CursorIcon::SeResize}
+            CursorIcon::ResizeSouth => {winit::window::CursorIcon::SResize}
+            CursorIcon::ResizeSouthWest => {winit::window::CursorIcon::SwResize}
+            CursorIcon::ResizeWest => {winit::window::CursorIcon::WResize}
+            CursorIcon::ResizeNorthWest => {winit::window::CursorIcon::NwResize}
+            CursorIcon::ResizeNorth => {winit::window::CursorIcon::NResize}
+            CursorIcon::ResizeNorthEast => {winit::window::CursorIcon::NeResize}
+            CursorIcon::ResizeColumn => {winit::window::CursorIcon::ColResize}
+            CursorIcon::ResizeRow => {winit::window::CursorIcon::RowResize}
         })
     }
 
@@ -798,41 +806,43 @@ impl<A: AllocatorTrait> Integration<A> {
     }
 
     /// end frame.
-    pub fn end_frame(&mut self, window: &Window) -> (egui::Output, Vec<ClippedShape>) {
-        let (output, clipped_shapes) = self.context.end_frame();
+    pub fn end_frame(&mut self, window: &Window) -> (egui::FullOutput, Vec<ClippedShape>) {
+        let output = self.context.end_frame();
 
+
+        let clipped_shapes = output.shapes.clone();
         // handle links
-        if let Some(egui::output::OpenUrl { url, .. }) = &output.open_url {
+        if let Some(egui::output::OpenUrl { url, .. }) = &output.platform_output.open_url {
             if let Err(err) = webbrowser::open(url) {
                 eprintln!("Failed to open url: {}", err);
             }
         }
 
         // handle clipboard
-        if !output.copied_text.is_empty() {
-            if let Err(err) = self.clipboard.set_contents(output.copied_text.clone()) {
+        if !output.platform_output.copied_text.is_empty() {
+            if let Err(err) = self.clipboard.set_contents(output.platform_output.copied_text.clone()) {
                 eprintln!("Copy/Cut error: {}", err);
             }
         }
 
         // handle cursor icon
-        if self.current_cursor_icon != output.cursor_icon {
+        if self.current_cursor_icon != output.platform_output.cursor_icon {
             if let Some(cursor_icon) =
-                Integration::<A>::egui_to_winit_cursor_icon(output.cursor_icon)
+                Integration::<A>::egui_to_winit_cursor_icon(output.platform_output.cursor_icon)
             {
                 window.set_cursor_visible(true);
                 window.set_cursor_icon(cursor_icon);
             } else {
                 window.set_cursor_visible(false);
             }
-            self.current_cursor_icon = output.cursor_icon;
+            self.current_cursor_icon = output.platform_output.cursor_icon;
         }
 
         (output, clipped_shapes)
     }
 
-    /// Get [`egui::CtxRef`].
-    pub fn context(&self) -> CtxRef {
+    /// Get [`egui::Context`].
+    pub fn context(&self) -> Context {
         self.context.clone()
     }
 
@@ -841,7 +851,8 @@ impl<A: AllocatorTrait> Integration<A> {
         &mut self,
         command_buffer: vk::CommandBuffer,
         swapchain_image_index: usize,
-        clipped_meshes: Vec<egui::ClippedMesh>,
+        output : FullOutput,
+        clipped_meshes: Vec<ClippedPrimitive>,
     ) {
         let index = swapchain_image_index;
 
@@ -852,8 +863,19 @@ impl<A: AllocatorTrait> Integration<A> {
             self.start_time = Some(Instant::now());
         }
 
+        if let Some(delta) = output.textures_delta.set.get(&TextureId::Managed(0)) {
+            println!("New font texture common chain!");
+            self.upload_font_texture(command_buffer, delta);
+        }
+
+        let delta = self.context.fonts().font_image_delta();
         // update font texture
-        self.upload_font_texture(command_buffer, &self.context.fonts().font_image());
+        if let Some(tex) = delta {
+            println!("New font texture!");
+            self.upload_font_texture(command_buffer, &tex);
+        } else {
+
+        }
 
         let mut vertex_buffer_ptr = self.vertex_buffer_allocations[index]
             .mapped_ptr()
@@ -962,116 +984,119 @@ impl<A: AllocatorTrait> Integration<A> {
         // render meshes
         let mut vertex_base = 0;
         let mut index_base = 0;
-        for egui::ClippedMesh(rect, mesh) in clipped_meshes {
+        for prim in clipped_meshes {
             // update texture
-            unsafe {
-                if let egui::TextureId::User(id) = mesh.texture_id {
-                    if let Some(descriptor_set) = self.user_textures[id as usize] {
+            let rect = &prim.clip_rect;
+            if let Primitive::Mesh(mesh) = prim.primitive {
+                unsafe {
+                    if let egui::TextureId::User(id) = mesh.texture_id {
+                        if let Some(descriptor_set) = self.user_textures[id as usize] {
+                            self.device.cmd_bind_descriptor_sets(
+                                command_buffer,
+                                vk::PipelineBindPoint::GRAPHICS,
+                                self.pipeline_layout,
+                                0,
+                                &[descriptor_set],
+                                &[],
+                            );
+                        } else {
+                            eprintln!(
+                                "This UserTexture has already been unregistered: {:?}",
+                                mesh.texture_id
+                            );
+                            continue;
+                        }
+                    } else {
                         self.device.cmd_bind_descriptor_sets(
                             command_buffer,
                             vk::PipelineBindPoint::GRAPHICS,
                             self.pipeline_layout,
                             0,
-                            &[descriptor_set],
+                            &[self.font_descriptor_sets[index]],
                             &[],
                         );
-                    } else {
-                        eprintln!(
-                            "This UserTexture has already been unregistered: {:?}",
-                            mesh.texture_id
-                        );
-                        continue;
                     }
-                } else {
-                    self.device.cmd_bind_descriptor_sets(
+                }
+
+                if mesh.vertices.is_empty() || mesh.indices.is_empty() {
+                    continue;
+                }
+
+                let v_slice = &mesh.vertices;
+                let v_size = std::mem::size_of_val(&v_slice[0]);
+                let v_copy_size = v_slice.len() * v_size;
+
+                let i_slice = &mesh.indices;
+                let i_size = std::mem::size_of_val(&i_slice[0]);
+                let i_copy_size = i_slice.len() * i_size;
+
+                let vertex_buffer_ptr_next = unsafe { vertex_buffer_ptr.add(v_copy_size) };
+                let index_buffer_ptr_next = unsafe { index_buffer_ptr.add(i_copy_size) };
+
+                if vertex_buffer_ptr_next >= vertex_buffer_ptr_end
+                    || index_buffer_ptr_next >= index_buffer_ptr_end
+                {
+                    panic!("egui paint out of memory");
+                }
+
+                // map memory
+                unsafe { vertex_buffer_ptr.copy_from(v_slice.as_ptr() as *const u8, v_copy_size) };
+                unsafe { index_buffer_ptr.copy_from(i_slice.as_ptr() as *const u8, i_copy_size) };
+
+                vertex_buffer_ptr = vertex_buffer_ptr_next;
+                index_buffer_ptr = index_buffer_ptr_next;
+
+                // record draw commands
+                unsafe {
+                    let min = rect.min;
+                    let min = egui::Pos2 {
+                        x: min.x * self.scale_factor as f32,
+                        y: min.y * self.scale_factor as f32,
+                    };
+                    let min = egui::Pos2 {
+                        x: f32::clamp(min.x, 0.0, self.physical_width as f32),
+                        y: f32::clamp(min.y, 0.0, self.physical_height as f32),
+                    };
+                    let max = rect.max;
+                    let max = egui::Pos2 {
+                        x: max.x * self.scale_factor as f32,
+                        y: max.y * self.scale_factor as f32,
+                    };
+                    let max = egui::Pos2 {
+                        x: f32::clamp(max.x, min.x, self.physical_width as f32),
+                        y: f32::clamp(max.y, min.y, self.physical_height as f32),
+                    };
+                    self.device.cmd_set_scissor(
                         command_buffer,
-                        vk::PipelineBindPoint::GRAPHICS,
-                        self.pipeline_layout,
                         0,
-                        &[self.font_descriptor_sets[index]],
-                        &[],
+                        &[vk::Rect2D::builder()
+                            .offset(
+                                vk::Offset2D::builder()
+                                    .x(min.x.round() as i32)
+                                    .y(min.y.round() as i32)
+                                    .build(),
+                            )
+                            .extent(
+                                vk::Extent2D::builder()
+                                    .width((max.x.round() - min.x) as u32)
+                                    .height((max.y.round() - min.y) as u32)
+                                    .build(),
+                            )
+                            .build()],
+                    );
+                    self.device.cmd_draw_indexed(
+                        command_buffer,
+                        mesh.indices.len() as u32,
+                        1,
+                        index_base,
+                        vertex_base,
+                        0,
                     );
                 }
+
+                vertex_base += mesh.vertices.len() as i32;
+                index_base += mesh.indices.len() as u32;
             }
-
-            if mesh.vertices.is_empty() || mesh.indices.is_empty() {
-                continue;
-            }
-
-            let v_slice = &mesh.vertices;
-            let v_size = std::mem::size_of_val(&v_slice[0]);
-            let v_copy_size = v_slice.len() * v_size;
-
-            let i_slice = &mesh.indices;
-            let i_size = std::mem::size_of_val(&i_slice[0]);
-            let i_copy_size = i_slice.len() * i_size;
-
-            let vertex_buffer_ptr_next = unsafe { vertex_buffer_ptr.add(v_copy_size) };
-            let index_buffer_ptr_next = unsafe { index_buffer_ptr.add(i_copy_size) };
-
-            if vertex_buffer_ptr_next >= vertex_buffer_ptr_end
-                || index_buffer_ptr_next >= index_buffer_ptr_end
-            {
-                panic!("egui paint out of memory");
-            }
-
-            // map memory
-            unsafe { vertex_buffer_ptr.copy_from(v_slice.as_ptr() as *const u8, v_copy_size) };
-            unsafe { index_buffer_ptr.copy_from(i_slice.as_ptr() as *const u8, i_copy_size) };
-
-            vertex_buffer_ptr = vertex_buffer_ptr_next;
-            index_buffer_ptr = index_buffer_ptr_next;
-
-            // record draw commands
-            unsafe {
-                let min = rect.min;
-                let min = egui::Pos2 {
-                    x: min.x * self.scale_factor as f32,
-                    y: min.y * self.scale_factor as f32,
-                };
-                let min = egui::Pos2 {
-                    x: f32::clamp(min.x, 0.0, self.physical_width as f32),
-                    y: f32::clamp(min.y, 0.0, self.physical_height as f32),
-                };
-                let max = rect.max;
-                let max = egui::Pos2 {
-                    x: max.x * self.scale_factor as f32,
-                    y: max.y * self.scale_factor as f32,
-                };
-                let max = egui::Pos2 {
-                    x: f32::clamp(max.x, min.x, self.physical_width as f32),
-                    y: f32::clamp(max.y, min.y, self.physical_height as f32),
-                };
-                self.device.cmd_set_scissor(
-                    command_buffer,
-                    0,
-                    &[vk::Rect2D::builder()
-                        .offset(
-                            vk::Offset2D::builder()
-                                .x(min.x.round() as i32)
-                                .y(min.y.round() as i32)
-                                .build(),
-                        )
-                        .extent(
-                            vk::Extent2D::builder()
-                                .width((max.x.round() - min.x) as u32)
-                                .height((max.y.round() - min.y) as u32)
-                                .build(),
-                        )
-                        .build()],
-                );
-                self.device.cmd_draw_indexed(
-                    command_buffer,
-                    mesh.indices.len() as u32,
-                    1,
-                    index_base,
-                    vertex_base,
-                    0,
-                );
-            }
-
-            vertex_base += mesh.vertices.len() as i32;
-            index_base += mesh.indices.len() as u32;
         }
 
         // end render pass
@@ -1080,13 +1105,20 @@ impl<A: AllocatorTrait> Integration<A> {
         }
     }
 
-    fn upload_font_texture(&mut self, command_buffer: vk::CommandBuffer, texture: &egui::FontImage) {
-        debug_assert_eq!(texture.pixels.len(), texture.width * texture.height);
+    fn upload_font_texture(&mut self, command_buffer: vk::CommandBuffer, delta: &ImageDelta) {
+        // debug_assert_eq!(texture..len(), texture.width() * texture.height());
 
-        // check version
-        if texture.version == self.font_image_version {
+        let texture;
+        if let ImageData::Font(inner) = &delta.image {
+            texture = inner;
+        } else {
             return;
         }
+
+        // check version
+        // if texture. == self.font_image_version {
+        //     return;
+        // }
 
         unsafe {
             self.device
@@ -1094,11 +1126,12 @@ impl<A: AllocatorTrait> Integration<A> {
                 .expect("Failed to wait device idle");
         }
 
-        let dimensions = (texture.width as u64, texture.height as u64);
+        let dimensions = (texture.size[0] as u64, texture.size[1] as u64);
         let data = texture
             .pixels
             .iter()
-            .flat_map(|&r| vec![r, r, r, r])
+            .map(|&r| (r * 255.0) as u8)
+            .flat_map(|r| vec![r, r, r, r])
             .collect::<Vec<_>>();
 
         // free prev staging buffer
@@ -1223,7 +1256,7 @@ impl<A: AllocatorTrait> Integration<A> {
         }
         .expect("Failed to create image view.");
         self.font_image_size = dimensions;
-        self.font_image_version = texture.version;
+        // self.font_image_version = texture.version;
 
         // update descriptor set
         for &font_descriptor_set in self.font_descriptor_sets.iter() {
@@ -1248,7 +1281,7 @@ impl<A: AllocatorTrait> Integration<A> {
         if let Some(allocation) = &self.font_image_staging_buffer_allocation {
             let ptr = allocation.mapped_ptr().unwrap().as_ptr() as *mut u8;
             unsafe {
-                ptr.copy_from_nonoverlapping(data.as_ptr(), data.len());
+                ptr.copy_from_nonoverlapping(data.as_ptr() as *const u8, data.len());
             }
         }
 

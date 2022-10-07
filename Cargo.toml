@@ -22,12 +22,13 @@ nalgebra = "0.31.1"
 nalgebra-glm = "0.17.0"
 egui-winit-ash-integration = {path = "ext/egui-winit-ash-integration" }
 gpu-allocator = "0.17.0"
-egui = "0.16.1"
+egui = "0.18.0"
 gltf = { version = "1.0.0", features = ["KHR_materials_pbrSpecularGlossiness"] }
 byteorder = "1.4.3"
 rayon = "1.5.3"
 specs = "0.18.0"
 crevice = { version = "0.11.0", features = ["nalgebra"] }
+egui-gizmo = "0.8.0"
 
 [workspace]
 members = [

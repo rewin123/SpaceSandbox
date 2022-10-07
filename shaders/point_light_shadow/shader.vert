@@ -1,3 +1,5 @@
+#version 450
+
 layout (location=0) in vec3 position;
 layout (location=1) in vec3 normal;
 layout (location=2) in vec2 uv;
@@ -5,12 +7,13 @@ layout (location=3) in mat4 model_matrix;
 
 #define PI 3.14
 
+layout (set=0, binding=0)
 uniform LightData {
     vec3 pos;
     float intensity;
 } light;
 
-vec3 get_sphere(vec3 pos) {
+vec3 get_sphere(vec3 dp) {
     float z = length(dp);
 
     float r = sqrt(dp.x * dp.x + dp.y * dp.y);
@@ -36,5 +39,5 @@ void main() {
 
     vec3 dp = vertex_pos.rgb - light.pos;
 
-    gl_Position = vec4(get_sphere_viewport(dp, intensity), 1.0);
+    gl_Position = vec4(get_sphere_viewport(dp, light.intensity), 1.0);
 }

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use ash::{vk};
 use ash::vk::{BufferUsageFlags};
 use byteorder::ByteOrder;
+use egui::RawInput;
 use gltf::{Semantic};
 use gltf::buffer::{Source};
 use gltf::json::accessor::ComponentType;
@@ -115,7 +116,6 @@ fn main() {
     for light in &mut game.render_server.point_lights {
         light.fill_instanse();
     }
-
 
     game.simple_loop(
      move |game, event, _, controlflow| {
@@ -260,7 +260,7 @@ fn main() {
                         });
                     }
 
-                    let (_, shapes) = game.gui.integration.end_frame(&mut game.gb.window);
+                    let (gui_output, shapes) = game.gui.integration.end_frame(&mut game.gb.window);
                     let clipped_meshes = game.gui.integration.context().tessellate(shapes);
 
                     camera.update_viewmatrix();
@@ -297,12 +297,14 @@ fn main() {
                         &assets
                     );
 
-                    game.gui.integration.paint(command_buffers[image_index as usize], image_index as usize, clipped_meshes);
-
+                    game.gui.integration.paint(
+                        command_buffers[image_index as usize],
+                        image_index as usize,
+                        gui_output,
+                        clipped_meshes);
                     unsafe {
                         game.gb.device.end_command_buffer(command_buffers[image_index as usize]).unwrap();
                     }
-
                     game.gb.end_frame(&command_buffers, image_index);
 
                     assets.texture_server.sync_tick();

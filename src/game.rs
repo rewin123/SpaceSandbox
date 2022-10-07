@@ -115,6 +115,7 @@ impl Game {
         event_loop.run(move |event, target, controlflow| {
             self.gui.integration.handle_event(&event);
 
+
             f(&mut self, event, target, controlflow);
         });
     }
