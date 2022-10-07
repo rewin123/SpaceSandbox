@@ -4,12 +4,14 @@ use ash::{vk};
 use ash::vk::{BufferUsageFlags};
 use byteorder::ByteOrder;
 use egui::RawInput;
+use egui_gizmo::{Gizmo, GizmoMode, GizmoOrientation, GizmoVisuals};
 use gltf::{Semantic};
 use gltf::buffer::{Source};
 use gltf::json::accessor::ComponentType;
 
 
 use log::*;
+use nalgebra::Matrix4;
 
 use SpaceSandbox::*;
 use SpaceSandbox::asset_server::{AssetServer, BaseModels};
@@ -208,6 +210,33 @@ fn main() {
                             fps_counter.draw(ui);
                             api_window.draw(ui);
                         });
+
+                        for light in &mut game.render_server.point_lights {
+
+                            let translate_matrix : Matrix4<f32> = nalgebra::Matrix::new_translation(
+                                &nalgebra::Vector3::new(light.position[0], light.position[1], light.position[2]));
+
+                            let mut proj = camera.projectionmatrix.clone();
+                            proj.m21 *= -1.0;
+                            proj.m22 *= -1.0;
+                            proj.m23 *= -1.0;
+                            proj.m24 *= -1.0;
+
+                            let gizmo = Gizmo::new("My gizmo")
+                                .view_matrix(camera.viewmatrix)
+                                .projection_matrix(proj)
+                                .model_matrix(translate_matrix)
+                                .orientation(GizmoOrientation::Global)
+                                .mode(GizmoMode::Translate);
+
+                            if let Some(response) = gizmo.interact(ui) {
+                                let model_matrix : nalgebra::Matrix4<f32> = response.transform.into();
+
+                                light.position[0] = model_matrix.m14;
+                                light.position[1] = model_matrix.m24;
+                                light.position[2] = model_matrix.m34;
+                            }
+                        }
                     });
 
                     if show_light_window {
@@ -259,6 +288,8 @@ fn main() {
                             }
                         });
                     }
+
+
 
                     let (gui_output, shapes) = game.gui.integration.end_frame(&mut game.gb.window);
                     let clipped_meshes = game.gui.integration.context().tessellate(shapes);

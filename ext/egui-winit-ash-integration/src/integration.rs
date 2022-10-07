@@ -863,9 +863,11 @@ impl<A: AllocatorTrait> Integration<A> {
             self.start_time = Some(Instant::now());
         }
 
-        if let Some(delta) = output.textures_delta.set.get(&TextureId::Managed(0)) {
-            println!("New font texture common chain!");
-            self.upload_font_texture(command_buffer, delta);
+        for (id, delta) in &output.textures_delta.set {
+            if id == &TextureId::Managed(0) {
+                self.upload_font_texture(command_buffer, delta);
+                println!("New font texture common chain!");
+            }
         }
 
         let delta = self.context.fonts().font_image_delta();

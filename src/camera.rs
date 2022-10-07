@@ -57,7 +57,7 @@ impl DerefMut for RenderCamera {
 }
 
 pub struct Camera {
-    viewmatrix : na::Matrix4<f32>,
+    pub viewmatrix : na::Matrix4<f32>,
     pub position: na::Vector3<f32>,
     pub view_direction: na::Vector3<f32>,
     pub down_direction: na::Vector3<f32>,
@@ -65,7 +65,7 @@ pub struct Camera {
     pub aspect: f32,
     pub near: f32,
     pub far: f32,
-    projectionmatrix: na::Matrix4<f32>,
+    pub projectionmatrix: na::Matrix4<f32>,
 }
 
 impl Default for Camera {
