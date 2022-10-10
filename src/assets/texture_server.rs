@@ -38,6 +38,11 @@ impl ServerTexture {
     }
 }
 
+pub enum TextureType {
+    Color,
+    Normal
+}
+
 #[derive(Clone)]
 struct TexFormTask {
     data : Vec<u8>,
@@ -82,7 +87,8 @@ impl TextureCounter {
 
 pub struct TextureServer {
     pub textures : HashMap<usize, Arc<TextureSafe>>,
-    default_texture : Arc<TextureSafe>,
+    pub default_texture : Arc<TextureSafe>,
+    pub default_normal_texture : Arc<TextureSafe>,
     index : usize,
     waiting_list : Arc<Mutex<Vec<TexFormTask>>>,
     api_base : ApiBase,
@@ -100,6 +106,11 @@ impl TextureServer {
                 1, 
                 1, 
                 &gb.get_api_base(pools)).unwrap()),
+            default_normal_texture : Arc::new(TextureSafe::from_raw_data(
+                &[255 / 2, 255 / 2, 255, 0],
+                1,
+                1,
+                &gb.get_api_base(pools)).unwrap()),
             waiting_list : Arc::new(Mutex::new(vec![])),
             api_base : gb.get_api_base(pools),
             task_server,
@@ -109,7 +120,8 @@ impl TextureServer {
 
     pub fn load_new_texture(
         &mut self,
-        path : String
+        path : String,
+        tp : TextureType
     ) -> ServerTexture {
         self.index += 1;
 
@@ -131,7 +143,12 @@ impl TextureServer {
             } );
         });
 
-        self.textures.insert(self.index, self.default_texture.clone());
+        let def = match tp {
+            TextureType::Color => {self.default_texture.clone()}
+            TextureType::Normal => {self.default_normal_texture.clone()}
+        };
+
+        self.textures.insert(self.index, def);
 
         ServerTexture::new(self.index, &self.counter)
     }
@@ -168,6 +185,12 @@ impl TextureServer {
 
         self.textures.insert(self.index, self.default_texture.clone());
 
+        ServerTexture::new(self.index, &self.counter)
+    }
+
+    pub fn get_default_normal_texture(&mut self) -> ServerTexture {
+        self.index += 1;
+        self.textures.insert(self.index, self.default_normal_texture.clone());
         ServerTexture::new(self.index, &self.counter)
     }
 }

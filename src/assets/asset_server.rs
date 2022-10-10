@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::io::Read;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -6,7 +7,7 @@ use byteorder::ByteOrder;
 use gltf::buffer::Source;
 use gltf::json::accessor::ComponentType;
 use gltf::Semantic;
-use crate::{BufferSafe, Game, GPUMesh, Material, RenderModel, TextureServer};
+use crate::{BufferSafe, Game, GPUMesh, Material, RenderModel, TextureServer, TextureType};
 use log::*;
 use crate::wavefront::load_gray_obj_now;
 
@@ -104,7 +105,8 @@ impl AssetServer {
                 gltf::image::Source::Uri {uri, mime_type} => {
                     let path = format!("{}/{}", base, uri);
                     info!("Loading texture {} ...", path);
-                    images.push(self.texture_server.load_new_texture(path));
+
+                    images.push(self.texture_server.load_new_texture(path, TextureType::Color));
                 }
                 _ => {
                     panic!("Not supported source for texture");
@@ -157,7 +159,6 @@ impl AssetServer {
 
                     let stride = view.stride().unwrap_or(acc.data_type().size() * acc.dimensions().multiplicity());
 
-
                     let buf = &buffers[view.buffer().index()];
 
                     for c in 0..acc.count() {
@@ -207,6 +208,7 @@ impl AssetServer {
 
                 if tangent.len() == 0 {
                     tangent = vec![0.0f32; pos.len()];
+                    info!("No tangent!");
                 }
 
                 let mut tangent_buffer = BufferSafe::new(
@@ -253,8 +255,9 @@ impl AssetServer {
                 let normal_tex;
                 if let Some(tex) = p.material().normal_texture() {
                     normal_tex = images[tex.texture().index()].clone();
+                    self.texture_server.textures.insert(normal_tex.server_index, self.texture_server.default_normal_texture.clone());
                 } else {
-                    normal_tex = self.texture_server.get_default_color_texture();
+                    normal_tex = self.texture_server.get_default_normal_texture();
                 }
 
                 let metallic_roughness;
