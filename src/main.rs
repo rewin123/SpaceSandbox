@@ -28,6 +28,11 @@ fn init_rayon() {
         .build_global().unwrap();
 }
 
+pub enum SelectedObject {
+    None,
+    Light(usize)
+}
+
 fn main() {
     init_logger();
     init_rayon();
@@ -97,6 +102,17 @@ fn main() {
         gpu_allocator::MemoryLocation::CpuToGpu).unwrap()
     });
 
+    game.render_server.point_lights.push(PointLight {
+        intensity: 5.0,
+        position: [2.0, 1.0, 0.0],
+        color: [1.0, 1.0, 1.0],
+        instance: BufferSafe::new(
+            &game.gb.allocator,
+            PointLight::get_instance_stride() as u64,
+            BufferUsageFlags::VERTEX_BUFFER,
+            gpu_allocator::MemoryLocation::CpuToGpu).unwrap()
+    });
+
     let gbuffer = gbuffer_draw.create_framebuffer();
     // let light_buffer = light_draw.create_framebuffer();
 
@@ -125,6 +141,8 @@ fn main() {
     for light in &mut game.render_server.point_lights {
         light.fill_instanse();
     }
+
+    let mut selected_object = SelectedObject::None;
 
     game.simple_loop(
      move |game, event, _, controlflow| {
@@ -216,10 +234,14 @@ fn main() {
                             }
                             fps_counter.draw(ui);
                             api_window.draw(ui);
+
+                            if ui.button("Deselect").clicked() {
+                                selected_object = SelectedObject::None;
+                            }
                         });
 
-                        for light in &mut game.render_server.point_lights {
-
+                        if let SelectedObject::Light(idx) = &selected_object {
+                            let light = &mut game.render_server.point_lights[*idx];
                             let translate_matrix : Matrix4<f32> = nalgebra::Matrix::new_translation(
                                 &nalgebra::Vector3::new(light.position[0], light.position[1], light.position[2]));
 
@@ -249,11 +271,13 @@ fn main() {
                     if show_light_window {
                         egui::Window::new("Lights").show(
                             &game.gui.integration.context(), |ui| {
-                                for light in &mut game.render_server.point_lights {
+                                for (idx, light) in &mut game.render_server.point_lights.iter_mut().enumerate() {
 
-                                    ui.add(egui::DragValue::new(&mut light.intensity));
-                                    ui.add(egui::DragValue::new(&mut light.position[1]));
-                                    ui.add(egui::DragValue::new(&mut light.position[0]));
+
+                                    ui.add(egui::DragValue::new(&mut light.intensity).prefix("Intensity"));
+                                    if ui.button("Select").clicked() {
+                                        selected_object = SelectedObject::Light(idx);
+                                    }
 
                                     ui.separator();
                                 }
