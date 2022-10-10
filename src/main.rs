@@ -104,7 +104,7 @@ fn main() {
 
     game.render_server.point_lights.push(PointLight {
         intensity: 5.0,
-        position: [2.0, 1.0, 0.0],
+        position: [4.0, 1.0, 0.0],
         color: [1.0, 1.0, 1.0],
         instance: BufferSafe::new(
             &game.gb.allocator,
@@ -280,6 +280,19 @@ fn main() {
                                     }
 
                                     ui.separator();
+                                }
+
+                                if ui.button("Add light").clicked() {
+                                    game.render_server.point_lights.push(PointLight {
+                                        intensity: 5.0,
+                                        position: [0.0, 1.0, 0.0],
+                                        color: [1.0, 1.0, 1.0],
+                                        instance: BufferSafe::new(
+                                            &game.gb.allocator,
+                                            PointLight::get_instance_stride() as u64,
+                                            BufferUsageFlags::VERTEX_BUFFER,
+                                            gpu_allocator::MemoryLocation::CpuToGpu).unwrap()
+                                    });
                                 }
                             }
                         );
