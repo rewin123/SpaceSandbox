@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use ash::{Device, Entry, vk};
 use ash::extensions::{khr::Surface};
 use ash::extensions::khr::Swapchain;
-use ash::vk::{PhysicalDevice, PhysicalDeviceProperties, RenderPass, SurfaceKHR, SwapchainKHR, DescriptorPool};
+use ash::vk::{PhysicalDevice, PhysicalDeviceProperties, RenderPass, SurfaceKHR, SwapchainKHR, DescriptorPool, VertexInputBindingDescription};
 
 use log::*;
 use simplelog::*;
@@ -273,10 +273,98 @@ use crate::safe_warp::InstanceSafe;
 pub struct GPUMesh {
     pub pos_data : BufferSafe,
     pub normal_data : BufferSafe,
+    pub tangent_data: BufferSafe,
     pub uv_data : BufferSafe,
     pub index_data : BufferSafe,
     pub vertex_count : u32,
     pub name : String
+}
+
+impl GPUMesh {
+    pub fn get_vertex_attrib_desc() -> Vec<vk::VertexInputAttributeDescription> {
+        vec![
+            vk::VertexInputAttributeDescription {
+                binding: 0,
+                location: 0,
+                offset: 0,
+                format: vk::Format::R32G32B32_SFLOAT,
+            },
+            vk::VertexInputAttributeDescription {
+                binding: 1,
+                location: 1,
+                offset: 0,
+                format: vk::Format::R32G32B32_SFLOAT
+            },
+            vk::VertexInputAttributeDescription {
+                binding: 2,
+                location: 2,
+                offset: 0,
+                format: vk::Format::R32G32B32_SFLOAT
+            },
+            vk::VertexInputAttributeDescription {
+                binding: 3,
+                location: 3,
+                offset: 0,
+                format: vk::Format::R32G32_SFLOAT
+            },
+
+            //define instance buffer
+            vk::VertexInputAttributeDescription {
+                binding: 4,
+                location: 4,
+                offset: 0,
+                format: vk::Format::R32G32B32A32_SFLOAT
+            },
+            vk::VertexInputAttributeDescription {
+                binding: 4,
+                location: 5,
+                offset: 16,
+                format: vk::Format::R32G32B32A32_SFLOAT
+            },
+            vk::VertexInputAttributeDescription {
+                binding: 4,
+                location: 6,
+                offset: 32,
+                format: vk::Format::R32G32B32A32_SFLOAT
+            },
+            vk::VertexInputAttributeDescription {
+                binding: 4,
+                location: 7,
+                offset: 48,
+                format: vk::Format::R32G32B32A32_SFLOAT
+            }
+        ]
+    }
+
+    pub fn get_binding_desc() -> Vec<VertexInputBindingDescription> {
+        vec![
+            vk::VertexInputBindingDescription {
+                binding: 0,
+                stride: 4 * 3,
+                input_rate: vk::VertexInputRate::VERTEX,
+            },
+            vk::VertexInputBindingDescription {
+                binding: 1,
+                stride: 4 * 3,
+                input_rate: vk::VertexInputRate::VERTEX
+            },
+            vk::VertexInputBindingDescription {
+                binding: 2,
+                stride: 4 * 3,
+                input_rate: vk::VertexInputRate::VERTEX
+            },
+            vk::VertexInputBindingDescription {
+                binding: 3,
+                stride: 4 * 2,
+                input_rate: vk::VertexInputRate::VERTEX
+            },
+            vk::VertexInputBindingDescription {
+                binding: 4,
+                stride: 4 * 16,
+                input_rate: vk::VertexInputRate::INSTANCE
+            }
+        ]
+    }
 }
 
 pub struct Material {

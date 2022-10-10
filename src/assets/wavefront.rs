@@ -46,6 +46,13 @@ pub fn load_gray_obj_now(graphic_base : &GraphicBase, path : String) -> Result<V
             gpu_allocator::MemoryLocation::CpuToGpu
         ).unwrap();
 
+        let mut tangent_data = BufferSafe::new(
+            &graphic_base.allocator,
+            (mesh.normals.len() * 3) as u64,
+            vk::BufferUsageFlags::VERTEX_BUFFER,
+            gpu_allocator::MemoryLocation::CpuToGpu
+        ).unwrap();
+
         let mut uv_data = BufferSafe::new(
             &graphic_base.allocator,
             (mesh.normals.len() * 4) as u64,
@@ -58,12 +65,15 @@ pub fn load_gray_obj_now(graphic_base : &GraphicBase, path : String) -> Result<V
         index_data.fill(&mesh.indices).unwrap();
         normal_data.fill(&mesh.normals).unwrap();
         uv_data.fill(&vec![0.0f32; mesh.normals.len()]).unwrap();
+        tangent_data.fill(&vec![0.0f32; mesh.normals.len()]).unwrap();
+
 
         scene.push(
             Arc::new(GPUMesh {
                 pos_data,
                 index_data,
                 normal_data,
+                tangent_data: tangent_data,
                 uv_data,
                 vertex_count: mesh.indices.len() as u32,
                 name : m.name.clone()

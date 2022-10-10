@@ -120,6 +120,7 @@ impl AssetServer {
                 let mut pos : Vec<f32> = vec![];
                 let mut normals : Vec<f32> = vec![];
                 let mut uv : Vec<f32> = vec![];
+                let mut tangent : Vec<f32> = vec![];
 
                 let indices_acc = p.indices().unwrap();
                 let indices_view = indices_acc.view().unwrap();
@@ -176,7 +177,9 @@ impl AssetServer {
                         Semantic::Normals => {
                             normals.extend(data.iter());
                         }
-                        Semantic::Tangents => {}
+                        Semantic::Tangents => {
+                            tangent.extend(data.iter());
+                        }
                         Semantic::Colors(_) => {}
                         Semantic::TexCoords(_) => {
                             uv.extend(data.iter());
@@ -201,6 +204,18 @@ impl AssetServer {
                     pos.len() as u64 * 4,
                     BufferUsageFlags::VERTEX_BUFFER,
                     gpu_allocator::MemoryLocation::CpuToGpu).unwrap();
+
+                if tangent.len() == 0 {
+                    tangent = vec![0.0f32; pos.len()];
+                }
+
+                let mut tangent_buffer = BufferSafe::new(
+                    &game.gb.allocator,
+                    tangent.len() as u64 * 4,
+                    BufferUsageFlags::VERTEX_BUFFER,
+                    gpu_allocator::MemoryLocation::CpuToGpu
+                ).unwrap();
+
                 let mut index_buffer = BufferSafe::new(
                     &game.gb.allocator,
                     indices.len() as u64 * 4,
@@ -223,11 +238,13 @@ impl AssetServer {
                 normal_buffer.fill(&normals).unwrap();
                 index_buffer.fill(&indices).unwrap();
                 uv_buffer.fill(&uv).unwrap();
+                tangent_buffer.fill(&tangent).unwrap();
 
                 let mesh = GPUMesh {
                     pos_data: pos_buffer,
                     normal_data: normal_buffer,
                     index_data: index_buffer,
+                    tangent_data: tangent_buffer,
                     uv_data : uv_buffer,
                     vertex_count: indices.len() as u32,
                     name: m.name().unwrap_or("").to_string()

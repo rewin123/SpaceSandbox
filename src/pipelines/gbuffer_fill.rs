@@ -4,7 +4,7 @@ use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::{CommandBuffer, DescriptorSet, Framebuffer};
 use log::*;
-use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe, TextureServer, MaterialTexture, FramebufferStorage, InstancesDrawer, TextureSafe, RenderServer, ServerTexture, FramebufferSafe};
+use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe, TextureServer, MaterialTexture, FramebufferStorage, InstancesDrawer, TextureSafe, RenderServer, ServerTexture, FramebufferSafe, GPUMesh};
 use ash::vk::DescriptorSetLayout;
 use crate::asset_server::AssetServer;
 
@@ -86,71 +86,9 @@ impl GBufferFillPipeline {
                 .name(&mainfunctionname);
             let shader_stages = vec![vertexshader_stage.build(), fragmentshader_stage.build()];
     
-            let vertex_attrib_descs = [vk::VertexInputAttributeDescription {
-                    binding: 0,
-                    location: 0,
-                    offset: 0,
-                    format: vk::Format::R32G32B32_SFLOAT,
-                },
-                vk::VertexInputAttributeDescription {
-                    binding: 1,
-                    location: 1,
-                    offset: 0,
-                    format: vk::Format::R32G32B32_SFLOAT
-                },
-                vk::VertexInputAttributeDescription {
-                    binding: 2,
-                    location: 2,
-                    offset: 0,
-                    format: vk::Format::R32G32_SFLOAT
-                },
+            let vertex_attrib_descs = GPUMesh::get_vertex_attrib_desc();
     
-                //define instance buffer
-                vk::VertexInputAttributeDescription {
-                    binding: 3,
-                    location: 3,
-                    offset: 0,
-                    format: vk::Format::R32G32B32A32_SFLOAT
-                },
-                vk::VertexInputAttributeDescription {
-                    binding: 3,
-                    location: 4,
-                    offset: 16,
-                    format: vk::Format::R32G32B32A32_SFLOAT
-                },
-                vk::VertexInputAttributeDescription {
-                    binding: 3,
-                    location: 5,
-                    offset: 32,
-                    format: vk::Format::R32G32B32A32_SFLOAT
-                },
-                vk::VertexInputAttributeDescription {
-                    binding: 3,
-                    location: 6,
-                    offset: 48,
-                    format: vk::Format::R32G32B32A32_SFLOAT
-                },];
-    
-            let vertex_binding_descs = [vk::VertexInputBindingDescription {
-                binding: 0,
-                stride: 4 * 3,
-                input_rate: vk::VertexInputRate::VERTEX,
-            },
-                vk::VertexInputBindingDescription {
-                    binding: 1,
-                    stride: 4 * 3,
-                    input_rate: vk::VertexInputRate::VERTEX
-                },
-                vk::VertexInputBindingDescription {
-                    binding: 2,
-                    stride: 4 * 2,
-                    input_rate: vk::VertexInputRate::VERTEX
-                },
-                vk::VertexInputBindingDescription {
-                    binding: 3,
-                    stride: 4 * 16,
-                    input_rate: vk::VertexInputRate::INSTANCE
-                }];
+            let vertex_binding_descs = GPUMesh::get_binding_desc();
     
             let vertex_input_info = vk::PipelineVertexInputStateCreateInfo::builder()
                 .vertex_attribute_descriptions(&vertex_attrib_descs)
@@ -550,9 +488,10 @@ impl InstancesDrawer for GBufferFillPipeline {
                     0,
                     &[model.mesh.pos_data.buffer,
                         model.mesh.normal_data.buffer,
+                        model.mesh.tangent_data.buffer,
                         model.mesh.uv_data.buffer,
                         model.instances.buffer],
-                    &[0, 0, 0, 0]);
+                    &[0, 0, 0, 0, 0]);
                 self.device.cmd_bind_index_buffer(cmd, model.mesh.index_data.buffer, 0, vk::IndexType::UINT32);
                 self.device.cmd_draw_indexed(cmd, model.mesh.vertex_count, model.model_count as u32, 0, 0, 0);
             }

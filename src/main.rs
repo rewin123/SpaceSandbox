@@ -104,7 +104,7 @@ fn main() {
 
     game.render_server.point_lights.push(PointLight {
         intensity: 5.0,
-        position: [4.0, 1.0, 0.0],
+        position: [-4.0, 1.0, 0.0],
         color: [1.0, 1.0, 1.0],
         instance: BufferSafe::new(
             &game.gb.allocator,
