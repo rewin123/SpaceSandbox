@@ -43,7 +43,14 @@ fn main() {
 
     let mut gbuffer_draw = GBufferFillPipeline::new(&game.gb, &camera).unwrap();
     let mut light_draw = MeshLightPipeline::new(&game.gb, &camera).unwrap();
+    let mut gamma_correction = TextureTransformPipeline::new(
+        &game.gb,
+        &game.pools,
+        &[vk::Format::R32G32B32A32_SFLOAT],
+        &[vk::Format::B8G8R8A8_UNORM]).unwrap();
     let mut copy_pipe = TextureDemonstratePipeline::new(&game.gb.get_api_base(&game.pools));
+
+    let light_buffer = light_draw.create_framebuffer();
 
     let mut fbs = vec![];
     for image in &game.gb.swapchain.images {
@@ -65,7 +72,7 @@ fn main() {
 
         let iview = [imageview];
         let framebuffer_info = vk::FramebufferCreateInfo::builder()
-            .render_pass(light_draw.renderpass.inner)
+            .render_pass(gamma_correction.renderpass.inner)
             .attachments(&iview)
             .width(game.gb.swapchain.extent.width)
             .height(game.gb.swapchain.extent.height)
@@ -74,7 +81,7 @@ fn main() {
         fbs.push(Arc::new(FramebufferSafe {
             franebuffer: fb,
             images: vec![],
-            renderpass: light_draw.renderpass.clone(),
+            renderpass: gamma_correction.renderpass.clone(),
             device: game.gb.device.clone()
         }));
     }
@@ -301,15 +308,14 @@ fn main() {
                         game.gb.device.begin_command_buffer(command_buffers[image_index as usize], &vk::CommandBufferBeginInfo::builder()).unwrap();
                     }
 
-
-                    // gray_draw.update_commandbuffer(
-                    //     command_buffers[image_index as usize],
-                    //     &game.gb.device,
-                    //     &game.gb.swapchain,
-                    //     &game.render_server.render_models,
-                    //     &assets.texture_server,
-                    //     image_index as usize
-                    // ).unwrap();
+                    gray_draw.update_commandbuffer(
+                        command_buffers[image_index as usize],
+                        &game.gb.device,
+                        &game.gb.swapchain,
+                        &game.render_server.render_models,
+                        &assets.texture_server,
+                        image_index as usize
+                    ).unwrap();
 
                     light_draw.set_camera(&camera);
 
@@ -323,10 +329,15 @@ fn main() {
                     light_draw.process(
                         command_buffers[image_index as usize],
                         &gbuffer.images[0..4],
-                        &fbs[image_index as usize],
+                        &light_buffer,
                         &game.render_server,
                         &assets
                     );
+
+                    gamma_correction.process(
+                        command_buffers[image_index as usize],
+                        &fbs[image_index as usize],
+                            vec![light_buffer.images[0].clone()]);
 
                     game.gui.integration.paint(
                         command_buffers[image_index as usize],

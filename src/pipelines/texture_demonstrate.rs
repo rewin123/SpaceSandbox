@@ -18,9 +18,9 @@ impl TextureDemonstratePipeline {
 }
 
 impl TextureTransform for TextureDemonstratePipeline {
-    fn process(&mut self, cmd : vk::CommandBuffer, dst: &Vec<Arc<TextureSafe>>, input: Vec<Arc<TextureSafe>>) {
+    fn process(&mut self, cmd : vk::CommandBuffer, dst: &Arc<FramebufferSafe>, input: Vec<Arc<TextureSafe>>) {
         let src = &input[self.show_idx];
-        let dst = &dst[0];
+        let dst = &dst.images[0];
 
         let src_state = src.get_barrier_state(0);
         let dst_state = dst.get_barrier_state(0);

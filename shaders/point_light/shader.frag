@@ -97,7 +97,6 @@ void main() {
     float NdotL = max(dot(N, L), 0.0);
 
     vec3 Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
-    Lo = pow(Lo, vec3(1.0 / gamma));
 
     out_color = vec4(Lo, 1.0);
 }

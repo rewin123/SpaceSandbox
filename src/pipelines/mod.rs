@@ -33,6 +33,6 @@ pub trait InstancesDrawer {
 }
 
 pub trait TextureTransform {
-    fn process(&mut self, cmd : CommandBuffer, dst : &Vec<Arc<TextureSafe>>, input : Vec<Arc<TextureSafe>>);
+    fn process(&mut self, cmd : CommandBuffer, dst : &Arc<FramebufferSafe>, input : Vec<Arc<TextureSafe>>);
     fn create_framebuffer(&mut self) -> Arc<FramebufferSafe>;
 }

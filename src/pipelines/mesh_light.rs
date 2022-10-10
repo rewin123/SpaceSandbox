@@ -264,7 +264,7 @@ impl MeshLightPipeline {
                 .initial_layout(vk::ImageLayout::UNDEFINED)
                 .final_layout(vk::ImageLayout::PRESENT_SRC_KHR)
                 .samples(vk::SampleCountFlags::TYPE_1)
-                .format(base.swapchain.format.format)
+                .format(vk::Format::R32G32B32A32_SFLOAT)
                 .build(),];
             let color_attachment_references = [vk::AttachmentReference {
                 attachment: 0,
@@ -468,6 +468,10 @@ impl InstancesDrawer for MeshLightPipeline {
                             vk::PipelineStageFlags::FRAGMENT_SHADER);
             }
 
+            for tex in &fb.images {
+                tex.current_state[0].lock().unwrap().layout = vk::ImageLayout::PRESENT_SRC_KHR;
+            }
+
             self.device.cmd_begin_render_pass(
                 cmd,
                 &renderpass_begininfo,
@@ -478,7 +482,6 @@ impl InstancesDrawer for MeshLightPipeline {
                 vk::PipelineBindPoint::GRAPHICS,
                 self.pipeline,
             );
-
 
 
             let base_mesh = assets.base_models.sphere.clone();
@@ -519,10 +522,7 @@ impl InstancesDrawer for MeshLightPipeline {
         let tex = Arc::new(TextureSafe::new(
             &self.allocator,
             &self.device,
-            vk::Extent2D {
-                width : 1024,
-                height : 1024
-            },
+            self.size,
             vk::Format::R32G32B32A32_SFLOAT,
             false));
         gbuffer_buf.push(tex);
