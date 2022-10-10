@@ -5,6 +5,7 @@ mod gbuffer_fill;
 mod texture_demonstrate;
 mod mesh_light;
 mod point_light_shadow;
+mod texture_transform_pipeline;
 
 use std::sync::Arc;
 use ash::vk::{CommandBuffer, ImageView};
@@ -14,6 +15,8 @@ pub use gbuffer_fill::*;
 pub use texture_demonstrate::*;
 pub use mesh_light::*;
 pub use point_light_shadow::*;
+pub use texture_transform_pipeline::*;
+
 use crate::{ApiBase, FramebufferSafe, GraphicBase, RenderCamera, RenderServer, TextureSafe};
 use crate::asset_server::AssetServer;
 

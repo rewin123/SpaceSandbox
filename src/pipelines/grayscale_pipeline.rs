@@ -116,7 +116,7 @@ impl GrayscalePipeline {
         commandbuffer : vk::CommandBuffer,
         logical_device: &ash::Device,
         swapchain: &SwapchainSafe,
-        meshes : &Vec<GPUMesh>,
+        meshes : &Vec<Arc<GPUMesh>>,
         i : usize
     ) -> Result<(), vk::Result> {
 

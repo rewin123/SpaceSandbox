@@ -66,6 +66,8 @@ void main() {
 //    tex_color = pow(tex_color, vec3(gamme));
     mr = pow(mr, vec3(gamma));
 
+    
+
 //    mr.g = pow(mr.g, gamma);
 
     //get radiance

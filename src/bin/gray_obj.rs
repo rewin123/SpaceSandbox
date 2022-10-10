@@ -150,7 +150,7 @@ fn main() {
 
 
                         });
-                    let (_, shapes) = gui.integration.end_frame(&mut graphic_base.window);
+                    let (output, shapes) = gui.integration.end_frame(&mut graphic_base.window);
                     let clipped_meshes = gui.integration.context().tessellate(shapes);
 
                     camera.update_viewmatrix();
@@ -169,7 +169,7 @@ fn main() {
                     );
 
 
-                    gui.integration.paint(command_buffers[image_index as usize], image_index as usize, clipped_meshes);
+                    gui.integration.paint(command_buffers[image_index as usize], image_index as usize, output, clipped_meshes);
 
                     unsafe {
                         graphic_base.device.end_command_buffer(command_buffers[image_index as usize]).unwrap();
