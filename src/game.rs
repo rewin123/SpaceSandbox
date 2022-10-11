@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use ash::vk;
+use ash::vk::Extent2D;
 use winit::event_loop::EventLoopWindowTarget;
-use crate::{BufferSafe, EguiWrapper, GraphicBase, Pools, RenderModel, TextureServer};
+use crate::{AllocatorSafe, BufferSafe, DeviceSafe, EguiWrapper, GraphicBase, Pools, RenderModel, TextureSafe, TextureServer};
 use crate::asset_server::{AssetServer, BaseModels};
 use crate::task_server::TaskServer;
 
@@ -10,10 +11,33 @@ pub struct PointLight {
     pub intensity : f32,
     pub position : [f32;3],
     pub color : [f32;3],
-    pub instance : BufferSafe
+    pub instance : BufferSafe,
+    pub shadow_map : Arc<TextureSafe>
 }
 
 impl PointLight {
+
+    pub fn default(allocator : &Arc<AllocatorSafe>,
+    device : &Arc<DeviceSafe>) -> Self {
+
+        Self {
+            intensity : 0.0,
+            position : [0.0, 0.0 ,0.0],
+            color : [1.0, 1.0, 1.0],
+            instance : BufferSafe::new(
+                allocator,
+                PointLight::get_instance_stride() as u64,
+                vk::BufferUsageFlags::VERTEX_BUFFER,
+                gpu_allocator::MemoryLocation::CpuToGpu
+            ).unwrap(),
+            shadow_map : Arc::new(TextureSafe::new_depth_cubemap(
+                allocator,
+                device,
+                Extent2D { width: 1024, height: 1024 },
+                false))
+        }
+    }
+
     pub fn get_instance_stride() -> u32 {
         (1 + 3 + 3) * 4
     }

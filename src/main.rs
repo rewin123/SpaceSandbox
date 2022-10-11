@@ -91,27 +91,17 @@ fn main() {
         }));
     }
 
-    game.render_server.point_lights.push(PointLight {
-        intensity: 5.0,
-        position: [0.0, 1.0, 0.0],
-        color: [1.0, 1.0, 1.0],
-        instance: BufferSafe::new(
-            &game.gb.allocator,
-            PointLight::get_instance_stride() as u64,
-        BufferUsageFlags::VERTEX_BUFFER,
-        gpu_allocator::MemoryLocation::CpuToGpu).unwrap()
-    });
+    let mut light_1 = PointLight::default(&game.gb.allocator, &game.gb.device);
+    let mut light_2 = PointLight::default(&game.gb.allocator, &game.gb.device);
 
-    game.render_server.point_lights.push(PointLight {
-        intensity: 5.0,
-        position: [-4.0, 1.0, 0.0],
-        color: [1.0, 1.0, 1.0],
-        instance: BufferSafe::new(
-            &game.gb.allocator,
-            PointLight::get_instance_stride() as u64,
-            BufferUsageFlags::VERTEX_BUFFER,
-            gpu_allocator::MemoryLocation::CpuToGpu).unwrap()
-    });
+    light_1.position = [0.0, 1.0, 0.0];
+    light_1.intensity = 5.0;
+
+    light_2.position = [-4.0, 1.0, 0.0];
+    light_2.intensity = 5.0;
+
+    game.render_server.point_lights.push(light_1);
+    game.render_server.point_lights.push(light_2);
 
     let gbuffer = gbuffer_draw.create_framebuffer();
     // let light_buffer = light_draw.create_framebuffer();
@@ -283,16 +273,10 @@ fn main() {
                                 }
 
                                 if ui.button("Add light").clicked() {
-                                    game.render_server.point_lights.push(PointLight {
-                                        intensity: 5.0,
-                                        position: [0.0, 1.0, 0.0],
-                                        color: [1.0, 1.0, 1.0],
-                                        instance: BufferSafe::new(
-                                            &game.gb.allocator,
-                                            PointLight::get_instance_stride() as u64,
-                                            BufferUsageFlags::VERTEX_BUFFER,
-                                            gpu_allocator::MemoryLocation::CpuToGpu).unwrap()
-                                    });
+                                    let mut light = PointLight::default(&game.gb.allocator, &game.gb.device);
+                                    light.intensity = 5.0;
+                                    light.position = [0.0, 1.0, 0.0];
+                                    game.render_server.point_lights.push(light);
                                 }
                             }
                         );

@@ -431,13 +431,16 @@ impl TextureSafe {
         }
     }
 
-    pub fn new(
+    fn new_detailed(
         allocator : &Arc<AllocatorSafe>,
         device : &Arc<DeviceSafe>,
         extent : vk::Extent2D,
         format : vk::Format,
-        mipmaps : bool) -> Self {
-
+        flags : vk::ImageCreateFlags,
+        array_layers : u32,
+        usage : vk::ImageUsageFlags,
+        mipmaps : bool
+    ) -> Self {
         let mipmap_count;
         if mipmaps {
             mipmap_count = ((extent.width as f32).log2() as u32).max(1);
@@ -453,10 +456,11 @@ impl TextureSafe {
                 depth : 1
             })
             .mip_levels(mipmap_count)
-            .array_layers(1)
+            .array_layers(array_layers)
             .format(format)
             .samples(vk::SampleCountFlags::TYPE_1)
-            .usage(vk::ImageUsageFlags::COLOR_ATTACHMENT | vk::ImageUsageFlags::TRANSFER_DST | vk::ImageUsageFlags::SAMPLED | vk::ImageUsageFlags::TRANSFER_SRC);
+            .flags(flags)
+            .usage(usage);
 
         let vk_image = unsafe {
             device.create_image(&img_create_info, None).unwrap()
@@ -480,13 +484,20 @@ impl TextureSafe {
                 allocation.offset()).unwrap();
         }
 
+        let aspect_flag;
+        if (usage & vk::ImageUsageFlags::COLOR_ATTACHMENT) != vk::ImageUsageFlags::empty() {
+            aspect_flag = vk::ImageAspectFlags::COLOR;
+        } else {
+            aspect_flag = vk::ImageAspectFlags::DEPTH;
+        }
+
         let view_create_info = vk::ImageViewCreateInfo::builder()
             .image(vk_image)
             .view_type(vk::ImageViewType::TYPE_2D)
             .format(format)
             .subresource_range(vk::ImageSubresourceRange::builder()
                 .base_array_layer(0)
-                .aspect_mask(vk::ImageAspectFlags::COLOR)
+                .aspect_mask(aspect_flag)
                 .base_mip_level(0)
                 .level_count(mipmap_count)
                 .layer_count(1)
@@ -531,6 +542,53 @@ impl TextureSafe {
             width : extent.width,
             height : extent.height
         }
+    }
+
+    pub fn new_depth_cubemap(
+        allocator : &Arc<AllocatorSafe>,
+        device : &Arc<DeviceSafe>,
+        extent : vk::Extent2D,
+        mipmaps : bool) -> Self {
+
+        let usage =
+            vk::ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT
+                | vk::ImageUsageFlags::TRANSFER_DST
+                | vk::ImageUsageFlags::SAMPLED
+                | vk::ImageUsageFlags::TRANSFER_SRC;
+
+        TextureSafe::new_detailed(
+            allocator,
+            device,
+            extent,
+            vk::Format::D32_SFLOAT,
+            vk::ImageCreateFlags::CUBE_COMPATIBLE,
+            6,
+            usage,
+            mipmaps)
+    }
+
+    pub fn new(
+        allocator : &Arc<AllocatorSafe>,
+        device : &Arc<DeviceSafe>,
+        extent : vk::Extent2D,
+        format : vk::Format,
+        mipmaps : bool) -> Self {
+
+        let usage =
+            vk::ImageUsageFlags::COLOR_ATTACHMENT
+                | vk::ImageUsageFlags::TRANSFER_DST
+                | vk::ImageUsageFlags::SAMPLED
+                | vk::ImageUsageFlags::TRANSFER_SRC;
+
+        TextureSafe::new_detailed(
+            allocator,
+            device,
+            extent,
+            format,
+            vk::ImageCreateFlags::default(),
+            1,
+            usage,
+            mipmaps)
     }
 
     pub fn get_width(&self) -> u32 {
