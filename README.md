@@ -1,3 +1,5 @@
+![alt text](https://github.com/rewin123/SpaceSandbox/blob/main/sponza.png?raw=true)
+
 Полезные ссылки:
 1. https://github.com/bombomby/optick - профайлер для игр
 2. https://crates.io/crates/profiling - обертка профайлеров для rust
