@@ -3,7 +3,7 @@ use std::sync::Arc;
 use ash::vk;
 use ash::vk::Extent2D;
 use winit::event_loop::EventLoopWindowTarget;
-use crate::{AllocatorSafe, BufferSafe, DeviceSafe, EguiWrapper, GraphicBase, Pools, RenderModel, TextureSafe, TextureServer};
+use crate::{AllocatorSafe, BufferSafe, DeviceSafe, EguiWrapper, GraphicBase, Pools, RenderCamera, RenderModel, TextureSafe, TextureServer};
 use crate::asset_server::{AssetServer, BaseModels};
 use crate::task_server::TaskServer;
 
@@ -12,13 +12,20 @@ pub struct PointLight {
     pub position : [f32;3],
     pub color : [f32;3],
     pub instance : BufferSafe,
-    pub shadow_map : Arc<TextureSafe>
+    pub shadow_map : Arc<TextureSafe>,
+    pub render_cameras : Vec<RenderCamera>
 }
 
 impl PointLight {
 
     pub fn default(allocator : &Arc<AllocatorSafe>,
     device : &Arc<DeviceSafe>) -> Self {
+
+        //allocate cameras
+        let mut cams = vec![];
+        for i in 0..6 {
+            cams.push(RenderCamera::new(allocator));
+        }
 
         Self {
             intensity : 0.0,
@@ -34,7 +41,8 @@ impl PointLight {
                 allocator,
                 device,
                 Extent2D { width: 1024, height: 1024 },
-                false))
+                false)),
+            render_cameras : cams
         }
     }
 

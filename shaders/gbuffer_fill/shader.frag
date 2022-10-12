@@ -19,7 +19,7 @@ void main() {
     vec4 tex_normal = texture(normal_tex, uv);
     vec3 tex_metal_rough = texture(metal_rough, uv).rgb;
 
-    vec3 ny = cross(normal, tangent);
+    vec3 ny = -cross(normal, tangent);
 
     tex_normal = tex_normal * 2.0 - 1.0;
 

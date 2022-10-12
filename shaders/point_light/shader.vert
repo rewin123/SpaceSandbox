@@ -23,7 +23,7 @@ layout (location=2) out float out_intensity;
 layout (location=3) out vec3 out_camera_pos;
 
 void main() {
-    float scale = intensity * 100;
+    float scale = intensity * 2;
     vec4 screen_pos = ubo.projection_matrix * ubo.view_matrix * vec4(position * scale + pos, 1.0);
     gl_Position = screen_pos;
     out_pos = screen_pos;
