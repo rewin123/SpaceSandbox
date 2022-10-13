@@ -102,7 +102,7 @@ fn main() {
     light_2.intensity = 5.0;
 
     game.render_server.point_lights.push(light_1);
-    game.render_server.point_lights.push(light_2);
+    // game.render_server.point_lights.push(light_2);
 
     let gbuffer = gbuffer_draw.create_framebuffer();
     // let light_buffer = light_draw.create_framebuffer();

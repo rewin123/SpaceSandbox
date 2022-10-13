@@ -152,7 +152,7 @@ impl PointLightShadowPipeline {
                     .binding(0)
                     .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
                     .descriptor_count(1)
-                    .stage_flags(vk::ShaderStageFlags::VERTEX)
+                    .stage_flags(vk::ShaderStageFlags::FRAGMENT)
                     .build()];
                 let descriptorset_layout_info = vk::DescriptorSetLayoutCreateInfo::builder()
                     .bindings(&descriptorset_layout_binding_descs);
@@ -161,7 +161,7 @@ impl PointLightShadowPipeline {
                 }.unwrap()
             };
 
-            let desclayouts = vec![descriptorsetlayout];
+            let desclayouts = vec![descriptorsetlayout, light_layout];
             let pipelinelayout_info = vk::PipelineLayoutCreateInfo::builder().set_layouts(&desclayouts);
 
         let depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo::builder()
@@ -424,6 +424,37 @@ impl ShadowPrepare for PointLightShadowPipeline {
                     }
                 }
 
+                unsafe {
+                    let buffer_infos = [vk::DescriptorBufferInfo {
+                        buffer: shadow.shadow_uniform.buffer,
+                        offset: 0,
+                        range: 3 * 4,
+                    }];
+
+                    let desc_layouts =
+                        vec![self.descriptor_set_layouts[1]; 1];
+                    let desc_set_info = vk::DescriptorSetAllocateInfo::builder()
+                        .descriptor_pool(self.descriptor_pool.pool)
+                        .set_layouts(&desc_layouts);
+                    let desc_set =
+                        self.device.allocate_descriptor_sets(
+                            &desc_set_info).unwrap()[0];
+
+                    shadow.shadow_set = desc_set;
+
+                    let desc_sets_write = [
+                        vk::WriteDescriptorSet::builder()
+                            .dst_set(desc_set)
+                            .dst_binding(0)
+                            .descriptor_type(vk::DescriptorType::UNIFORM_BUFFER)
+                            .buffer_info(&buffer_infos)
+                            .build()];
+
+                    self.device.update_descriptor_sets(
+                        &desc_sets_write,
+                        &[]);
+                }
+
                 light.shadow_map = Some(shadow);
             }
 
@@ -475,6 +506,8 @@ impl ShadowPrepare for PointLightShadowPipeline {
                         vk::SubpassContents::INLINE,
                     );
 
+                    shadow_map.shadow_uniform.fill(&light.position).unwrap();
+
                     for model in &server.render_models {
 
                         self.device.cmd_bind_descriptor_sets(
@@ -482,7 +515,7 @@ impl ShadowPrepare for PointLightShadowPipeline {
                             vk::PipelineBindPoint::GRAPHICS,
                             self.layout,
                             0,
-                            &[shadow_map.sets[cam_idx]],
+                            &[shadow_map.sets[cam_idx], shadow_map.shadow_set],
                             &[]);
 
                         self.device.cmd_bind_vertex_buffers(

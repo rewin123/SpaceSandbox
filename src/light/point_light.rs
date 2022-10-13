@@ -7,7 +7,9 @@ pub struct PointLightShadowMap {
     pub cameras : Vec<RenderCamera>,
     pub framebuffer : Vec<FramebufferPartial>,
     pub sets : Vec<vk::DescriptorSet>,
-    pub cube_view : TextureView
+    pub cube_view : TextureView,
+    pub shadow_uniform : BufferSafe,
+    pub shadow_set : vk::DescriptorSet
 }
 
 pub struct PointLight {
@@ -59,6 +61,7 @@ impl PointLight {
         for i in 0..6 {
             cams.push(RenderCamera::new(allocator));
             cams[i].aspect = 1.0;
+            cams[i].camera.fovy = 1.0;
 
             if i == 0 { //+X
                 cams[i].view_direction = [1.0, 0.0, 0.0].into();
@@ -71,7 +74,7 @@ impl PointLight {
                 cams[i].down_direction = [0.0, 0.0, -1.0].into();
             } else if i == 3 { //-Y
                 cams[i].view_direction = [0.0, -1.0, 0.0].into();
-                cams[i].down_direction = [0.0, 0.0, 1.0].into();
+                cams[i].down_direction = [0.0, 0.0, -1.0].into();
             } else if i == 4 { //+Z
                 cams[i].view_direction = [0.0, 0.0, 1.0].into();
                 cams[i].down_direction = [0.0, 1.0, 0.0].into();
@@ -155,7 +158,13 @@ impl PointLight {
             cameras : cams,
             framebuffer: fbs,
             sets : vec![],
-            cube_view
+            cube_view,
+            shadow_set : vk::DescriptorSet::null(),
+            shadow_uniform : BufferSafe::new(
+                allocator,
+                3 * 4,
+                vk::BufferUsageFlags::UNIFORM_BUFFER,
+                gpu_allocator::MemoryLocation::CpuToGpu).unwrap()
         }
     }
 

@@ -13,6 +13,12 @@ layout (set=0, binding=0) uniform UniformBufferObject {
 
 #define PI 3.14
 
+layout (location=0) out vec4 model_pos;
+
 void main() {
-    gl_Position = ubo.projection_matrix * ubo.view_matrix * model_matrix * vec4(position, 1.0);
+
+    model_pos = model_matrix * vec4(position, 1.0);
+    vec4 res = ubo.projection_matrix * ubo.view_matrix * model_matrix * vec4(position, 1.0);
+    res.x *= -1;
+    gl_Position = res;
 }

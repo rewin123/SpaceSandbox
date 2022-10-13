@@ -81,6 +81,7 @@ void main() {
     vec3 H = normalize(L + V);
 
     float shadow = texture(shadow_map, -L).r;
+    shadow = distance / 100.0 > (shadow + 0.002) ? 0.0 : 1.0;
 
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, tex_color, mr.r);
@@ -101,6 +102,6 @@ void main() {
 
     vec3 Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
 
-//    out_color = vec4(Lo, 1.0);
-    out_color = vec4(shadow, shadow, shadow, 1.0);
+    out_color = vec4(Lo * shadow, 1.0);
+//    out_color = vec4(shadow, shadow, shadow, 1.0);
 }
