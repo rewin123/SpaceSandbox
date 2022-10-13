@@ -10,6 +10,14 @@ pub struct FramebufferPartial {
     pub views : Vec<Arc<TextureView>>
 }
 
+impl Drop for FramebufferPartial {
+    fn drop(&mut self) {
+        unsafe {
+            self.device.destroy_framebuffer(self.framebuffer, None)
+        }
+    }
+}
+
 pub struct FramebufferSafe {
     pub franebuffer : vk::Framebuffer,
     pub images : Vec<Arc<TextureSafe>>,

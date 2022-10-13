@@ -447,7 +447,7 @@ impl InstancesDrawer for GBufferFillPipeline {
         unsafe {
 
             for tex in &fb.images {
-                tex.current_state[0].lock().unwrap().layout = vk::ImageLayout::PRESENT_SRC_KHR;
+                tex.current_state[0][0].lock().unwrap().layout = vk::ImageLayout::PRESENT_SRC_KHR;
             }
 
             self.device.cmd_begin_render_pass(

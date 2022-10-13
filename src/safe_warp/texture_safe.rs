@@ -28,7 +28,8 @@ pub struct TextureSafe {
     pub device : Arc<DeviceSafe>,
     pub index : usize,
     pub miplevel_count : u32,
-    pub current_state: Vec<Mutex<TextureBarrierState>>,
+    pub current_state: Vec<Vec<Mutex<TextureBarrierState>>>,
+    pub aspect_mask : vk::ImageAspectFlags,
     width : u32,
     height : u32
 }
@@ -58,7 +59,7 @@ impl TextureSafe {
         stage : vk::PipelineStageFlags) {
 
         self.barrier_range(cmd, access, layout, stage, vk::ImageSubresourceRange {
-            aspect_mask: vk::ImageAspectFlags::COLOR,
+            aspect_mask: self.aspect_mask,
             base_mip_level: 0,
             level_count: 1,
             base_array_layer: 0,
@@ -66,8 +67,8 @@ impl TextureSafe {
         });
     }
 
-    pub fn get_barrier_state(&self, mip_lvl: usize) -> TextureBarrierState {
-        self.current_state[mip_lvl].lock().unwrap().clone()
+    pub fn get_barrier_state(&self, layer : usize, mip_lvl: usize) -> TextureBarrierState {
+        self.current_state[layer][mip_lvl].lock().unwrap().clone()
     }
 
     pub fn barrier_range(
@@ -77,7 +78,7 @@ impl TextureSafe {
         layout : vk::ImageLayout,
         stage : vk::PipelineStageFlags,
         range : vk::ImageSubresourceRange) {
-        let mut cur = self.current_state[range.base_mip_level as usize].lock().unwrap();
+        let mut cur = self.current_state[range.base_array_layer as usize][range.base_mip_level as usize].lock().unwrap();
 
         let barrier = vk::ImageMemoryBarrier::builder()
             .image(self.image)
@@ -418,6 +419,7 @@ impl TextureSafe {
             }));
         }
 
+
         Self {
             image : vk_image,
             allocation : Some(allocation),
@@ -427,9 +429,10 @@ impl TextureSafe {
             device : device.clone(),
             index,
             miplevel_count : mipmap_count,
-            current_state : states,
+            current_state : vec![states],
             width : extent.width,
-            height : extent.height
+            height : extent.height,
+            aspect_mask : vk::ImageAspectFlags::DEPTH
         }
     }
 
@@ -441,7 +444,8 @@ impl TextureSafe {
         flags : vk::ImageCreateFlags,
         array_layers : u32,
         usage : vk::ImageUsageFlags,
-        mipmaps : bool
+        mipmaps : bool,
+        aspect_mask : vk::ImageAspectFlags
     ) -> Self {
         let mipmap_count;
         if mipmaps {
@@ -502,7 +506,7 @@ impl TextureSafe {
                 .aspect_mask(aspect_flag)
                 .base_mip_level(0)
                 .level_count(mipmap_count)
-                .layer_count(array_layers)
+                .layer_count(1)
                 .build());
         let imageview = unsafe {
             device.create_image_view(&view_create_info, None).expect("image view creaton")
@@ -523,12 +527,16 @@ impl TextureSafe {
         };
 
         let mut states = vec![];
-        for i in 0..mipmap_count {
-            states.push(Mutex::new(TextureBarrierState {
-                access : vk::AccessFlags::empty(),
-                stage : vk::PipelineStageFlags::TOP_OF_PIPE,
-                layout : vk::ImageLayout::UNDEFINED
-            }));
+        for lvl in 0..array_layers {
+            let mut tmp = vec![];
+            for i in 0..mipmap_count {
+                tmp.push(Mutex::new(TextureBarrierState {
+                    access: vk::AccessFlags::empty(),
+                    stage: vk::PipelineStageFlags::TOP_OF_PIPE,
+                    layout: vk::ImageLayout::UNDEFINED
+                }));
+            }
+            states.push(tmp);
         }
 
         Self {
@@ -542,7 +550,8 @@ impl TextureSafe {
             miplevel_count : mipmap_count,
             current_state : states,
             width : extent.width,
-            height : extent.height
+            height : extent.height,
+            aspect_mask
         }
     }
 
@@ -566,7 +575,8 @@ impl TextureSafe {
             vk::ImageCreateFlags::CUBE_COMPATIBLE,
             6,
             usage,
-            mipmaps)
+            mipmaps,
+            vk::ImageAspectFlags::DEPTH)
     }
 
     pub fn new(
@@ -590,7 +600,8 @@ impl TextureSafe {
             vk::ImageCreateFlags::default(),
             1,
             usage,
-            mipmaps)
+            mipmaps,
+            vk::ImageAspectFlags::COLOR)
     }
 
     pub fn get_width(&self) -> u32 {

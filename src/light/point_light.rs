@@ -5,7 +5,9 @@ use crate::{AllocatorSafe, BufferSafe, DeviceSafe, FramebufferPartial, RenderCam
 pub struct PointLightShadowMap {
     pub texture : Arc<TextureSafe>,
     pub cameras : Vec<RenderCamera>,
-    pub framebuffer : Vec<FramebufferPartial>
+    pub framebuffer : Vec<FramebufferPartial>,
+    pub sets : Vec<vk::DescriptorSet>,
+    pub cube_view : TextureView
 }
 
 pub struct PointLight {
@@ -56,6 +58,27 @@ impl PointLight {
         let mut fbs = vec![];
         for i in 0..6 {
             cams.push(RenderCamera::new(allocator));
+            cams[i].aspect = 1.0;
+
+            if i == 0 { //+X
+                cams[i].view_direction = [1.0, 0.0, 0.0].into();
+                cams[i].down_direction = [0.0, -1.0, 0.0].into();
+            } else if i == 1 { //-X
+                cams[i].view_direction = [-1.0, 0.0, 0.0].into();
+                cams[i].down_direction = [0.0, -1.0, 0.0].into();
+            } else if i == 2 { //+Y
+                cams[i].view_direction = [0.0, 1.0, 0.0].into();
+                cams[i].down_direction = [0.0, 0.0, -1.0].into();
+            } else if i == 3 { //-Y
+                cams[i].view_direction = [0.0, -1.0, 0.0].into();
+                cams[i].down_direction = [0.0, 0.0, 1.0].into();
+            } else if i == 4 { //+Z
+                cams[i].view_direction = [0.0, 0.0, 1.0].into();
+                cams[i].down_direction = [0.0, 1.0, 0.0].into();
+            } else if i == 5 { //-Z
+                cams[i].view_direction = [0.0, 0.0, -1.0].into();
+                cams[i].down_direction = [0.0, 1.0, 0.0].into();
+            }
 
             let fb = unsafe {
 
@@ -76,25 +99,63 @@ impl PointLight {
                     &create_view_info,
                     None).unwrap();
 
-                let view_safe = TextureView {
+                let view_safe = Arc::new(TextureView {
                     view,
                     texture : texture.clone()
-                };
+                });
+
+                let views = vec![view_safe.view];
+
+                let fb_create_info = vk::FramebufferCreateInfo::builder()
+                    .render_pass(render_pass.inner)
+                    .attachments(&views)
+                    .width(view_safe.texture.get_width())
+                    .height(view_safe.texture.get_height())
+                    .layers(1);
+
+                let fb = device.create_framebuffer(&fb_create_info, None)
+                    .unwrap();
 
                 FramebufferPartial {
-                    framebuffer: Default::default(),
+                    framebuffer: fb,
                     renderpass: render_pass.clone(),
                     device: device.clone(),
-                    views: vec![Arc::new(view_safe)]
+                    views: vec![view_safe]
                 }
             };
             fbs.push(fb);
         }
 
+        let cube_view = unsafe {
+            let create_view_info = vk::ImageViewCreateInfo::builder()
+                .image(texture.image)
+                .view_type(vk::ImageViewType::CUBE)
+                .format(vk::Format::D32_SFLOAT)
+                .subresource_range(vk::ImageSubresourceRange::builder()
+                    .base_array_layer(0)
+                    .aspect_mask(vk::ImageAspectFlags::DEPTH)
+                    .base_mip_level(0)
+                    .level_count(1)
+                    .base_array_layer(0)
+                    .layer_count(6)
+                    .build());
+
+            let view = device.create_image_view(
+                &create_view_info,
+                None).unwrap();
+
+            TextureView {
+                view,
+                texture : texture.clone()
+            }
+        };
+
         PointLightShadowMap {
             texture,
             cameras : cams,
-            framebuffer: fbs
+            framebuffer: fbs,
+            sets : vec![],
+            cube_view
         }
     }
 

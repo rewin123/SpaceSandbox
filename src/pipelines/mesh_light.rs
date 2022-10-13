@@ -209,8 +209,9 @@ impl MeshLightPipeline {
             let desc_set_normal = MeshLightPipeline::get_img_desc_set(logical_device.clone());
             let desc_set_met_roug = MeshLightPipeline::get_img_desc_set(logical_device.clone());
             let desc_set_pos = MeshLightPipeline::get_img_desc_set(logical_device.clone());
+            let desc_set_shadow = MeshLightPipeline::get_img_desc_set(logical_device.clone());
 
-            let desclayouts = vec![descriptorsetlayout, light_layout, desc_set_color, desc_set_normal, desc_set_met_roug, desc_set_pos];
+            let desclayouts = vec![descriptorsetlayout, light_layout, desc_set_color, desc_set_normal, desc_set_met_roug, desc_set_pos, desc_set_shadow];
             let pipelinelayout_info = vk::PipelineLayoutCreateInfo::builder().set_layouts(&desclayouts);
 
         let depth_stencil_info = vk::PipelineDepthStencilStateCreateInfo::builder()
@@ -434,6 +435,40 @@ impl MeshLightPipeline {
             }
         }
     }
+
+    fn update_light_desc(&mut self, light : &PointLight) {
+        unsafe {
+            let tex = light.shadow_map.as_ref().unwrap().cube_view.texture.clone();
+            if self.descriptor_sets_texture.contains_key(&tex.index) == false {
+                let imageinfo = vk::DescriptorImageInfo::builder()
+                    .image_layout(vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL)
+                    .image_view(light.shadow_map.as_ref().unwrap().cube_view.view)
+                    .sampler(tex.sampler)
+                    .build();
+
+                info!("image layout {:?}", imageinfo.image_layout);
+
+                let desc_layouts_texture =
+                    vec![self.descriptor_set_layouts[2]; 1];
+                let descriptor_set_allocate_info_texture = vk::DescriptorSetAllocateInfo::builder()
+                    .descriptor_pool(self.descriptor_pool.pool)
+                    .set_layouts(&desc_layouts_texture);
+                self.descriptor_sets_texture.insert(tex.index, self.device.allocate_descriptor_sets(
+                    &descriptor_set_allocate_info_texture).unwrap()[0]);
+
+                let mut descriptorwrite_image = vk::WriteDescriptorSet::builder()
+                    .dst_set(self.descriptor_sets_texture[&tex.index])
+                    .dst_binding(0)
+                    .dst_array_element(0)
+                    .descriptor_type(vk::DescriptorType::COMBINED_IMAGE_SAMPLER)
+                    .build();
+
+                descriptorwrite_image.descriptor_count = 1;
+                descriptorwrite_image.p_image_info = &imageinfo;
+                self.device.update_descriptor_sets(&[descriptorwrite_image], &[]);
+            }
+        }
+    }
 }
 
 impl InstancesDrawer for MeshLightPipeline {
@@ -470,7 +505,27 @@ impl InstancesDrawer for MeshLightPipeline {
             }
 
             for tex in &fb.images {
-                tex.current_state[0].lock().unwrap().layout = vk::ImageLayout::PRESENT_SRC_KHR;
+                tex.current_state[0][0].lock().unwrap().layout = vk::ImageLayout::PRESENT_SRC_KHR;
+            }
+
+            for light in &server.point_lights {
+                let shadow_map = light.shadow_map.as_ref().unwrap();
+                for i in 0..6 {
+                    shadow_map.texture.barrier_range(
+                        cmd,
+                        vk::AccessFlags::SHADER_READ,
+                        vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
+                        vk::PipelineStageFlags::FRAGMENT_SHADER,
+                        vk::ImageSubresourceRange::builder()
+                            .layer_count(1)
+                            .base_array_layer(i)
+                            .base_mip_level(0)
+                            .level_count(1)
+                            .aspect_mask(vk::ImageAspectFlags::DEPTH)
+                            .build()
+                    );
+                }
+                self.update_light_desc(&light);
             }
 
             self.device.cmd_begin_render_pass(
@@ -488,6 +543,10 @@ impl InstancesDrawer for MeshLightPipeline {
             let base_mesh = assets.base_models.sphere.clone();
 
             for light in &server.point_lights {
+
+
+
+
                 self.device.cmd_bind_descriptor_sets(
                     cmd,
                     vk::PipelineBindPoint::GRAPHICS,
@@ -498,7 +557,8 @@ impl InstancesDrawer for MeshLightPipeline {
                         self.descriptor_sets_texture[&input[0].index],
                         self.descriptor_sets_texture[&input[1].index],
                         self.descriptor_sets_texture[&input[2].index],
-                        self.descriptor_sets_texture[&input[3].index]],
+                        self.descriptor_sets_texture[&input[3].index],
+                        self.descriptor_sets_texture[&light.shadow_map.as_ref().unwrap().texture.index]],
                     &[]
                 );
 

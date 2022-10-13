@@ -11,7 +11,6 @@ layout(set=2,binding=0) uniform sampler2D color;
 layout(set=3,binding=0) uniform sampler2D normal_tex;
 layout(set=4,binding=0) uniform sampler2D metal_rough;
 layout(set=5,binding=0) uniform sampler2D global_pos;
-layout(set=6,binding=0) uniform samplerCube shadow_map;
 
 #define PI 3.14
 
@@ -80,8 +79,6 @@ void main() {
     vec3 V = normalize(camera_pos - pos);
     vec3 H = normalize(L + V);
 
-    float shadow = texture(shadow_map, -L).r;
-
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, tex_color, mr.r);
 
@@ -101,6 +98,5 @@ void main() {
 
     vec3 Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
 
-//    out_color = vec4(Lo, 1.0);
-    out_color = vec4(shadow, shadow, shadow, 1.0);
+    out_color = vec4(Lo, 1.0);
 }

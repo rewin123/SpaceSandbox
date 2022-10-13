@@ -348,6 +348,11 @@ fn main() {
                             &game.render_server,
                             &assets);
 
+                    point_light_shadow_pipeline.process(
+                        command_buffers[image_index as usize],
+                        &mut game.render_server,
+                        &assets);
+
                     light_draw.process(
                         command_buffers[image_index as usize],
                         &gbuffer.images[0..4],

@@ -22,8 +22,8 @@ impl TextureTransform for TextureDemonstratePipeline {
         let src = &input[self.show_idx];
         let dst = &dst.images[0];
 
-        let src_state = src.get_barrier_state(0);
-        let dst_state = dst.get_barrier_state(0);
+        let src_state = src.get_barrier_state(0, 0);
+        let dst_state = dst.get_barrier_state(0, 0);
 
         let range = vk::ImageSubresourceRange {
             aspect_mask: vk::ImageAspectFlags::COLOR,
