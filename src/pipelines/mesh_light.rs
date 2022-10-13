@@ -4,9 +4,10 @@ use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::{CommandBuffer, DescriptorSet, Framebuffer};
 use log::*;
-use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe, TextureServer, MaterialTexture, FramebufferStorage, InstancesDrawer, TextureSafe, RenderServer, ServerTexture, FramebufferSafe, PointLight, BufferSafe};
+use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe, TextureServer, MaterialTexture, FramebufferStorage, InstancesDrawer, TextureSafe, RenderServer, ServerTexture, FramebufferSafe, BufferSafe};
 use ash::vk::DescriptorSetLayout;
 use crate::asset_server::AssetServer;
+use crate::light::PointLight;
 
 
 pub struct MeshLightPipeline {

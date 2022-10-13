@@ -1,7 +1,14 @@
 use std::{sync::Arc, collections::HashMap};
 
 use ash::vk::{self, ImageView};
-use crate::{TextureSafe, DeviceSafe, RenderPassSafe};
+use crate::{TextureSafe, DeviceSafe, RenderPassSafe, TextureView};
+
+pub struct FramebufferPartial {
+    pub framebuffer : vk::Framebuffer,
+    pub renderpass : Arc<RenderPassSafe>,
+    pub device : Arc<DeviceSafe>,
+    pub views : Vec<Arc<TextureView>>
+}
 
 pub struct FramebufferSafe {
     pub franebuffer : vk::Framebuffer,

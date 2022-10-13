@@ -4,13 +4,13 @@ use ash::prelude::VkResult;
 use ash::vk;
 use ash::vk::{CommandBuffer, DescriptorSet, Framebuffer};
 use log::*;
-use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe, TextureServer, MaterialTexture, FramebufferStorage, InstancesDrawer, TextureSafe, RenderServer, ServerTexture, FramebufferSafe, PointLight, BufferSafe};
+use crate::{AllocatorSafe, DeviceSafe, GraphicBase, init_renderpass, RenderCamera, RenderModel, RenderPassSafe, SwapchainSafe, DescriptorPoolSafe, TextureServer, MaterialTexture, FramebufferStorage, InstancesDrawer, TextureSafe, RenderServer, ServerTexture, FramebufferSafe, BufferSafe, ShadowPrepare};
 use ash::vk::DescriptorSetLayout;
 use crate::asset_server::AssetServer;
+use crate::light::PointLight;
 
 
 pub struct PointLightShadowPipeline {
-    camera_set : DescriptorSet,
     light_info_buffer : BufferSafe,
     light_info_set : DescriptorSet,
     framebuffers : FramebufferStorage,
@@ -19,7 +19,6 @@ pub struct PointLightShadowPipeline {
     allocator : Arc<AllocatorSafe>,
     descriptor_pool : Arc<DescriptorPoolSafe>,
     descriptor_sets_texture : HashMap<usize, DescriptorSet>,
-    pub mode : MaterialTexture,
     
     pub pipeline: vk::Pipeline,
     pub layout: vk::PipelineLayout,
@@ -325,8 +324,8 @@ impl PointLightShadowPipeline {
     }
 
     pub fn new(
-        graphic_base : &GraphicBase,
-        camera : &RenderCamera) -> Result<Self, vk::Result> {
+        graphic_base : &GraphicBase) -> Result<Self, vk::Result> {
+
         let renderpass = PointLightShadowPipeline::init_renderpass(&graphic_base).unwrap();
 
         let (pipeline, pipeline_layout, descriptor_set_layouts) =
@@ -338,16 +337,12 @@ impl PointLightShadowPipeline {
         let pool_sizes = [
             vk::DescriptorPoolSize {
                 ty : vk::DescriptorType::UNIFORM_BUFFER,
-                descriptor_count : graphic_base.swapchain.amount_of_images
-            },
-            vk::DescriptorPoolSize {
-                ty : vk::DescriptorType::COMBINED_IMAGE_SAMPLER,
                 descriptor_count : 1024
             },
         ];
         let descriptor_pool_info = vk::DescriptorPoolCreateInfo::builder()
             .flags(vk::DescriptorPoolCreateFlags::FREE_DESCRIPTOR_SET)
-            .max_sets(1024 + 3)
+            .max_sets(1024)
             .pool_sizes(&pool_sizes);
         let descriptor_pool = unsafe {
             graphic_base.device.create_descriptor_pool(&descriptor_pool_info, None)
@@ -355,14 +350,6 @@ impl PointLightShadowPipeline {
 
         let renderpass = Arc::new(renderpass);
         let framebuffer_storage = FramebufferStorage::new(&renderpass);
-
-        let camera_set = PointLightShadowPipeline::generate_set(
-            graphic_base,
-            descriptor_set_layouts[0],
-            descriptor_pool,
-            camera.uniformbuffer.buffer,
-            64 * 2 + 4
-        );
 
         let mut light_info_buffer = BufferSafe::new(
             &graphic_base.allocator,
@@ -384,14 +371,12 @@ impl PointLightShadowPipeline {
 
         Ok(Self {
             pipeline,
-            camera_set,
             renderpass,
             light_info_buffer,
             light_info_set : light_set,
             device : graphic_base.device.clone(),
             descriptor_pool : Arc::new(DescriptorPoolSafe { pool: descriptor_pool, device: graphic_base.device.clone() }),
             descriptor_sets_texture : HashMap::new(),
-            mode : MaterialTexture::Diffuse,
             framebuffers: framebuffer_storage,
             layout: pipeline_layout,
             descriptor_set_layouts,
@@ -434,84 +419,66 @@ impl PointLightShadowPipeline {
     }
 }
 
-impl InstancesDrawer for PointLightShadowPipeline {
+impl ShadowPrepare for PointLightShadowPipeline {
     fn process(
-            &mut self,
-            cmd: CommandBuffer,
-            input : &[Arc<TextureSafe>],
-            fb: &Arc<FramebufferSafe>,
-            server: &RenderServer,
-            assets : &AssetServer) {
+        &mut self,
+        cmd: CommandBuffer,
+        server: &mut RenderServer,
+        assets: &AssetServer) {
         let clearvalues = [vk::ClearValue {
             color: vk::ClearColorValue {
                 float32: [0.0, 0.0, 0.0, 0.0],
             },
-        },];
+        }, ];
 
-        let renderpass_begininfo = vk::RenderPassBeginInfo::builder()
-            .render_pass(self.renderpass.inner)
-            .framebuffer(fb.franebuffer)
-            .render_area(vk::Rect2D {
-                offset: vk::Offset2D { x: 0, y: 0 },
-                extent: self.size
-            })
-            .clear_values(&clearvalues);
-
-        unsafe {
-
-            for tex in input {
-                self.update_tex_desc(tex);
-                tex.barrier(cmd,
-                            vk::AccessFlags::SHADER_READ,
-                            vk::ImageLayout::SHADER_READ_ONLY_OPTIMAL,
-                            vk::PipelineStageFlags::FRAGMENT_SHADER);
+        for light in &mut server.point_lights {
+            if light.shadow_enabled == false {
+                continue;
             }
 
-            self.device.cmd_begin_render_pass(
-                cmd,
-                &renderpass_begininfo,
-                vk::SubpassContents::INLINE,
-            );
-            self.device.cmd_bind_pipeline(
-                cmd,
-                vk::PipelineBindPoint::GRAPHICS,
-                self.pipeline,
-            );
-
-
-
-            let base_mesh = assets.base_models.sphere.clone();
-
-            for light in &server.point_lights {
-                self.device.cmd_bind_descriptor_sets(
-                    cmd,
-                    vk::PipelineBindPoint::GRAPHICS,
-                    self.layout,
-                    0,
-                    &[self.camera_set,
-                        self.light_info_set,
-                        self.descriptor_sets_texture[&input[0].index],
-                        self.descriptor_sets_texture[&input[1].index],
-                        self.descriptor_sets_texture[&input[2].index],
-                        self.descriptor_sets_texture[&input[3].index]],
-                    &[]
-                );
-
-                self.device.cmd_bind_vertex_buffers(
-                    cmd,
-                    0,
-                    &[base_mesh.pos_data.buffer,
-                        base_mesh.normal_data.buffer,
-                        base_mesh.uv_data.buffer,
-                        light.instance.buffer],
-                    &[0, 0, 0, 0]);
-                self.device.cmd_bind_index_buffer(cmd, base_mesh.index_data.buffer, 0, vk::IndexType::UINT32);
-                self.device.cmd_draw_indexed(cmd, base_mesh.vertex_count, 1, 0, 0, 0);
+            if light.shadow_map.is_none() {
+                light.shadow_map = Some(PointLight::get_shadow_map(
+                    &self.allocator,
+                    &self.device,
+                    &self.renderpass
+                ));
             }
 
-            self.device.cmd_end_render_pass(cmd);
+            let shadow_map = light.shadow_map.as_ref().unwrap();
+
+            for cam_idx in 0..6 {
+                let renderpass_begininfo = vk::RenderPassBeginInfo::builder()
+                    .render_pass(self.renderpass.inner)
+                    .framebuffer(shadow_map.framebuffer[cam_idx].framebuffer)
+                    .render_area(vk::Rect2D {
+                        offset: vk::Offset2D { x: 0, y: 0 },
+                        extent: self.size
+                    })
+                    .clear_values(&clearvalues);
+
+                unsafe {
+
+                    self.device.cmd_begin_render_pass(
+                        cmd,
+                        &renderpass_begininfo,
+                        vk::SubpassContents::INLINE,
+                    );
+                    self.device.cmd_bind_pipeline(
+                        cmd,
+                        vk::PipelineBindPoint::GRAPHICS,
+                        self.pipeline,
+                    );
+
+
+                    let base_mesh = assets.base_models.sphere.clone();
+
+
+                    self.device.cmd_end_render_pass(cmd);
+                }
+            }
         }
     }
+
 
     fn create_framebuffer(&mut self) -> Arc<FramebufferSafe> {
         let mut gbuffer_buf = vec![];
@@ -526,9 +493,5 @@ impl InstancesDrawer for PointLightShadowPipeline {
             false));
         gbuffer_buf.push(tex);
         self.framebuffers.get_framebuffer(&gbuffer_buf)
-    }
-
-    fn set_camera(&mut self, camera: &RenderCamera) {
-
     }
 }

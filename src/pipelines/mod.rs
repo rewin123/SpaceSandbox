@@ -32,6 +32,15 @@ pub trait InstancesDrawer {
     fn set_camera(&mut self, camera : &RenderCamera);
 }
 
+pub trait ShadowPrepare {
+    fn process(
+        &mut self,
+        cmd : CommandBuffer,
+        server : &mut RenderServer,
+        assets : &AssetServer);
+    fn create_framebuffer(&mut self) -> Arc<FramebufferSafe>;
+}
+
 pub trait TextureTransform {
     fn process(&mut self, cmd : CommandBuffer, dst : &Arc<FramebufferSafe>, input : Vec<Arc<TextureSafe>>);
     fn create_framebuffer(&mut self) -> Arc<FramebufferSafe>;

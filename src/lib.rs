@@ -27,6 +27,7 @@ pub mod pipelines;
 pub mod task_server;
 pub mod ui;
 pub mod game;
+pub mod light;
 
 pub use debug_layer::*;
 pub use vulkan_init_utils::*;

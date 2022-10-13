@@ -10,6 +10,8 @@ use log::*;
 
 static mut GLOBAL_TEXTURE_INDEXER : usize = 0;
 
+
+
 #[derive(Debug, Clone)]
 pub struct TextureBarrierState {
     pub access : vk::AccessFlags,
@@ -500,7 +502,7 @@ impl TextureSafe {
                 .aspect_mask(aspect_flag)
                 .base_mip_level(0)
                 .level_count(mipmap_count)
-                .layer_count(1)
+                .layer_count(array_layers)
                 .build());
         let imageview = unsafe {
             device.create_image_view(&view_create_info, None).expect("image view creaton")

@@ -5,83 +5,10 @@ use ash::vk::Extent2D;
 use winit::event_loop::EventLoopWindowTarget;
 use crate::{AllocatorSafe, BufferSafe, DeviceSafe, EguiWrapper, GraphicBase, Pools, RenderCamera, RenderModel, TextureSafe, TextureServer};
 use crate::asset_server::{AssetServer, BaseModels};
+use crate::light::PointLight;
 use crate::task_server::TaskServer;
 
-pub struct PointLight {
-    pub intensity : f32,
-    pub position : [f32;3],
-    pub color : [f32;3],
-    pub instance : BufferSafe,
-    pub shadow_map : Arc<TextureSafe>,
-    pub render_cameras : Vec<RenderCamera>
-}
 
-impl PointLight {
-
-    pub fn default(allocator : &Arc<AllocatorSafe>,
-    device : &Arc<DeviceSafe>) -> Self {
-
-        //allocate cameras
-        let mut cams = vec![];
-        for i in 0..6 {
-            cams.push(RenderCamera::new(allocator));
-        }
-
-        Self {
-            intensity : 0.0,
-            position : [0.0, 0.0 ,0.0],
-            color : [1.0, 1.0, 1.0],
-            instance : BufferSafe::new(
-                allocator,
-                PointLight::get_instance_stride() as u64,
-                vk::BufferUsageFlags::VERTEX_BUFFER,
-                gpu_allocator::MemoryLocation::CpuToGpu
-            ).unwrap(),
-            shadow_map : Arc::new(TextureSafe::new_depth_cubemap(
-                allocator,
-                device,
-                Extent2D { width: 1024, height: 1024 },
-                false)),
-            render_cameras : cams
-        }
-    }
-
-    pub fn get_instance_stride() -> u32 {
-        (1 + 3 + 3) * 4
-    }
-
-    pub fn get_instance_vertex_attribs() ->
-         Vec<vk::VertexInputAttributeDescription> {
-        vec![
-            vk::VertexInputAttributeDescription {
-                binding : 3,
-                location : 3,
-                offset : 0,
-                format: vk::Format::R32_SFLOAT
-            },
-            vk::VertexInputAttributeDescription {
-                binding : 3,
-                location : 4,
-                offset : 4,
-                format: vk::Format::R32G32B32_SFLOAT
-            },
-            vk::VertexInputAttributeDescription {
-                binding : 3,
-                location : 5,
-                offset : 4 + 4 * 3,
-                format: vk::Format::R32G32B32_SFLOAT
-            },
-        ]
-    }
-
-    pub fn fill_instanse(&mut self) {
-        let mut data = vec![];
-        data.push(self.intensity);
-        data.extend(self.color);
-        data.extend(self.position);
-        self.instance.fill(&data);
-    }
-}
 
 
 pub struct RenderServer {

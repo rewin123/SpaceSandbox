@@ -84,6 +84,7 @@ impl GBufferFillPipeline {
                 .stage(vk::ShaderStageFlags::FRAGMENT)
                 .module(fragmentshader_module)
                 .name(&mainfunctionname);
+
             let shader_stages = vec![vertexshader_stage.build(), fragmentshader_stage.build()];
     
             let vertex_attrib_descs = GPUMesh::get_vertex_attrib_desc();

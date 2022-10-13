@@ -19,6 +19,7 @@ use SpaceSandbox::MaterialTexture::{Diffuse, MetallicRoughness, Normal};
 use SpaceSandbox::task_server::{TaskServer, TaskState};
 use SpaceSandbox::ui::*;
 use SpaceSandbox::game::*;
+use SpaceSandbox::light::PointLight;
 
 // for time measure wolfpld/tracy
 
@@ -53,7 +54,7 @@ fn main() {
         &game.pools,
         &[vk::Format::R32G32B32A32_SFLOAT],
         &[vk::Format::B8G8R8A8_UNORM]).unwrap();
-    let mut copy_pipe = TextureDemonstratePipeline::new(&game.gb.get_api_base(&game.pools));
+    let mut point_light_shadow_pipeline = PointLightShadowPipeline::new(&game.gb).unwrap();
 
     let light_buffer = light_draw.create_framebuffer();
 
