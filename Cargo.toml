@@ -31,9 +31,10 @@ egui-gizmo = "0.8.0"
 wgpu = "0.13"
 pollster = "0.2"
 tokio = "1.21.2"
-encase = "0.3.0"
+encase = {version = "0.3.0", features = ["nalgebra"] }
 crevice = {version = "0.11.0", features = ["nalgebra"] }
 bytemuck = { version = "1.4.1", features = [ "derive" ] }
+glam = "0.21.3"
 
 
 

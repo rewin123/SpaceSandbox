@@ -1,10 +1,12 @@
 use std::iter;
+use std::ops::Add;
 use wgpu::util::DeviceExt;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 use SpaceSandbox::asset_server::AssetServer;
 use SpaceSandbox::{GMesh, GVertex};
+use encase::{ShaderType, UniformBuffer};
 
 struct State {
     surface : wgpu::Surface,
@@ -13,7 +15,52 @@ struct State {
     config : wgpu::SurfaceConfiguration,
     size : winit::dpi::PhysicalSize<u32>,
     pipeline : wgpu::RenderPipeline,
-    scene : Vec<GMesh>
+    scene : Vec<GMesh>,
+    camera : Camera,
+    camera_buffer : wgpu::Buffer,
+    camera_bind_group : wgpu::BindGroup
+}
+
+#[derive(ShaderType)]
+struct CameraUniform {
+    pub view : nalgebra::Matrix4<f32>,
+    pub proj : nalgebra::Matrix4<f32>,
+}
+
+struct Camera {
+    pub pos : nalgebra::Point3<f32>,
+    pub frw : nalgebra::Vector3<f32>,
+    pub up : nalgebra::Vector3<f32>
+}
+
+impl Default for Camera {
+    fn default() -> Self {
+        Self {
+            pos : [-3.0, 1.0, 0.0].into(),
+            frw : [1.0, 0.0, 0.0].into(),
+            up : [0.0, 1.0, 0.0].into()
+        }
+    }
+}
+
+impl Camera {
+    fn build_uniform(&self) -> CameraUniform {
+
+        let mut target = self.pos + self.frw;
+        let view = nalgebra::Matrix4::look_at_rh(
+            &self.pos,
+            &target,
+            &self.up);
+        let proj = nalgebra::Matrix4::<f32>::new_perspective(
+            1.0,
+            3.14 / 2.0,
+            0.01,
+            10000.0);
+        CameraUniform {
+            view,
+            proj
+        }
+    }
 }
 
 impl State {
@@ -55,6 +102,45 @@ impl State {
         };
         surface.configure(&device, &config);
 
+
+        let camera = Camera::default();
+        let camera_uniform = camera.build_uniform();
+
+        let mut camera_cpu_buffer = UniformBuffer::new(vec![0u8;100]);
+        camera_cpu_buffer.write(&camera_uniform);
+
+        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label : Some("Camera uniform buffer"),
+            contents : &camera_cpu_buffer.into_inner(),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
+        });
+
+        let camera_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Canera uniform group layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None
+                        },
+                        count: None
+                    }
+                ]
+            });
+
+        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout : &camera_bind_group_layout,
+            entries : &[wgpu::BindGroupEntry {
+                binding : 0,
+                resource : camera_buffer.as_entire_binding()
+            }],
+            label : Some("camera bind group")
+        });
+
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/wgsl/shader.wgsl").into())
@@ -63,7 +149,7 @@ impl State {
         let pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label : Some("Test render layout"),
-                bind_group_layouts : &[],
+                bind_group_layouts : &[&camera_bind_group_layout],
                 push_constant_ranges: &[]
             });
 
@@ -109,6 +195,7 @@ impl State {
             &device,
             "res/test_res/models/sponza/glTF/Sponza.gltf".into());
 
+
         Self {
             surface,
             device,
@@ -116,7 +203,10 @@ impl State {
             config,
             size,
             scene,
-            pipeline
+            pipeline,
+            camera : Camera::default(),
+            camera_buffer,
+            camera_bind_group
         }
     }
 
@@ -169,6 +259,7 @@ impl State {
             });
 
             render_pass.set_pipeline(&self.pipeline);
+            render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
             for mesh in &self.scene {
                 render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
                 render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
