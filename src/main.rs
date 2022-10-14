@@ -8,6 +8,7 @@ use SpaceSandbox::asset_server::AssetServer;
 use SpaceSandbox::{GMesh, GVertex};
 use encase::{ShaderType, UniformBuffer};
 use SpaceSandbox::pipelines::wgpu_gbuffer_fill::GBufferFill;
+use SpaceSandbox::wgpu_gbuffer_fill::GFramebuffer;
 
 struct State {
     surface : wgpu::Surface,
@@ -18,7 +19,8 @@ struct State {
     scene : Vec<GMesh>,
     camera : Camera,
     camera_buffer : wgpu::Buffer,
-    gbuffer_pipeline : GBufferFill
+    gbuffer_pipeline : GBufferFill,
+    gbuffer : GFramebuffer
 }
 
 #[derive(ShaderType)]
@@ -135,6 +137,14 @@ impl State {
                 depth_or_array_layers : 1
             });
 
+        let framebuffer = GBufferFill::spawn_framebuffer(
+            &device,
+            wgpu::Extent3d {
+                width : config.width,
+                height : config.height,
+                depth_or_array_layers : 1
+        });
+
         Self {
             surface,
             device,
@@ -144,7 +154,8 @@ impl State {
             scene,
             camera : Camera::default(),
             camera_buffer,
-            gbuffer_pipeline : gbuffer
+            gbuffer_pipeline : gbuffer,
+            gbuffer : framebuffer
         }
     }
 
@@ -189,7 +200,22 @@ impl State {
             });
 
         {
-            self.gbuffer_pipeline.draw(&mut encoder, &self.scene, &view);
+            self.gbuffer_pipeline.draw(&mut encoder, &self.scene, &self.gbuffer);
+        }
+
+        {
+            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[Some(
+                    wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        resolve_target: None,
+                        ops: Default::default()
+                    }
+                )],
+                depth_stencil_attachment: None
+            });
+            
         }
 
         self.queue.submit(iter::once(encoder.finish()));

@@ -10,13 +10,13 @@ struct VertexInput {
     @location(0) position : vec3<f32>,
     @location(1) normal : vec3<f32>,
     @location(2) tangent : vec3<f32>,
-    @location(3) uv : vec3<f32>,
-    @location(4) model_matrix : mat4x4<f32>
+    @location(3) uv : vec3<f32>
 }
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) normal: vec2<f32>,
+    @location(0) normal: vec3<f32>,
+    @location(1) pos: vec3<f32>,
 }
 
 @vertex
@@ -25,10 +25,24 @@ fn vs_main(
 ) -> VertexOutput {
     var out : VertexOutput;
     out.normal = model.normal;
-    out.clip_position = camera.proj * camera.view * model_matrix * vec4<f32>(model.position, 1.0);
+    out.pos = model.position;
+    out.clip_position = camera.proj * camera.view * vec4<f32>(model.position, 1.0);
+    return out;
 }
 
+struct FragmentOutput {
+@location(0) diffuse : vec4<f32>,
+@location(1) normal : vec4<f32>,
+@location(2) pos : vec4<f32>,
+};
+
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return in.normal;
+fn fs_main(in: VertexOutput) -> FragmentOutput {
+    var out : FragmentOutput;
+
+    out.diffuse = vec4(0.5, 0.5, 0.5, 1.0);
+    out.normal = vec4<f32>(in.normal, 1.0);
+    out.pos = vec4<f32>(in.pos, 1.0);
+
+    return out;
 }
