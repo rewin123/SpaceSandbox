@@ -7,6 +7,7 @@ mod mesh_light;
 mod point_light_shadow;
 mod texture_transform_pipeline;
 pub mod wgpu_gbuffer_fill;
+pub mod wgpu_light_fill;
 
 use std::sync::Arc;
 use ash::vk::{CommandBuffer, ImageView};
