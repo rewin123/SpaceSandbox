@@ -7,8 +7,9 @@ use byteorder::ByteOrder;
 use gltf::buffer::Source;
 use gltf::json::accessor::ComponentType;
 use gltf::Semantic;
-use crate::{BufferSafe, Game, GPUMesh, Material, RenderModel, TextureServer, TextureType};
+use crate::{BufferSafe, Game, GMesh, GPUMesh, GVertex, Material, RenderModel, TextureServer, TextureType};
 use log::*;
+use wgpu::util::DeviceExt;
 use crate::wavefront::load_gray_obj_now;
 
 pub struct BaseModels {
@@ -326,5 +327,161 @@ impl AssetServer {
         }
 
         game.render_server.render_models.extend(scene);
+    }
+
+
+    pub fn wgpu_gltf_load(device : &wgpu::Device, path : String) -> Vec<GMesh> {
+
+        let mut scene = vec![];
+
+        let sponza = gltf::Gltf::open(&path).unwrap();
+        let base = PathBuf::from(&path).parent().unwrap().to_str().unwrap().to_string();
+
+        let mut buffers = vec![];
+        for buf in sponza.buffers() {
+            match buf.source() {
+                Source::Bin => {
+                    error!("Bin buffer not supported!");
+                }
+                Source::Uri(uri) => {
+                    info!("Loading buffer {} ...", uri);
+                    let mut f = std::fs::File::open(format!("{}/{}", &base, uri)).unwrap();
+                    let metadata = std::fs::metadata(&format!("{}/{}", &base, uri)).unwrap();
+                    let mut byte_buffer = vec![0; metadata.len() as usize];
+                    f.read(&mut byte_buffer).unwrap();
+                    buffers.push(byte_buffer);
+                }
+            }
+        }
+
+        let mut meshes = vec![];
+
+        for m in sponza.meshes() {
+            let mut sub_models = vec![];
+            for p in m.primitives() {
+                let mut pos : Vec<f32> = vec![];
+                let mut normals : Vec<f32> = vec![];
+                let mut uv : Vec<f32> = vec![];
+                let mut tangent : Vec<f32> = vec![];
+
+                let indices_acc = p.indices().unwrap();
+                let indices_view = indices_acc.view().unwrap();
+                let mut indices;
+
+                info!("ind: {:?}", indices_acc.data_type());
+
+                match indices_acc.data_type() {
+                    ComponentType::U16 => {
+                        indices = vec![0; indices_acc.count()];
+                        let buf = &buffers[indices_view.buffer().index()];
+                        info!("indices stride: {:?}", indices_view.stride());
+                        for idx in 0..indices.len() {
+                            let global_idx = idx * indices_view.stride().unwrap_or(2) + indices_view.offset() + indices_acc.offset();
+                            indices[idx] = byteorder::LittleEndian::read_u16(&buf[global_idx..(global_idx + 2)]) as u32;
+                        }
+                    }
+                    ComponentType::U32 => {
+                        indices = vec![0; indices_acc.count()];
+                        let buf = &buffers[indices_view.buffer().index()];
+                        info!("indices stride: {:?}", indices_view.stride());
+                        for idx in 0..indices.len() {
+                            let global_idx = idx * indices_view.stride().unwrap_or(4) + indices_view.offset() + indices_acc.offset();
+                            indices[idx] = byteorder::LittleEndian::read_u32(&buf[global_idx..(global_idx + 4)]) as u32;
+                        }
+                    }
+                    _ => {panic!("Unsupported index type!");}
+                }
+
+                for (sem, acc) in p.attributes() {
+                    // match  { }
+                    let view = acc.view().unwrap();
+                    let mut data = vec![0.0f32; acc.count() * acc.dimensions().multiplicity()];
+
+                    let stride = view.stride().unwrap_or(acc.data_type().size() * acc.dimensions().multiplicity());
+
+                    let buf = &buffers[view.buffer().index()];
+
+                    for c in 0..acc.count() {
+                        for d in 0..acc.dimensions().multiplicity() {
+                            let idx = c * acc.dimensions().multiplicity() + d;
+                            let global_idx = c * stride + acc.offset() + view.offset() + d * acc.data_type().size();
+                            data[idx] = byteorder::LittleEndian::read_f32(&buf[global_idx..(global_idx + 4)]);
+                        }
+                    }
+
+                    match sem {
+                        Semantic::Positions => {
+                            pos.extend(data.iter());
+                            info!("Pos {}", acc.dimensions().multiplicity());
+                            info!("Stride: {}", stride);
+                        }
+                        Semantic::Normals => {
+                            normals.extend(data.iter());
+                        }
+                        Semantic::Tangents => {
+                            tangent.extend(data.iter());
+                        }
+                        Semantic::Colors(_) => {}
+                        Semantic::TexCoords(_) => {
+                            uv.extend(data.iter());
+                        }
+                        Semantic::Joints(_) => {}
+                        Semantic::Weights(_) => {}
+                        _ => {}
+                    }
+                }
+                info!("Loaded mesh with {} positions and {} normals", pos.len(), normals.len());
+
+                //load diffuse texture
+
+                if tangent.len() == 0 {
+                    tangent = vec![0.0f32; pos.len()];
+                    info!("No tangent!");
+                }
+
+                if uv.len() == 0 {
+                    uv = vec![0.0f32; pos.len() / 3 * 2];
+                }
+
+                let vertex_count = pos.len() / 3;
+
+                let mut verts = vec![];
+                for i in 0..vertex_count {
+                    let shift = i * 3;
+                    let uv_shift = i * 2;
+                    verts.push( GVertex {
+                        pos: [pos[shift], pos[shift + 1], pos[shift + 2]],
+                        normal: [normals[shift], normals[shift + 1], normals[shift + 2]],
+                        tangent: [tangent[shift], tangent[shift + 1], tangent[shift + 2]],
+                        uv: [uv[uv_shift], uv[uv_shift + 1]],
+                    });
+                }
+                
+                let vert_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("gltf vertex buffer"),
+                    contents: bytemuck::cast_slice(&verts),
+                    usage: wgpu::BufferUsages::VERTEX
+                });
+
+                let index_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("gltf index buffer"),
+                    contents: bytemuck::cast_slice(&indices),
+                    usage: wgpu::BufferUsages::INDEX
+                });
+
+                let model = GMesh {
+                    vertex : vert_buffer,
+                    index : index_buf,
+                    index_count : indices.len() as u32
+                };
+
+                sub_models.push(model);
+            }
+            meshes.push(sub_models);
+        }
+
+        scene = meshes.into_iter().flatten().collect();
+
+        scene
     }
 }

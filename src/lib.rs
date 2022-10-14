@@ -40,6 +40,51 @@ pub use assets::*;
 pub use pipelines::*;
 pub use game::*;
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct GVertex {
+    pub pos : [f32; 3],
+    pub normal : [f32; 3],
+    pub tangent : [f32; 3],
+    pub uv : [f32; 2]
+}
+
+impl GVertex {
+    pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<GVertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: 4 * 3,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: 4 * 3 * 2,
+                    shader_location: 2,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: 4 * 3 * 3,
+                    shader_location: 3,
+                    format: wgpu::VertexFormat::Float32x2,
+                },
+            ],
+        }
+    }
+}
+
+pub struct GMesh {
+    pub vertex : wgpu::Buffer,
+    pub index : wgpu::Buffer,
+    pub index_count : u32
+}
 
 pub struct AllocatorSafe {
     pub device : Arc<DeviceSafe>,
