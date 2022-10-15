@@ -35,6 +35,13 @@ encase = {version = "0.3.0", features = ["nalgebra"] }
 crevice = {version = "0.11.0", features = ["nalgebra"] }
 bytemuck = { version = "1.4.1", features = [ "derive" ] }
 glam = "0.21.3"
+space_macros = {path = "crates/space_macros"}
+space_shaders = {path = "crates/space_shaders"}
+space_core = {path = "crates/space_core"}
 
-
-
+[workspace]
+members = [
+    "crates/space_macros",
+    "crates/space_shaders",
+    "crates/space_core"
+]

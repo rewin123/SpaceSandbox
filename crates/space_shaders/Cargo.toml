@@ -1,0 +1,11 @@
+[package]
+name = "space_shaders"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+encase = {version = "0.3.0", features = ["nalgebra"] }
+space_macros = {path = "../space_macros"}
+space_core = {path = "../space_core"}

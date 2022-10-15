@@ -2,7 +2,7 @@ use std::num::NonZeroU32;
 use egui::FontSelection::Default;
 use wgpu::{Extent3d, TextureDimension};
 use crate::{GMesh, GVertex, TextureView};
-use crate::wgpu_gbuffer_fill::TextureBundle;
+use crate::wgpu_gbuffer_fill::{TextureBundle, GFramebuffer};
 
 
 pub struct PointLightPipeline {
