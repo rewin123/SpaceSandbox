@@ -4,7 +4,7 @@ struct VertexInput {
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) screen_uv: vec2<f32>,
+    @location(0) uv: vec2<f32>,
 }
 
 @vertex
@@ -26,7 +26,7 @@ struct FragmentOutput {
 fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
 
-    out.diffuse = in.uv;
+    out.diffuse = vec4<f32>(in.uv.x, in.uv.y, 0.5, 1.0);
 
     return out;
 }

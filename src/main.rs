@@ -1,6 +1,7 @@
 use std::iter;
 use std::ops::Deref;
 
+use SpaceSandbox::wgpu_texture_present::TexturePresent;
 use space_shaders::*;
 use wgpu::util::DeviceExt;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
@@ -97,7 +98,8 @@ struct State {
     camera : Camera,
     camera_buffer : wgpu::Buffer,
     gbuffer_pipeline : GBufferFill,
-    gbuffer : GFramebuffer
+    gbuffer : GFramebuffer,
+    present : TexturePresent
 }
 
 #[derive(ShaderType)]
@@ -147,7 +149,7 @@ impl State {
     async fn new(window: &Window) -> Self {
         let size = window.inner_size();
 
-        let instance = wgpu::Instance::new(wgpu::Backends::all());
+        let instance = wgpu::Instance::new(wgpu::Backends::VULKAN);
         
         let surface = unsafe {
             instance.create_surface(window)
@@ -217,6 +219,15 @@ impl State {
                 depth_or_array_layers : 1
         });
 
+        let present = TexturePresent::new(
+            &device, 
+            config.format, 
+            wgpu::Extent3d {
+                width : config.width,
+                height : config.height,
+                depth_or_array_layers : 1
+            });
+
         Self {
             surface,
             device,
@@ -227,7 +238,8 @@ impl State {
             camera : Camera::default(),
             camera_buffer,
             gbuffer_pipeline : gbuffer,
-            gbuffer : framebuffer
+            gbuffer : framebuffer,
+            present
         }
     }
 
@@ -238,16 +250,23 @@ impl State {
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
 
+            let size = wgpu::Extent3d {
+                width : self.config.width,
+                height : self.config.height,
+                depth_or_array_layers : 1
+            };
+
             self.gbuffer_pipeline = GBufferFill::new(
                 &self.device,
                 &self.camera_buffer,
                 self.config.format,
-                wgpu::Extent3d {
-                    width : self.config.width,
-                    height : self.config.height,
-                    depth_or_array_layers : 1
-                }
+                size.clone()
             );
+
+            self.present = TexturePresent::new(
+                &self.device, 
+                self.config.format, 
+                size);
         }
     }
 
@@ -275,20 +294,7 @@ impl State {
             self.gbuffer_pipeline.draw(&mut encoder, &self.scene, &self.gbuffer);
         }
 
-        {
-            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &[Some(
-                    wgpu::RenderPassColorAttachment {
-                        view: &view,
-                        resolve_target: None,
-                        ops: Default::default()
-                    }
-                )],
-                depth_stencil_attachment: None
-            });
-            
-        }
+        self.present.draw(&mut encoder, &view);
 
         self.queue.submit(iter::once(encoder.finish()));
         output.present();
