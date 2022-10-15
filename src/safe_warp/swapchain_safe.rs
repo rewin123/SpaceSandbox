@@ -6,7 +6,6 @@ use crate::*;
 use std::default::Default;
 use std::pin::Pin;
 use gpu_allocator::vulkan::AllocationCreateDesc;
-use egui_winit_ash_integration::MemoryLocation;
 
 pub struct SwapchainSafe {
     pub inner : SwapchainKHR,

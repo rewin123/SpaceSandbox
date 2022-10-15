@@ -1,7 +1,10 @@
 use std::iter;
 use std::ops::Deref;
 
+use SpaceSandbox::light::PointLight;
+use SpaceSandbox::wgpu_light_fill::PointLightPipeline;
 use SpaceSandbox::wgpu_texture_present::TexturePresent;
+use egui::epaint::ahash::HashMap;
 use space_shaders::*;
 use wgpu::util::DeviceExt;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
@@ -11,7 +14,7 @@ use SpaceSandbox::asset_server::AssetServer;
 use SpaceSandbox::{GMesh, init_logger};
 use encase::{ShaderType, UniformBuffer};
 use SpaceSandbox::pipelines::wgpu_gbuffer_fill::GBufferFill;
-use SpaceSandbox::wgpu_gbuffer_fill::GFramebuffer;
+use SpaceSandbox::wgpu_gbuffer_fill::{GFramebuffer, TextureBundle};
 
 use nalgebra as na;
 
@@ -50,6 +53,9 @@ async fn run() {
                             // new_inner_size is &&mut so w have to dereference it twice
                             state.resize(**new_inner_size);
                         }
+                        WindowEvent::KeyboardInput { device_id, input, is_synthetic } => {
+                            state.input_system.process_event(input);
+                        }
                         _ => {}
                     }
                 }
@@ -76,18 +82,6 @@ async fn run() {
     });
 }
 
-struct PointLight {
-    inner : PointLightUniform
-}
-
-impl Deref for PointLight {
-    type Target = PointLightUniform;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
 struct State {
     surface : wgpu::Surface,
     device : wgpu::Device,
@@ -98,14 +92,19 @@ struct State {
     camera : Camera,
     camera_buffer : wgpu::Buffer,
     gbuffer_pipeline : GBufferFill,
+    light_pipeline : PointLightPipeline,
+    light_buffer : TextureBundle,
     gbuffer : GFramebuffer,
-    present : TexturePresent
+    present : TexturePresent,
+    point_lights : Vec<PointLight>,
+    input_system : InputSystem
 }
 
 #[derive(ShaderType)]
 struct CameraUniform {
     pub view : nalgebra::Matrix4<f32>,
     pub proj : nalgebra::Matrix4<f32>,
+    pub pos : nalgebra::Vector3<f32>
 }
 
 struct Camera {
@@ -114,10 +113,40 @@ struct Camera {
     pub up : nalgebra::Vector3<f32>
 }
 
+impl Camera {
+    pub fn get_right(&self) -> na::Vector3<f32> {
+        self.frw.cross(&self.up)
+    }
+}
+
+
+#[derive(Default)]
+struct InputSystem {
+    key_state : HashMap<winit::event::VirtualKeyCode, bool>
+}
+
+impl InputSystem {
+    pub fn process_event(&mut self, input : &KeyboardInput) {
+        if let Some(key) = input.virtual_keycode {
+            // log::info!("New {:?} state {:?}", &key, &input.state);
+            self.key_state.insert(key, input.state == ElementState::Pressed);
+        }
+    }
+
+    fn get_key_state(&self, key : VirtualKeyCode) -> bool {
+        if let Some(state) = self.key_state.get(&key) {
+            *state
+        } else {
+            false
+        }
+    }
+}
+
+
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            pos : [-3.0, 1.0, 0.0].into(),
+            pos : [-3.0, 9.0, 0.0].into(),
             frw : [1.0, 0.0, 0.0].into(),
             up : [0.0, 1.0, 0.0].into()
         }
@@ -139,7 +168,8 @@ impl Camera {
             10000.0);
         CameraUniform {
             view,
-            proj
+            proj,
+            pos : na::Vector3::new(self.pos.x, self.pos.y, self.pos.z)
         }
     }
 }
@@ -197,6 +227,12 @@ impl State {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
         });
 
+        let extent = wgpu::Extent3d {
+            width : config.width,
+            height : config.height,
+            depth_or_array_layers : 1
+        };
+
         let scene = AssetServer::wgpu_gltf_load(
             &device,
             "res/test_res/models/sponza/glTF/Sponza.gltf".into());
@@ -213,11 +249,7 @@ impl State {
 
         let framebuffer = GBufferFill::spawn_framebuffer(
             &device,
-            wgpu::Extent3d {
-                width : config.width,
-                height : config.height,
-                depth_or_array_layers : 1
-        });
+            extent);
 
         let present = TexturePresent::new(
             &device, 
@@ -227,6 +259,13 @@ impl State {
                 height : config.height,
                 depth_or_array_layers : 1
             });
+
+        let lights = vec![
+            PointLight::new(&device, [0.0, 10.0, 0.0].into())
+        ];
+
+        let light_pipeline = PointLightPipeline::new(&device, &camera_buffer, extent);
+        let light_buffer = light_pipeline.spawn_framebuffer(&device, extent);
 
         Self {
             surface,
@@ -239,7 +278,11 @@ impl State {
             camera_buffer,
             gbuffer_pipeline : gbuffer,
             gbuffer : framebuffer,
-            present
+            present,
+            point_lights : lights,
+            light_pipeline,
+            light_buffer,
+            input_system : InputSystem::default()
         }
     }
 
@@ -267,6 +310,14 @@ impl State {
                 &self.device, 
                 self.config.format, 
                 size);
+
+            self.light_pipeline = PointLightPipeline::new(
+                &self.device,
+                &self.camera_buffer,
+                size
+            );
+
+            self.light_buffer = self.light_pipeline.spawn_framebuffer(&self.device, size);
         }
     }
 
@@ -275,7 +326,44 @@ impl State {
     }
 
     fn update(&mut self) {
+        let speed = 0.1;
+        if self.input_system.get_key_state(VirtualKeyCode::W) {
+            self.camera.pos += self.camera.frw * speed;
+        } 
+        if self.input_system.get_key_state(VirtualKeyCode::S) {
+            self.camera.pos -= self.camera.frw * speed;
+        }
+        if self.input_system.get_key_state(VirtualKeyCode::D) {
+            self.camera.pos += self.camera.get_right() * speed;
+        }
+        if self.input_system.get_key_state(VirtualKeyCode::A) {
+            self.camera.pos -= self.camera.get_right() * speed;
+        }
 
+        let camera_unifrom = self.camera.build_uniform();
+        let mut uniform = encase::UniformBuffer::new(vec![]);
+        uniform.write(&camera_unifrom).unwrap();
+        let inner = uniform.into_inner();
+
+        let tmp_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: &inner,
+            usage: wgpu::BufferUsages::COPY_SRC,
+        });
+
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Update encoder"),
+            });
+
+        encoder.copy_buffer_to_buffer(
+            &tmp_buffer, 
+            0, 
+            &self.camera_buffer, 
+            0, 
+            inner.len() as wgpu::BufferAddress);
+        self.queue.submit(iter::once(encoder.finish()));
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -294,7 +382,9 @@ impl State {
             self.gbuffer_pipeline.draw(&mut encoder, &self.scene, &self.gbuffer);
         }
 
-        self.present.draw(&mut encoder, &view);
+        self.light_pipeline.draw(&self.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
+
+        self.present.draw(&self.device, &mut encoder, &self.light_buffer, &view);
 
         self.queue.submit(iter::once(encoder.finish()));
         output.present();

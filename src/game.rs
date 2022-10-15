@@ -3,7 +3,7 @@ use std::sync::Arc;
 use ash::vk;
 use ash::vk::Extent2D;
 use winit::event_loop::EventLoopWindowTarget;
-use crate::{AllocatorSafe, BufferSafe, DeviceSafe, EguiWrapper, GraphicBase, Pools, RenderCamera, RenderModel, TextureSafe, TextureServer};
+use crate::{AllocatorSafe, BufferSafe, DeviceSafe, GraphicBase, Pools, RenderCamera, RenderModel, TextureSafe, TextureServer};
 use crate::asset_server::{AssetServer, BaseModels};
 use crate::light::PointLight;
 use crate::task_server::TaskServer;
@@ -22,7 +22,6 @@ pub struct Game {
     pub task_server : Arc<TaskServer>,
     pub gb : GraphicBase,
     pub pools : Arc<Pools>,
-    pub gui : EguiWrapper,
     pub event_loop : Option<winit::event_loop::EventLoop<()>>,
     pub render_server : RenderServer
 }
@@ -40,10 +39,6 @@ impl Default for Game {
             &graphic_base.queue_families
         ).unwrap();
 
-        let mut gui = EguiWrapper::new(
-            &graphic_base
-        );
-
         let mut task_server = Arc::new(TaskServer::new());
 
         Self {
@@ -51,7 +46,6 @@ impl Default for Game {
             task_server: task_server,
             gb: graphic_base,
             pools,
-            gui,
             event_loop: Some(eventloop),
             render_server : RenderServer {
                 render_models : vec![],
@@ -72,7 +66,7 @@ impl Game {
         let event_loop = self.event_loop.take().unwrap();
 
         event_loop.run(move |event, target, controlflow| {
-            self.gui.integration.handle_event(&event);
+
 
 
             f(&mut self, event, target, controlflow);

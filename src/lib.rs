@@ -19,7 +19,6 @@ const AppName : &str = "SpaceSandbox";
 pub mod safe_warp;
 pub mod debug_layer;
 pub mod vulkan_init_utils;
-pub mod gui;
 pub mod camera;
 pub mod graphic_base;
 pub mod assets;
@@ -31,7 +30,6 @@ pub mod light;
 
 pub use debug_layer::*;
 pub use vulkan_init_utils::*;
-pub use gui::*;
 pub use camera::*;
 pub use safe_warp::*;
 pub use graphic_base::*;

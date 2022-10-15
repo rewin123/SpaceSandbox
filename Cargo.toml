@@ -20,7 +20,6 @@ ash-window = "0.9.1"
 vk-shader-macros = "0.2.2"
 nalgebra = "0.31.1"
 nalgebra-glm = "0.17.0"
-egui-winit-ash-integration = {path = "ext/egui-winit-ash-integration" }
 gpu-allocator = "0.17.0"
 egui = "0.19.0"
 gltf = { version = "1.0.0", features = ["KHR_materials_pbrSpecularGlossiness"] }

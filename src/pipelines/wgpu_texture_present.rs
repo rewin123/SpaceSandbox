@@ -1,12 +1,13 @@
 use std::num::NonZeroU32;
 use egui::FontSelection::Default;
 use wgpu::{Extent3d, util::DeviceExt};
-use crate::{GMesh, GVertex, TextureView};
+use crate::{GMesh, GVertex, TextureView, wgpu_gbuffer_fill::TextureBundle};
 
 
 pub struct TexturePresent {
     pub pipeline : wgpu::RenderPipeline,
-    screen_mesh : ScreenMesh
+    screen_mesh : ScreenMesh,
+    texture_bind_group_layout : wgpu::BindGroupLayout
 }
 
 impl TexturePresent {
@@ -36,6 +37,28 @@ impl TexturePresent {
 
     pub fn new(device : &wgpu::Device, format : wgpu::TextureFormat, size : wgpu::Extent3d) -> Self {
 
+        let texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label : Some("Texture present binding"),
+            entries : &[
+                wgpu::BindGroupLayoutEntry {
+                    binding : 0,
+                    visibility : wgpu::ShaderStages::FRAGMENT,
+                    ty : wgpu::BindingType::Texture { 
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false }, 
+                        view_dimension: wgpu::TextureViewDimension::D2, 
+                        multisampled: false 
+                    },
+                    count : None
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding : 1,
+                    visibility : wgpu::ShaderStages::FRAGMENT,
+                    ty : wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                    count : None
+                }
+            ]
+        });
+
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/wgsl/present_texture.wgsl").into())
@@ -44,7 +67,7 @@ impl TexturePresent {
         let pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label : Some("Texture present"),
-                bind_group_layouts : &[],
+                bind_group_layouts : &[&texture_bind_group_layout],
                 push_constant_ranges: &[]
             });
 
@@ -85,13 +108,36 @@ impl TexturePresent {
 
         Self {
             pipeline,
-            screen_mesh : TexturePresent::create_screen_mesh(device)
+            screen_mesh : TexturePresent::create_screen_mesh(device),
+            texture_bind_group_layout
         }
     }
 
-    pub fn draw(&mut self, encoder : &mut wgpu::CommandEncoder, dst : &wgpu::TextureView) {
+    pub fn draw(
+            &mut self,
+            device : &wgpu::Device,
+            encoder : &mut wgpu::CommandEncoder,
+            src : &TextureBundle,
+            dst : &wgpu::TextureView) {
+        
+        let tex_bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout : &self.texture_bind_group_layout,
+            entries : &[
+                wgpu::BindGroupEntry {
+                    binding : 0,
+                    resource : wgpu::BindingResource::TextureView(&src.view)
+                },
+                wgpu::BindGroupEntry {
+                    binding : 1,
+                    resource : wgpu::BindingResource::Sampler(&src.sampler)
+                }
+            ],
+            label : Some("texture present bind")
+        });
+
         let mut render_pass = self.spawn_renderpass(encoder, dst);
         render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_bind_group(0, &tex_bind, &[]);
         render_pass.set_vertex_buffer(0, self.screen_mesh.vertex.slice(..));
         render_pass.draw(0..6, 0..1);
         
