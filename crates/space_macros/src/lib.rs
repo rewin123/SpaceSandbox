@@ -1,10 +1,13 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
+use syn::{parse_macro_input, DeriveInput};
+use quote::*;
 
 #[proc_macro]
 pub fn make_answer(_item: TokenStream) -> TokenStream {
     "fn answer() -> u32 { 42 }".parse().unwrap()
 }
+
 
 #[proc_macro]
 pub fn unifrom_struct(item : TokenStream) -> TokenStream {
@@ -25,7 +28,7 @@ pub fn unifrom_struct(item : TokenStream) -> TokenStream {
         if first_token {
             first_token = false;
             let name = token.to_string();
-            result += format!("pub srtruct {} {{\n", token).as_str();
+            result += format!("pub struct {} {{\n", token).as_str();
 
             //shader part
             include_name = name.trim().to_string();
@@ -78,7 +81,7 @@ pub fn unifrom_struct(item : TokenStream) -> TokenStream {
 
     result += "\n";
     //implement shader uniform trait
-    result += format!("impl space_shaders::ShaderUniform for {} {{\n", include_name).as_str();
+    result += format!("impl ShaderUniform for {} {{\n", include_name).as_str();
 
     result += "fn get_name(&self) -> String {\n";
     result += format!("\"{}\".to_string()\n", include_name).as_str();

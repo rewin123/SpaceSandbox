@@ -1,7 +1,7 @@
 
 pub use encase::{ShaderType, private::WriteInto, UniformBuffer};
-pub use space_macros::*;
 pub use space_core::SpaceResult;
+pub use space_macros::unifrom_struct;
 
 pub trait ShaderUniform : ShaderType + WriteInto {
     fn get_name(&self) -> String;
@@ -12,3 +12,10 @@ pub trait ShaderUniform : ShaderType + WriteInto {
         Ok(camera_cpu_buffer.into_inner())
     }
 }
+
+unifrom_struct!(
+    PointLightUniform,
+    pos : vec3,
+    color : vec3,
+    intensity : f32
+);

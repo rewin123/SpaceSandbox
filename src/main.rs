@@ -1,4 +1,5 @@
 use std::iter;
+use std::ops::Deref;
 
 use space_shaders::*;
 use wgpu::util::DeviceExt;
@@ -13,21 +14,8 @@ use SpaceSandbox::wgpu_gbuffer_fill::GFramebuffer;
 
 use nalgebra as na;
 
-unifrom_struct!(
-    LightUniform,
-    pos : vec3,
-    color : vec3,
-    intensity : f32
-);
-
-
 async fn run() {
-
     init_logger();
-    answer();
-
-    return;
-
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
@@ -88,9 +76,15 @@ async fn run() {
 }
 
 struct PointLight {
-    pub pos : na::Point3<f32>,
-    pub color : na::Vector3<f32>,
-    pub intensity : f32
+    inner : PointLightUniform
+}
+
+impl Deref for PointLight {
+    type Target = PointLightUniform;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
 }
 
 struct State {
