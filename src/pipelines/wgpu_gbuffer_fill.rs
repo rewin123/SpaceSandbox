@@ -1,7 +1,7 @@
-use std::num::NonZeroU32;
-use egui::FontSelection::Default;
+use std::{num::NonZeroU32, sync::{Arc, Mutex}};
+use egui::{FontSelection::Default, epaint::ahash::{HashMap, HashMapExt}};
 use wgpu::Extent3d;
-use crate::{GMesh, GVertex, TextureBundle, Material};
+use crate::{GMesh, GVertex, TextureBundle, Material, RenderBase, asset_server::AssetServer};
 use specs::*;
 
 
@@ -114,6 +114,9 @@ pub struct GBufferFill {
     pub pipeline : wgpu::RenderPipeline,
     camera_bind_group_layout : wgpu::BindGroupLayout,
     camera_bind_group : wgpu::BindGroup,
+    texture_bind_group_layout : wgpu::BindGroupLayout,
+    textures : HashMap<Material, Arc<wgpu::BindGroup>>,
+    render : Arc<RenderBase>
 }
 
 impl GBufferFill {
@@ -122,9 +125,9 @@ impl GBufferFill {
         GFramebuffer::new(device, size)
     }
 
-    pub fn new(device : &wgpu::Device, camera_buffer : &wgpu::Buffer, format : wgpu::TextureFormat, size : wgpu::Extent3d) -> Self {
+    pub fn new(render : &Arc<RenderBase>, camera_buffer : &wgpu::Buffer, format : wgpu::TextureFormat, size : wgpu::Extent3d) -> Self {
         let camera_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        render.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("Canera uniform group layout"),
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
@@ -140,7 +143,7 @@ impl GBufferFill {
                 ]
             });
 
-        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let camera_bind_group = render.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout : &camera_bind_group_layout,
             entries : &[wgpu::BindGroupEntry {
                 binding : 0,
@@ -149,19 +152,58 @@ impl GBufferFill {
             label : Some("camera bind group")
         });
 
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        let texture_bind_group_layout = render.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label : Some("Texture present binding"),
+            entries : &[
+                wgpu::BindGroupLayoutEntry {
+                    binding : 0,
+                    visibility : wgpu::ShaderStages::FRAGMENT,
+                    ty : wgpu::BindingType::Texture { 
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false }, 
+                        view_dimension: wgpu::TextureViewDimension::D2, 
+                        multisampled: false 
+                    },
+                    count : None
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding : 1,
+                    visibility : wgpu::ShaderStages::FRAGMENT,
+                    ty : wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                    count : None
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding : 2,
+                    visibility : wgpu::ShaderStages::FRAGMENT,
+                    ty : wgpu::BindingType::Texture { 
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false }, 
+                        view_dimension: wgpu::TextureViewDimension::D2, 
+                        multisampled: false 
+                    },
+                    count : None
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding : 3,
+                    visibility : wgpu::ShaderStages::FRAGMENT,
+                    ty : wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                    count : None
+                },
+            ]
+        });
+
+
+        let shader = render.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/wgsl/gbuffer_fill.wgsl").into())
         });
 
         let pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        render.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label : Some("Test render layout"),
-                bind_group_layouts : &[&camera_bind_group_layout],
+                bind_group_layouts : &[&camera_bind_group_layout, &texture_bind_group_layout],
                 push_constant_ranges: &[]
             });
 
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let pipeline = render.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
@@ -216,12 +258,17 @@ impl GBufferFill {
             pipeline,
             camera_bind_group,
             camera_bind_group_layout,
+            textures : HashMap::new(),
+            texture_bind_group_layout,
+            render : render.clone()
         }
     }
 
-    pub fn draw(&mut self, encoder : &mut wgpu::CommandEncoder, scene : &World, dst : &GFramebuffer) {
+
+
+    pub fn draw(&mut self, assets : &AssetServer, encoder : &mut wgpu::CommandEncoder, scene : &World, dst : &GFramebuffer) {
         let mesh_st = scene.read_storage::<GMesh>();
-        let material_st = scene.read_storage::<Material>();
+        let mut material_st = scene.write_storage::<Material>();
 
         let mut render_pass = dst.spawn_renderpass(encoder);
 
@@ -229,10 +276,42 @@ impl GBufferFill {
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
 
 
-        for (mesh, material) in (&mesh_st, &material_st).join() {
-            render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
-            render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
-            render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
+        for (mesh, material) in (&mesh_st, &mut material_st).join() {
+
+            // if material.gbuffer_bind.is_none() {
+                let group = self.render.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: None,
+                    layout: &self.texture_bind_group_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::TextureView(&assets.get(&material.color).unwrap().view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::Sampler(&assets.get(&material.color).unwrap().sampler),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: wgpu::BindingResource::TextureView(&assets.get(&material.normal).unwrap().view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 3,
+                            resource: wgpu::BindingResource::Sampler(&assets.get(&material.normal).unwrap().sampler),
+                        }
+                    ],
+                });
+
+                material.gbuffer_bind = Some(group);
+            // }
+
+            {
+
+                render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
+                render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
+                render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
+                render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
+            }
         }
     }
 }

@@ -23,6 +23,9 @@ use nalgebra as na;
 
 async fn run() {
     init_logger();
+    rayon::ThreadPoolBuilder::default()
+        .num_threads(3)
+        .build_global().unwrap();
     
 
     let event_loop = EventLoop::new();
@@ -195,6 +198,7 @@ impl State {
                 force_fallback_adapter: false
             }
         ).await.unwrap();
+        
 
         let (device, queue) = adapter.request_device(
             &wgpu::DeviceDescriptor {
@@ -257,7 +261,7 @@ impl State {
             &mut world);
 
         let gbuffer = GBufferFill::new(
-            &render.device,
+            &render,
             &camera_buffer,
             config.format,
             wgpu::Extent3d {
@@ -319,7 +323,7 @@ impl State {
             };
 
             self.gbuffer_pipeline = GBufferFill::new(
-                &self.render.device,
+                &self.render,
                 &self.camera_buffer,
                 self.config.format,
                 size.clone()
@@ -398,7 +402,7 @@ impl State {
             });
 
         {
-            self.gbuffer_pipeline.draw(&mut encoder, &self.scene, &self.gbuffer);
+            self.gbuffer_pipeline.draw(&self.assets,&mut encoder, &self.scene, &self.gbuffer);
         }
 
         self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
@@ -407,6 +411,8 @@ impl State {
 
         self.render.queue.submit(iter::once(encoder.finish()));
         output.present();
+
+        self.assets.sync_tick();
 
         Ok(())
     }

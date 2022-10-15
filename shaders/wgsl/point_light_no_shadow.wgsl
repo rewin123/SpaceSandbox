@@ -108,7 +108,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var V = normalize(camera.pos - pos);
     var dist = length(light.position - pos);
 
-    var tex_color = vec3<f32>(1.0, 1.0, 1.0);
+    var tex_color = textureSample(t_diffuse, s_diffuse, screen_uv).rgb;
     var mr = vec3(0.0, 0.5, 0.0);
     var attenuation = 1.0 / (dist * dist);
     var radiance = light.intensity * attenuation * vec3(1.0,1.0,1.0);

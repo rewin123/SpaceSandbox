@@ -83,7 +83,8 @@ impl Component for GMesh {
 pub struct Material {
     pub color : Handle<TextureBundle>,
     pub normal : Handle<TextureBundle>,
-    pub metallic_roughness: Handle<TextureBundle>
+    pub metallic_roughness: Handle<TextureBundle>,
+    pub gbuffer_bind : Option<wgpu::BindGroup>
 }
 
 impl Component for Material {

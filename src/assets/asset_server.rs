@@ -15,6 +15,7 @@ use crate::{GMesh, GVertex, RenderBase, TextureBundle, Material};
 use log::*;
 use wgpu::util::DeviceExt;
 use specs::*;
+use std::hash::Hash;
 
 pub trait Asset : DowncastSync {
 
@@ -29,6 +30,18 @@ pub struct Handle<T : Asset> {
     marker : PhantomData<T>,
     asset_server : Arc<AssetServerGlobal>,
     strong : bool
+}
+
+impl<T : Asset> PartialEq for Handle<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.idx == other.idx && self.strong == other.strong
+    }
+}
+
+impl<T : Asset> Hash for Handle<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.idx.hash(state);
+    }
 }
 
 impl<T> Handle<T> where T : Asset {
@@ -250,6 +263,39 @@ impl AssetServer {
         }
     }
 
+    pub fn sync_tick(&mut self) {
+        {
+            let mut add = self.memory_holder.create_queue.lock().unwrap();
+            for a in add.iter() {
+                if let Some(h) = self.assets.get_mut(&a) {
+                    h.count += 1;
+                }
+            }
+            add.clear();
+        } 
+        
+        {
+            let mut add = self.memory_holder.background_loading.lock().unwrap();
+            for (handle, data) in add.iter() {
+                if let Some(h) = self.assets.get_mut(&handle.idx) {
+                    h.ptr = data.clone();
+                    log::info!("New data seted");
+                }
+            }
+            add.clear();
+        }
+
+        {
+            let mut add = self.memory_holder.destroy_queue.lock().unwrap();
+            for a in add.iter() {
+                if let Some(h) = self.assets.get_mut(&a) {
+                    h.count -= 1;
+                }
+            }
+            add.clear();
+        }
+    }
+
     pub fn get_files_by_ext(&self, ext : String) -> Vec<String> {
         let path = PathBuf::from(self.root_path.clone());
         self.get_files_by_ext_from_folder(path, ext)
@@ -340,7 +386,7 @@ impl AssetServer {
 
         self.loaded_assets.insert(path.clone(), handler.get_weak().get_untyped());
         
-        self.task_server.spawn(&format!("Loading {}", path).to_string(),move || {
+        // self.task_server.spawn(&format!("Loading {}", path).to_string(),move || {
 
             let image = image::open(path)
                 .map(|img| img.to_rgba())
@@ -350,14 +396,14 @@ impl AssetServer {
             let tex_color = render.device.create_texture_with_data(
                 &render.queue, &wgpu::TextureDescriptor {
                     label: Some("default color texture"),
-                    size: wgpu::Extent3d {width : 1, height : 1, depth_or_array_layers : 1},
+                    size: wgpu::Extent3d {width, height, depth_or_array_layers : 1},
                     mip_level_count: 1,
                     sample_count: 1,
                     dimension: wgpu::TextureDimension::D2,
                     format: wgpu::TextureFormat::Rgba8UnormSrgb,
                     usage: wgpu::TextureUsages::TEXTURE_BINDING,
                 }, 
-                &[255, 255, 255, 255]);
+                &image);
     
             let s_color = tex_color.create_view(&wgpu::TextureViewDescriptor::default());
             let sampler = render.device.create_sampler(&wgpu::SamplerDescriptor {
@@ -383,7 +429,7 @@ impl AssetServer {
 
             back.background_loading.lock().unwrap()
                 .push((untyped, Arc::new(bundle)));
-        });
+        // });
 
         handler
     }
@@ -579,6 +625,7 @@ impl AssetServer {
                     color,
                     normal,
                     metallic_roughness: mr,
+                    gbuffer_bind : None
                 };
 
                 world.create_entity().with(model).with(material).build();
