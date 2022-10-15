@@ -4,7 +4,7 @@ use egui::FontSelection::Default;
 use wgpu::{Extent3d, TextureDimension};
 use crate::light::PointLight;
 use crate::wavefront::wgpu_load_gray_obj;
-use crate::{GMesh, GVertex, TextureView};
+use crate::{GMesh, GVertex};
 use crate::wgpu_gbuffer_fill::{TextureBundle, GFramebuffer};
 
 

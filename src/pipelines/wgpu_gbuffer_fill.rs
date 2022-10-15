@@ -1,7 +1,7 @@
 use std::num::NonZeroU32;
 use egui::FontSelection::Default;
 use wgpu::Extent3d;
-use crate::{GMesh, GVertex, TextureView};
+use crate::{GMesh, GVertex};
 
 pub struct TextureBundle {
     pub texture : wgpu::Texture,

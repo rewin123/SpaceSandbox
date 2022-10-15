@@ -8,7 +8,6 @@ default-run = "SpaceSandbox"
 
 [dependencies]
 winit      = "0.27.4"
-ash        = "0.36.0"
 num        = "0.2"
 cgmath     = "0.17.0"
 image      = "0.22"
@@ -16,8 +15,6 @@ memoffset  = "0.5.1"
 tobj       = "3.2.2"
 log        = "0.4.17"
 simplelog  = "0.10.1"
-ash-window = "0.9.1"
-vk-shader-macros = "0.2.2"
 nalgebra = "0.31.1"
 nalgebra-glm = "0.17.0"
 gpu-allocator = "0.17.0"
@@ -37,6 +34,7 @@ glam = "0.21.3"
 space_macros = {path = "crates/space_macros"}
 space_shaders = {path = "crates/space_shaders"}
 space_core = {path = "crates/space_core"}
+downcast-rs = "1.2.0"
 
 [workspace]
 members = [

@@ -1,6 +1,5 @@
 use egui::Ui;
 use crate::asset_server::AssetServer;
-use crate::Game;
 
 pub struct SelectGltfWindow {
     files : Vec<String>
@@ -13,13 +12,13 @@ impl SelectGltfWindow {
         }
     }
 
-    pub fn draw(&self, ui : &mut Ui, assets : &mut AssetServer, game : &mut Game) -> bool {
-        for file in &self.files {
-            if ui.button(file).clicked() {
-                assets.load_static_gltf(game, file.to_string());
-                return true;
-            }
-        }
-        false
-    }
+    // pub fn draw(&self, ui : &mut Ui, assets : &mut AssetServer, game : &mut Game) -> bool {
+    //     for file in &self.files {
+    //         if ui.button(file).clicked() {
+    //             assets.load_static_gltf(game, file.to_string());
+    //             return true;
+    //         }
+    //     }
+    //     false
+    // }
 }
