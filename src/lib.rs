@@ -3,6 +3,7 @@ use std::ops::Deref;
 use std::os::raw::c_char;
 use std::sync::{Arc, Mutex};
 
+use assets::asset_server::{Asset, Handle};
 use log::*;
 use simplelog::*;
 use std::default::Default;
@@ -21,6 +22,8 @@ pub mod light;
 pub use assets::runtime_gpu_assets::*;
 pub use assets::*;
 pub use pipelines::*;
+
+use specs::*;
 
 pub struct RenderBase {
     pub device : wgpu::Device,
@@ -73,10 +76,18 @@ pub struct GMesh {
     pub index_count : u32
 }
 
+impl Component for GMesh {
+    type Storage = VecStorage<GMesh>;
+}
+
 pub struct Material {
-    pub color : ServerTexture,
-    pub normal : ServerTexture,
-    pub metallic_roughness: ServerTexture
+    pub color : Handle<TextureBundle>,
+    pub normal : Handle<TextureBundle>,
+    pub metallic_roughness: Handle<TextureBundle>
+}
+
+impl Component for Material {
+    type Storage = VecStorage<Material>;
 }
 
 pub fn init_logger() {
@@ -86,4 +97,41 @@ pub fn init_logger() {
             WriteLogger::new(LevelFilter::Debug, Config::default(), File::create("detailed.log").unwrap())
         ]
     );
+}
+
+
+pub struct TextureBundle {
+    pub texture : wgpu::Texture,
+    pub view : wgpu::TextureView,
+    pub sampler : wgpu::Sampler
+}
+
+impl TextureBundle {
+    pub fn new(device : &wgpu::Device, desc : &wgpu::TextureDescriptor) -> Self {
+        let texture = device.create_texture(desc);
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: None,
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            lod_min_clamp: 0.0,
+            lod_max_clamp: 0.0,
+            compare: None,
+            anisotropy_clamp: None,
+            border_color: None
+        });
+        Self {
+            texture,
+            view,
+            sampler
+        }
+    }
+}
+
+impl Asset for TextureBundle {
+
 }

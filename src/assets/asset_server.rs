@@ -9,13 +9,17 @@ use egui::epaint::ahash::{HashMap, HashMapExt};
 use gltf::buffer::Source;
 use gltf::json::accessor::ComponentType;
 use gltf::Semantic;
-use crate::{GMesh, GVertex, Material, RenderBase};
+use specs::WorldExt;
+use crate::task_server::TaskServer;
+use crate::{GMesh, GVertex, RenderBase, TextureBundle, Material};
 use log::*;
 use wgpu::util::DeviceExt;
+use specs::*;
 
 pub trait Asset : DowncastSync {
-    fn as_any(&self) -> &dyn Any;
+
 }
+
 impl_downcast!(sync Asset);
 
 pub type HandleId = usize;
@@ -23,12 +27,115 @@ pub type HandleId = usize;
 pub struct Handle<T : Asset> {
     idx : HandleId,
     marker : PhantomData<T>,
-    asset_server : Arc<AssetServerGlobal>
+    asset_server : Arc<AssetServerGlobal>,
+    strong : bool
+}
+
+impl<T> Handle<T> where T : Asset {
+
+    fn new(idx : HandleId, asset_server : Arc<AssetServerGlobal>, strong : bool) -> Self {
+        let res = Self {
+            idx,
+            marker : PhantomData::default(),
+            asset_server,
+            strong
+        };
+        if strong {
+            res.incerase_counter();
+        }
+        res
+    }
+
+    fn incerase_counter(&self) {
+        self.asset_server.create_queue.lock()
+            .unwrap().push(self.idx);
+    }
+
+    pub fn get_untyped(&self) -> HandleUntyped {
+        if self.strong {
+            self.incerase_counter();
+        }
+
+        HandleUntyped { 
+            idx: self.idx, 
+            tp: TypeId::of::<T>(), 
+            asset_server: self.asset_server.clone(),
+            strong : self.strong
+        }
+    }
+
+    pub fn get_weak(&self) -> Handle<T> {
+        Handle::new( self.idx, self.asset_server.clone(), false) 
+    }
+}
+
+impl<T> Drop for Handle<T> where T : Asset {
+    fn drop(&mut self) {
+        if self.strong {
+            self.asset_server.destroy_queue.lock().unwrap().push(self.idx);
+        }
+    }
+}
+
+impl<T> Clone for Handle<T> where T : Asset {
+    fn clone(&self) -> Self {
+        Handle::new(self.idx, self.asset_server.clone(), self.strong)
+    }
+}
+
+pub struct HandleUntyped {
+    idx : HandleId,
+    tp : TypeId,
+    asset_server : Arc<AssetServerGlobal>,
+    strong : bool
+}
+
+impl HandleUntyped {
+
+    fn new(idx : HandleId, tp : TypeId, asset_server : Arc<AssetServerGlobal>, strong : bool) -> Self {
+        let res = Self {
+            idx,
+            tp,
+            asset_server,
+            strong
+        };
+        if res.strong {
+            res.incerase_counter();
+        }
+        res
+    }
+
+    fn get_strong(&self) -> Self {
+        HandleUntyped::new(self.idx, self.tp, self.asset_server.clone(), true)
+    }
+
+    fn get_typed<T : Asset>(&self) -> Handle<T> {
+        Handle::<T>::new(self.idx, self.asset_server.clone(), self.strong)
+    }
+
+    fn incerase_counter(&self) {
+        self.asset_server.create_queue.lock()
+            .unwrap().push(self.idx);
+    }
+}
+
+impl Drop for HandleUntyped {
+    fn drop(&mut self) {
+        if self.strong {
+            self.asset_server.destroy_queue.lock().unwrap().push(self.idx);
+        }
+    }
+}
+
+impl Clone for HandleUntyped {
+    fn clone(&self) -> Self {
+        HandleUntyped::new(self.idx, self.tp, self.asset_server.clone(), self.strong)
+    }
 }
 
 
 pub struct AssetServerDecriptor {
-    pub device : Arc<wgpu::Device>
+    pub render : Arc<RenderBase>
 }
 
 pub struct AssetHolder {
@@ -38,26 +145,108 @@ pub struct AssetHolder {
 
 #[derive(Default)]
 struct AssetServerGlobal {
-    pub destroy_queue : Mutex<Vec<HandleId>>
+    pub destroy_queue : Mutex<Vec<HandleId>>,
+    pub create_queue : Mutex<Vec<HandleId>>,
+    pub background_loading : Mutex<Vec<(HandleUntyped, Arc<dyn Asset>)>>
 }
 
 pub struct AssetServer {
     root_path : String,
-    assets : HashMap<usize, AssetHolder>,
-    device : Arc<wgpu::Device>,
-    counter : usize,
-    memory_holder : Arc<AssetServerGlobal>
+    assets : HashMap<HandleId, AssetHolder>,
+    loaded_assets : HashMap<String, HandleUntyped>,
+    render : Arc<RenderBase>,
+    counter : HandleId,
+    memory_holder : Arc<AssetServerGlobal>,
+    default_color : Arc<TextureBundle>,
+    default_normal : Arc<TextureBundle>,
+    task_server : Arc<TaskServer>
 }
 
 impl AssetServer {
-    pub fn new(desc : &AssetServerDecriptor) -> AssetServer {
+    pub fn new(
+            render : &Arc<RenderBase>,
+            task_server : &Arc<TaskServer>) -> AssetServer {
+
+        let def_color = {
+            let tex_color = render.device.create_texture_with_data(
+                &render.queue, &wgpu::TextureDescriptor {
+                    label: Some("default color texture"),
+                    size: wgpu::Extent3d {width : 1, height : 1, depth_or_array_layers : 1},
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                    usage: wgpu::TextureUsages::TEXTURE_BINDING,
+                }, 
+                &[255, 255, 255, 255]);
+
+            let s_color = tex_color.create_view(&wgpu::TextureViewDescriptor::default());
+            let sampler = render.device.create_sampler(&wgpu::SamplerDescriptor {
+                label: Some("default color sampler"),
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Nearest,
+                min_filter: wgpu::FilterMode::Nearest,
+                mipmap_filter: wgpu::FilterMode::Nearest,
+                lod_min_clamp: 0.0,
+                lod_max_clamp: 0.0,
+                compare: None,
+                anisotropy_clamp: None,
+                border_color: None,
+            });
+            TextureBundle {
+                texture: tex_color,
+                view: s_color,
+                sampler: sampler,
+            }
+        };
+
+        let def_normal = {
+            let tex_color = render.device.create_texture_with_data(
+                &render.queue, &wgpu::TextureDescriptor {
+                    label: Some("default color texture"),
+                    size: wgpu::Extent3d {width : 1, height : 1, depth_or_array_layers : 1},
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                    usage: wgpu::TextureUsages::TEXTURE_BINDING,
+                }, 
+                &[0, 0, 255, 255]);
+
+            let s_color = tex_color.create_view(&wgpu::TextureViewDescriptor::default());
+            let sampler = render.device.create_sampler(&wgpu::SamplerDescriptor {
+                label: Some("default color sampler"),
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Nearest,
+                min_filter: wgpu::FilterMode::Nearest,
+                mipmap_filter: wgpu::FilterMode::Nearest,
+                lod_min_clamp: 0.0,
+                lod_max_clamp: 0.0,
+                compare: None,
+                anisotropy_clamp: None,
+                border_color: None,
+            });
+            TextureBundle {
+                texture: tex_color,
+                view: s_color,
+                sampler: sampler,
+            }
+        };
 
         Self {
             root_path : "res".to_string(),
-            device : desc.device,
+            render : render.clone(),
             assets : HashMap::new(),
             counter : 0,
             memory_holder : Arc::new(AssetServerGlobal::default()),
+            default_color : Arc::new(def_color),
+            task_server : task_server.clone(),
+            default_normal : Arc::new(def_normal),
+            loaded_assets : HashMap::new()
         }
     }
 
@@ -95,9 +284,9 @@ impl AssetServer {
         }
     }
 
-    pub fn get<T : Asset>(&self, id : HandleId) -> Option<Arc<T>> {
-        if let Some(val) = self.assets.get(&id) {
-           match val.ptr.downcast_arc::<T>() {
+    pub fn get<T : Asset>(&self, handle : &Handle<T>) -> Option<Arc<T>> {
+        if let Some(val) = self.assets.get(&handle.idx) {
+           match val.ptr.clone().downcast_arc::<T>() {
             Ok(val) => Some(val),
             Err(_) => None,
         }
@@ -106,264 +295,126 @@ impl AssetServer {
         }
     }
 
-    // pub fn load_static_gltf(&mut self, game : &mut Game, path : String) {
+    pub fn get_untyped<T : Asset>(&self, handle : &HandleUntyped) -> Option<Arc<T>> {
+        if let Some(val) = self.assets.get(&handle.idx) {
+           match val.ptr.clone().downcast_arc::<T>() {
+            Ok(val) => Some(val),
+            Err(_) => None,
+        }
+        } else {
+            None
+        }
+    }
 
-    //     let mut scene = vec![];
+    fn new_asset<T : Asset>(&mut self, val : Arc<T>) -> Handle<T> {
+        let holder = AssetHolder {
+            ptr: val,
+            count: 1,
+        };
+        self.counter += 1;
+        self.assets.insert(self.counter, holder);
+        Handle { 
+            idx: self.counter, 
+            marker: PhantomData::<T>::default(), 
+            asset_server: self.memory_holder.clone(),
+            strong : true
+        }
+    }
 
-    //     let sponza = gltf::Gltf::open(&path).unwrap();
-    //     let base = PathBuf::from(&path).parent().unwrap().to_str().unwrap().to_string();
+    pub fn load_color_texture(&mut self, path : String) -> Handle<crate::TextureBundle> {
 
-    //     let mut buffers = vec![];
-    //     for buf in sponza.buffers() {
-    //         match buf.source() {
-    //             Source::Bin => {
-    //                 error!("Bin buffer not supported!");
-    //             }
-    //             Source::Uri(uri) => {
-    //                 info!("Loading buffer {} ...", uri);
-    //                 let mut f = std::fs::File::open(format!("{}/{}", &base, uri)).unwrap();
-    //                 let metadata = std::fs::metadata(&format!("{}/{}", &base, uri)).unwrap();
-    //                 let mut byte_buffer = vec![0; metadata.len() as usize];
-    //                 f.read(&mut byte_buffer).unwrap();
-    //                 buffers.push(byte_buffer);
-    //             }
-    //         }
-    //     }
+        if let Some(handle) = self.loaded_assets.get(&path) {
+            if let Some(val) = self.get_untyped::<TextureBundle>(&handle) {
+                return handle.get_strong().get_typed();
+            }
+        }
 
-    //     let mut images = vec![];
+        self.counter += 1;
 
-    //     for img_meta in sponza.images() {
-    //         match img_meta.source() {
-    //             gltf::image::Source::Uri {uri, mime_type} => {
-    //                 let path = format!("{}/{}", base, uri);
-    //                 info!("Loading texture {} ...", path);
+        let copy_index = self.counter;
+        let handler = self.new_asset(self.default_color.clone());
 
-    //                 images.push(self.texture_server.load_new_texture(path, TextureType::Color));
-    //             }
-    //             _ => {
-    //                 panic!("Not supported source for texture");
-    //             }
-    //         }
-    //     }
+        let untyped = handler.get_untyped();
+        let render = self.render.clone();
+        let back = self.memory_holder.clone();
 
-    //     let mut meshes = vec![];
+        self.loaded_assets.insert(path.clone(), handler.get_weak().get_untyped());
+        
+        self.task_server.spawn(&format!("Loading {}", path).to_string(),move || {
 
-    //     for m in sponza.meshes() {
-    //         let mut sub_models = vec![];
-    //         for p in m.primitives() {
-    //             let mut pos : Vec<f32> = vec![];
-    //             let mut normals : Vec<f32> = vec![];
-    //             let mut uv : Vec<f32> = vec![];
-    //             let mut tangent : Vec<f32> = vec![];
+            let image = image::open(path)
+                .map(|img| img.to_rgba())
+                .expect("unable to open image");
+            let (width, height) = image.dimensions();
 
-    //             let indices_acc = p.indices().unwrap();
-    //             let indices_view = indices_acc.view().unwrap();
-    //             let mut indices;
+            let tex_color = render.device.create_texture_with_data(
+                &render.queue, &wgpu::TextureDescriptor {
+                    label: Some("default color texture"),
+                    size: wgpu::Extent3d {width : 1, height : 1, depth_or_array_layers : 1},
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                    usage: wgpu::TextureUsages::TEXTURE_BINDING,
+                }, 
+                &[255, 255, 255, 255]);
+    
+            let s_color = tex_color.create_view(&wgpu::TextureViewDescriptor::default());
+            let sampler = render.device.create_sampler(&wgpu::SamplerDescriptor {
+                label: Some("default color sampler"),
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Nearest,
+                min_filter: wgpu::FilterMode::Nearest,
+                mipmap_filter: wgpu::FilterMode::Nearest,
+                lod_min_clamp: 0.0,
+                lod_max_clamp: 0.0,
+                compare: None,
+                anisotropy_clamp: None,
+                border_color: None,
+            });
 
-    //             info!("ind: {:?}", indices_acc.data_type());
+            let bundle = TextureBundle {
+                texture : tex_color,
+                view : s_color,
+                sampler
+            };
 
-    //             match indices_acc.data_type() {
-    //                 ComponentType::U16 => {
-    //                     indices = vec![0; indices_acc.count()];
-    //                     let buf = &buffers[indices_view.buffer().index()];
-    //                     info!("indices stride: {:?}", indices_view.stride());
-    //                     for idx in 0..indices.len() {
-    //                         let global_idx = idx * indices_view.stride().unwrap_or(2) + indices_view.offset() + indices_acc.offset();
-    //                         indices[idx] = byteorder::LittleEndian::read_u16(&buf[global_idx..(global_idx + 2)]) as u32;
-    //                     }
-    //                 }
-    //                 ComponentType::U32 => {
-    //                     indices = vec![0; indices_acc.count()];
-    //                     let buf = &buffers[indices_view.buffer().index()];
-    //                     info!("indices stride: {:?}", indices_view.stride());
-    //                     for idx in 0..indices.len() {
-    //                         let global_idx = idx * indices_view.stride().unwrap_or(4) + indices_view.offset() + indices_acc.offset();
-    //                         indices[idx] = byteorder::LittleEndian::read_u32(&buf[global_idx..(global_idx + 4)]) as u32;
-    //                     }
-    //                 }
-    //                 _ => {panic!("Unsupported index type!");}
-    //             }
+            back.background_loading.lock().unwrap()
+                .push((untyped, Arc::new(bundle)));
+        });
 
-    //             for (sem, acc) in p.attributes() {
-    //                 // match  { }
-    //                 let view = acc.view().unwrap();
-    //                 let mut data = vec![0.0f32; acc.count() * acc.dimensions().multiplicity()];
+        handler
+    }
 
-    //                 let stride = view.stride().unwrap_or(acc.data_type().size() * acc.dimensions().multiplicity());
+    pub fn load_gltf_color_texture(&mut self, base : &String, src : Option<gltf::texture::Info>) -> Handle<TextureBundle> {
+        if let Some(tex) = src {
+            match tex.texture().source().source() {
+                gltf::image::Source::View { view, mime_type } => todo!(),
+                gltf::image::Source::Uri { uri, mime_type } => {
+                    self.load_color_texture(format!("{}/{}",base, uri))
+                },
+            }
+        } else {
+            self.new_asset(self.default_color.clone())
+        }
+    }
 
-    //                 let buf = &buffers[view.buffer().index()];
+    pub fn load_gltf_normal_texture(&mut self, base : &String, src : Option<gltf::material::NormalTexture>) -> Handle<TextureBundle> {
+        if let Some(tex) = src {
+            match tex.texture().source().source() {
+                gltf::image::Source::View { view, mime_type } => todo!(),
+                gltf::image::Source::Uri { uri, mime_type } => {
+                    self.load_color_texture(format!("{}/{}",base, uri))
+                },
+            }
+        } else {
+            self.new_asset(self.default_normal.clone())
+        }
+    }
 
-    //                 for c in 0..acc.count() {
-    //                     for d in 0..acc.dimensions().multiplicity() {
-    //                         let idx = c * acc.dimensions().multiplicity() + d;
-    //                         let global_idx = c * stride + acc.offset() + view.offset() + d * acc.data_type().size();
-    //                         data[idx] = byteorder::LittleEndian::read_f32(&buf[global_idx..(global_idx + 4)]);
-    //                     }
-    //                 }
-
-    //                 match sem {
-    //                     Semantic::Positions => {
-    //                         pos.extend(data.iter());
-    //                         info!("Pos {}", acc.dimensions().multiplicity());
-    //                         info!("Stride: {}", stride);
-    //                     }
-    //                     Semantic::Normals => {
-    //                         normals.extend(data.iter());
-    //                     }
-    //                     Semantic::Tangents => {
-    //                         tangent.extend(data.iter());
-    //                     }
-    //                     Semantic::Colors(_) => {}
-    //                     Semantic::TexCoords(_) => {
-    //                         uv.extend(data.iter());
-    //                     }
-    //                     Semantic::Joints(_) => {}
-    //                     Semantic::Weights(_) => {}
-    //                     _ => {}
-    //                 }
-    //             }
-    //             info!("Loaded mesh with {} positions and {} normals", pos.len(), normals.len());
-
-    //             //load diffuse texture
-
-
-    //             let mut pos_buffer = BufferSafe::new(
-    //                 &game.gb.allocator,
-    //                 pos.len() as u64 * 4,
-    //                 BufferUsageFlags::VERTEX_BUFFER,
-    //                 gpu_allocator::MemoryLocation::CpuToGpu).unwrap();
-    //             let mut normal_buffer = BufferSafe::new(
-    //                 &game.gb.allocator,
-    //                 pos.len() as u64 * 4,
-    //                 BufferUsageFlags::VERTEX_BUFFER,
-    //                 gpu_allocator::MemoryLocation::CpuToGpu).unwrap();
-
-    //             if tangent.len() == 0 {
-    //                 tangent = vec![0.0f32; pos.len()];
-    //                 info!("No tangent!");
-    //             }
-
-    //             let mut tangent_buffer = BufferSafe::new(
-    //                 &game.gb.allocator,
-    //                 tangent.len() as u64 * 4,
-    //                 BufferUsageFlags::VERTEX_BUFFER,
-    //                 gpu_allocator::MemoryLocation::CpuToGpu
-    //             ).unwrap();
-
-    //             let mut index_buffer = BufferSafe::new(
-    //                 &game.gb.allocator,
-    //                 indices.len() as u64 * 4,
-    //                 BufferUsageFlags::INDEX_BUFFER,
-    //                 gpu_allocator::MemoryLocation::CpuToGpu
-    //             ).unwrap();
-
-    //             if uv.len() == 0 {
-    //                 uv = vec![0.0f32; pos.len() / 3 * 2];
-    //             }
-
-    //             let mut uv_buffer = BufferSafe::new(
-    //                 &game.gb.allocator,
-    //                 uv.len() as u64 * 4,
-    //                 BufferUsageFlags::VERTEX_BUFFER,
-    //                 gpu_allocator::MemoryLocation::CpuToGpu
-    //             ).unwrap();
-
-    //             pos_buffer.fill(&pos).unwrap();
-    //             normal_buffer.fill(&normals).unwrap();
-    //             index_buffer.fill(&indices).unwrap();
-    //             uv_buffer.fill(&uv).unwrap();
-    //             tangent_buffer.fill(&tangent).unwrap();
-
-    //             let mesh = GPUMesh {
-    //                 pos_data: pos_buffer,
-    //                 normal_data: normal_buffer,
-    //                 index_data: index_buffer,
-    //                 tangent_data: tangent_buffer,
-    //                 uv_data : uv_buffer,
-    //                 vertex_count: indices.len() as u32,
-    //                 name: m.name().unwrap_or("").to_string()
-    //             };
-
-    //             let normal_tex;
-    //             if let Some(tex) = p.material().normal_texture() {
-    //                 normal_tex = images[tex.texture().index()].clone();
-    //                 self.texture_server.textures.insert(normal_tex.server_index, self.texture_server.default_normal_texture.clone());
-    //             } else {
-    //                 normal_tex = self.texture_server.get_default_normal_texture();
-    //             }
-
-    //             let metallic_roughness;
-    //             if let Some(tex) = p.material().pbr_metallic_roughness().metallic_roughness_texture() {
-    //                 metallic_roughness = images[tex.texture().index()].clone();
-    //             } else {
-    //                 metallic_roughness = self.texture_server.get_default_color_texture();
-    //             }
-
-    //             let material = {
-    //                 match p.material().pbr_specular_glossiness() {
-    //                     Some(v) => {
-
-    //                         let color;
-    //                         if let Some(tex) = v.diffuse_texture() {
-    //                             color = images[tex.texture().index()].clone()
-    //                         } else {
-    //                             color = self.texture_server.get_default_color_texture();
-    //                         }
-
-    //                         Material {
-    //                             color,
-    //                             normal : normal_tex,
-    //                             metallic_roughness: metallic_roughness
-    //                         }
-    //                     }
-    //                     None => {
-    //                         Material {
-    //                             color : images[p.material().pbr_metallic_roughness().base_color_texture().unwrap().texture().index()].clone(),
-    //                             normal : normal_tex,
-    //                             metallic_roughness: metallic_roughness
-    //                         }
-    //                     }
-    //                 }
-    //             };
-
-    //             let model = RenderModel::new(&game.gb.allocator,
-    //                                          Arc::new(mesh),
-    //                                          material);
-    //             sub_models.push(model);
-    //         }
-    //         meshes.push(sub_models);
-    //     }
-
-    //     for n in sponza.nodes() {
-    //         let matrix = n.transform().matrix();
-    //         if let Some(mesh) = n.mesh() {
-    //             for rm in &mut meshes[mesh.index()] {
-    //                 rm.add_matrix(&matrix);
-    //             }
-    //         } else {
-    //             for child in n.children() {
-    //                 if let Some(mesh) = child.mesh() {
-    //                     for rm in &mut meshes[mesh.index()] {
-    //                         rm.add_matrix(&matrix);
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     scene = meshes.into_iter().flatten().collect();
-
-    //     for rm in &mut scene {
-    //         rm.update_instance_buffer().unwrap();
-    //     }
-
-    //     game.render_server.render_models.extend(scene);
-    // }
-
-
-    pub fn wgpu_gltf_load(device : &wgpu::Device, path : String) -> Vec<GMesh> {
-
-        let mut scene = vec![];
+    pub fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut specs::World) {
 
         let sponza = gltf::Gltf::open(&path).unwrap();
         let base = PathBuf::from(&path).parent().unwrap().to_str().unwrap().to_string();
@@ -385,10 +436,22 @@ impl AssetServer {
             }
         }
 
-        let mut meshes = vec![];
+        // let mut images = vec![];
+
+        // for img_meta in sponza.images() {
+        //     match img_meta.source() {
+        //         gltf::image::Source::Uri {uri, mime_type} => {
+        //             let path = format!("{}/{}", base, uri);
+        //             info!("Loading texture {} ...", path);
+        //             images.push(self.load_color_texture(path));
+        //         }
+        //         _ => {
+        //             panic!("Not supported source for texture");
+        //         }
+        //     }
+        // }
 
         for m in sponza.meshes() {
-            let mut sub_models = vec![];
             for p in m.primitives() {
                 let mut pos : Vec<f32> = vec![];
                 let mut normals : Vec<f32> = vec![];
@@ -506,13 +569,20 @@ impl AssetServer {
                     index_count : indices.len() as u32
                 };
 
-                sub_models.push(model);
+                let normal = self.load_gltf_normal_texture(&base, p.material().normal_texture());
+                
+                let color = self.load_gltf_color_texture(&base, p.material().pbr_metallic_roughness().base_color_texture());
+                
+                let mr = self.load_gltf_color_texture(&base, p.material().pbr_metallic_roughness().metallic_roughness_texture());
+
+                let material = Material {
+                    color,
+                    normal,
+                    metallic_roughness: mr,
+                };
+
+                world.create_entity().with(model).with(material).build();
             }
-            meshes.push(sub_models);
         }
-
-        scene = meshes.into_iter().flatten().collect();
-
-        scene
     }
 }

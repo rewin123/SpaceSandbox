@@ -1,39 +1,9 @@
 use std::num::NonZeroU32;
 use egui::FontSelection::Default;
 use wgpu::Extent3d;
-use crate::{GMesh, GVertex};
+use crate::{GMesh, GVertex, TextureBundle, Material};
+use specs::*;
 
-pub struct TextureBundle {
-    pub texture : wgpu::Texture,
-    pub view : wgpu::TextureView,
-    pub sampler : wgpu::Sampler
-}
-
-impl TextureBundle {
-    pub fn new(device : &wgpu::Device, desc : &wgpu::TextureDescriptor) -> Self {
-        let texture = device.create_texture(desc);
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: None,
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            lod_min_clamp: 0.0,
-            lod_max_clamp: 0.0,
-            compare: None,
-            anisotropy_clamp: None,
-            border_color: None
-        });
-        Self {
-            texture,
-            view,
-            sampler
-        }
-    }
-}
 
 pub struct GFramebuffer {
     pub diffuse : TextureBundle,
@@ -249,12 +219,17 @@ impl GBufferFill {
         }
     }
 
-    pub fn draw(&mut self, encoder : &mut wgpu::CommandEncoder, scene : &[GMesh], dst : &GFramebuffer) {
+    pub fn draw(&mut self, encoder : &mut wgpu::CommandEncoder, scene : &World, dst : &GFramebuffer) {
+        let mesh_st = scene.read_storage::<GMesh>();
+        let material_st = scene.read_storage::<Material>();
+
         let mut render_pass = dst.spawn_renderpass(encoder);
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-        for mesh in scene {
+
+
+        for (mesh, material) in (&mesh_st, &material_st).join() {
             render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
             render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
             render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);

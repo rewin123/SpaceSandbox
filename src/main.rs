@@ -1,25 +1,29 @@
 use std::iter;
 use std::ops::Deref;
+use std::sync::Arc;
 
 use SpaceSandbox::light::PointLight;
+use SpaceSandbox::task_server::TaskServer;
 use SpaceSandbox::wgpu_light_fill::PointLightPipeline;
 use SpaceSandbox::wgpu_texture_present::TexturePresent;
 use egui::epaint::ahash::HashMap;
 use space_shaders::*;
+use specs::*;
 use wgpu::util::DeviceExt;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 use SpaceSandbox::asset_server::AssetServer;
-use SpaceSandbox::{GMesh, init_logger};
+use SpaceSandbox::{GMesh, init_logger, Material, RenderBase, TextureBundle};
 use encase::{ShaderType, UniformBuffer};
 use SpaceSandbox::pipelines::wgpu_gbuffer_fill::GBufferFill;
-use SpaceSandbox::wgpu_gbuffer_fill::{GFramebuffer, TextureBundle};
+use SpaceSandbox::wgpu_gbuffer_fill::{GFramebuffer};
 
 use nalgebra as na;
 
 async fn run() {
     init_logger();
+    
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
@@ -84,11 +88,10 @@ async fn run() {
 
 struct State {
     surface : wgpu::Surface,
-    device : wgpu::Device,
-    queue : wgpu::Queue,
+    render : Arc<RenderBase>,
     config : wgpu::SurfaceConfiguration,
     size : winit::dpi::PhysicalSize<u32>,
-    scene : Vec<GMesh>,
+    scene : World,
     camera : Camera,
     camera_buffer : wgpu::Buffer,
     gbuffer_pipeline : GBufferFill,
@@ -97,7 +100,8 @@ struct State {
     gbuffer : GFramebuffer,
     present : TexturePresent,
     point_lights : Vec<PointLight>,
-    input_system : InputSystem
+    input_system : InputSystem,
+    assets : AssetServer
 }
 
 #[derive(ShaderType)]
@@ -233,12 +237,27 @@ impl State {
             depth_or_array_layers : 1
         };
 
-        let scene = AssetServer::wgpu_gltf_load(
-            &device,
-            "res/test_res/models/sponza/glTF/Sponza.gltf".into());
+        let mut world = World::new();
+        world.register::<GMesh>();
+        world.register::<Material>();
+
+        let task_server = Arc::new(TaskServer::new());
+
+        let render = Arc::new(RenderBase {
+            device,
+            queue,
+        });
+
+        let mut assets = AssetServer::new(&render, &task_server);
+        
+
+        let scene = assets.wgpu_gltf_load(
+            &render.device,
+            "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
+            &mut world);
 
         let gbuffer = GBufferFill::new(
-            &device,
+            &render.device,
             &camera_buffer,
             config.format,
             wgpu::Extent3d {
@@ -248,11 +267,11 @@ impl State {
             });
 
         let framebuffer = GBufferFill::spawn_framebuffer(
-            &device,
+            &render.device,
             extent);
 
         let present = TexturePresent::new(
-            &device, 
+            &render.device, 
             config.format, 
             wgpu::Extent3d {
                 width : config.width,
@@ -261,19 +280,17 @@ impl State {
             });
 
         let lights = vec![
-            PointLight::new(&device, [0.0, 10.0, 0.0].into())
+            PointLight::new(&render.device, [0.0, 10.0, 0.0].into())
         ];
 
-        let light_pipeline = PointLightPipeline::new(&device, &camera_buffer, extent);
-        let light_buffer = light_pipeline.spawn_framebuffer(&device, extent);
+        let light_pipeline = PointLightPipeline::new(&render.device, &camera_buffer, extent);
+        let light_buffer = light_pipeline.spawn_framebuffer(&render.device, extent);
 
         Self {
             surface,
-            device,
-            queue,
             config,
             size,
-            scene,
+            scene : world,
             camera : Camera::default(),
             camera_buffer,
             gbuffer_pipeline : gbuffer,
@@ -282,7 +299,9 @@ impl State {
             point_lights : lights,
             light_pipeline,
             light_buffer,
-            input_system : InputSystem::default()
+            input_system : InputSystem::default(),
+            assets,
+            render
         }
     }
 
@@ -291,7 +310,7 @@ impl State {
             self.size = new_size;
             self.config.width = new_size.width;
             self.config.height = new_size.height;
-            self.surface.configure(&self.device, &self.config);
+            self.surface.configure(&self.render.device, &self.config);
 
             let size = wgpu::Extent3d {
                 width : self.config.width,
@@ -300,24 +319,24 @@ impl State {
             };
 
             self.gbuffer_pipeline = GBufferFill::new(
-                &self.device,
+                &self.render.device,
                 &self.camera_buffer,
                 self.config.format,
                 size.clone()
             );
 
             self.present = TexturePresent::new(
-                &self.device, 
+                &self.render.device, 
                 self.config.format, 
                 size);
 
             self.light_pipeline = PointLightPipeline::new(
-                &self.device,
+                &self.render.device,
                 &self.camera_buffer,
                 size
             );
 
-            self.light_buffer = self.light_pipeline.spawn_framebuffer(&self.device, size);
+            self.light_buffer = self.light_pipeline.spawn_framebuffer(&self.render.device, size);
         }
     }
 
@@ -345,14 +364,14 @@ impl State {
         uniform.write(&camera_unifrom).unwrap();
         let inner = uniform.into_inner();
 
-        let tmp_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let tmp_buffer = self.render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: &inner,
             usage: wgpu::BufferUsages::COPY_SRC,
         });
 
         let mut encoder = self
-            .device
+        .render.device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Update encoder"),
             });
@@ -363,7 +382,7 @@ impl State {
             &self.camera_buffer, 
             0, 
             inner.len() as wgpu::BufferAddress);
-        self.queue.submit(iter::once(encoder.finish()));
+        self.render.queue.submit(iter::once(encoder.finish()));
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -373,7 +392,7 @@ impl State {
             .create_view(&wgpu::TextureViewDescriptor::default());
 
         let mut encoder = self
-            .device
+        .render.device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
@@ -382,11 +401,11 @@ impl State {
             self.gbuffer_pipeline.draw(&mut encoder, &self.scene, &self.gbuffer);
         }
 
-        self.light_pipeline.draw(&self.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
+        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
 
-        self.present.draw(&self.device, &mut encoder, &self.light_buffer, &view);
+        self.present.draw(&self.render.device, &mut encoder, &self.light_buffer, &view);
 
-        self.queue.submit(iter::once(encoder.finish()));
+        self.render.queue.submit(iter::once(encoder.finish()));
         output.present();
 
         Ok(())
