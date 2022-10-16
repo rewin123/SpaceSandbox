@@ -4,9 +4,11 @@ use std::sync::Arc;
 
 use SpaceSandbox::light::PointLight;
 use SpaceSandbox::task_server::TaskServer;
+use SpaceSandbox::ui::{Gui, FpsCounter};
 use SpaceSandbox::wgpu_light_fill::PointLightPipeline;
 use SpaceSandbox::wgpu_texture_present::TexturePresent;
 use egui::epaint::ahash::HashMap;
+use egui_wgpu_backend::ScreenDescriptor;
 use space_shaders::*;
 use specs::*;
 use wgpu::util::DeviceExt;
@@ -35,6 +37,7 @@ async fn run() {
     let mut state = State::new(&window).await;
 
     event_loop.run(move |event, _, control_flow| {
+        state.gui.platform.handle_event(&event);
         match event {
             Event::WindowEvent {
                 ref event,
@@ -69,7 +72,7 @@ async fn run() {
             }
             Event::RedrawRequested(window_id) if window_id == window.id() => {
                 state.update();
-                match state.render() {
+                match state.render(&window) {
                     Ok(_) => {}
                     // Reconfigure the surface if it's lost or outdated
                     Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => state.resize(state.size),
@@ -104,7 +107,9 @@ struct State {
     present : TexturePresent,
     point_lights : Vec<PointLight>,
     input_system : InputSystem,
-    assets : AssetServer
+    assets : AssetServer,
+    gui : Gui,
+    fps : FpsCounter
 }
 
 #[derive(ShaderType)]
@@ -290,6 +295,14 @@ impl State {
         let light_pipeline = PointLightPipeline::new(&render.device, &camera_buffer, extent);
         let light_buffer = light_pipeline.spawn_framebuffer(&render.device, extent);
 
+        let gui = Gui::new(
+            &render, 
+            config.format, 
+            extent, 
+            window.scale_factor());
+
+        let fps = FpsCounter::default();
+
         Self {
             surface,
             config,
@@ -305,7 +318,9 @@ impl State {
             light_buffer,
             input_system : InputSystem::default(),
             assets,
-            render
+            render,
+            gui,
+            fps
         }
     }
 
@@ -389,7 +404,7 @@ impl State {
         self.render.queue.submit(iter::once(encoder.finish()));
     }
 
-    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    fn render(&mut self, window : &Window) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture
@@ -408,6 +423,24 @@ impl State {
         self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
 
         self.present.draw(&self.render.device, &mut encoder, &self.light_buffer, &view);
+
+        self.gui.begin_frame();
+
+        egui::TopBottomPanel::top("top_panel").show(
+            &self.gui.platform.context(), |ui| {
+                self.fps.draw(ui);
+        });
+
+        
+        let gui_output = self.gui.end_frame(Some(window));
+        self.gui.draw(gui_output, 
+            ScreenDescriptor {
+                physical_width: self.config.width,
+                physical_height: self.config.height,
+                scale_factor: window.scale_factor() as f32,
+            }, 
+            &mut encoder, 
+            &view);
 
         self.render.queue.submit(iter::once(encoder.finish()));
         output.present();

@@ -35,6 +35,8 @@ space_macros = {path = "crates/space_macros"}
 space_shaders = {path = "crates/space_shaders"}
 space_core = {path = "crates/space_core"}
 downcast-rs = "1.2.0"
+egui_wgpu_backend = "0.19"
+egui_winit_platform = "0.16"
 
 [workspace]
 members = [
