@@ -33,6 +33,8 @@ async fn run() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
 
+    window.set_title("Space sandbox");
+
     // State::new uses async code, so we're going to wait for it to finish
     let mut state = State::new(&window).await;
 
@@ -223,7 +225,7 @@ impl State {
             format: surface.get_supported_formats(&adapter)[0],
             width: size.width,
             height: size.height,
-            present_mode: wgpu::PresentMode::Fifo,
+            present_mode: wgpu::PresentMode::Immediate,
         };
         surface.configure(&device, &config);
 
@@ -258,7 +260,6 @@ impl State {
         });
 
         let mut assets = AssetServer::new(&render, &task_server);
-        
 
         let scene = assets.wgpu_gltf_load(
             &render.device,
@@ -288,9 +289,11 @@ impl State {
                 depth_or_array_layers : 1
             });
 
-        let lights = vec![
+        let mut lights = vec![
             PointLight::new(&render.device, [0.0, 10.0, 0.0].into())
         ];
+        lights[0].intensity = 1000.0;
+
 
         let light_pipeline = PointLightPipeline::new(&render.device, &camera_buffer, extent);
         let light_buffer = light_pipeline.spawn_framebuffer(&render.device, extent);
@@ -368,7 +371,7 @@ impl State {
     }
 
     fn update(&mut self) {
-        let speed = 0.1;
+        let speed = 0.3;
         if self.input_system.get_key_state(VirtualKeyCode::W) {
             self.camera.pos += self.camera.frw * speed;
         } 
@@ -380,6 +383,12 @@ impl State {
         }
         if self.input_system.get_key_state(VirtualKeyCode::A) {
             self.camera.pos -= self.camera.get_right() * speed;
+        }
+        if self.input_system.get_key_state(VirtualKeyCode::Space) {
+            self.camera.pos += self.camera.up  * speed;
+        }
+        if self.input_system.get_key_state(VirtualKeyCode::LShift) {
+            self.camera.pos -= self.camera.up * speed;
         }
 
         let camera_unifrom = self.camera.build_uniform();
@@ -413,6 +422,11 @@ impl State {
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
+
+        for light in &self.point_lights {
+            light.update_buffer(&self.render);
+        }
+        self.render.device.poll(wgpu::Maintain::Wait);
 
         let mut encoder = self
         .render.device
