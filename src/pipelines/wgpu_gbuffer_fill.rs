@@ -278,7 +278,7 @@ impl GBufferFill {
 
         for (mesh, material) in (&mesh_st, &mut material_st).join() {
 
-            // if material.gbuffer_bind.is_none() {
+            if material.need_rebind(assets) {
                 let group = self.render.device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: None,
                     layout: &self.texture_bind_group_layout,
@@ -303,10 +303,9 @@ impl GBufferFill {
                 });
 
                 material.gbuffer_bind = Some(group);
-            // }
+            }
 
             {
-
                 render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
                 render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
                 render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);

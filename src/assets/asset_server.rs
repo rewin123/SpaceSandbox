@@ -16,151 +16,26 @@ use log::*;
 use wgpu::util::DeviceExt;
 use specs::*;
 use std::hash::Hash;
+use crate::asset_holder::AssetHolder;
+use crate::handle::*;
 
 pub trait Asset : DowncastSync {
 
 }
-
 impl_downcast!(sync Asset);
-
-pub type HandleId = usize;
-
-pub struct Handle<T : Asset> {
-    idx : HandleId,
-    marker : PhantomData<T>,
-    asset_server : Arc<AssetServerGlobal>,
-    strong : bool
-}
-
-impl<T : Asset> PartialEq for Handle<T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.idx == other.idx && self.strong == other.strong
-    }
-}
-
-impl<T : Asset> Hash for Handle<T> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.idx.hash(state);
-    }
-}
-
-impl<T> Handle<T> where T : Asset {
-
-    fn new(idx : HandleId, asset_server : Arc<AssetServerGlobal>, strong : bool) -> Self {
-        let res = Self {
-            idx,
-            marker : PhantomData::default(),
-            asset_server,
-            strong
-        };
-        if strong {
-            res.incerase_counter();
-        }
-        res
-    }
-
-    fn incerase_counter(&self) {
-        self.asset_server.create_queue.lock()
-            .unwrap().push(self.idx);
-    }
-
-    pub fn get_untyped(&self) -> HandleUntyped {
-        if self.strong {
-            self.incerase_counter();
-        }
-
-        HandleUntyped { 
-            idx: self.idx, 
-            tp: TypeId::of::<T>(), 
-            asset_server: self.asset_server.clone(),
-            strong : self.strong
-        }
-    }
-
-    pub fn get_weak(&self) -> Handle<T> {
-        Handle::new( self.idx, self.asset_server.clone(), false) 
-    }
-}
-
-impl<T> Drop for Handle<T> where T : Asset {
-    fn drop(&mut self) {
-        if self.strong {
-            self.asset_server.destroy_queue.lock().unwrap().push(self.idx);
-        }
-    }
-}
-
-impl<T> Clone for Handle<T> where T : Asset {
-    fn clone(&self) -> Self {
-        Handle::new(self.idx, self.asset_server.clone(), self.strong)
-    }
-}
-
-pub struct HandleUntyped {
-    idx : HandleId,
-    tp : TypeId,
-    asset_server : Arc<AssetServerGlobal>,
-    strong : bool
-}
-
-impl HandleUntyped {
-
-    fn new(idx : HandleId, tp : TypeId, asset_server : Arc<AssetServerGlobal>, strong : bool) -> Self {
-        let res = Self {
-            idx,
-            tp,
-            asset_server,
-            strong
-        };
-        if res.strong {
-            res.incerase_counter();
-        }
-        res
-    }
-
-    fn get_strong(&self) -> Self {
-        HandleUntyped::new(self.idx, self.tp, self.asset_server.clone(), true)
-    }
-
-    fn get_typed<T : Asset>(&self) -> Handle<T> {
-        Handle::<T>::new(self.idx, self.asset_server.clone(), self.strong)
-    }
-
-    fn incerase_counter(&self) {
-        self.asset_server.create_queue.lock()
-            .unwrap().push(self.idx);
-    }
-}
-
-impl Drop for HandleUntyped {
-    fn drop(&mut self) {
-        if self.strong {
-            self.asset_server.destroy_queue.lock().unwrap().push(self.idx);
-        }
-    }
-}
-
-impl Clone for HandleUntyped {
-    fn clone(&self) -> Self {
-        HandleUntyped::new(self.idx, self.tp, self.asset_server.clone(), self.strong)
-    }
-}
 
 
 pub struct AssetServerDecriptor {
     pub render : Arc<RenderBase>
 }
 
-pub struct AssetHolder {
-    pub ptr : Arc<dyn Asset>,
-    pub count : i32
-}
 
 #[derive(Default)]
-struct AssetServerGlobal {
+pub struct AssetServerGlobal {
     pub destroy_queue : Mutex<Vec<HandleId>>,
     pub create_queue : Mutex<Vec<HandleId>>,
-    pub background_loading : Mutex<Vec<(HandleUntyped, Arc<dyn Asset>)>>
+    pub background_loading : Mutex<Vec<(HandleUntyped, Arc<dyn Asset>)>>,
+    pub mark_to_update : Mutex<Vec<HandleId>>
 }
 
 pub struct AssetServer {
@@ -268,7 +143,7 @@ impl AssetServer {
             let mut add = self.memory_holder.create_queue.lock().unwrap();
             for a in add.iter() {
                 if let Some(h) = self.assets.get_mut(&a) {
-                    h.count += 1;
+                    h.inc_counter();
                 }
             }
             add.clear();
@@ -277,9 +152,20 @@ impl AssetServer {
         {
             let mut add = self.memory_holder.background_loading.lock().unwrap();
             for (handle, data) in add.iter() {
-                if let Some(h) = self.assets.get_mut(&handle.idx) {
-                    h.ptr = data.clone();
+                if let Some(h) = self.assets.get_mut(&handle.get_idx()) {
+                    h.update_data(data.clone(), &self.memory_holder);
                     log::info!("New data seted");
+                }
+            }
+            add.clear();
+        }
+
+        //rebuild part
+        {
+            let mut add = self.memory_holder.mark_to_update.lock().unwrap();
+            for handle in add.iter() {
+                if let Some(val) = self.assets.get_mut(&handle) {
+                    val.set_rebuild(true);
                 }
             }
             add.clear();
@@ -289,7 +175,7 @@ impl AssetServer {
             let mut add = self.memory_holder.destroy_queue.lock().unwrap();
             for a in add.iter() {
                 if let Some(h) = self.assets.get_mut(&a) {
-                    h.count -= 1;
+                    h.dec_counter();
                 }
             }
             add.clear();
@@ -331,8 +217,8 @@ impl AssetServer {
     }
 
     pub fn get<T : Asset>(&self, handle : &Handle<T>) -> Option<Arc<T>> {
-        if let Some(val) = self.assets.get(&handle.idx) {
-           match val.ptr.clone().downcast_arc::<T>() {
+        if let Some(val) = self.assets.get(&handle.get_idx()) {
+           match val.get().clone().downcast_arc::<T>() {
             Ok(val) => Some(val),
             Err(_) => None,
         }
@@ -341,9 +227,17 @@ impl AssetServer {
         }
     }
 
+    pub fn get_version<T : Asset>(&self, handle : &Handle<T>) -> Option<u32> {
+        if let Some(val) = self.assets.get(&handle.get_idx()) {
+            Some(val.get_version())
+        } else {
+            None
+        }
+    }
+
     pub fn get_untyped<T : Asset>(&self, handle : &HandleUntyped) -> Option<Arc<T>> {
-        if let Some(val) = self.assets.get(&handle.idx) {
-           match val.ptr.clone().downcast_arc::<T>() {
+        if let Some(val) = self.assets.get(&handle.get_idx()) {
+           match val.get().clone().downcast_arc::<T>() {
             Ok(val) => Some(val),
             Err(_) => None,
         }
@@ -353,18 +247,10 @@ impl AssetServer {
     }
 
     fn new_asset<T : Asset>(&mut self, val : Arc<T>) -> Handle<T> {
-        let holder = AssetHolder {
-            ptr: val,
-            count: 1,
-        };
+        let holder = AssetHolder::new(val);
         self.counter += 1;
         self.assets.insert(self.counter, holder);
-        Handle { 
-            idx: self.counter, 
-            marker: PhantomData::<T>::default(), 
-            asset_server: self.memory_holder.clone(),
-            strong : true
-        }
+        Handle::new(self.counter, self.memory_holder.clone(), true)
     }
 
     pub fn load_color_texture(&mut self, path : String) -> Handle<crate::TextureBundle> {
@@ -626,7 +512,8 @@ impl AssetServer {
                     color,
                     normal,
                     metallic_roughness: mr,
-                    gbuffer_bind : None
+                    gbuffer_bind : None,
+                    version_sum : 0
                 };
 
                 world.create_entity().with(model).with(material).build();

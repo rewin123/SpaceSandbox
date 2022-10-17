@@ -3,11 +3,10 @@ use std::ops::Deref;
 use std::os::raw::c_char;
 use std::sync::{Arc, Mutex};
 
-use assets::asset_server::{Asset, Handle};
+
 use log::*;
 use simplelog::*;
 use std::default::Default;
-use gpu_allocator::vulkan::{Allocation, AllocatorCreateDesc};
 // use winit::window::Window;
 
 const EngineName : &str = "Rewin engine";
@@ -24,6 +23,8 @@ pub use assets::*;
 pub use pipelines::*;
 
 use specs::*;
+use crate::asset_server::{Asset, AssetServer};
+use crate::handle::Handle;
 
 pub struct RenderBase {
     pub device : wgpu::Device,
@@ -84,7 +85,26 @@ pub struct Material {
     pub color : Handle<TextureBundle>,
     pub normal : Handle<TextureBundle>,
     pub metallic_roughness: Handle<TextureBundle>,
+    pub version_sum : u32,
     pub gbuffer_bind : Option<wgpu::BindGroup>
+}
+
+impl Material {
+    pub fn need_rebind(&self, assets : &AssetServer) -> bool {
+        if self.gbuffer_bind.is_none() {
+            return true;
+        } else {
+            let sum = assets.get_version(&self.color).unwrap()
+                + assets.get_version(&self.normal).unwrap()
+                + assets.get_version(&self.metallic_roughness).unwrap();
+            if sum != self.version_sum {
+                return true;
+            } else {
+                return false;
+            }
+
+        }
+    }
 }
 
 impl Component for Material {
