@@ -19,3 +19,11 @@ unifrom_struct!(
     color : vec3,
     intensity : f32
 );
+
+unifrom_struct!(
+    LightCamera,
+    pos : vec3,
+    frw : vec3,
+    up : vec3,
+    far : f32
+);

@@ -45,7 +45,6 @@ impl GFramebuffer {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING
         });
 
-
         Self {
             diffuse,
             normal,

@@ -2,7 +2,7 @@ use std::iter;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use SpaceSandbox::light::PointLight;
+use SpaceSandbox::light::{PointLight, PointLightShadow};
 use SpaceSandbox::task_server::TaskServer;
 use SpaceSandbox::ui::{Gui, FpsCounter};
 use SpaceSandbox::wgpu_light_fill::PointLightPipeline;
@@ -22,6 +22,7 @@ use SpaceSandbox::pipelines::wgpu_gbuffer_fill::GBufferFill;
 use SpaceSandbox::wgpu_gbuffer_fill::{GFramebuffer};
 
 use nalgebra as na;
+use SpaceSandbox::wgpu_light_shadow::PointLightShadowPipeline;
 
 async fn run() {
     init_logger();
@@ -103,6 +104,7 @@ struct State {
     camera : Camera,
     camera_buffer : wgpu::Buffer,
     gbuffer_pipeline : GBufferFill,
+    light_shadow : PointLightShadowPipeline,
     light_pipeline : PointLightPipeline,
     light_buffer : TextureBundle,
     gbuffer : GFramebuffer,
@@ -290,10 +292,11 @@ impl State {
             });
 
         let mut lights = vec![
-            PointLight::new(&render.device, [0.0, 10.0, 0.0].into())
+            PointLight::new(&render, [0.0, 10.0, 0.0].into(), true)
         ];
         lights[0].intensity = 1000.0;
 
+        let point_light_shadow = PointLightShadowPipeline::new(&render);
 
         let light_pipeline = PointLightPipeline::new(&render.device, &camera_buffer, extent);
         let light_buffer = light_pipeline.spawn_framebuffer(&render.device, extent);
@@ -323,7 +326,8 @@ impl State {
             assets,
             render,
             gui,
-            fps
+            fps,
+            light_shadow : point_light_shadow
         }
     }
 
@@ -423,7 +427,7 @@ impl State {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        for light in &self.point_lights {
+        for light in &mut self.point_lights {
             light.update_buffer(&self.render);
         }
         self.render.device.poll(wgpu::Maintain::Wait);
@@ -434,10 +438,8 @@ impl State {
                 label: Some("Render Encoder"),
             });
 
-        {
-            self.gbuffer_pipeline.draw(&self.assets,&mut encoder, &self.scene, &self.gbuffer);
-        }
-
+        self.gbuffer_pipeline.draw(&self.assets,&mut encoder, &self.scene, &self.gbuffer);
+        self.light_shadow.draw(&mut encoder, &mut self.point_lights, &self.scene);
         self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
 
         self.present.draw(&self.render.device, &mut encoder, &self.light_buffer, &view);
