@@ -115,7 +115,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     var shadow_dist = textureSample(t_shadow, s_shadow, -L).r;
     var shadow = 1.0;
-    if (dist / 10000.0 > shadow_dist - 0.01) {
+    if (dist / 10000.0 > shadow_dist + 0.00001) {
         shadow = 0.0;
     }
 
