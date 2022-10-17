@@ -101,6 +101,26 @@ fn fresnelSchlick( cosTheta : f32, F0 : vec3<f32>) -> vec3<f32>
 }
 
 
+fn sample_shadow(dir : vec3<f32>, N : vec3<f32>, T : vec3<f32>, dist : f32) -> f32 {
+    var res : f32 = 0.0;
+    var up = cross(N, T);
+
+    for (var dx : i32 = -2; dx < 3; dx++) {
+        for (var dy : i32 = -2; dy < 3; dy++) {
+            var k = dir + (up * f32(dy) + T * f32(dx)) / 512.0;
+            var shadow_dist = textureSample(t_shadow, s_shadow, normalize(k)).r;
+            if (dist / 10000.0 > shadow_dist + 0.00001) {
+                
+            } else {
+                res += 1.0;
+            }
+        }
+    }
+
+    res /= 25.0;
+    return res;
+}
+
 @fragment
 fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
@@ -113,11 +133,11 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var V = normalize(camera.pos - pos);
     var dist = length(light.position - pos);
 
-    var shadow_dist = textureSample(t_shadow, s_shadow, -L).r;
-    var shadow = 1.0;
-    if (dist / 10000.0 > shadow_dist + 0.00001) {
-        shadow = 0.0;
-    }
+    // var shadow_dist = textureSample(t_shadow, s_shadow, -L).r;
+    var shadow = sample_shadow(-L, N, normalize(cross(L, N)), dist);
+    // if (dist / 10000.0 > shadow_dist + 0.00001) {
+    //     shadow = 0.0;
+    // }
 
     var tex_color = textureSample(t_diffuse, s_diffuse, screen_uv).rgb;
     var mr = vec3(0.0, 0.5, 0.0);
