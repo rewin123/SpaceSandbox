@@ -393,6 +393,7 @@ impl AssetServer {
                 .expect("unable to open image");
             let (width, height) = image.dimensions();
 
+
             let tex_color = render.device.create_texture_with_data(
                 &render.queue, &wgpu::TextureDescriptor {
                     label: Some("default color texture"),

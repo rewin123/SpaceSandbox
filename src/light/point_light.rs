@@ -46,12 +46,6 @@ impl PointLight {
             buffer.slice(..).get_mapped_range_mut().copy_from_slice(&inned_data);
             buffer.unmap();
         });
-
-        // while *(update_flag.lock().unwrap()) == false {
-        //     render.device.poll(wgpu::Maintain::Wait);
-        //     std::thread::sleep(Duration::from_micros(10));
-        // }
-
     }
 }
 
