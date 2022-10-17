@@ -94,8 +94,8 @@ impl Component for Material {
 pub fn init_logger() {
     let _ = CombinedLogger::init(
         vec![
-            TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed, ColorChoice::Auto),
-            WriteLogger::new(LevelFilter::Debug, Config::default(), File::create("detailed.log").unwrap())
+            TermLogger::new(LevelFilter::Error, Config::default(), TerminalMode::Mixed, ColorChoice::Auto),
+            WriteLogger::new(LevelFilter::Error, Config::default(), File::create("detailed.log").unwrap())
         ]
     );
 }

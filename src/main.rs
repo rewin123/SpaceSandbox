@@ -344,6 +344,10 @@ impl State {
                 size.clone()
             );
 
+            self.gbuffer = GBufferFill::spawn_framebuffer(
+                &self.render.device,
+            size.clone());
+
             self.present = TexturePresent::new(
                 &self.render.device, 
                 self.config.format, 
