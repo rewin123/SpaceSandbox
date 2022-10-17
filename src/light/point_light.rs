@@ -98,7 +98,8 @@ pub struct PointLightShadow {
     pub pipeline_bind : Option<wgpu::BindGroup>,
     pub camera_binds : Vec<wgpu::BindGroup>,
     pub camera_buffers : Vec<Arc<wgpu::Buffer>>,
-    pub cameras_unforms : Vec<LightCamera>
+    pub cameras_unforms : Vec<LightCamera>,
+    pub sampler : wgpu::Sampler
 }
 
 impl PointLightShadow {
@@ -123,10 +124,10 @@ impl PointLightShadow {
             let view = tex.create_view(&wgpu::TextureViewDescriptor {
                 label: Some("point light side view"),
                 format: None,
-                dimension: None,
+                dimension: Some(wgpu::TextureViewDimension::D2),
                 aspect: Default::default(),
                 base_mip_level: 0,
-                mip_level_count: None,
+                mip_level_count: Some(NonZeroU32::new(1).unwrap()),
                 base_array_layer: idx,
                 array_layer_count: Some(NonZeroU32::new(1).unwrap())
             });
@@ -144,6 +145,21 @@ impl PointLightShadow {
             array_layer_count: Some(NonZeroU32::new(6).unwrap())
         });
 
+        let sampler = render.device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Shadow cube sampler"),
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            lod_min_clamp: 0.0,
+            lod_max_clamp: 0.0,
+            compare: None,
+            anisotropy_clamp: None,
+            border_color: None
+        });
+
         let mut cameras = vec![];
         let mut camera_buffers = vec![];
         for idx in 0..6 {
@@ -151,22 +167,22 @@ impl PointLightShadow {
             let up;
             let frw;
             if idx == 0 {
-                frw = na::Vector3::<f32>::new(1.0, 0.0, 0.0);
-                up = na::Vector3::<f32>::new(0.0, 1.0, 0.0);
-            } else if idx == 1 {
                 frw = na::Vector3::<f32>::new(-1.0, 0.0, 0.0);
                 up = na::Vector3::<f32>::new(0.0, 1.0, 0.0);
+            } else if idx == 1 {
+                frw = na::Vector3::<f32>::new(1.0, 0.0, 0.0);
+                up = na::Vector3::<f32>::new(0.0, 1.0, 0.0);
             } else if idx == 2 {
-                frw = na::Vector3::<f32>::new(0.0, 1.0, 0.0);
-                up = na::Vector3::<f32>::new(0.0, 0.0, -1.0);
-            } else if idx == 3 {
                 frw = na::Vector3::<f32>::new(0.0, -1.0, 0.0);
                 up = na::Vector3::<f32>::new(0.0, 0.0, 1.0);
+            } else if idx == 3 {
+                frw = na::Vector3::<f32>::new(0.0, 1.0, 0.0);
+                up = na::Vector3::<f32>::new(0.0, 0.0, -1.0);
             } else if idx == 4 {
-                frw = na::Vector3::<f32>::new(0.0, 0.0, 1.0);
+                frw = na::Vector3::<f32>::new(0.0, 0.0, -1.0);
                 up = na::Vector3::<f32>::new(0.0, 1.0, 0.0);
             } else if idx == 5 {
-                frw = na::Vector3::<f32>::new(0.0, 0.0, -1.0);
+                frw = na::Vector3::<f32>::new(0.0, 0.0, 1.0);
                 up = na::Vector3::<f32>::new(0.0, 1.0, 0.0);
             } else {
                 panic!();
@@ -174,6 +190,8 @@ impl PointLightShadow {
 
 
             let cam = LightCamera {
+                proj : nalgebra::Matrix4::<f32>::new_perspective(
+                    1.0f32, std::f32::consts::PI / 2.0, 0.01f32, 100000.0f32),
                 pos : [0.0, 0.0, 0.0].into(),
                 frw,
                 up,
@@ -200,6 +218,7 @@ impl PointLightShadow {
             camera_binds : vec![],
             camera_buffers,
             cameras_unforms : cameras,
+            sampler
         }
     }
 }

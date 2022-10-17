@@ -126,7 +126,7 @@ impl PointLightShadowPipeline {
                 }
                 
                 for camera_idx in 0..6 {
-                    self.shadow_draw(shadow, idx, world, encoder);
+                    self.shadow_draw(shadow, camera_idx, world, encoder);
                 }
             }
         }

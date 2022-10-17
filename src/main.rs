@@ -292,7 +292,7 @@ impl State {
             });
 
         let mut lights = vec![
-            PointLight::new(&render, [0.0, 10.0, 0.0].into(), true)
+            PointLight::new(&render, [100.0, 100.0, 0.0].into(), true)
         ];
         lights[0].intensity = 1000.0;
 

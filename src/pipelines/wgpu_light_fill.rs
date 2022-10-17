@@ -156,6 +156,22 @@ impl PointLightPipeline {
                             min_binding_size: None
                         },
                         count: None
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        count: None,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::Cube,
+                            multisampled: false
+                        }
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                        count: None
                     }
                 ]
         });
@@ -173,7 +189,7 @@ impl PointLightPipeline {
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/wgsl/point_light_no_shadow.wgsl").into())
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/wgsl/point_light.wgsl").into())
         });
 
         let pipeline_layout =
@@ -281,6 +297,7 @@ impl PointLightPipeline {
 
         self.light_groups.clear();
         for light in scene {
+            let shadow = light.shadow.as_ref().unwrap();
             let light_uniform= device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("light"),
                 layout: &self.light_bind_group_layout,
@@ -292,6 +309,14 @@ impl PointLightPipeline {
                             offset: 0,
                             size: None,
                         }),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::TextureView(&shadow.cube_view)
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::Sampler(&shadow.sampler)
                     }
                 ],
             });

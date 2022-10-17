@@ -22,6 +22,7 @@ unifrom_struct!(
 
 unifrom_struct!(
     LightCamera,
+    proj : mat4,
     pos : vec3,
     frw : vec3,
     up : vec3,

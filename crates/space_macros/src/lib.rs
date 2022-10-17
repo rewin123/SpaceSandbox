@@ -48,6 +48,8 @@ pub fn unifrom_struct(item : TokenStream) -> TokenStream {
                 line += "nalgebra::Vector3<f32>,";
             } else if cls == "f32" {
                 line += "f32,";
+            } else if cls == "mat4" {
+                line += "nalgebra::Matrix4<f32>,";
             }
             line += "\n";
 
@@ -62,6 +64,8 @@ pub fn unifrom_struct(item : TokenStream) -> TokenStream {
                 line += "vec3<f32>";
             } else if cls == "f32" {
                 line += "f32";
+            } else if cls == "mat4" {
+                line += "mat4x4<f32>";
             }
 
             if shader_struct_body.len() > 0 {

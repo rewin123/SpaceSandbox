@@ -1,4 +1,5 @@
 struct LightCamera {
+    projection : mat4x4<f32>,
     pos : vec3<f32>,
     frw : vec3<f32>,
     up : vec3<f32>,
@@ -17,6 +18,7 @@ struct VertexInput {
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
+    @location(0) pos : vec3<f32>
 }
 
 @vertex
@@ -28,17 +30,22 @@ fn vs_main(
     var loc_pos = model.position - camera.pos;
     var right = cross(camera.frw, camera.up);
     var view = vec3<f32>(dot(loc_pos, right), dot(loc_pos, camera.up), dot(loc_pos, camera.frw));
-
-    if (abs(view.z) > 0.01) {
-        view.x /= view.z;
-        view.y /= view.z;
-        view.z /= camera.far;
-    }
-    out.clip_position = vec4<f32>(view, 1.0);
+    var res = camera.projection * vec4<f32>(view, 1.0);
+//    res.y *= -1.0;
+    out.clip_position = res;
+    out.pos = loc_pos;
     return out;
 }
 
-@fragment
-fn fs_main(in: VertexOutput) {
+struct FragmentOutput {
+@builtin(frag_depth) depth : f32
+}
 
+@fragment
+fn fs_main(in: VertexOutput) -> FragmentOutput {
+    var out : FragmentOutput;
+
+    out.depth = length(in.pos) / camera.far;
+
+    return out;
 }
