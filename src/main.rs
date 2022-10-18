@@ -8,6 +8,7 @@ use SpaceSandbox::ui::{Gui, FpsCounter};
 use SpaceSandbox::wgpu_light_fill::PointLightPipeline;
 use SpaceSandbox::wgpu_texture_present::TexturePresent;
 use egui::epaint::ahash::HashMap;
+use egui_gizmo::GizmoMode;
 use egui_wgpu_backend::ScreenDescriptor;
 use space_shaders::*;
 use specs::*;
@@ -211,7 +212,7 @@ impl State {
 
         let (device, queue) = adapter.request_device(
             &wgpu::DeviceDescriptor {
-                features: wgpu::Features::empty(),
+                features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
                 limits: if cfg!(target_arch = "wasm32") {
                     wgpu::Limits::downlevel_webgl2_defaults()
                 } else {
@@ -292,9 +293,11 @@ impl State {
             });
 
         let mut lights = vec![
-            PointLight::new(&render, [100.0, 100.0, 0.0].into(), true)
+            PointLight::new(&render, [100.0, 100.0, 0.0].into(), true),
+            PointLight::new(&render, [-100.0, 100.0, 0.0].into(), true),
         ];
         lights[0].intensity = 1000.0;
+        lights[1].intensity = 1000.0;
 
         let point_light_shadow = PointLightShadowPipeline::new(&render);
 
@@ -449,7 +452,27 @@ impl State {
         egui::TopBottomPanel::top("top_panel").show(
             &self.gui.platform.context(), |ui| {
                 self.fps.draw(ui);
+
+                let cam_uniform = self.camera.build_uniform();
+                for (idx, light) in self.point_lights.iter_mut().enumerate() {
+                    let model_mat = na::Matrix4::new_translation(&light.pos);
+                    let gizmo = egui_gizmo::Gizmo::new(format!("Light gizmo {}", idx))
+                        .view_matrix(cam_uniform.view)
+                        .projection_matrix(cam_uniform.proj)
+                        .model_matrix(model_mat)
+                        .mode(GizmoMode::Translate);
+
+                    if let Some(responce) = gizmo.interact(ui) {
+                        let model_mat : na::Matrix4<f32> = responce.transform.into();
+                        let x = model_mat.m14;
+                        let y = model_mat.m24;
+                        let z = model_mat.m34;
+                        light.pos = na::Vector3::new(x, y, z);
+                    }
+                }
         });
+
+
 
         
         let gui_output = self.gui.end_frame(Some(window));

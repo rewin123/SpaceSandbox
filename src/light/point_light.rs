@@ -174,10 +174,10 @@ impl PointLightShadow {
                 up = na::Vector3::<f32>::new(0.0, 1.0, 0.0);
             } else if idx == 2 {
                 frw = na::Vector3::<f32>::new(0.0, -1.0, 0.0);
-                up = na::Vector3::<f32>::new(0.0, 0.0, 1.0);
+                up = na::Vector3::<f32>::new(0.0, 0.0, -1.0);
             } else if idx == 3 {
                 frw = na::Vector3::<f32>::new(0.0, 1.0, 0.0);
-                up = na::Vector3::<f32>::new(0.0, 0.0, -1.0);
+                up = na::Vector3::<f32>::new(0.0, 0.0, 1.0);
             } else if idx == 4 {
                 frw = na::Vector3::<f32>::new(0.0, 0.0, -1.0);
                 up = na::Vector3::<f32>::new(0.0, 1.0, 0.0);
@@ -191,7 +191,7 @@ impl PointLightShadow {
 
             let cam = LightCamera {
                 proj : nalgebra::Matrix4::<f32>::new_perspective(
-                    1.0f32, std::f32::consts::PI / 2.0, 0.01f32, 100000.0f32),
+                    1.0f32, std::f32::consts::PI / 2.0, 0.01f32, 10000.0f32),
                 pos : [0.0, 0.0, 0.0].into(),
                 frw,
                 up,
@@ -208,7 +208,6 @@ impl PointLightShadow {
             cameras.push(cam);
             camera_buffers.push(Arc::new(buffer));
         }
-
 
         Self {
             tex,

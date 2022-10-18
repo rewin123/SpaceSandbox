@@ -105,9 +105,9 @@ fn sample_shadow(dir : vec3<f32>, N : vec3<f32>, T : vec3<f32>, dist : f32) -> f
     var res : f32 = 0.0;
     var up = cross(N, T);
 
-    for (var dx : i32 = -2; dx < 3; dx++) {
-        for (var dy : i32 = -2; dy < 3; dy++) {
-            var k = dir + (up * f32(dy) + T * f32(dx)) / 512.0;
+    for (var dx : i32 = -1; dx < 1; dx++) {
+        for (var dy : i32 = -1; dy < 1; dy++) {
+            var k = dir + (up * f32(dy) + T * f32(dx)) / 256.0;
             var shadow_dist = textureSample(t_shadow, s_shadow, normalize(k)).r;
             if (dist / 10000.0 > shadow_dist + 0.00001) {
                 
@@ -117,7 +117,7 @@ fn sample_shadow(dir : vec3<f32>, N : vec3<f32>, T : vec3<f32>, dist : f32) -> f
         }
     }
 
-    res /= 25.0;
+    res /= 9.0;
     return res;
 }
 
@@ -163,7 +163,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var NdotL = max(dot(N, L), 0.0);
 
     var Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
-    Lo = Lo * shadow;
+    Lo = Lo * shadow + kD * tex_color / PI * radiance * 0.05;
     Lo = pow(Lo, vec3<f32>(1.0 / 2.2));
     out.color = vec4<f32>(Lo, 1.0);
 //    out.color = vec4<f32>(shadow_dist,shadow_dist,shadow_dist,1.0);
