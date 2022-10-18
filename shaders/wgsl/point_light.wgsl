@@ -7,7 +7,8 @@ struct CameraUniform {
 struct PointLightUniform {
     position : vec3<f32>,
     color : vec3<f32>,
-    intensity : f32
+    intensity : f32,
+    shadow_far : f32
 }
 
 @group(0) @binding(0)
@@ -35,7 +36,7 @@ fn vs_main(
     model : VertexInput
 ) -> VertexOutput {
     var out : VertexOutput;
-    out.clip_position = camera.view * vec4<f32>(model.position * sqrt(light.intensity / pow(0.01, 2.2)), 1.0);
+    out.clip_position = camera.view * vec4<f32>(model.position * light.shadow_far, 1.0);
     out.clip_position.z = min(-0.1, out.clip_position.z);
     out.clip_position = camera.proj * out.clip_position;
     out.pos = out.clip_position;
@@ -114,7 +115,7 @@ fn sample_shadow(dir : vec3<f32>, N : vec3<f32>, T : vec3<f32>, dist : f32) -> f
         for (var dy : i32 = -1; dy < 1; dy++) {
             var k = dir + (up * f32(dy) + T * f32(dx)) / 256.0;
             var shadow_dist = textureSample(t_shadow, s_shadow, normalize(k)).r;
-            if (dist / 10000.0 > shadow_dist + 0.00001) {
+            if (dist / light.shadow_far > shadow_dist + 0.00001) {
                 
             } else {
                 res += 1.0;

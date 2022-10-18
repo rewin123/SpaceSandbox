@@ -21,6 +21,11 @@ pub struct PointLight {
 }
 
 impl PointLight {
+
+    fn get_shadow_dist(intensity : f32) -> f32 {
+        (intensity / 0.01f32.powf(2.2)).sqrt()
+    }
+
     pub fn new(
         render : &Arc<RenderBase>,
         position : na::Vector3<f32>,
@@ -31,6 +36,7 @@ impl PointLight {
             pos: position,
             color: [1.0, 1.0, 1.0].into(),
             intensity: 10.0,
+            shadow_dist : PointLight::get_shadow_dist(10.0)
         };
         let buffer = render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Light buffer"),
@@ -53,6 +59,7 @@ impl PointLight {
     }
 
     pub fn update_buffer(&mut self, render : &RenderBase) {
+        self.inner.shadow_dist = PointLight::get_shadow_dist(self.inner.intensity);
         let inned_data = self.inner.get_bytes().unwrap();
         let buffer = self.buffer.clone();
         self.buffer.slice(..).map_async(wgpu::MapMode::Write, move|_|{
@@ -63,6 +70,7 @@ impl PointLight {
         if let Some(shadow) = self.shadow.as_mut() {
             for idx in 0..6 {
                 shadow.cameras_unforms[idx].pos = self.inner.pos.clone();
+                shadow.cameras_unforms[idx].far = PointLight::get_shadow_dist(self.inner.intensity);
 
                 let inned_data = shadow.cameras_unforms[idx].get_bytes().unwrap();
                 let buffer = shadow.camera_buffers[idx].clone();
@@ -195,7 +203,7 @@ impl PointLightShadow {
                 pos : [0.0, 0.0, 0.0].into(),
                 frw,
                 up,
-                far : 10000.0
+                far : PointLight::get_shadow_dist(10.0)
             };
 
 

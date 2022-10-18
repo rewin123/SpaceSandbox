@@ -17,7 +17,8 @@ unifrom_struct!(
     PointLightUniform,
     pos : vec3,
     color : vec3,
-    intensity : f32
+    intensity : f32,
+    shadow_dist : f32
 );
 
 unifrom_struct!(
