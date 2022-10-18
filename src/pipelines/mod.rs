@@ -2,6 +2,7 @@ pub mod wgpu_gbuffer_fill;
 pub mod wgpu_light_fill;
 pub mod wgpu_texture_present;
 pub mod wgpu_light_shadow;
+pub mod wgpu_textures_transform;
 
 
 // pub trait InstancesDrawer {

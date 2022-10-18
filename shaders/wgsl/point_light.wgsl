@@ -164,7 +164,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     var Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
     Lo = Lo * shadow + kD * tex_color / PI * radiance * 0.05;
-    Lo = pow(Lo, vec3<f32>(1.0 / 2.2));
+//    Lo = pow(Lo, vec3<f32>(1.0 / 2.2));
     out.color = vec4<f32>(Lo, 1.0);
 //    out.color = vec4<f32>(shadow_dist,shadow_dist,shadow_dist,1.0);
 //    out.color = vec4<f32>(abs(-L.x), abs(-L.x),abs(-L.x),1.0);

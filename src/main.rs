@@ -24,6 +24,7 @@ use SpaceSandbox::wgpu_gbuffer_fill::{GFramebuffer};
 
 use nalgebra as na;
 use SpaceSandbox::wgpu_light_shadow::PointLightShadowPipeline;
+use SpaceSandbox::wgpu_textures_transform::{CommonFramebuffer, TextureTransformPipeline};
 
 async fn run() {
     init_logger();
@@ -107,9 +108,11 @@ struct State {
     gbuffer_pipeline : GBufferFill,
     light_shadow : PointLightShadowPipeline,
     light_pipeline : PointLightPipeline,
+    gamma_correction : TextureTransformPipeline,
     light_buffer : TextureBundle,
     gbuffer : GFramebuffer,
     present : TexturePresent,
+    gamma_buffer : CommonFramebuffer,
     point_lights : Vec<PointLight>,
     input_system : InputSystem,
     assets : AssetServer,
@@ -312,6 +315,17 @@ impl State {
 
         let fps = FpsCounter::default();
 
+        let mut gamma_correction = TextureTransformPipeline::new(
+            &render,
+            wgpu::TextureFormat::Rgba32Float,
+            extent,
+            1,
+            1,
+            include_str!("../shaders/wgsl/gamma_correction.wgsl").into()
+        );
+
+        let gamma_buffer = gamma_correction.spawn_framebuffer();
+
         Self {
             surface,
             config,
@@ -330,7 +344,9 @@ impl State {
             render,
             gui,
             fps,
-            light_shadow : point_light_shadow
+            light_shadow : point_light_shadow,
+            gamma_correction,
+            gamma_buffer
         }
     }
 
@@ -368,6 +384,17 @@ impl State {
                 &self.camera_buffer,
                 size
             );
+
+            self.gamma_correction = TextureTransformPipeline::new(
+                &self.render,
+                wgpu::TextureFormat::Rgba32Float,
+                size,
+                1,
+                1,
+                include_str!("../shaders/wgsl/gamma_correction.wgsl").into()
+            );
+
+            self.gamma_buffer = self.gamma_correction.spawn_framebuffer();
 
             self.light_buffer = self.light_pipeline.spawn_framebuffer(&self.render.device, size);
         }
@@ -444,8 +471,9 @@ impl State {
         self.gbuffer_pipeline.draw(&self.assets,&mut encoder, &self.scene, &self.gbuffer);
         self.light_shadow.draw(&mut encoder, &mut self.point_lights, &self.scene);
         self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
+        self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
-        self.present.draw(&self.render.device, &mut encoder, &self.light_buffer, &view);
+        self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
 
         self.gui.begin_frame();
 
