@@ -253,7 +253,7 @@ impl AssetServer {
         Handle::new(self.counter, self.memory_holder.clone(), true)
     }
 
-    pub fn load_color_texture(&mut self, path : String) -> Handle<crate::TextureBundle> {
+    pub fn load_color_texture(&mut self, path : String, gamma : bool) -> Handle<crate::TextureBundle> {
 
         if let Some(handle) = self.loaded_assets.get(&path) {
             if let Some(val) = self.get_untyped::<TextureBundle>(&handle) {
@@ -271,6 +271,14 @@ impl AssetServer {
         let back = self.memory_holder.clone();
 
         self.loaded_assets.insert(path.clone(), handler.get_weak().get_untyped());
+
+        let format = {
+            if gamma {
+                wgpu::TextureFormat::Rgba8UnormSrgb
+            } else {
+                wgpu::TextureFormat::Rgba8Unorm
+            }
+        };
         
         self.task_server.spawn(&format!("Loading {}", path).to_string(),move || {
 
@@ -287,7 +295,7 @@ impl AssetServer {
                     mip_level_count: 1,
                     sample_count: 1,
                     dimension: wgpu::TextureDimension::D2,
-                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                    format,
                     usage: wgpu::TextureUsages::TEXTURE_BINDING,
                 }, 
                 &image);
@@ -321,12 +329,12 @@ impl AssetServer {
         handler
     }
 
-    pub fn load_gltf_color_texture(&mut self, base : &String, src : Option<gltf::texture::Info>) -> Handle<TextureBundle> {
+    pub fn load_gltf_color_texture(&mut self, base : &String, src : Option<gltf::texture::Info>, gamma : bool) -> Handle<TextureBundle> {
         if let Some(tex) = src {
             match tex.texture().source().source() {
                 gltf::image::Source::View { view, mime_type } => todo!(),
                 gltf::image::Source::Uri { uri, mime_type } => {
-                    self.load_color_texture(format!("{}/{}",base, uri))
+                    self.load_color_texture(format!("{}/{}",base, uri), gamma)
                 },
             }
         } else {
@@ -339,7 +347,7 @@ impl AssetServer {
             match tex.texture().source().source() {
                 gltf::image::Source::View { view, mime_type } => todo!(),
                 gltf::image::Source::Uri { uri, mime_type } => {
-                    self.load_color_texture(format!("{}/{}",base, uri))
+                    self.load_color_texture(format!("{}/{}",base, uri), false)
                 },
             }
         } else {
@@ -504,9 +512,9 @@ impl AssetServer {
 
                 let normal = self.load_gltf_normal_texture(&base, p.material().normal_texture());
                 
-                let color = self.load_gltf_color_texture(&base, p.material().pbr_metallic_roughness().base_color_texture());
+                let color = self.load_gltf_color_texture(&base, p.material().pbr_metallic_roughness().base_color_texture(), true);
                 
-                let mr = self.load_gltf_color_texture(&base, p.material().pbr_metallic_roughness().metallic_roughness_texture());
+                let mr = self.load_gltf_color_texture(&base, p.material().pbr_metallic_roughness().metallic_roughness_texture(), false);
 
                 let material = Material {
                     color,

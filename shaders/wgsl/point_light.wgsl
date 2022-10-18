@@ -128,7 +128,7 @@ fn sample_shadow(dir : vec3<f32>, N : vec3<f32>, T : vec3<f32>, dist : f32) -> f
 
 fn ao_reflection(ao : vec3<f32>, V : vec3<f32>, N : vec3<f32>, mr : vec3<f32>, tex_color : vec3<f32>) -> vec3<f32> {
     var flat_v = V - N * dot(V, N);
-    var L = V - 2.0 * flat_v;
+    var L = normalize(V - 2.0 * flat_v);
     var H = normalize(L + V);
 
     var F0 = vec3<f32>(0.04,0.04,0.04);
@@ -147,7 +147,7 @@ fn ao_reflection(ao : vec3<f32>, V : vec3<f32>, N : vec3<f32>, mr : vec3<f32>, t
 
     var NdotL = max(dot(N, L), 0.0);
 
-    var Lo = (kD * tex_color / PI + specular) * ao * NdotL;
+    var Lo = (kD * tex_color / PI) * ao * NdotL;
     return Lo;
 }
 
