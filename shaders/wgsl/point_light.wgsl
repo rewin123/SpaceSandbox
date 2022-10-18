@@ -57,6 +57,11 @@ var t_position: texture_2d<f32>;
 @group(2) @binding(5)
 var s_position: sampler;
 
+@group(2) @binding(6)
+var t_mr: texture_2d<f32>;
+@group(2) @binding(7)
+var s_mr: sampler;
+
 struct FragmentOutput {
 @location(0) color : vec4<f32>,
 };
@@ -140,13 +145,13 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     // }
 
     var tex_color = textureSample(t_diffuse, s_diffuse, screen_uv).rgb;
-    var mr = vec3(0.0, 0.5, 0.0);
+    var mr = textureSample(t_mr, s_mr, screen_uv).rgb;
     var attenuation = 1.0 / (dist * dist);
     var radiance = light.intensity * attenuation * vec3(1.0,1.0,1.0);
     var H = normalize(L + V);
 
     var F0 = vec3<f32>(0.04,0.04,0.04);
-    F0 = mix(F0, tex_color, mr.r);
+    F0 = mix(F0, tex_color, mr.b);
 
     var NDF = DistributionGGX(N, H, mr.g);
     var G   = GeometrySmith(N, V, L, mr.g);
@@ -154,7 +159,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     var kS = F;
     var kD = vec3(1.0) - kS;
-    kD *= 1.0 - mr.r;
+    kD *= 1.0 - mr.b;
 
     var numerator = NDF * G * F;
     var denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
@@ -163,10 +168,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var NdotL = max(dot(N, L), 0.0);
 
     var Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
-    Lo = Lo * shadow + kD * tex_color / PI * radiance * 0.05;
-//    Lo = pow(Lo, vec3<f32>(1.0 / 2.2));
+    Lo = Lo * shadow + kD * tex_color * radiance * 0.001;
     out.color = vec4<f32>(Lo, 1.0);
-//    out.color = vec4<f32>(shadow_dist,shadow_dist,shadow_dist,1.0);
-//    out.color = vec4<f32>(abs(-L.x), abs(-L.x),abs(-L.x),1.0);
     return out;
 }

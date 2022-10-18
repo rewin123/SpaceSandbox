@@ -9,6 +9,7 @@ pub struct GFramebuffer {
     pub diffuse : TextureBundle,
     pub normal : TextureBundle,
     pub position : TextureBundle,
+    pub mr : TextureBundle,
     pub depth : TextureBundle,
 }
 
@@ -28,12 +29,9 @@ impl GFramebuffer {
         };
 
         let diffuse = TextureBundle::new(device, &color_desc);
-
         let normal = TextureBundle::new(device, &color_desc);
-
-        let normal = TextureBundle::new(device, &color_desc);
-
         let position = TextureBundle::new(device, &color_desc);
+        let mr = TextureBundle::new(device, &color_desc);
 
         let depth = TextureBundle::new(device, &wgpu::TextureDescriptor {
             label: Some("gbuffer depth"),
@@ -49,7 +47,8 @@ impl GFramebuffer {
             diffuse,
             normal,
             position,
-            depth
+            depth,
+            mr
         }
     }
 
@@ -84,6 +83,19 @@ impl GFramebuffer {
             }),
             Some(wgpu::RenderPassColorAttachment {
                 view: &self.position.view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.0,
+                        a: 1.0,
+                    }),
+                    store: true,
+                },
+            }),
+            Some(wgpu::RenderPassColorAttachment {
+                view: &self.mr.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -158,7 +170,7 @@ impl GBufferFill {
                     binding : 0,
                     visibility : wgpu::ShaderStages::FRAGMENT,
                     ty : wgpu::BindingType::Texture { 
-                        sample_type: wgpu::TextureSampleType::Float { filterable: false }, 
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         view_dimension: wgpu::TextureViewDimension::D2, 
                         multisampled: false 
                     },
@@ -167,14 +179,14 @@ impl GBufferFill {
                 wgpu::BindGroupLayoutEntry {
                     binding : 1,
                     visibility : wgpu::ShaderStages::FRAGMENT,
-                    ty : wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                    ty : wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count : None
                 },
                 wgpu::BindGroupLayoutEntry {
                     binding : 2,
                     visibility : wgpu::ShaderStages::FRAGMENT,
                     ty : wgpu::BindingType::Texture { 
-                        sample_type: wgpu::TextureSampleType::Float { filterable: false }, 
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         view_dimension: wgpu::TextureViewDimension::D2, 
                         multisampled: false 
                     },
@@ -183,7 +195,23 @@ impl GBufferFill {
                 wgpu::BindGroupLayoutEntry {
                     binding : 3,
                     visibility : wgpu::ShaderStages::FRAGMENT,
-                    ty : wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                    ty : wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count : None
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding : 4,
+                    visibility : wgpu::ShaderStages::FRAGMENT,
+                    ty : wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false
+                    },
+                    count : None
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding : 5,
+                    visibility : wgpu::ShaderStages::FRAGMENT,
+                    ty : wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count : None
                 },
             ]
@@ -214,6 +242,11 @@ impl GBufferFill {
                 module : &shader,
                 entry_point : "fs_main",
                 targets : &[Some(wgpu::ColorTargetState {
+                    format : wgpu::TextureFormat::Rgba32Float,
+                    blend : None,
+                    write_mask : wgpu::ColorWrites::ALL
+                }),
+                Some(wgpu::ColorTargetState {
                     format : wgpu::TextureFormat::Rgba32Float,
                     blend : None,
                     write_mask : wgpu::ColorWrites::ALL
@@ -297,6 +330,14 @@ impl GBufferFill {
                         wgpu::BindGroupEntry {
                             binding: 3,
                             resource: wgpu::BindingResource::Sampler(&assets.get(&material.normal).unwrap().sampler),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 4,
+                            resource: wgpu::BindingResource::TextureView(&assets.get(&material.metallic_roughness).unwrap().view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 5,
+                            resource: wgpu::BindingResource::Sampler(&assets.get(&material.metallic_roughness).unwrap().sampler),
                         }
                     ],
                 });
