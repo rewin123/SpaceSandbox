@@ -126,6 +126,31 @@ fn sample_shadow(dir : vec3<f32>, N : vec3<f32>, T : vec3<f32>, dist : f32) -> f
     return res;
 }
 
+fn ao_reflection(ao : vec3<f32>, V : vec3<f32>, N : vec3<f32>, mr : vec3<f32>, tex_color : vec3<f32>) -> vec3<f32> {
+    var flat_v = V - N * dot(V, N);
+    var L = V - 2.0 * flat_v;
+    var H = normalize(L + V);
+
+    var F0 = vec3<f32>(0.04,0.04,0.04);
+    F0 = mix(F0, tex_color, mr.b);
+    var NDF = DistributionGGX(N, H, mr.g);
+    var G   = GeometrySmith(N, V, L, mr.g);
+    var F   = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    var kS = F;
+    var kD = vec3(1.0) - kS;
+    kD *= 1.0 - mr.b;
+
+    var numerator = NDF * G * F;
+    var denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+    var specular = numerator / max(denominator, 0.001);
+
+    var NdotL = max(dot(N, L), 0.0);
+
+    var Lo = (kD * tex_color / PI + specular) * ao * NdotL;
+    return Lo;
+}
+
 @fragment
 fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
@@ -161,6 +186,13 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var kD = vec3(1.0) - kS;
     kD *= 1.0 - mr.b;
 
+    var ao = ao_reflection(
+        radiance * 0.01,
+        V,
+        N,
+        mr,
+        tex_color
+    );
     var numerator = NDF * G * F;
     var denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
     var specular = numerator / max(denominator, 0.001);
@@ -168,7 +200,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var NdotL = max(dot(N, L), 0.0);
 
     var Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
-    Lo = Lo * shadow + kD * tex_color * radiance * 0.001;
+    Lo = Lo * shadow + ao;
     out.color = vec4<f32>(Lo, 1.0);
     return out;
 }
