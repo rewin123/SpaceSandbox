@@ -304,7 +304,7 @@ impl State {
 
         let point_light_shadow = PointLightShadowPipeline::new(&render);
 
-        let light_pipeline = PointLightPipeline::new(&render.device, &camera_buffer, extent);
+        let light_pipeline = PointLightPipeline::new(&render, &camera_buffer, extent);
         let light_buffer = light_pipeline.spawn_framebuffer(&render.device, extent);
 
         let gui = Gui::new(
@@ -380,7 +380,7 @@ impl State {
                 size);
 
             self.light_pipeline = PointLightPipeline::new(
-                &self.render.device,
+                &self.render,
                 &self.camera_buffer,
                 size
             );

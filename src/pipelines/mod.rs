@@ -1,32 +1,14 @@
+use downcast_rs::impl_downcast;
+
+use crate::AssetPath;
+
 pub mod wgpu_gbuffer_fill;
 pub mod wgpu_light_fill;
 pub mod wgpu_texture_present;
 pub mod wgpu_light_shadow;
 pub mod wgpu_textures_transform;
 
-
-// pub trait InstancesDrawer {
-//     fn process(
-//         &mut self,
-//         cmd : CommandBuffer,
-//         input : &[Arc<TextureSafe>],
-//         fb : &Arc<FramebufferSafe>,
-//         server : &RenderServer,
-//         assets : &AssetServer);
-//     fn create_framebuffer(&mut self) -> Arc<FramebufferSafe>;
-//     fn set_camera(&mut self, camera : &RenderCamera);
-// }
-
-// pub trait ShadowPrepare {
-//     fn process(
-//         &mut self,
-//         cmd : CommandBuffer,
-//         server : &mut RenderServer,
-//         assets : &AssetServer);
-//     fn create_framebuffer(&mut self) -> Arc<FramebufferSafe>;
-// }
-
-// pub trait TextureTransform {
-//     fn process(&mut self, cmd : CommandBuffer, dst : &Arc<FramebufferSafe>, input : Vec<Arc<TextureSafe>>);
-//     fn create_framebuffer(&mut self) -> Arc<FramebufferSafe>;
-// }
+pub trait Pipeline {
+    fn get_shader_path(&self) -> AssetPath;
+    fn rebuild_with_new_shader(&mut self, shader : AssetPath, camera_buffer : &wgpu::Buffer);
+}

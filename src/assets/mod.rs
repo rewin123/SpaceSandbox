@@ -6,3 +6,8 @@ pub mod handle;
 pub mod asset_holder;
 
 pub use texture_server::*;
+
+#[derive(Clone, Debug)]
+pub enum AssetPath {
+    Uri(String)
+}

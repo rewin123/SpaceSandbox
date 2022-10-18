@@ -4,9 +4,9 @@ use egui::FontSelection::Default;
 use wgpu::{Extent3d, TextureDimension};
 use crate::light::PointLight;
 use crate::wavefront::wgpu_load_gray_obj;
-use crate::{GMesh, GVertex, TextureBundle};
+use crate::{GMesh, GVertex, TextureBundle, AssetPath, Pipeline, RenderBase};
 use crate::wgpu_gbuffer_fill::{GFramebuffer};
-
+use downcast_rs::*;
 
 pub struct PointLightPipeline {
     pub pipeline : wgpu::RenderPipeline,
@@ -19,6 +19,19 @@ pub struct PointLightPipeline {
     diffuse : Option<wgpu::BindGroup>,
     normal : Option<wgpu::BindGroup>,
     position : Option<wgpu::BindGroup>,
+    shader_path : AssetPath,
+    render : Arc<RenderBase>,
+    size : wgpu::Extent3d
+}
+
+impl Pipeline for PointLightPipeline {
+    fn get_shader_path(&self) -> AssetPath {
+        self.shader_path.clone()
+    }
+
+    fn rebuild_with_new_shader(&mut self, shader : AssetPath, camera_buffer : &wgpu::Buffer) {
+        *self = PointLightPipeline::new(&self.render.clone(), camera_buffer, self.size);
+    }
 }
 
 impl PointLightPipeline {
@@ -149,9 +162,9 @@ impl PointLightPipeline {
         })
     }
 
-    pub fn new(device : &wgpu::Device, camera_buffer : &wgpu::Buffer, size : wgpu::Extent3d) -> Self {
+    pub fn new(render : &Arc<RenderBase>, camera_buffer : &wgpu::Buffer, size : wgpu::Extent3d) -> Self {
         let camera_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            render.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("Canera uniform group layout"),
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
@@ -168,7 +181,7 @@ impl PointLightPipeline {
         });
 
         let light_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            render.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("Light uniform group layout"),
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
@@ -200,9 +213,9 @@ impl PointLightPipeline {
                 ]
         });
 
-        let texture_bing_group_layout = PointLightPipeline::get_texture_layout(device);
+        let texture_bing_group_layout = PointLightPipeline::get_texture_layout(&render.device);
 
-        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let camera_bind_group = render.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout : &camera_bind_group_layout,
             entries : &[wgpu::BindGroupEntry {
                 binding : 0,
@@ -211,13 +224,13 @@ impl PointLightPipeline {
             label : Some("camera bind group")
         });
 
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        let shader = render.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/wgsl/point_light.wgsl").into())
         });
 
         let pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            render.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label : Some("Test render layout"),
                 bind_group_layouts : &[
                     &camera_bind_group_layout, 
@@ -226,7 +239,7 @@ impl PointLightPipeline {
                 push_constant_ranges: &[]
             });
 
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let pipeline = render.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
@@ -279,7 +292,7 @@ impl PointLightPipeline {
         });
 
         let sphere = wgpu_load_gray_obj(
-            device, 
+            &render.device, 
             "res/base_models/sphere.obj".into()).unwrap();
 
         Self {
@@ -292,7 +305,10 @@ impl PointLightPipeline {
             texture_bing_group_layout,
             diffuse : None,
             normal : None,
-            position : None
+            position : None,
+            render : render.clone(),
+            size,
+            shader_path: AssetPath::Uri("../../shaders/wgsl/point_light.wgsl".into())
         }
     }
 
