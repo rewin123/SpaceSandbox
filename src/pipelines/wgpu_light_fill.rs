@@ -308,7 +308,7 @@ impl PointLightPipeline {
             position : None,
             render : render.clone(),
             size,
-            shader_path: AssetPath::Uri("../../shaders/wgsl/point_light.wgsl".into())
+            shader_path: AssetPath::GlobalPath("../../shaders/wgsl/point_light.wgsl".into())
         }
     }
 

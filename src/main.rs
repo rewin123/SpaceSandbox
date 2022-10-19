@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use SpaceSandbox::light::{PointLight, PointLightShadow};
 use SpaceSandbox::task_server::TaskServer;
-use SpaceSandbox::ui::{Gui, FpsCounter};
+use SpaceSandbox::ui::{Gui, FpsCounter, PipelineEditor};
 use SpaceSandbox::wgpu_light_fill::PointLightPipeline;
 use SpaceSandbox::wgpu_texture_present::TexturePresent;
 use egui::epaint::ahash::HashMap;
@@ -117,7 +117,8 @@ struct State {
     input_system : InputSystem,
     assets : AssetServer,
     gui : Gui,
-    fps : FpsCounter
+    fps : FpsCounter,
+    pipeline_editor : PipelineEditor
 }
 
 #[derive(ShaderType)]
@@ -326,6 +327,8 @@ impl State {
 
         let gamma_buffer = gamma_correction.spawn_framebuffer();
 
+        let pipeline_editor = PipelineEditor::default();
+
         Self {
             surface,
             config,
@@ -346,7 +349,8 @@ impl State {
             fps,
             light_shadow : point_light_shadow,
             gamma_correction,
-            gamma_buffer
+            gamma_buffer,
+            pipeline_editor
         }
     }
 
@@ -479,7 +483,11 @@ impl State {
 
         egui::TopBottomPanel::top("top_panel").show(
             &self.gui.platform.context(), |ui| {
-                self.fps.draw(ui);
+
+                ui.horizontal(|ui| {
+                    self.pipeline_editor.draw_button(ui);
+                    self.fps.draw(ui);
+                });
 
                 let cam_uniform = self.camera.build_uniform();
                 for (idx, light) in self.point_lights.iter_mut().enumerate() {
@@ -500,9 +508,8 @@ impl State {
                 }
         });
 
+        self.pipeline_editor.draw_winow(&self.gui.platform.context(), &self.assets);
 
-
-        
         let gui_output = self.gui.end_frame(Some(window));
         self.gui.draw(gui_output, 
             ScreenDescriptor {

@@ -9,9 +9,10 @@ use egui::epaint::ahash::{HashMap, HashMapExt};
 use gltf::buffer::Source;
 use gltf::json::accessor::ComponentType;
 use gltf::Semantic;
+use space_core::SpaceResult;
 use specs::WorldExt;
 use crate::task_server::TaskServer;
-use crate::{GMesh, GVertex, RenderBase, TextureBundle, Material};
+use crate::{GMesh, GVertex, RenderBase, TextureBundle, Material, AssetPath};
 use log::*;
 use wgpu::util::DeviceExt;
 use specs::*;
@@ -135,6 +136,18 @@ impl AssetServer {
             task_server : task_server.clone(),
             default_normal : Arc::new(def_normal),
             loaded_assets : HashMap::new()
+        }
+    }
+
+    pub fn get_file_text(&self, path : &AssetPath) -> SpaceResult<String> {
+        match path {
+            AssetPath::GlobalPath(path) => {
+                Ok(std::fs::read_to_string(path)?)
+            },
+            AssetPath::Binary(bytes) => {
+                Ok(String::from_utf8(bytes.clone())?)
+            },
+            AssetPath::Text(text) => Ok(text.clone()),
         }
     }
 

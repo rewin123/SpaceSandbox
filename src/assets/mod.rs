@@ -9,5 +9,7 @@ pub use texture_server::*;
 
 #[derive(Clone, Debug)]
 pub enum AssetPath {
-    Uri(String)
+    GlobalPath(String),
+    Binary(Vec<u8>),
+    Text(String)
 }
