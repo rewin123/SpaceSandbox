@@ -11,10 +11,7 @@ pub use fps_counter::*;
 pub use api_info::*;
 pub use gltf_to_load::*;
 pub use pipeline_editor::*;
-
-
-
-use crate::RenderBase;
+use space_core::RenderBase;
 
 pub struct Gui {
     pub render_pass : egui_wgpu_backend::RenderPass,

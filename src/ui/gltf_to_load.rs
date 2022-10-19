@@ -1,5 +1,5 @@
 use egui::Ui;
-use crate::asset_server::AssetServer;
+use space_assets::*;
 
 pub struct SelectGltfWindow {
     files : Vec<String>

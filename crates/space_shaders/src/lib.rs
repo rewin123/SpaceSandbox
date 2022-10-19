@@ -3,6 +3,11 @@ pub use encase::{ShaderType, private::WriteInto, UniformBuffer};
 pub use space_core::SpaceResult;
 pub use space_macros::unifrom_struct;
 
+#[derive(Clone)]
+pub struct ShaderServer {
+
+}
+
 pub trait ShaderUniform : ShaderType + WriteInto {
     fn get_name(&self) -> String;
     fn get_struct(&self) -> String;

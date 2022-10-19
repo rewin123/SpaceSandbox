@@ -2,11 +2,7 @@ use std::iter;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use SpaceSandbox::light::{PointLight, PointLightShadow};
-use SpaceSandbox::task_server::TaskServer;
 use SpaceSandbox::ui::{Gui, FpsCounter, PipelineEditor};
-use SpaceSandbox::wgpu_light_fill::PointLightPipeline;
-use SpaceSandbox::wgpu_texture_present::TexturePresent;
 use egui::epaint::ahash::HashMap;
 use egui_gizmo::GizmoMode;
 use egui_wgpu_backend::ScreenDescriptor;
@@ -16,15 +12,14 @@ use wgpu::util::DeviceExt;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
-use SpaceSandbox::asset_server::AssetServer;
-use SpaceSandbox::{GMesh, init_logger, Material, RenderBase, TextureBundle};
+use SpaceSandbox::{init_logger};
 use encase::{ShaderType, UniformBuffer};
-use SpaceSandbox::pipelines::wgpu_gbuffer_fill::GBufferFill;
-use SpaceSandbox::wgpu_gbuffer_fill::{GFramebuffer};
+use space_assets::*;
 
 use nalgebra as na;
-use SpaceSandbox::wgpu_light_shadow::PointLightShadowPipeline;
-use SpaceSandbox::wgpu_textures_transform::{CommonFramebuffer, TextureTransformPipeline};
+use space_core::{RenderBase, TaskServer};
+use space_render::pipelines::*;
+use space_render::light::*;
 
 async fn run() {
     init_logger();
@@ -532,5 +527,23 @@ impl State {
 
 
 fn main() {
-    pollster::block_on(run());
+    #[cfg(not(target_arch = "wasm32"))]
+        {
+            pollster::block_on(run());
+        }
+    #[cfg(target_arch = "wasm32")]
+        {
+            std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+            use winit::platform::web::WindowExtWebSys;
+            // On wasm, append the canvas to the document body
+            web_sys::window()
+                .and_then(|win| win.document())
+                .and_then(|doc| doc.body())
+                .and_then(|body| {
+                    body.append_child(&web_sys::Element::from(window.canvas()))
+                        .ok()
+                })
+                .expect("couldn't append canvas to document body");
+            wasm_bindgen_futures::spawn_local(run());
+        }
 }

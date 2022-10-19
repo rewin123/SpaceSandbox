@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use egui::{Context, Ui, Galley, text::LayoutJob, Style, TextFormat, Color32};
 
-use crate::{AssetPath, asset_server::AssetServer};
+use space_assets::*;
 
 
 pub struct PipelineEditor {

@@ -13,6 +13,8 @@ layout(set=4,binding=0) uniform sampler2D metal_rough;
 layout(set=5,binding=0) uniform sampler2D global_pos;
 layout(set=6,binding=0) uniform samplerCube shadow_map;
 
+
+
 #define PI 3.14
 
 float DistributionGGX(vec3 N, vec3 H, float a)

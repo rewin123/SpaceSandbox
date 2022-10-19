@@ -1,12 +1,34 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
-use egui::FontSelection::Default;
-use wgpu::{Extent3d, TextureDimension};
+use wgpu::{Buffer, Extent3d, TextureDimension};
 use crate::light::PointLight;
-use crate::wavefront::wgpu_load_gray_obj;
-use crate::{GMesh, GVertex, TextureBundle, AssetPath, Pipeline, RenderBase};
-use crate::wgpu_gbuffer_fill::{GFramebuffer};
 use downcast_rs::*;
+use space_assets::*;
+use space_assets::wavefront::wgpu_load_gray_obj;
+use space_core::RenderBase;
+use crate::pipelines::{Pipeline, PipelineDesc};
+use crate::pipelines::wgpu_gbuffer_fill::GFramebuffer;
+
+#[derive(Clone, Debug)]
+pub struct PointLightPipelineDesc {
+    shader_path : AssetPath,
+    render : Arc<RenderBase>,
+    size : wgpu::Extent3d
+}
+
+impl PipelineDesc for PointLightPipelineDesc {
+    fn get_shader_path(&self) -> AssetPath {
+        AssetPath::Text("".into())
+    }
+
+    fn set_shader_path(&mut self, path: AssetPath) {
+        self.shader_path = path;
+    }
+
+    fn clone_boxed(&self) -> Box<dyn PipelineDesc> {
+        Box::new(self.clone())
+    }
+}
 
 pub struct PointLightPipeline {
     pub pipeline : wgpu::RenderPipeline,
@@ -19,18 +41,24 @@ pub struct PointLightPipeline {
     diffuse : Option<wgpu::BindGroup>,
     normal : Option<wgpu::BindGroup>,
     position : Option<wgpu::BindGroup>,
-    shader_path : AssetPath,
     render : Arc<RenderBase>,
     size : wgpu::Extent3d
 }
 
 impl Pipeline for PointLightPipeline {
-    fn get_shader_path(&self) -> AssetPath {
-        self.shader_path.clone()
+
+    fn new_described(desc: Box<dyn PipelineDesc>, camera_buffer: &Buffer) -> Self {
+        let desc : Box<PointLightPipelineDesc> = desc.downcast().unwrap();
+        PointLightPipeline::new(&desc.render, camera_buffer, desc.size)
     }
 
-    fn rebuild_with_new_shader(&mut self, shader : AssetPath, camera_buffer : &wgpu::Buffer) {
-        *self = PointLightPipeline::new(&self.render.clone(), camera_buffer, self.size);
+    fn get_desc(&self) -> Box<dyn PipelineDesc> {
+        let mut desc = PointLightPipelineDesc {
+            shader_path: AssetPath::GlobalPath("../../shaders/wgsl/point_light.wgsl".into()),
+            render: self.render.clone(),
+            size: self.size
+        };
+        Box::new(desc)
     }
 }
 
@@ -226,7 +254,7 @@ impl PointLightPipeline {
 
         let shader = render.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/wgsl/point_light.wgsl").into())
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../../../shaders/wgsl/point_light.wgsl").into())
         });
 
         let pipeline_layout =
@@ -308,7 +336,6 @@ impl PointLightPipeline {
             position : None,
             render : render.clone(),
             size,
-            shader_path: AssetPath::GlobalPath("../../shaders/wgsl/point_light.wgsl".into())
         }
     }
 

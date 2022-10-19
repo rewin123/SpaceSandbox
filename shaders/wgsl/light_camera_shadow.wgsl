@@ -27,6 +27,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out : VertexOutput;
 
+
     var loc_pos = model.position - camera.pos;
     var right = cross(camera.frw, camera.up);
     var view = vec3<f32>(dot(loc_pos, right), dot(loc_pos, camera.up), dot(loc_pos, camera.frw));

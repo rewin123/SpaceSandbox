@@ -1,13 +1,11 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
-use egui::FontSelection::Default;
 use wgpu::{Extent3d, TextureDimension};
 use crate::light::{PointLight, PointLightShadow};
-use crate::wavefront::wgpu_load_gray_obj;
-use crate::{GMesh, GVertex, Material, RenderBase, TextureBundle};
-use crate::wgpu_gbuffer_fill::{GFramebuffer};
 use space_shaders::*;
 use specs::*;
+use space_core::RenderBase;
+use space_assets::*;
 
 
 pub struct PointLightShadowPipeline {
@@ -38,7 +36,7 @@ impl PointLightShadowPipeline {
 
         let shader = render.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/wgsl/light_camera_shadow.wgsl").into())
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../../../shaders/wgsl/light_camera_shadow.wgsl").into())
         });
 
         let pipeline_layout =

@@ -1,9 +1,9 @@
 use std::fs::rename;
 use std::num::NonZeroU32;
 use std::sync::Arc;
-use egui::FontSelection::Default;
 use wgpu::{Extent3d, util::DeviceExt};
-use crate::{GMesh, GVertex, RenderBase, TextureBundle};
+use space_assets::*;
+use space_core::RenderBase;
 
 pub struct CommonFramebuffer {
     pub dst : Vec<TextureBundle>

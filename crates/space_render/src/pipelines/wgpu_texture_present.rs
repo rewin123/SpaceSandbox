@@ -1,7 +1,6 @@
 use std::num::NonZeroU32;
-use egui::FontSelection::Default;
 use wgpu::{Extent3d, util::DeviceExt};
-use crate::{GMesh, GVertex, TextureBundle};
+use space_assets::*;
 
 
 pub struct TexturePresent {
@@ -61,7 +60,7 @@ impl TexturePresent {
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/wgsl/present_texture.wgsl").into())
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../../../shaders/wgsl/present_texture.wgsl").into())
         });
 
         let pipeline_layout =

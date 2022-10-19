@@ -1,9 +1,9 @@
 use std::{num::NonZeroU32, sync::{Arc, Mutex}};
-use egui::{FontSelection::Default, epaint::ahash::{HashMap, HashMapExt}};
+use std::collections::HashMap;
 use wgpu::Extent3d;
-use crate::{GMesh, GVertex, TextureBundle, Material, RenderBase, asset_server::AssetServer};
 use specs::*;
-
+use space_assets::*;
+use space_core::RenderBase;
 
 pub struct GFramebuffer {
     pub diffuse : TextureBundle,
@@ -220,7 +220,7 @@ impl GBufferFill {
 
         let shader = render.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/wgsl/gbuffer_fill.wgsl").into())
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../../../shaders/wgsl/gbuffer_fill.wgsl").into())
         });
 
         let pipeline_layout =

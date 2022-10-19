@@ -2,8 +2,7 @@ use std::sync::Arc;
 use space_core::SpaceResult;
 use tobj::LoadError;
 use wgpu::util::DeviceExt;
-use crate::{GMesh, GVertex};
-use log::*;
+use crate::mesh::{GMesh, GVertex};
 
 
 pub fn wgpu_load_gray_obj(device : &wgpu::Device, path : String) -> SpaceResult<Vec<Arc<GMesh>>> {
@@ -14,7 +13,6 @@ pub fn wgpu_load_gray_obj(device : &wgpu::Device, path : String) -> SpaceResult<
 
 
     for (_, m) in models.iter().enumerate() {
-        info!("Found model {}!", m.name.clone());
 
         let mesh = &m.mesh;
 
