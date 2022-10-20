@@ -1,7 +1,6 @@
 mod fps_counter;
 mod api_info;
 mod gltf_to_load;
-mod pipeline_editor;
 
 use std::{sync::Arc, time::Instant};
 
@@ -10,7 +9,6 @@ use egui_wgpu_backend::ScreenDescriptor;
 pub use fps_counter::*;
 pub use api_info::*;
 pub use gltf_to_load::*;
-pub use pipeline_editor::*;
 use space_core::RenderBase;
 
 pub struct Gui {

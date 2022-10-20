@@ -171,6 +171,8 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     //     shadow = 0.0;
     // }
 
+
+
     var tex_color = textureSample(t_diffuse, s_diffuse, screen_uv).rgb;
     var mr = textureSample(t_mr, s_mr, screen_uv).rgb;
     var attenuation = 1.0 / (dist * dist);

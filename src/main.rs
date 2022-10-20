@@ -2,7 +2,7 @@ use std::iter;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use SpaceSandbox::ui::{Gui, FpsCounter, PipelineEditor};
+use SpaceSandbox::ui::{Gui, FpsCounter};
 use egui::epaint::ahash::HashMap;
 use egui_gizmo::GizmoMode;
 use egui_wgpu_backend::ScreenDescriptor;
@@ -113,7 +113,7 @@ struct State {
     assets : AssetServer,
     gui : Gui,
     fps : FpsCounter,
-    pipeline_editor : PipelineEditor
+    pipeline_editor : space_code_editor::WgslEditor
 }
 
 #[derive(ShaderType)]
@@ -322,7 +322,7 @@ impl State {
 
         let gamma_buffer = gamma_correction.spawn_framebuffer();
 
-        let pipeline_editor = PipelineEditor::default();
+        let pipeline_editor = space_code_editor::WgslEditor::default();
 
         Self {
             surface,
@@ -527,23 +527,5 @@ impl State {
 
 
 fn main() {
-    #[cfg(not(target_arch = "wasm32"))]
-        {
-            pollster::block_on(run());
-        }
-    #[cfg(target_arch = "wasm32")]
-        {
-            std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-            use winit::platform::web::WindowExtWebSys;
-            // On wasm, append the canvas to the document body
-            web_sys::window()
-                .and_then(|win| win.document())
-                .and_then(|doc| doc.body())
-                .and_then(|body| {
-                    body.append_child(&web_sys::Element::from(window.canvas()))
-                        .ok()
-                })
-                .expect("couldn't append canvas to document body");
-            wasm_bindgen_futures::spawn_local(run());
-        }
+    pollster::block_on(run());
 }
