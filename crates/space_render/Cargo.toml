@@ -1,0 +1,20 @@
+[package]
+name = "space_render"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+wgpu = {version = "0.13", features = ["webgl"]}
+nalgebra = "0.31.1"
+specs = "0.18.0"
+downcast-rs = "1.2.0"
+bytemuck = { version = "1.4.1", features = [ "derive" ] }
+
+space_assets = {path = "../space_assets"}
+space_core = {path = "../space_core"}
+space_shaders = {path = "../space_shaders"}
+
+#[lib]
+#crate-type = ["dylib"]

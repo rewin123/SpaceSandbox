@@ -1,0 +1,21 @@
+[package]
+name = "space_assets"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+byteorder = "1.4.3"
+downcast-rs = "1.2.0"
+specs = "0.18.0"
+wgpu = {version = "0.13", features = ["webgl"]}
+image = "0.22"
+bytemuck = { version = "1.4.1", features = [ "derive" ] }
+tobj     = "3.2.2"
+gltf = { version = "1.0.0", features = ["KHR_materials_pbrSpecularGlossiness"] }
+
+space_core = {path = "../space_core"}
+
+#[lib]
+#crate-type = ["dylib"]
