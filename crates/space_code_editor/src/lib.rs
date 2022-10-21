@@ -19,33 +19,43 @@ enum TokenType {
     Type,
     Variable,
     Function,
+    StructDefine,
     Undefined
 }
 
+#[derive(Clone)]
 struct TokenParser {
     rg : Regex,
-    tp : TokenType
+    tp : TokenType,
+    match_idx : usize
 }
 
-struct WgslHighlight {
-    code : String,
-    cached_jobs : LayoutJob,
+#[derive(Clone)]
+struct LanguageDefine {
     type_regexes : Vec<TokenParser>,
     var_regexes : Vec<Regex>,
-    tp_var_regexes : Vec<Regex>
+    tp_var_regexes : Vec<Regex>,
+    struct_regexes : Vec<Regex>,
+    fn_regexes : Vec<Regex>
 }
 
-impl Default for WgslHighlight {
-    fn default() -> Self {
-
-        let type_regexes = vec![
+impl LanguageDefine {
+    fn new_wgsl() -> Self {
+        let mut type_regexes = vec![
             TokenParser {
                 tp : TokenType::Type,
-                rg : Regex::new("f32").unwrap()
+                rg : Regex::new("f32").unwrap(),
+                match_idx : 0
             },
             TokenParser {
                 tp : TokenType::Type,
-                rg : Regex::new(r"vec\d<f32>").unwrap()
+                rg : Regex::new(r"vec\d<f32>").unwrap(),
+                match_idx : 0
+            },
+            TokenParser {
+                tp : TokenType::Type,
+                rg : Regex::new(r"mat\dx\d<f32>").unwrap(),
+                match_idx : 0
             }
         ];
 
@@ -54,35 +64,79 @@ impl Default for WgslHighlight {
         ];
 
         let tp_var_regexes = vec![
-            Regex::new(r"(var)\s(\w+)\s*:\s*(.+);").unwrap()
+            Regex::new(r"(var)\s(\w+)\s*:\s*(.+);").unwrap(),
+            Regex::new(r"(var<\w+>)\s*(\w+)\s*:\s*(\w+);").unwrap()
         ];
 
+        let struct_regexes = vec![
+            Regex::new(r"(struct)\s+(\w+)").unwrap()
+        ];
+
+        let fn_names = vec![
+            "max",
+            "dot",
+            "pow",
+            "cross",
+            "textureSample",
+            "mix",
+            "length",
+            "normalize",
+        ];
+
+        for f in fn_names {
+            type_regexes.push(TokenParser {
+                rg: Regex::new(format!(r"({})\s*\(", f).as_str()).unwrap(),
+                tp: TokenType::Function,
+                match_idx : 1
+            });
+        }
+
+        let fn_regexes = vec![
+            Regex::new(r"fn\s+(\w+)\s*\(").unwrap()
+        ];
+
+        Self { 
+            type_regexes, 
+            var_regexes, 
+            tp_var_regexes, 
+            struct_regexes,
+            fn_regexes
+        }
+    }
+}
+
+struct WgslHighlight {
+    code : String,
+    cached_jobs : LayoutJob,
+    language : LanguageDefine
+}
+
+impl Default for WgslHighlight {
+    fn default() -> Self {
         Self {
             code : String::default(),
             cached_jobs : LayoutJob::default(),
-            type_regexes,
-            var_regexes,
-            tp_var_regexes
+            language : LanguageDefine::new_wgsl()
         }
     }
 }
 
 impl WgslHighlight {
 
-    fn get_tokens(&self, line : &str) -> Vec<Token> {
+    fn get_tokens(&self, line : &str, lng : &mut LanguageDefine) -> Vec<Token> {
         let mut ranges = vec![];
-        for parser in &self.type_regexes {
+        for parser in &lng.type_regexes {
             for cap in parser.rg.captures_iter(line) {
-                if let Some(mat) = cap.get(0) {
+                if let Some(mat) = cap.get(parser.match_idx) {
                     ranges.push( Token {
                         range : mat.range(),
-                        tp : parser.tp.clone()
+                        tp : parser.tp.clone(),
                     });
                 }
             }
         }
 
-        for parser in &self.var_regexes {
+        for parser in &lng.var_regexes {
             for cap in parser.captures_iter(line) {
                 if let Some(tp_mat) = cap.get(1) {
                     if let Some(var_mat) = cap.get(2) {
@@ -99,7 +153,7 @@ impl WgslHighlight {
             }
         }
 
-        for parser in &self.tp_var_regexes {
+        for parser in &lng.tp_var_regexes {
             for cap in parser.captures_iter(line) {
                 if let Some(var_word_mat) = cap.get(1) {
                     if let Some(var_mat) = cap.get(2) {
@@ -117,6 +171,29 @@ impl WgslHighlight {
                                 tp: TokenType::Type
                             });
                         }
+                    }
+                }
+            }
+        }
+
+        for parser in &lng.struct_regexes {
+            for cap in parser.captures_iter(line) {
+                if let Some(str_mat) = cap.get(1) {
+                    if let Some(struct_name_mat) = cap.get(2) {
+                        ranges.push(Token {
+                            range: str_mat.range(),
+                            tp: TokenType::Type
+                        });
+                        ranges.push(Token {
+                            range: struct_name_mat.range(),
+                            tp: TokenType::StructDefine
+                        });
+                        lng.type_regexes.push(TokenParser {
+                            rg: Regex::new(
+                                &line[struct_name_mat.range().start..struct_name_mat.range().end]).unwrap(),
+                            tp: TokenType::Type,
+                            match_idx : 0
+                        });
                     }
                 }
             }
@@ -158,6 +235,9 @@ impl WgslHighlight {
     }
 
     fn highlight(&mut self, ui: &Ui, code: &str, wrap_width: f32) -> LayoutJob {
+        
+        let mut lng = self.language.clone();
+        
         if self.code == code {
             return self.cached_jobs.clone();
         }
@@ -169,16 +249,18 @@ impl WgslHighlight {
         tp_format.color =  Color32::from_rgb(156, 220, 254);
         let mut var_format = normal_format.clone();
         var_format.color = Color32::LIGHT_BLUE;
+        let mut fn_format = normal_format.clone();
+        fn_format.color = Color32::from_rgb(209, 105, 209);
+        let mut struct_format = normal_format.clone();
+        struct_format.color = Color32::from_rgb(62, 214, 194);
 
         for line in code.split('\n') {
-
-            
             let mut idx = 0;
+            let ranges = self.get_tokens(line, &mut lng);
             while idx < line.len() {
                 let mut skip = 1;
                 let mut tp = TokenType::Undefined;
 
-                let ranges = self.get_tokens(line);
 
                 for range in &ranges {
                     if idx == range.range.start {
@@ -190,8 +272,9 @@ impl WgslHighlight {
                 let format = match tp {
                     TokenType::Type => {&tp_format}
                     TokenType::Variable => {&var_format}
-                    TokenType::Function => {&tp_format}
+                    TokenType::Function => {&fn_format}
                     TokenType::Undefined => {&normal_format}
+                    TokenType::StructDefine => {&struct_format},
                 };
 
                 job.append(&line[idx..(idx + skip)], 0.0, format.clone());
