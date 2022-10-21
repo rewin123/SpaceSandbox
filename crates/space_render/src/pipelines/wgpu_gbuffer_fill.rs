@@ -28,8 +28,18 @@ impl GFramebuffer {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING
         };
 
+        let noraml_desc = wgpu::TextureDescriptor {
+            label: Some("gbuffer color attachment"),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Snorm,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING
+        };
+
         let diffuse = TextureBundle::new(device, &color_desc);
-        let normal = TextureBundle::new(device, &color_desc);
+        let normal = TextureBundle::new(device, &noraml_desc);
         let position = TextureBundle::new(device, &color_desc);
         let mr = TextureBundle::new(device, &color_desc);
 
@@ -247,7 +257,7 @@ impl GBufferFill {
                     write_mask : wgpu::ColorWrites::ALL
                 }),
                 Some(wgpu::ColorTargetState {
-                    format : wgpu::TextureFormat::Rgba32Float,
+                    format : wgpu::TextureFormat::Rgba8Snorm,
                     blend : None,
                     write_mask : wgpu::ColorWrites::ALL
                 }),

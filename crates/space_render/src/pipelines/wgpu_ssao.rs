@@ -183,11 +183,11 @@ impl SSAO {
         let mut thread_rng = rand::thread_rng();
         for i in 0..32 {
             let mut v = nalgebra::Vector3::new(
-                thread_rng.gen_range(-1.0..=1.0),
-                thread_rng.gen_range(-1.0..=1.0),
-                thread_rng.gen_range(0.0..=1.0)
+                thread_rng.gen_range(-1.0f32..=1.0),
+                thread_rng.gen_range(-1.0f32..=1.0),
+                thread_rng.gen_range(0.0f32..=1.0)
             );
-            v = v.normalize();
+            // v = v.normalize();
             samples[i] = [v.x, v.y, v.z, 1.0];
         }
 
