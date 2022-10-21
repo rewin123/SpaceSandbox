@@ -145,11 +145,11 @@ impl WgslHighlight {
 
     fn get_tokens(&self, tokens : &mut Vec<Token>, lng : &mut LanguageDefine) {
 
-        for (idx, token) in tokens.iter_mut().enumerate() {
-            for group in &lng.grouped_tokens {
-                if to
-            }
-        }
+        // for (idx, token) in tokens.iter_mut().enumerate() {
+        //     for group in &lng.grouped_tokens {
+        //         if to
+        //     }
+        // }
 
         // let mut ranges = vec![];
         // for parser in &lng.type_regexes {
