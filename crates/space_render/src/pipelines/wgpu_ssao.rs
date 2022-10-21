@@ -1,19 +1,25 @@
 use std::fs::rename;
 use std::num::NonZeroU32;
 use std::sync::Arc;
+use bytemuck::Zeroable;
+use rand::Rng;
 use wgpu::{Extent3d, util::DeviceExt};
 use space_assets::*;
 use space_core::RenderBase;
-use crate::pipelines::{CommonFramebuffer, GFramebuffer};
+use crate::{pipelines::{CommonFramebuffer, GFramebuffer}, Camera};
 use encase::*;
 
-#[derive(ShaderType)]
+#[repr(C)]
+#[derive(Zeroable, bytemuck::Pod, Clone, Copy, Default)]
 struct SsaoUniform {
     proj_view : [[f32; 4]; 4],
-    samples : [[f32; 3]; 32],
-    random_vec  : [[f32; 3]; 6],
+    cam_pos : [f32; 4],
+    samples : [[f32; 4]; 32],
+    random_vec  : [[f32; 4]; 16],
     tex_width : f32,
-    tex_height : f32
+    tex_height : f32,
+    scale : f32,
+    dummy1 : f32
 }
 
 pub struct SSAO {
@@ -25,7 +31,10 @@ pub struct SSAO {
     input_count : u32,
     size : Extent3d,
     render : Arc<RenderBase>,
-    bind: Option<wgpu::BindGroup>
+    bind: Option<wgpu::BindGroup>,
+    buffer : Arc<wgpu::Buffer>,
+    pub scale : f32,
+    cached_uniform : SsaoUniform
 }
 
 impl SSAO {
@@ -85,6 +94,7 @@ impl SSAO {
         output_count : u32,
         shader : String) -> Self {
 
+        let input_count = 2;
         let mut binds = vec![];
         for idx in 0..input_count {
             binds.push(wgpu::BindGroupLayoutEntry {
@@ -104,6 +114,16 @@ impl SSAO {
                 count : None
             });
         }
+        binds.push(wgpu::BindGroupLayoutEntry {
+            binding: 4,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Buffer { 
+                ty: wgpu::BufferBindingType::Uniform, 
+                has_dynamic_offset: false, 
+                min_binding_size: None 
+            },
+            count: None,
+        });
 
         let texture_bind_group_layout = render.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label : Some("Texture present binding"),
@@ -157,6 +177,41 @@ impl SSAO {
             multiview: None
         });
 
+        let mut def_uniform = SsaoUniform::default();
+
+        let mut samples = [[0.0f32; 4]; 32];
+        let mut thread_rng = rand::thread_rng();
+        for i in 0..32 {
+            let mut v = nalgebra::Vector3::new(
+                thread_rng.gen_range(-1.0..=1.0),
+                thread_rng.gen_range(-1.0..=1.0),
+                thread_rng.gen_range(0.0..=1.0)
+            );
+            v = v.normalize();
+            samples[i] = [v.x, v.y, v.z, 1.0];
+        }
+
+        let mut random_vec = [[0.0f32; 4]; 16];
+        for i in 0..16 {
+            let mut v = nalgebra::Vector3::new(
+                thread_rng.gen_range(-1.0..=1.0),
+                thread_rng.gen_range(-1.0..=1.0),
+                thread_rng.gen_range(-1.0..=1.0)
+            );
+            v = v.normalize();
+            random_vec[i] = [v.x, v.y, v.z, 1.0];
+        }
+
+        def_uniform.random_vec = random_vec;
+        def_uniform.samples = samples;
+
+
+        let buffer = render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: &bytemuck::bytes_of(&def_uniform),
+            usage: wgpu::BufferUsages::MAP_WRITE | wgpu::BufferUsages::UNIFORM,
+        });
+
         Self {
             pipeline,
             screen_mesh : SSAO::create_screen_mesh(&render.device),
@@ -166,8 +221,33 @@ impl SSAO {
             input_count,
             size,
             render: render.clone(),
-            bind: None
+            bind: None,
+            buffer : Arc::new(buffer),
+            scale : 10.0,
+            cached_uniform : def_uniform
         }
+    }
+
+    pub fn update(&mut self, camera : &Camera) {
+        let cam_uniform = camera.build_uniform();
+
+        let proj_view = cam_uniform.proj * cam_uniform.view;
+
+        self.cached_uniform.proj_view = proj_view.into();
+        self.cached_uniform.tex_width = self.size.width as f32;
+        self.cached_uniform.tex_height = self.size.height as f32;
+        self.cached_uniform.scale = self.scale;
+        self.cached_uniform.cam_pos = [camera.pos.x, camera.pos.y, camera.pos.z, 1.0];
+
+        let ssao = self.cached_uniform.clone();
+        
+
+        let buffer = self.buffer.clone();
+
+        self.buffer.slice(..).map_async(wgpu::MapMode::Write,  move |a| {
+            buffer.slice(..).get_mapped_range_mut().copy_from_slice(bytemuck::bytes_of(&ssao));
+            buffer.unmap();
+        });
     }
 
     pub fn draw(
@@ -199,6 +279,16 @@ impl SSAO {
             wgpu::BindGroupEntry {
                 binding : 3,
                 resource : wgpu::BindingResource::Sampler(&src.position.sampler)
+            }
+        );
+        binds.push(
+            wgpu::BindGroupEntry {
+                binding : 4,
+                resource : wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                    buffer: &self.buffer,
+                    offset: 0,
+                    size: None,
+                })
             }
         );
         

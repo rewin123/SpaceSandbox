@@ -18,7 +18,7 @@ use space_assets::*;
 
 use nalgebra as na;
 use space_core::{RenderBase, TaskServer};
-use space_render::pipelines::*;
+use space_render::{pipelines::*, Camera};
 use space_render::light::*;
 use space_render::pipelines::wgpu_ssao::SSAO;
 
@@ -116,25 +116,7 @@ struct State {
     assets : AssetServer,
     gui : Gui,
     fps : FpsCounter,
-}
-
-#[derive(ShaderType)]
-struct CameraUniform {
-    pub view : nalgebra::Matrix4<f32>,
-    pub proj : nalgebra::Matrix4<f32>,
-    pub pos : nalgebra::Vector3<f32>
-}
-
-struct Camera {
-    pub pos : nalgebra::Point3<f32>,
-    pub frw : nalgebra::Vector3<f32>,
-    pub up : nalgebra::Vector3<f32>
-}
-
-impl Camera {
-    pub fn get_right(&self) -> na::Vector3<f32> {
-        self.frw.cross(&self.up)
-    }
+    device_name : String
 }
 
 
@@ -156,38 +138,6 @@ impl InputSystem {
             *state
         } else {
             false
-        }
-    }
-}
-
-
-impl Default for Camera {
-    fn default() -> Self {
-        Self {
-            pos : [-3.0, 9.0, 0.0].into(),
-            frw : [1.0, 0.0, 0.0].into(),
-            up : [0.0, 1.0, 0.0].into()
-        }
-    }
-}
-
-impl Camera {
-    fn build_uniform(&self) -> CameraUniform {
-
-        let mut target = self.pos + self.frw;
-        let view = nalgebra::Matrix4::look_at_rh(
-            &self.pos,
-            &target,
-            &self.up);
-        let proj = nalgebra::Matrix4::<f32>::new_perspective(
-            1.0,
-            3.14 / 2.0,
-            0.01,
-            10000.0);
-        CameraUniform {
-            view,
-            proj,
-            pos : na::Vector3::new(self.pos.x, self.pos.y, self.pos.z)
         }
     }
 }
@@ -326,7 +276,7 @@ impl State {
 
         let ssao_pipeline = SSAO::new(
             &render,
-            wgpu::TextureFormat::Rgba32Float,
+            wgpu::TextureFormat::R8Unorm,
             extent,
             1,
             1,
@@ -357,7 +307,8 @@ impl State {
             gamma_correction,
             gamma_buffer,
             ssao_pipeline,
-            ssao_framebuffer : ssao_buffer
+            ssao_framebuffer : ssao_buffer,
+            device_name : adapter.get_info().name.clone()
         }
     }
 
@@ -405,9 +356,20 @@ impl State {
                 include_str!("../shaders/wgsl/gamma_correction.wgsl").into()
             );
 
+            self.ssao_pipeline = SSAO::new(
+                &self.render, 
+                wgpu::TextureFormat::R8Unorm, 
+                size, 
+                1, 
+                1, 
+                include_str!("../shaders/wgsl/ssao.wgsl").into()
+            );
+
             self.gamma_buffer = self.gamma_correction.spawn_framebuffer();
 
             self.light_buffer = self.light_pipeline.spawn_framebuffer(&self.render.device, size);
+
+            self.ssao_framebuffer = self.ssao_pipeline.spawn_framebuffer();
         }
     }
 
@@ -468,6 +430,7 @@ impl State {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
+        self.ssao_pipeline.update(&self.camera);
         for light in &mut self.point_lights {
             light.update_buffer(&self.render);
         }
@@ -481,10 +444,12 @@ impl State {
 
         self.gbuffer_pipeline.draw(&self.assets,&mut encoder, &self.scene, &self.gbuffer);
         self.light_shadow.draw(&mut encoder, &mut self.point_lights, &self.scene);
-        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
+        self.ssao_pipeline.draw(&mut encoder, &self.gbuffer, &self.ssao_framebuffer.dst[0]);
+        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer, &self.ssao_framebuffer.dst[0]);
         self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
         self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+        // self.present.draw(&self.render.device, &mut encoder, &self.ssao_framebuffer.dst[0], &view);
 
         self.gui.begin_frame();
 
@@ -493,25 +458,11 @@ impl State {
 
                 ui.horizontal(|ui| {
                     self.fps.draw(ui);
+                    ui.label(&self.device_name);
+
+                    ui.add(egui::Slider::new(&mut self.ssao_pipeline.scale, 0.0..=1000.0));
                 });
 
-                let cam_uniform = self.camera.build_uniform();
-                for (idx, light) in self.point_lights.iter_mut().enumerate() {
-                    let model_mat = na::Matrix4::new_translation(&light.pos);
-                    let gizmo = egui_gizmo::Gizmo::new(format!("Light gizmo {}", idx))
-                        .view_matrix(cam_uniform.view)
-                        .projection_matrix(cam_uniform.proj)
-                        .model_matrix(model_mat)
-                        .mode(GizmoMode::Translate);
-
-                    if let Some(responce) = gizmo.interact(ui) {
-                        let model_mat : na::Matrix4<f32> = responce.transform.into();
-                        let x = model_mat.m14;
-                        let y = model_mat.m24;
-                        let z = model_mat.m34;
-                        light.pos = na::Vector3::new(x, y, z);
-                    }
-                }
         });
 
         let gui_output = self.gui.end_frame(Some(window));

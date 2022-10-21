@@ -19,7 +19,8 @@ struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) normal: vec3<f32>,
     @location(1) pos: vec3<f32>,
-    @location(2) uv : vec2<f32>
+    @location(2) uv : vec2<f32>,
+    @location(3) tangent : vec3<f32>
 }
 
 @vertex
@@ -31,6 +32,7 @@ fn vs_main(
     out.pos = model.position;
     out.clip_position = camera.proj * camera.view * vec4<f32>(model.position, 1.0);
     out.uv = model.uv;
+    out.tangent = model.tangent;
     return out;
 }
 
@@ -57,12 +59,25 @@ var t_mr: texture_2d<f32>;
 var s_mr: sampler;
 
 
+fn normal_mapping(normal : vec3<f32>, tangent : vec3<f32>, uv : vec2<f32>) -> vec4<f32> {
+    let bitangent = -cross(normal, tangent);
+
+    var map = textureSample(t_normal, s_normal, uv).rgb;
+    map = map * 2.0 - 1.0;
+
+    let res = tangent * map.x + bitangent * map.y + normal * map.z;
+
+    return vec4<f32>(normalize(res), 1.0);
+}
+
 @fragment
 fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
 
     out.diffuse = textureSample(t_diffuse, s_diffuse, in.uv);
-    out.normal = vec4<f32>(in.normal, 1.0);
+    // out.diffuse = vec4<f32>(1.0, 1.0, 1.0, 1.0);
+    out.normal = normal_mapping(in.normal, in.tangent, in.uv);
+    // out.normal = vec4<f32>(in.normal, 1.0);
     out.pos = vec4<f32>(in.pos, 1.0);
     out.mr = textureSample(t_mr, s_mr, in.uv);
 

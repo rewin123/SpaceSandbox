@@ -12,6 +12,7 @@ encase = {version = "0.3.0", features = ["nalgebra"] }
 specs = "0.18.0"
 downcast-rs = "1.2.0"
 bytemuck = { version = "1.4.1", features = [ "derive" ] }
+rand = "0.8.3"
 
 space_assets = {path = "../space_assets"}
 space_core = {path = "../space_core"}
