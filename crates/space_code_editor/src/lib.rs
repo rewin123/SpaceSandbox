@@ -11,7 +11,8 @@ use space_assets::*;
 #[derive(Clone)]
 struct Token {
     range : Range<usize>,
-    tp : TokenType
+    tp : TokenType,
+    text : String
 }
 
 #[derive(Clone)]
@@ -31,12 +32,19 @@ struct TokenParser {
 }
 
 #[derive(Clone)]
+struct GroupedToken {
+    tp : TokenType,
+    rg : Vec<Regex>
+}
+
+#[derive(Clone)]
 struct LanguageDefine {
-    type_regexes : Vec<TokenParser>,
-    var_regexes : Vec<Regex>,
-    tp_var_regexes : Vec<Regex>,
-    struct_regexes : Vec<Regex>,
-    fn_regexes : Vec<Regex>
+    grouped_tokens : Vec<GroupedToken>,
+    tokenizer : Regex
+    // var_regexes : Vec<Regex>,
+    // tp_var_regexes : Vec<Regex>,
+    // struct_regexes : Vec<Regex>,
+    // fn_regexes : Vec<Regex>
 }
 
 impl LanguageDefine {
@@ -72,6 +80,8 @@ impl LanguageDefine {
             Regex::new(r"(struct)\s+(\w+)").unwrap()
         ];
 
+        let mut grouped_tokens = vec![];
+
         let fn_names = vec![
             "max",
             "dot",
@@ -84,10 +94,9 @@ impl LanguageDefine {
         ];
 
         for f in fn_names {
-            type_regexes.push(TokenParser {
-                rg: Regex::new(format!(r"({})\s*\(", f).as_str()).unwrap(),
+            grouped_tokens.push(GroupedToken {
+                rg: vec![Regex::new(format!(r"{}", f).as_str()).unwrap()],
                 tp: TokenType::Function,
-                match_idx : 1
             });
         }
 
@@ -96,11 +105,12 @@ impl LanguageDefine {
         ];
 
         Self { 
-            type_regexes, 
-            var_regexes, 
-            tp_var_regexes, 
-            struct_regexes,
-            fn_regexes
+            grouped_tokens, 
+            tokenizer : Regex::new(r"\w+|:|\(|\)|{|}|\.|\,|(@\w+)|<|>|;|=|\*|\\|\+|\/").unwrap()
+            // var_regexes, 
+            // tp_var_regexes, 
+            // struct_regexes,
+            // fn_regexes
         }
     }
 }
@@ -123,115 +133,132 @@ impl Default for WgslHighlight {
 
 impl WgslHighlight {
 
-    fn get_tokens(&self, line : &str, lng : &mut LanguageDefine) -> Vec<Token> {
-        let mut ranges = vec![];
-        for parser in &lng.type_regexes {
-            for cap in parser.rg.captures_iter(line) {
-                if let Some(mat) = cap.get(parser.match_idx) {
-                    ranges.push( Token {
-                        range : mat.range(),
-                        tp : parser.tp.clone(),
-                    });
-                }
+    fn tokenize(code : &str, lng : &LanguageDefine) -> Vec<Token> {
+        lng.tokenizer.captures_iter(code).filter(|cap| {
+            cap.get(0).is_some()
+        }).map(|cap| {
+            let mat = cap.get(0).unwrap();
+            let text = code[mat.range().start..mat.range().end].to_string();
+            Token { range: mat.range(), tp: TokenType::Undefined, text }
+        }).collect()
+    }
+
+    fn get_tokens(&self, tokens : &mut Vec<Token>, lng : &mut LanguageDefine) {
+
+        for (idx, token) in tokens.iter_mut().enumerate() {
+            for group in &lng.grouped_tokens {
+                if to
             }
         }
 
-        for parser in &lng.var_regexes {
-            for cap in parser.captures_iter(line) {
-                if let Some(tp_mat) = cap.get(1) {
-                    if let Some(var_mat) = cap.get(2) {
-                        ranges.push(Token {
-                            range : tp_mat.range(),
-                            tp : TokenType::Type
-                        });
-                        ranges.push(Token {
-                            range : var_mat.range(),
-                            tp : TokenType::Variable
-                        });
-                    }
-                }
-            }
-        }
+        // let mut ranges = vec![];
+        // for parser in &lng.type_regexes {
+        //     for cap in parser.rg.captures_iter(line) {
+        //         if let Some(mat) = cap.get(parser.match_idx) {
+        //             ranges.push( Token {
+        //                 range : mat.range(),
+        //                 tp : parser.tp.clone(),
+        //             });
+        //         }
+        //     }
+        // }
 
-        for parser in &lng.tp_var_regexes {
-            for cap in parser.captures_iter(line) {
-                if let Some(var_word_mat) = cap.get(1) {
-                    if let Some(var_mat) = cap.get(2) {
-                        if let Some(tp_mat) = cap.get(3) {
-                            ranges.push(Token {
-                                range: var_word_mat.range(),
-                                tp: TokenType::Type
-                            });
-                            ranges.push(Token {
-                                range: var_mat.range(),
-                                tp: TokenType::Variable
-                            });
-                            ranges.push(Token {
-                                range: tp_mat.range(),
-                                tp: TokenType::Type
-                            });
-                        }
-                    }
-                }
-            }
-        }
+        // for parser in &lng.var_regexes {
+        //     for cap in parser.captures_iter(line) {
+        //         if let Some(tp_mat) = cap.get(1) {
+        //             if let Some(var_mat) = cap.get(2) {
+        //                 ranges.push(Token {
+        //                     range : tp_mat.range(),
+        //                     tp : TokenType::Type
+        //                 });
+        //                 ranges.push(Token {
+        //                     range : var_mat.range(),
+        //                     tp : TokenType::Variable
+        //                 });
+        //             }
+        //         }
+        //     }
+        // }
 
-        for parser in &lng.struct_regexes {
-            for cap in parser.captures_iter(line) {
-                if let Some(str_mat) = cap.get(1) {
-                    if let Some(struct_name_mat) = cap.get(2) {
-                        ranges.push(Token {
-                            range: str_mat.range(),
-                            tp: TokenType::Type
-                        });
-                        ranges.push(Token {
-                            range: struct_name_mat.range(),
-                            tp: TokenType::StructDefine
-                        });
-                        lng.type_regexes.push(TokenParser {
-                            rg: Regex::new(
-                                &line[struct_name_mat.range().start..struct_name_mat.range().end]).unwrap(),
-                            tp: TokenType::Type,
-                            match_idx : 0
-                        });
-                    }
-                }
-            }
-        }
+        // for parser in &lng.tp_var_regexes {
+        //     for cap in parser.captures_iter(line) {
+        //         if let Some(var_word_mat) = cap.get(1) {
+        //             if let Some(var_mat) = cap.get(2) {
+        //                 if let Some(tp_mat) = cap.get(3) {
+        //                     ranges.push(Token {
+        //                         range: var_word_mat.range(),
+        //                         tp: TokenType::Type
+        //                     });
+        //                     ranges.push(Token {
+        //                         range: var_mat.range(),
+        //                         tp: TokenType::Variable
+        //                     });
+        //                     ranges.push(Token {
+        //                         range: tp_mat.range(),
+        //                         tp: TokenType::Type
+        //                     });
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-        let mut mark_vec = vec![false; ranges.len()];
-        let mut marked = 1;
-        while marked > 0 {
-            marked = 0;
+        // for parser in &lng.struct_regexes {
+        //     for cap in parser.captures_iter(line) {
+        //         if let Some(str_mat) = cap.get(1) {
+        //             if let Some(struct_name_mat) = cap.get(2) {
+        //                 ranges.push(Token {
+        //                     range: str_mat.range(),
+        //                     tp: TokenType::Type
+        //                 });
+        //                 ranges.push(Token {
+        //                     range: struct_name_mat.range(),
+        //                     tp: TokenType::StructDefine
+        //                 });
+        //                 lng.type_regexes.push(TokenParser {
+        //                     rg: Regex::new(
+        //                         &line[struct_name_mat.range().start..struct_name_mat.range().end]).unwrap(),
+        //                     tp: TokenType::Type,
+        //                     match_idx : 0
+        //                 });
+        //             }
+        //         }
+        //     }
+        // }
 
-            for idx in  0..ranges.len() {
-                let range = &ranges[idx];
-                if mark_vec[idx] {
-                    continue;
-                }
-                for j in 0..ranges.len() {
-                    if j != idx {
-                        let sub_range = &ranges[j];
-                        if range.range.start <= sub_range.range.start &&
-                            range.range.end >= sub_range.range.end {
-                            marked += 1;
-                            mark_vec[j] = true;
-                        }
-                    }
-                }
-            }
+        // let mut mark_vec = vec![false; ranges.len()];
+        // let mut marked = 1;
+        // while marked > 0 {
+        //     marked = 0;
 
-            ranges = ranges.iter().enumerate().filter(|(idx, range)| {
-                !mark_vec[*idx]
-            }).map(|(idx, range)| {range.clone()}).collect();
-            mark_vec.fill(false);
-        }
+        //     for idx in  0..ranges.len() {
+        //         let range = &ranges[idx];
+        //         if mark_vec[idx] {
+        //             continue;
+        //         }
+        //         for j in 0..ranges.len() {
+        //             if j != idx {
+        //                 let sub_range = &ranges[j];
+        //                 if range.range.start <= sub_range.range.start &&
+        //                     range.range.end >= sub_range.range.end {
+        //                     marked += 1;
+        //                     mark_vec[j] = true;
+        //                 }
+        //             }
+        //         }
+        //     }
 
-        ranges.sort_by(|a, b| {
-            a.range.start.cmp(&b.range.start)
-        });
+        //     ranges = ranges.iter().enumerate().filter(|(idx, range)| {
+        //         !mark_vec[*idx]
+        //     }).map(|(idx, range)| {range.clone()}).collect();
+        //     mark_vec.fill(false);
+        // }
 
-        ranges
+        // ranges.sort_by(|a, b| {
+        //     a.range.start.cmp(&b.range.start)
+        // });
+
+        // ranges
     }
 
     fn highlight(&mut self, ui: &Ui, code: &str, wrap_width: f32) -> LayoutJob {
