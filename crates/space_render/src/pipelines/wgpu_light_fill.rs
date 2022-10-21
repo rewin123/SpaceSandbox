@@ -85,7 +85,7 @@ impl PointLightPipeline {
                     visibility : wgpu::ShaderStages::FRAGMENT,
                     ty : wgpu::BindingType::Texture { 
                         sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2, 
+                        view_dimension: wgpu::TextureViewDimension::D2,
                         multisampled: false 
                     },
                     count : None
@@ -227,7 +227,7 @@ impl PointLightPipeline {
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         count: None,
                         ty: wgpu::BindingType::Texture {
-                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            sample_type: wgpu::TextureSampleType::Depth,
                             view_dimension: wgpu::TextureViewDimension::Cube,
                             multisampled: false
                         }
@@ -235,7 +235,7 @@ impl PointLightPipeline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 2,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Comparison),
                         count: None
                     }
                 ]

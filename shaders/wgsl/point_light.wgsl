@@ -18,9 +18,9 @@ var<uniform> camera : CameraUniform;
 var<uniform> light : PointLightUniform;
 
 @group(1) @binding(1)
-var t_shadow: texture_cube<f32>;
+var t_shadow: texture_depth_cube;
 @group(1) @binding(2)
-var s_shadow: sampler;
+var s_shadow: sampler_comparison;
 
 struct VertexInput {
     @location(0) position : vec3<f32>,
@@ -101,6 +101,15 @@ fn GeometrySmith(N : vec3<f32>, V : vec3<f32>, L : vec3<f32>,  k : f32) -> f32
     return ggx1 * ggx2;
 }
 
+// From https://www.unrealengine.com/en-US/blog/physically-based-shading-on-mobile
+fn EnvBRDFApprox(f0: vec3<f32>, perceptual_roughness: f32, NoV: f32) -> vec3<f32> {
+    let c0 = vec4<f32>(-1.0, -0.0275, -0.572, 0.022);
+    let c1 = vec4<f32>(1.0, 0.0425, 1.04, -0.04);
+    let r = perceptual_roughness * c0 + c1;
+    let a004 = min(r.x * r.x, exp2(-9.28 * NoV)) * r.x + r.y;
+    let AB = vec2<f32>(-1.04, 1.04) * a004 + r.zw;
+    return f0 * AB.x + AB.y;
+}
 
 fn fresnelSchlick( cosTheta : f32, F0 : vec3<f32>) -> vec3<f32>
 {
@@ -110,47 +119,8 @@ fn fresnelSchlick( cosTheta : f32, F0 : vec3<f32>) -> vec3<f32>
 
 fn sample_shadow(dir : vec3<f32>, N : vec3<f32>, T : vec3<f32>, dist : f32) -> f32 {
     var res : f32 = 0.0;
-    var up = cross(N, T);
-
-    for (var dx : i32 = -1; dx < 1; dx++) {
-        for (var dy : i32 = -1; dy < 1; dy++) {
-            var k = dir + (up * f32(dy) + T * f32(dx)) / 256.0;
-            var shadow_dist = textureSample(t_shadow, s_shadow, normalize(k)).r;
-            if (dist / light.shadow_far > shadow_dist + 0.00001) {
-                
-            } else {
-                res += 1.0;
-            }
-        }
-    }
-
-    res /= 9.0;
+    res = textureSampleCompare(t_shadow, s_shadow, dir, dist / light.shadow_far);
     return res;
-}
-
-fn ao_reflection(ao : vec3<f32>, V : vec3<f32>, N : vec3<f32>, mr : vec3<f32>, tex_color : vec3<f32>) -> vec3<f32> {
-    var flat_v = V - N * dot(V, N);
-    var L = normalize(V - 2.0 * flat_v);
-    var H = normalize(L + V);
-
-    var F0 = vec3<f32>(0.04,0.04,0.04);
-    F0 = mix(F0, tex_color, mr.b);
-    var NDF = DistributionGGX(N, H, mr.g);
-    var G   = GeometrySmith(N, V, L, mr.g);
-    var F   = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
-    var kS = F;
-    var kD = vec3(1.0) - kS;
-    kD *= 1.0 - mr.b;
-
-    var numerator = NDF * G * F;
-    var denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
-    var specular = numerator / max(denominator, 0.001);
-
-    var NdotL = max(dot(N, L), 0.0);
-
-    var Lo = (kD * tex_color / PI) * ao * NdotL;
-    return Lo;
 }
 
 @fragment
@@ -175,6 +145,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     var tex_color = textureSample(t_diffuse, s_diffuse, screen_uv).rgb;
     var mr = textureSample(t_mr, s_mr, screen_uv).rgb;
+//    mr.g *= 0.1;
     var attenuation = 1.0 / (dist * dist);
     var radiance = light.intensity * attenuation * vec3(1.0,1.0,1.0);
     var H = normalize(L + V);
@@ -190,21 +161,20 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var kD = vec3(1.0) - kS;
     kD *= 1.0 - mr.b;
 
-    var ao = ao_reflection(
-        radiance * 0.01,
-        V,
-        N,
-        mr,
-        tex_color
-    );
     var numerator = NDF * G * F;
     var denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
     var specular = numerator / max(denominator, 0.001);
 
     var NdotL = max(dot(N, L), 0.0);
+    var NdotV = max(dot(N, V), 0.0);
+
+    let diffuse_ambient = EnvBRDFApprox(tex_color, 1.0, NdotV);
+    let specular_ambient = EnvBRDFApprox(F0, mr.g, NdotV);
+
+    let ambient = (diffuse_ambient + specular_ambient) * (radiance * 0.01);
 
     var Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
-    Lo = Lo * shadow + ao;
+    Lo = Lo * shadow + ambient;
     out.color = vec4<f32>(Lo, 1.0);
     return out;
 }

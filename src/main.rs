@@ -20,6 +20,7 @@ use nalgebra as na;
 use space_core::{RenderBase, TaskServer};
 use space_render::pipelines::*;
 use space_render::light::*;
+use space_render::pipelines::wgpu_ssao::SSAO;
 
 async fn run() {
     init_logger();
@@ -102,6 +103,8 @@ struct State {
     camera_buffer : wgpu::Buffer,
     gbuffer_pipeline : GBufferFill,
     light_shadow : PointLightShadowPipeline,
+    ssao_pipeline : SSAO,
+    ssao_framebuffer : CommonFramebuffer,
     light_pipeline : PointLightPipeline,
     gamma_correction : TextureTransformPipeline,
     light_buffer : TextureBundle,
@@ -113,7 +116,6 @@ struct State {
     assets : AssetServer,
     gui : Gui,
     fps : FpsCounter,
-    pipeline_editor : space_code_editor::WgslEditor
 }
 
 #[derive(ShaderType)]
@@ -322,7 +324,16 @@ impl State {
 
         let gamma_buffer = gamma_correction.spawn_framebuffer();
 
-        let pipeline_editor = space_code_editor::WgslEditor::default();
+        let ssao_pipeline = SSAO::new(
+            &render,
+            wgpu::TextureFormat::Rgba32Float,
+            extent,
+            1,
+            1,
+            include_str!("../shaders/wgsl/ssao.wgsl").into()
+        );
+
+        let ssao_buffer = ssao_pipeline.spawn_framebuffer();
 
         Self {
             surface,
@@ -345,7 +356,8 @@ impl State {
             light_shadow : point_light_shadow,
             gamma_correction,
             gamma_buffer,
-            pipeline_editor
+            ssao_pipeline,
+            ssao_framebuffer : ssao_buffer
         }
     }
 
@@ -480,7 +492,6 @@ impl State {
             &self.gui.platform.context(), |ui| {
 
                 ui.horizontal(|ui| {
-                    self.pipeline_editor.draw_button(ui);
                     self.fps.draw(ui);
                 });
 
@@ -502,8 +513,6 @@ impl State {
                     }
                 }
         });
-
-        self.pipeline_editor.draw_winow(&self.gui.platform.context(), &self.assets);
 
         let gui_output = self.gui.end_frame(Some(window));
         self.gui.draw(gui_output, 

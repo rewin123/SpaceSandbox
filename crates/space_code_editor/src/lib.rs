@@ -263,57 +263,57 @@ impl WgslHighlight {
 
     fn highlight(&mut self, ui: &Ui, code: &str, wrap_width: f32) -> LayoutJob {
         
-        let mut lng = self.language.clone();
-        
-        if self.code == code {
-            return self.cached_jobs.clone();
-        }
-
+        // let mut lng = self.language.clone();
+        //
+        // if self.code == code {
+        //     return self.cached_jobs.clone();
+        // }
+        //
         let mut job = LayoutJob::default();
-
-        let normal_format = TextFormat::default();
-        let mut tp_format = normal_format.clone();
-        tp_format.color =  Color32::from_rgb(156, 220, 254);
-        let mut var_format = normal_format.clone();
-        var_format.color = Color32::LIGHT_BLUE;
-        let mut fn_format = normal_format.clone();
-        fn_format.color = Color32::from_rgb(209, 105, 209);
-        let mut struct_format = normal_format.clone();
-        struct_format.color = Color32::from_rgb(62, 214, 194);
-
-        for line in code.split('\n') {
-            let mut idx = 0;
-            let ranges = self.get_tokens(line, &mut lng);
-            while idx < line.len() {
-                let mut skip = 1;
-                let mut tp = TokenType::Undefined;
-
-
-                for range in &ranges {
-                    if idx == range.range.start {
-                        skip = range.range.len();
-                        tp = range.tp.clone();
-                    }
-                }
-
-                let format = match tp {
-                    TokenType::Type => {&tp_format}
-                    TokenType::Variable => {&var_format}
-                    TokenType::Function => {&fn_format}
-                    TokenType::Undefined => {&normal_format}
-                    TokenType::StructDefine => {&struct_format},
-                };
-
-                job.append(&line[idx..(idx + skip)], 0.0, format.clone());
-                idx += skip;
-            }
-
-            job.append("\n", 0.0, normal_format.clone());
-        }
-
-        self.code = code.to_string();
-        self.cached_jobs = job.clone();
-
+        //
+        // let normal_format = TextFormat::default();
+        // let mut tp_format = normal_format.clone();
+        // tp_format.color =  Color32::from_rgb(156, 220, 254);
+        // let mut var_format = normal_format.clone();
+        // var_format.color = Color32::LIGHT_BLUE;
+        // let mut fn_format = normal_format.clone();
+        // fn_format.color = Color32::from_rgb(209, 105, 209);
+        // let mut struct_format = normal_format.clone();
+        // struct_format.color = Color32::from_rgb(62, 214, 194);
+        //
+        // for line in code.split('\n') {
+        //     let mut idx = 0;
+        //     let ranges = self.get_tokens(line, &mut lng);
+        //     while idx < line.len() {
+        //         let mut skip = 1;
+        //         let mut tp = TokenType::Undefined;
+        //
+        //
+        //         for range in &ranges {
+        //             if idx == range.range.start {
+        //                 skip = range.range.len();
+        //                 tp = range.tp.clone();
+        //             }
+        //         }
+        //
+        //         let format = match tp {
+        //             TokenType::Type => {&tp_format}
+        //             TokenType::Variable => {&var_format}
+        //             TokenType::Function => {&fn_format}
+        //             TokenType::Undefined => {&normal_format}
+        //             TokenType::StructDefine => {&struct_format},
+        //         };
+        //
+        //         job.append(&line[idx..(idx + skip)], 0.0, format.clone());
+        //         idx += skip;
+        //     }
+        //
+        //     job.append("\n", 0.0, normal_format.clone());
+        // }
+        //
+        // self.code = code.to_string();
+        // self.cached_jobs = job.clone();
+        //
         job
     }
 }
