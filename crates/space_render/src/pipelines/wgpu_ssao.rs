@@ -10,7 +10,7 @@ use crate::{pipelines::{CommonFramebuffer, GFramebuffer}, Camera};
 use encase::*;
 
 #[repr(C)]
-#[derive(Zeroable, bytemuck::Pod, Clone, Copy, Default)]
+#[derive(Zeroable, bytemuck::Pod, Clone, Copy)]
 struct SsaoUniform {
     proj_view : [[f32; 4]; 4],
     cam_pos : [f32; 4],
@@ -20,6 +20,21 @@ struct SsaoUniform {
     tex_height : f32,
     scale : f32,
     dummy1 : f32
+}
+
+impl Default for SsaoUniform {
+    fn default() -> Self {
+        Self {
+            proj_view : [[0.0; 4]; 4],
+            cam_pos : [0.0; 4],
+            samples : [[0.0; 4] ; 32],
+            random_vec : [[0.0; 4]; 16],
+            tex_width : 0.0,
+            tex_height : 0.0,
+            scale : 0.0,
+            dummy1 : 0.0
+        }
+    }
 }
 
 pub struct SSAO {
@@ -187,7 +202,11 @@ impl SSAO {
                 thread_rng.gen_range(-1.0f32..=1.0),
                 thread_rng.gen_range(0.0f32..=1.0)
             );
-            // v = v.normalize();
+            
+            v = v.normalize();
+            let mut scale = (i as f32) / 32.0;
+            scale = 0.1 + scale * scale * (1.0 - 0.1);
+            v = v * scale;
             samples[i] = [v.x, v.y, v.z, 1.0];
         }
 
@@ -223,7 +242,7 @@ impl SSAO {
             render: render.clone(),
             bind: None,
             buffer : Arc::new(buffer),
-            scale : 10.0,
+            scale : 30.0,
             cached_uniform : def_uniform
         }
     }

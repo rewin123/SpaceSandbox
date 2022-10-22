@@ -55,10 +55,12 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
 
     let pos = textureSample(t_position, s_position, in.uv).rgb;
-    let normal = textureSample(t_normal, s_normal, in.uv).rgb;
-    let random_vec = ssao.random_vec[get_random_idx(in.uv)].rgb;
+    let normal = normalize(textureSample(t_normal, s_normal, in.uv).rgb);
+    let rand_idx = get_random_idx(in.uv);
+    let random_vec = ssao.random_vec[rand_idx].rgb;
 
-    let tangent = normalize(random_vec - normal * dot(normal, random_vec));
+    var tangent = normalize(random_vec - normal * dot(normal, random_vec));
+    tangent = normalize(tangent - normal * dot(normal, ssao.random_vec[(rand_idx + 1) % 16].rgb));
     let bitangent = cross(tangent, normal);
 
     let tbn = mat3x3<f32>(tangent, bitangent, normal);
@@ -74,13 +76,14 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
         let dist = length(pos2 - pos);
         let k = smoothstep(0.0, 1.0, ssao.scale / dist);
 
-        let s = f32(length(np - ssao.cam_pos.rgb) > length(pos2 - ssao.cam_pos.rgb));
+        let s = f32((length(np - ssao.cam_pos.rgb)) > length(pos2 - ssao.cam_pos.rgb));
 
         res += s * k;
     }
 
     res /= 32.0;
     res = 1.0 - res;
+    // res = pow(res, 2.0);
     out.ao = vec4<f32>(res, res, res, 1.0);
 
     return out;

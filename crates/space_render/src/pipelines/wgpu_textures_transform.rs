@@ -1,9 +1,14 @@
 use std::fs::rename;
 use std::num::NonZeroU32;
 use std::sync::Arc;
+use bytemuck::{Zeroable, Pod};
 use wgpu::{Extent3d, util::DeviceExt};
 use space_assets::*;
 use space_core::RenderBase;
+
+pub trait TextureTransformUniform {
+    fn get_bytes(&self) -> Vec<u8>;
+}
 
 pub struct CommonFramebuffer {
     pub dst : Vec<TextureBundle>
@@ -18,7 +23,9 @@ pub struct TextureTransformPipeline {
     input_count : u32,
     size : Extent3d,
     render : Arc<RenderBase>,
-    bind: Option<wgpu::BindGroup>
+    bind: Option<wgpu::BindGroup>,
+
+    buffer : Option<wgpu::Buffer>
 }
 
 impl TextureTransformPipeline {
@@ -78,6 +85,7 @@ impl TextureTransformPipeline {
         size : wgpu::Extent3d,
         input_count : u32,
         output_count : u32,
+        uniform : Option<Box<dyn TextureTransformUniform>>,
         shader : String) -> Self {
 
         let mut binds = vec![];
@@ -99,6 +107,19 @@ impl TextureTransformPipeline {
                 count : None
             });
         }
+        if let Some(u) = uniform.as_ref() {
+            binds.push(wgpu::BindGroupLayoutEntry {
+                binding: binds.len() as u32,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer { 
+                    ty: wgpu::BufferBindingType::Uniform, 
+                    has_dynamic_offset: false, 
+                    min_binding_size: None 
+                },
+                count: None,
+            });
+        }
+        
 
         let texture_bind_group_layout = render.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label : Some("Texture present binding"),
@@ -152,6 +173,15 @@ impl TextureTransformPipeline {
             multiview: None
         });
 
+        let mut buffer = None;
+        if let Some(s) = uniform {
+            buffer = Some(render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: &s.get_bytes(),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::MAP_WRITE,
+            }));
+        }
+
         Self {
             pipeline,
             screen_mesh : TextureTransformPipeline::create_screen_mesh(&render.device),
@@ -161,9 +191,11 @@ impl TextureTransformPipeline {
             input_count,
             size,
             render: render.clone(),
-            bind: None
+            bind: None,
+            buffer
         }
     }
+
 
     pub fn draw(
             &mut self,
@@ -186,6 +218,18 @@ impl TextureTransformPipeline {
                     resource : wgpu::BindingResource::Sampler(&src[idx as usize].sampler)
                 }
             );
+        }
+        if let Some(buf) = self.buffer.as_ref() {
+            binds.push(
+                wgpu::BindGroupEntry {
+                    binding: binds.len() as u32,
+                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                        buffer: buf,
+                        offset: 0,
+                        size: None,
+                    }),
+                }
+            )
         }
         
         let tex_bind = device.create_bind_group(&wgpu::BindGroupDescriptor {

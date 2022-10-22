@@ -124,7 +124,7 @@ fn fresnelSchlick( cosTheta : f32, F0 : vec3<f32>) -> vec3<f32>
 
 fn sample_shadow(dir : vec3<f32>, N : vec3<f32>, T : vec3<f32>, dist : f32) -> f32 {
     var res : f32 = 0.0;
-    res = textureSampleCompare(t_shadow, s_shadow, dir, dist / light.shadow_far);
+    res = textureSampleCompare(t_shadow, s_shadow, dir, (dist - 1.0) / light.shadow_far);
     return res;
 }
 
@@ -178,7 +178,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     let ao = textureSample(t_ssao, s_ssao, screen_uv).r;
 
-    let ambient = (diffuse_ambient + specular_ambient) * (radiance * 0.1) * ao;
+    let ambient = (diffuse_ambient + specular_ambient) * (radiance * 0.3) * ao;
 
     var Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
     Lo = Lo * shadow + ambient;

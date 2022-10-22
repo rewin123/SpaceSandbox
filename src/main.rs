@@ -3,6 +3,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use SpaceSandbox::ui::{Gui, FpsCounter};
+use bytemuck::{Zeroable, Pod};
 use egui::epaint::ahash::HashMap;
 use egui_gizmo::GizmoMode;
 use egui_wgpu_backend::ScreenDescriptor;
@@ -21,6 +22,19 @@ use space_core::{RenderBase, TaskServer};
 use space_render::{pipelines::*, Camera};
 use space_render::light::*;
 use space_render::pipelines::wgpu_ssao::SSAO;
+
+#[repr(C)]
+#[derive(Clone, Zeroable, Pod, Copy)]
+pub struct SmoothUniform {
+    size : [i32; 2]
+}
+
+impl TextureTransformUniform for SmoothUniform {
+    fn get_bytes(&self) -> Vec<u8> {
+        let bytes = bytemuck::bytes_of(self);
+        bytes.to_vec()
+    }
+}
 
 async fn run() {
     init_logger();
@@ -105,6 +119,10 @@ struct State {
     light_shadow : PointLightShadowPipeline,
     ssao_pipeline : SSAO,
     ssao_framebuffer : CommonFramebuffer,
+
+    ssao_smooth_pipeline : TextureTransformPipeline,
+    ssao_smooth_framebuffer : CommonFramebuffer,
+
     light_pipeline : PointLightPipeline,
     gamma_correction : TextureTransformPipeline,
     light_buffer : TextureBundle,
@@ -269,6 +287,7 @@ impl State {
             extent,
             1,
             1,
+            None,
             include_str!("../shaders/wgsl/gamma_correction.wgsl").into()
         );
 
@@ -277,13 +296,36 @@ impl State {
         let ssao_pipeline = SSAO::new(
             &render,
             wgpu::TextureFormat::R8Unorm,
-            extent,
+            wgpu::Extent3d {
+                width : extent.width / 2,
+                height : extent.height / 2,
+                depth_or_array_layers : 1
+            },
             1,
             1,
             include_str!("../shaders/wgsl/ssao.wgsl").into()
         );
 
         let ssao_buffer = ssao_pipeline.spawn_framebuffer();
+
+        let size_uniform = SmoothUniform {
+            size : [extent.width as i32 / 2, extent.height as i32 / 2]
+        };
+
+        let ssao_smooth_pipeline = TextureTransformPipeline::new(
+            &render, 
+            wgpu::TextureFormat::R8Unorm, 
+            wgpu::Extent3d {
+                width : extent.width / 2,
+                height : extent.height / 2,
+                depth_or_array_layers : 1
+            }, 
+            1, 
+            1, 
+            Some(Box::new(size_uniform)), 
+            include_str!("../shaders/wgsl/smooth.wgsl").into());
+
+        let ssao_smooth_framebuffer = ssao_smooth_pipeline.spawn_framebuffer();
 
         Self {
             surface,
@@ -308,7 +350,9 @@ impl State {
             gamma_buffer,
             ssao_pipeline,
             ssao_framebuffer : ssao_buffer,
-            device_name : adapter.get_info().name.clone()
+            device_name : adapter.get_info().name.clone(),
+            ssao_smooth_pipeline,
+            ssao_smooth_framebuffer
         }
     }
 
@@ -353,13 +397,18 @@ impl State {
                 size,
                 1,
                 1,
+                None,
                 include_str!("../shaders/wgsl/gamma_correction.wgsl").into()
             );
 
             self.ssao_pipeline = SSAO::new(
                 &self.render, 
                 wgpu::TextureFormat::R8Unorm, 
-                size, 
+                wgpu::Extent3d {
+                    width : size.width / 2,
+                    height : size.height / 2,
+                    depth_or_array_layers : 1
+                }, 
                 1, 
                 1, 
                 include_str!("../shaders/wgsl/ssao.wgsl").into()
@@ -370,6 +419,25 @@ impl State {
             self.light_buffer = self.light_pipeline.spawn_framebuffer(&self.render.device, size);
 
             self.ssao_framebuffer = self.ssao_pipeline.spawn_framebuffer();
+
+            let size_uniform = SmoothUniform {
+                size : [size.width as i32 / 2, size.height as i32 / 2]
+            };
+
+            self.ssao_smooth_pipeline = TextureTransformPipeline::new(
+                &self.render, 
+                wgpu::TextureFormat::R8Unorm, 
+                wgpu::Extent3d {
+                    width : size.width / 2,
+                    height : size.height / 2,
+                    depth_or_array_layers : 1
+                }, 
+                1, 
+                1, 
+                Some(Box::new(size_uniform)), 
+                include_str!("../shaders/wgsl/smooth.wgsl").into());
+    
+            self.ssao_smooth_framebuffer = self.ssao_smooth_pipeline.spawn_framebuffer();
         }
     }
 
@@ -445,11 +513,12 @@ impl State {
         self.gbuffer_pipeline.draw(&self.assets,&mut encoder, &self.scene, &self.gbuffer);
         self.light_shadow.draw(&mut encoder, &mut self.point_lights, &self.scene);
         self.ssao_pipeline.draw(&mut encoder, &self.gbuffer, &self.ssao_framebuffer.dst[0]);
-        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer, &self.ssao_framebuffer.dst[0]);
+        self.ssao_smooth_pipeline.draw(&self.render.device, &mut encoder, &[&self.ssao_framebuffer.dst[0]], &[&self.ssao_smooth_framebuffer.dst[0]]);
+        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer, &self.ssao_smooth_framebuffer.dst[0]);
         self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
         self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
-        // self.present.draw(&self.render.device, &mut encoder, &self.ssao_framebuffer.dst[0], &view);
+        // self.present.draw(&self.render.device, &mut encoder, &self.ssao_smooth_framebuffer.dst[0], &view);
 
         self.gui.begin_frame();
 
