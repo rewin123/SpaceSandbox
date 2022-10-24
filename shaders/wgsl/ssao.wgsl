@@ -83,8 +83,8 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     res /= 32.0;
     res = 1.0 - res;
-    // res = pow(res, 2.0);
+     res = pow(res, 4.0);
     out.ao = vec4<f32>(res, res, res, 1.0);
-
+//    out.ao = vec4<f32>(1.0, 1.0, 1.0, 1.0);
     return out;
 }

@@ -140,13 +140,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var V = normalize(camera.pos - pos);
     var dist = length(light.position - pos);
 
-    // var shadow_dist = textureSample(t_shadow, s_shadow, -L).r;
     var shadow = sample_shadow(-L, N, normalize(cross(L, N)), dist);
-    // if (dist / 10000.0 > shadow_dist + 0.00001) {
-    //     shadow = 0.0;
-    // }
-
-
 
     var tex_color = textureSample(t_diffuse, s_diffuse, screen_uv).rgb;
     var mr = textureSample(t_mr, s_mr, screen_uv).rgb;
@@ -178,7 +172,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     let ao = textureSample(t_ssao, s_ssao, screen_uv).r;
 
-    let ambient = (diffuse_ambient + specular_ambient) * (radiance * 0.3) * ao;
+    let ambient = (diffuse_ambient + specular_ambient) * (radiance * 0.1) * ao;
 
     var Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
     Lo = Lo * shadow + ambient;
