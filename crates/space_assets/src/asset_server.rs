@@ -1,5 +1,5 @@
 use std::any::Any;
-use std::{any::TypeId, marker::PhantomData};
+use std::{any::TypeId, iter, marker::PhantomData};
 use std::collections::HashMap;
 use std::io::Read;
 use std::path::PathBuf;
@@ -10,11 +10,13 @@ use space_core::{RenderBase, SpaceResult};
 use specs::WorldExt;
 use space_core::TaskServer;
 use std::hash::Hash;
+use std::num::NonZeroU32;
 use wgpu::util::DeviceExt;
 use crate::asset_holder::AssetHolder;
 use crate::AssetPath;
 use crate::handle::*;
 use crate::mesh::TextureBundle;
+use crate::mipmap_generator::MipmapGenerator;
 
 pub trait Asset : DowncastSync {
 
@@ -295,18 +297,39 @@ impl AssetServer {
                 .expect("unable to open image");
             let (width, height) = image.dimensions();
 
+            let mipcount = (height.max(width) as f32).log2() as u32 + 1;
 
-            let tex_color = render.device.create_texture_with_data(
-                &render.queue, &wgpu::TextureDescriptor {
+            let padded_width = ((width * 4) / 256 + 1) * 256;
+            let mut padded_buffer = vec![0u8; (padded_width * height * 4) as usize];
+
+            for y in 0..height {
+                for x in 0..width {
+                    let pix = image.get_pixel(x, y);
+                    let shift = ((y * padded_width + x) * 4) as usize;
+                    padded_buffer[shift] = pix.0[0];
+                    padded_buffer[shift + 1] = pix.0[1];
+                    padded_buffer[shift + 2] = pix.0[2];
+                    padded_buffer[shift + 3] = pix.0[3];
+                }
+            }
+
+
+            let tex_color = render.device.create_texture(
+                &wgpu::TextureDescriptor {
                     label: Some("default color texture"),
                     size: wgpu::Extent3d {width, height, depth_or_array_layers : 1},
-                    mip_level_count: 1,
+                    mip_level_count: mipcount,
                     sample_count: 1,
                     dimension: wgpu::TextureDimension::D2,
                     format,
-                    usage: wgpu::TextureUsages::TEXTURE_BINDING,
-                }, 
-                &image);
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::COPY_SRC,
+                });
+
+            let src_buffer = render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: &padded_buffer,
+                usage: wgpu::BufferUsages::COPY_SRC
+            });
     
             let s_color = tex_color.create_view(&wgpu::TextureViewDescriptor::default());
             let sampler = render.device.create_sampler(&wgpu::SamplerDescriptor {
@@ -318,11 +341,46 @@ impl AssetServer {
                 min_filter: wgpu::FilterMode::Linear,
                 mipmap_filter: wgpu::FilterMode::Linear,
                 lod_min_clamp: 0.0,
-                lod_max_clamp: 0.0,
+                lod_max_clamp: mipcount as f32,
                 compare: None,
                 anisotropy_clamp: None,
                 border_color: None,
             });
+
+            let mut encoder = render.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: None,
+            });
+
+            let mut layout = wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: NonZeroU32::new(padded_width * 4),
+                rows_per_image: None
+            };
+
+            encoder.copy_buffer_to_texture(wgpu::ImageCopyBufferBase {
+                buffer: &src_buffer,
+                layout: layout
+            }, wgpu::ImageCopyTextureBase {
+                texture: &tex_color,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All
+            },
+            wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers : 1
+            });
+
+            render.queue.submit(iter::once(encoder.finish()));
+
+            MipmapGenerator::generate(
+                &render,
+                &tex_color,
+                width,
+                height,
+                mipcount,
+                format);
 
             let bundle = TextureBundle {
                 texture : tex_color,

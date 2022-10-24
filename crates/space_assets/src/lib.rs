@@ -5,6 +5,7 @@ pub mod asset_holder;
 pub mod mesh;
 pub mod wavefront;
 pub mod gltf_loader;
+pub mod mipmap_generator;
 
 pub use gltf_loader::*;
 pub use asset_server::*;

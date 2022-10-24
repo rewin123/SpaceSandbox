@@ -233,7 +233,7 @@ impl State {
 
         let mut assets = AssetServer::new(&render, &task_server);
 
-        let scene = assets.wgpu_gltf_load(
+        assets.wgpu_gltf_load(
             &render.device,
             "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
             &mut world);

@@ -48,7 +48,7 @@ members = [
     "crates/space_core",
     "crates/space_assets",
     "crates/space_code_editor",
-    "crates/space_render"
+    "crates/space_render",
 ]
 
 [lib]

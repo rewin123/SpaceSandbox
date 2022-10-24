@@ -66,21 +66,6 @@ impl GltfAssetLoader for AssetServer {
             }
         }
 
-        // let mut images = vec![];
-
-        // for img_meta in sponza.images() {
-        //     match img_meta.source() {
-        //         gltf::image::Source::Uri {uri, mime_type} => {
-        //             let path = format!("{}/{}", base, uri);
-        //             info!("Loading texture {} ...", path);
-        //             images.push(self.load_color_texture(path));
-        //         }
-        //         _ => {
-        //             panic!("Not supported source for texture");
-        //         }
-        //     }
-        // }
-
         for m in sponza.meshes() {
             for p in m.primitives() {
                 let mut pos : Vec<f32> = vec![];

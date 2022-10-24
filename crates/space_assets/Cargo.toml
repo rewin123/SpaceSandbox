@@ -15,7 +15,8 @@ bytemuck = { version = "1.4.1", features = [ "derive" ] }
 tobj     = "3.2.2"
 gltf = { version = "1.0.0", features = ["KHR_materials_pbrSpecularGlossiness"] }
 
+
 space_core = {path = "../space_core"}
 
-#[lib]
-#crate-type = ["dylib"]
+[lib]
+crate-type = ["dylib"]

@@ -9,6 +9,7 @@ edition = "2021"
 rayon = "1.5.3"
 wgpu = {version = "0.13", features = ["webgl"]}
 specs = "0.18.0"
+bytemuck = { version = "1.4.1", features = [ "derive" ] }
 
-#[lib]
-#crate-type = ["dylib"]
+[lib]
+crate-type = ["dylib"]
