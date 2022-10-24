@@ -221,8 +221,9 @@ impl State {
         };
 
         let mut world = World::new();
-        world.register::<GMesh>();
-        world.register::<Material>();
+        world.register::<Arc<GMesh>>();
+        world.register::<Arc<Material>>();
+        world.register::<Location>();
 
         let task_server = Arc::new(TaskServer::new());
 
@@ -237,6 +238,11 @@ impl State {
             &render.device,
             "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
             &mut world);
+
+        // assets.wgpu_gltf_load(
+        //     &render.device,
+        //     "res/bobik/bobik.gltf".into(),
+        //     &mut world);
 
         let gbuffer = GBufferFill::new(
             &render,

@@ -54,7 +54,7 @@ impl PointLightShadowPipeline {
             vertex: wgpu::VertexState {
                 module : &shader,
                 entry_point : "vs_main",
-                buffers: &[GVertex::desc()]
+                buffers: &GVertex::desc()
             },
             fragment: Some(wgpu::FragmentState {
                 module : &shader,
@@ -65,7 +65,7 @@ impl PointLightShadowPipeline {
                 topology : wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format : None,
                 front_face : wgpu::FrontFace::Ccw,
-                cull_mode : Some(wgpu::Face::Front),
+                cull_mode : Some(wgpu::Face::Back),
                 polygon_mode : wgpu::PolygonMode::Fill,
                 unclipped_depth : false,
                 conservative : false
@@ -137,8 +137,9 @@ impl PointLightShadowPipeline {
                    world : &World,
                    encoder : &mut wgpu::CommandEncoder) {
 
-        let mesh_st = world.read_storage::<GMesh>();
-        let mut material_st = world.write_storage::<Material>();
+        let mesh_st = world.read_storage::<GMeshPtr>();
+        let mut material_st = world.write_storage::<MaterialPtr>();
+        let loc_st = world.write_storage::<MaterialPtr>();
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Point light renderpass"),
@@ -155,7 +156,10 @@ impl PointLightShadowPipeline {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &shadow.camera_binds[idx], &[]);
 
-        for (mesh, material) in (&mesh_st, &mut material_st).join() {
+        for (mesh_ptr, material_ptr, loc) in (&mesh_st, &mut material_st, &loc_st).join() {
+            let mesh = mesh_ptr.mesh.clone();
+            let mut material = material_ptr.mat.clone();
+
             render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
             render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
             render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);

@@ -1,12 +1,15 @@
 use std::io::Read;
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use byteorder::ByteOrder;
+use gltf::animation::Property::Rotation;
 use gltf::json::accessor::ComponentType;
 use gltf::Semantic;
 use specs::{Builder, Component, VecStorage, WorldExt};
 use wgpu::util::DeviceExt;
 use crate::asset_server::AssetServer;
 use crate::handle::Handle;
+use crate::{GMeshPtr, Location, MaterialPtr};
 use crate::mesh::{GMesh, GVertex, Material, TextureBundle};
 
 
@@ -66,7 +69,10 @@ impl GltfAssetLoader for AssetServer {
             }
         }
 
+        let mut meshes = vec![];
+
         for m in sponza.meshes() {
+            let mut combined = vec![];
             for p in m.primitives() {
                 let mut pos : Vec<f32> = vec![];
                 let mut normals : Vec<f32> = vec![];
@@ -189,7 +195,27 @@ impl GltfAssetLoader for AssetServer {
                     version_sum : 0
                 };
 
-                world.create_entity().with(model).with(material).build();
+                combined.push((GMeshPtr {mesh : Arc::new(model)}, MaterialPtr {mat : Arc::new(Mutex::new(material))}));
+            }
+            meshes.push(combined);
+        }
+
+        for n in sponza.nodes() {
+            if let Some(mesh_idx) = n.mesh() {
+                let mut location = Location::new(&device);
+
+                let (tr, quat, scale) = n.transform().decomposed();
+                let q = nalgebra::Quaternion::new(quat[3], quat[0], quat[1], quat[2]);
+                let rot = nalgebra::Rotation::from(nalgebra::UnitQuaternion::from_quaternion(q));
+                let (e_x, e_y, e_z) = rot.euler_angles();
+                location.pos = tr.into();
+                location.rotation = [e_x, e_y, e_z].into();
+                location.scale = scale.into();
+
+                for (p, m) in &meshes[mesh_idx.index()] {
+
+                    world.create_entity().with(location.clone(&device)).with(m.clone()).with(p.clone());
+                }
             }
         }
     }

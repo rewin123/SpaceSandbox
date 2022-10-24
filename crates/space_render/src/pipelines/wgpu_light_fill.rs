@@ -297,7 +297,7 @@ impl PointLightPipeline {
             vertex: wgpu::VertexState {
                 module : &shader,
                 entry_point : "vs_main",
-                buffers: &[GVertex::desc()]
+                buffers: &GVertex::desc()
             },
             fragment: Some(wgpu::FragmentState {
                 module : &shader,

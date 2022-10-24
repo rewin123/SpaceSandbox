@@ -1,6 +1,11 @@
+use std::sync::{Arc, Mutex};
 use specs::{Component, VecStorage};
 use crate::asset_server::{Asset, AssetServer};
 use crate::handle::Handle;
+use nalgebra::*;
+use wgpu::util::DeviceExt;
+use wgpu::{BufferUsages, VertexFormat};
+use space_core::RenderBase;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -12,7 +17,8 @@ pub struct GVertex {
 }
 
 impl GVertex {
-    pub fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+    pub fn desc<'a>() -> Vec<wgpu::VertexBufferLayout<'a>> {
+        vec![
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<GVertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
@@ -38,7 +44,34 @@ impl GVertex {
                     format: wgpu::VertexFormat::Float32x2,
                 },
             ],
-        }
+        },
+            wgpu::VertexBufferLayout {
+                array_stride: 16 * 4,
+                step_mode: wgpu::VertexStepMode::Instance,
+                attributes: &[
+                    wgpu::VertexAttribute {
+                        format: wgpu::VertexFormat::Float32x4,
+                        offset : 0,
+                        shader_location: 4
+                    },
+                    wgpu::VertexAttribute {
+                        format: wgpu::VertexFormat::Float32x4,
+                        offset : 4 * 4,
+                        shader_location: 5
+                    },
+                    wgpu::VertexAttribute {
+                        format: wgpu::VertexFormat::Float32x4,
+                        offset : 8 * 4,
+                        shader_location: 6
+                    },
+                    wgpu::VertexAttribute {
+                        format: wgpu::VertexFormat::Float32x4,
+                        offset : 12 * 4,
+                        shader_location: 7
+                    },
+                ]
+            }
+        ]
     }
 }
 
@@ -48,8 +81,68 @@ pub struct GMesh {
     pub index_count : u32
 }
 
-impl Component for GMesh {
-    type Storage = VecStorage<GMesh>;
+#[derive(Clone)]
+pub struct GMeshPtr {
+    pub mesh : Arc<GMesh>
+}
+
+impl Component for GMeshPtr {
+    type Storage = VecStorage<GMeshPtr>;
+}
+
+pub struct Location {
+    pub pos : Vector3<f32>,
+    pub rotation : Vector3<f32>,
+    pub scale : Vector3<f32>,
+    pub buffer : Arc<wgpu::Buffer>
+}
+impl Location {
+
+    pub fn clone(&self, device : &wgpu::Device) -> Self {
+        Self {
+            pos : self.pos.clone(),
+            rotation : self.rotation.clone(),
+            scale : self.scale.clone(),
+            buffer : Arc::new(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: &[0u8; 16],
+                usage: BufferUsages::MAP_WRITE | BufferUsages::VERTEX
+            }))
+        }
+    }
+
+    pub fn new(device : &wgpu::Device) -> Self {
+        Location {
+            pos : [0.0, 0.0, 0.0].into(),
+            rotation : [0.0, 0.0, 0.0].into(),
+            scale : [0.0, 0.0, 0.0].into(),
+            buffer : Arc::new(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: &[0u8; 16],
+                usage: BufferUsages::MAP_WRITE | BufferUsages::VERTEX
+            }))
+        }
+    }
+
+    fn update_buffer(&mut self) {
+        let tr : Matrix4<f32> = Matrix::new_translation(&self.pos);
+        let scale : Matrix4<f32> = Matrix::new_nonuniform_scaling(&self.scale);
+
+        let rot = Rotation::from_euler_angles(self.rotation.x, self.rotation.y, self.rotation.z);
+        let rot_mat : Matrix4<f32> = rot.into();
+
+        let res = tr * rot_mat * scale;
+
+        let buffer = self.buffer.clone();
+        self.buffer.slice(..).map_async(wgpu::MapMode::Write, move |a| {
+            buffer.slice(..).get_mapped_range_mut().copy_from_slice(bytemuck::cast_slice(&res.as_slice()));
+            buffer.unmap();
+        });
+    }
+}
+
+impl Component for Location {
+    type Storage = VecStorage<Location>;
 }
 
 
@@ -112,8 +205,13 @@ impl Material {
     }
 }
 
-impl Component for Material {
-    type Storage = VecStorage<Material>;
+#[derive(Clone)]
+pub struct MaterialPtr {
+    pub mat : Arc<Mutex<Material>>
+}
+
+impl Component for MaterialPtr {
+    type Storage = VecStorage<MaterialPtr>;
 }
 
 impl Asset for TextureBundle {

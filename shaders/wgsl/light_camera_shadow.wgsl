@@ -13,7 +13,11 @@ struct VertexInput {
     @location(0) position : vec3<f32>,
     @location(1) normal : vec3<f32>,
     @location(2) tangent : vec3<f32>,
-    @location(3) uv : vec2<f32>
+    @location(3) uv : vec2<f32>,
+    @location(4) model_mat_1 : vec4<f32>,
+    @location(5) model_mat_2 : vec4<f32>,
+    @location(6) model_mat_3 : vec4<f32>,
+    @location(7) model_mat_4 : vec4<f32>,
 }
 
 struct VertexOutput {
@@ -26,13 +30,13 @@ fn vs_main(
     model : VertexInput
 ) -> VertexOutput {
     var out : VertexOutput;
+    let model_mat = mat4x4<f32>(model.model_mat_1,model.model_mat_2,model.model_mat_3,model.model_mat_4);
 
-
-    var loc_pos = model.position - camera.pos;
+    let model_pos = model_mat * vec4<f32>(model.position, 1.0);
+    var loc_pos = model_pos.rgb - camera.pos;
     var right = cross(camera.frw, camera.up);
     var view = vec3<f32>(dot(loc_pos, right), dot(loc_pos, camera.up), dot(loc_pos, camera.frw));
     var res = camera.projection * vec4<f32>(view, 1.0);
-//    res.y *= -1.0;
     out.clip_position = res;
     out.pos = loc_pos;
     return out;

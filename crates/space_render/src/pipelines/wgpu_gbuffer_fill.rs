@@ -246,7 +246,7 @@ impl GBufferFill {
             vertex: wgpu::VertexState {
                 module : &shader,
                 entry_point : "vs_main",
-                buffers: &[GVertex::desc()]
+                buffers: &GVertex::desc()
             },
             fragment: Some(wgpu::FragmentState {
                 module : &shader,
@@ -309,8 +309,9 @@ impl GBufferFill {
 
 
     pub fn draw(&mut self, assets : &AssetServer, encoder : &mut wgpu::CommandEncoder, scene : &World, dst : &GFramebuffer) {
-        let mesh_st = scene.read_storage::<GMesh>();
-        let mut material_st = scene.write_storage::<Material>();
+        let mesh_st = scene.read_storage::<GMeshPtr>();
+        let mut material_st = scene.write_storage::<MaterialPtr>();
+        let mut pos_st = scene.read_storage::<Location>();
 
         let mut render_pass = dst.spawn_renderpass(encoder);
 
@@ -318,8 +319,9 @@ impl GBufferFill {
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
 
 
-        for (mesh, material) in (&mesh_st, &mut material_st).join() {
-
+        for (mesh_ptr, material_tr, loc) in (&mesh_st, &mut material_st, &pos_st).join() {
+            let mesh = mesh_ptr.mesh.clone();
+            let mut material = material_tr.mat.lock().unwrap();
             if material.need_rebind(assets) {
                 let group = self.render.device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: None,
@@ -355,12 +357,12 @@ impl GBufferFill {
                 material.gbuffer_bind = Some(group);
             }
 
-            {
-                render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
-                render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
-                render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
-                render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
-            }
+
+            render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
+            render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
+            render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
+            render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
+
         }
     }
 }

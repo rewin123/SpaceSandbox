@@ -139,7 +139,7 @@ impl MipmapGenerator {
         for mip in 1..mipcount {
             let buffer = render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
-                contents: bytemuck::cast_slice(&[width as f32, height as f32]),
+                contents: bytemuck::cast_slice(&[mip_width as f32, mip_height as f32]),
                 usage: wgpu::BufferUsages::UNIFORM
             });
 
