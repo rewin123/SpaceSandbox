@@ -16,6 +16,10 @@ struct VertexInput {
     @location(5) model_mat_2 : vec4<f32>,
     @location(6) model_mat_3 : vec4<f32>,
     @location(7) model_mat_4 : vec4<f32>,
+    @location(8)  normal_mat_1 : vec4<f32>,
+    @location(9)  normal_mat_2 : vec4<f32>,
+    @location(10) normal_mat_3 : vec4<f32>,
+    @location(11) normal_mat_4 : vec4<f32>,
 }
 
 
@@ -32,12 +36,13 @@ fn vs_main(
     model : VertexInput
 ) -> VertexOutput {
     let model_mat = mat4x4<f32>(model.model_mat_1,model.model_mat_2,model.model_mat_3,model.model_mat_4);
+    let normal_mat = mat4x4<f32>(model.normal_mat_1,model.normal_mat_2,model.normal_mat_3,model.normal_mat_4);
     var out : VertexOutput;
-    out.normal = model.normal;
     out.pos = (model_mat * vec4<f32>(model.position, 1.0)).rgb;
+    out.normal = normalize((normal_mat * vec4<f32>(model.normal, 1.0)).rgb);
     out.clip_position = camera.proj * camera.view * model_mat * vec4<f32>(model.position, 1.0);
     out.uv = model.uv;
-    out.tangent = model.tangent;
+    out.tangent = normalize((normal_mat * vec4<f32>(model.tangent, 1.0)).rgb);
     return out;
 }
 

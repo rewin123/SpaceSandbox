@@ -69,6 +69,26 @@ impl GVertex {
                         offset : 12 * 4,
                         shader_location: 7
                     },
+                    wgpu::VertexAttribute {
+                        format: wgpu::VertexFormat::Float32x4,
+                        offset : 4 * 4 * 4,
+                        shader_location: 8
+                    },
+                    wgpu::VertexAttribute {
+                        format: wgpu::VertexFormat::Float32x4,
+                        offset : 4 * 4 * 5,
+                        shader_location: 9
+                    },
+                    wgpu::VertexAttribute {
+                        format: wgpu::VertexFormat::Float32x4,
+                        offset : 4 * 4 * 6,
+                        shader_location: 10
+                    },
+                    wgpu::VertexAttribute {
+                        format: wgpu::VertexFormat::Float32x4,
+                        offset : 4 * 4 * 7,
+                        shader_location: 11
+                    },
                 ]
             }
         ]
@@ -90,6 +110,13 @@ impl Component for GMeshPtr {
     type Storage = VecStorage<GMeshPtr>;
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct LocationInstant {
+    model : [[f32; 4]; 4],
+    normal : [[f32; 4]; 4]
+}
+
 pub struct Location {
     pub pos : Vector3<f32>,
     pub rotation : Vector3<f32>,
@@ -105,7 +132,7 @@ impl Location {
             scale : self.scale.clone(),
             buffer : Arc::new(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
-                contents: &[0u8; 16 * 4],
+                contents: &[0u8; 16 * 4 * 2],
                 usage: BufferUsages::MAP_WRITE | BufferUsages::VERTEX
             }))
         }
@@ -118,7 +145,7 @@ impl Location {
             scale : [0.0, 0.0, 0.0].into(),
             buffer : Arc::new(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
-                contents: &[0u8; 16],
+                contents: &[0u8; 16 * 4 * 2],
                 usage: BufferUsages::MAP_WRITE | BufferUsages::VERTEX
             }))
         }
@@ -132,10 +159,17 @@ impl Location {
         let rot_mat : Matrix4<f32> = rot.into();
 
         let res = tr * rot_mat * scale;
+        let normal = rot_mat * Matrix4::identity();
+        println!("Normal: {:#?}", normal);
+
+        let inst = LocationInstant {
+            model : res.into(),
+            normal : normal.into()
+        };
 
         let buffer = self.buffer.clone();
         self.buffer.slice(..).map_async(wgpu::MapMode::Write, move |a| {
-            buffer.slice(..).get_mapped_range_mut().copy_from_slice(bytemuck::cast_slice(&res.as_slice()));
+            buffer.slice(..).get_mapped_range_mut().copy_from_slice(bytemuck::cast_slice(&[inst]));
             buffer.unmap();
         });
     }

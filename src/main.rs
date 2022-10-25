@@ -18,6 +18,7 @@ use encase::{ShaderType, UniformBuffer};
 use space_assets::*;
 
 use nalgebra as na;
+use nalgebra::Matrix4;
 use wgpu::MaintainBase;
 use space_core::{RenderBase, TaskServer};
 use space_render::{pipelines::*, Camera};
@@ -269,10 +270,10 @@ impl State {
             });
 
         let mut lights = vec![
-            PointLight::new(&render, [0.0, 10.0, 0.0].into(), true),
+            PointLight::new(&render, [0.0, 3.0, 0.0].into(), true),
             // PointLight::new(&render, [0.0, 1.0, 0.0].into(), true),
         ];
-        lights[0].intensity = 1.0;
+        lights[0].intensity = 10.0;
         // lights[1].intensity = 1.0;
 
         let point_light_shadow = PointLightShadowPipeline::new(&render);
@@ -545,6 +546,22 @@ impl State {
 
                     ui.add(egui::Slider::new(&mut self.ssao_pipeline.scale, 0.0..=1000.0));
                 });
+
+                let cam_uniform = self.camera.build_uniform();
+                let gizmo = egui_gizmo::Gizmo::new("light gizmo").projection_matrix(
+                    cam_uniform.proj
+                ).view_matrix(cam_uniform.view)
+                    .model_matrix(na::Matrix4::new_translation(&self.point_lights[0].pos))
+                    .mode(GizmoMode::Translate);
+
+                if let Some(responce) = gizmo.interact(ui) {
+                    let mat : Matrix4<f32> = responce.transform.into();
+                    self.point_lights[0].pos.x = mat.m14;
+                    self.point_lights[0].pos.y = mat.m24;
+                    self.point_lights[0].pos.z = mat.m34;
+
+                }
+
 
         });
 

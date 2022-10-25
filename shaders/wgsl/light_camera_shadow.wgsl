@@ -18,6 +18,10 @@ struct VertexInput {
     @location(5) model_mat_2 : vec4<f32>,
     @location(6) model_mat_3 : vec4<f32>,
     @location(7) model_mat_4 : vec4<f32>,
+    @location(8) normal_mat_1 : vec4<f32>,
+    @location(9) normal_mat_2 : vec4<f32>,
+    @location(10) normal_mat_3 : vec4<f32>,
+    @location(11) normal_mat_4 : vec4<f32>,
 }
 
 struct VertexOutput {

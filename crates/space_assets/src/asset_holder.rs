@@ -3,7 +3,7 @@ use crate::asset_server::{Asset, AssetServerGlobal};
 use crate::handle::HandleUntyped;
 
 pub struct AssetHolder {
-    ptr : Box<dyn Asset>,
+    ptr : Arc<dyn Asset>,
     count : i32,
     version : u32,
     watchers : Vec<HandleUntyped>,
@@ -11,7 +11,7 @@ pub struct AssetHolder {
 }
 
 impl AssetHolder {
-    pub fn new(ptr : Box<dyn Asset>) -> Self {
+    pub fn new(ptr : Arc<dyn Asset>) -> Self {
         AssetHolder {
             ptr,
             count : 0,
@@ -21,12 +21,8 @@ impl AssetHolder {
         }
     }
 
-    pub fn get(&self) -> &Box<dyn Asset> {
+    pub fn get(&self) -> &Arc<dyn Asset> {
         &self.ptr
-    }
-
-    pub fn get_mut(&mut self) -> &mut Box<dyn Asset> {
-        &mut self.ptr
     }
 
     pub fn inc_counter(&mut self) {
@@ -38,7 +34,7 @@ impl AssetHolder {
         self.count <= 0
     }
 
-    pub fn update_data(&mut self, ptr : Box<dyn Asset>, core : &Arc<AssetServerGlobal>) {
+    pub fn update_data(&mut self, ptr : Arc<dyn Asset>, core : &Arc<AssetServerGlobal>) {
         self.ptr = ptr;
         self.version += 1;
 

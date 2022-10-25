@@ -50,6 +50,6 @@ members = [
     "crates/space_code_editor",
     "crates/space_render",
 ]
-
-[lib]
-crate-type = ["cdylib", "rlib"]
+#
+#[lib]
+#crate-type = ["cdylib", "rlib"]

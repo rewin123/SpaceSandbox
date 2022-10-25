@@ -19,5 +19,5 @@ nalgebra = "0.31.1"
 
 space_core = {path = "../space_core"}
 
-[lib]
-crate-type = ["dylib"]
+#[lib]
+#crate-type = ["dylib"]

@@ -70,15 +70,15 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
         let np = pos + tbn * (ssao.samples[idx].rgb * ssao.scale);
         let clip = ssao.proj_view * vec4<f32>(np, 1.0);
         let uv = clip.xy / clip.w * vec2<f32>(0.5, -0.5) + 0.5;
-        let pos2 = textureSample(t_position, s_position, uv).rgb;
+        let pos2 = textureSample(t_position, s_position, uv);
         // let clip2 = ssao.proj_view * vec4<f32>(pos2, 1.0);
 
-        let dist = length(pos2 - pos);
+        let dist = length(pos2.rgb - pos);
         let k = smoothstep(0.0, 1.0, ssao.scale / dist);
 
-        let s = f32((length(np - ssao.cam_pos.rgb)) > length(pos2 - ssao.cam_pos.rgb));
+        let s = f32((length(np - ssao.cam_pos.rgb)) > length(pos2.rgb - ssao.cam_pos.rgb));
 
-        res += s * k;
+        res += s * k * pos2.w;
     }
 
     res /= 32.0;
