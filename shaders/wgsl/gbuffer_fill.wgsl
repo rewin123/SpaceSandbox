@@ -36,13 +36,14 @@ fn vs_main(
     model : VertexInput
 ) -> VertexOutput {
     let model_mat = mat4x4<f32>(model.model_mat_1,model.model_mat_2,model.model_mat_3,model.model_mat_4);
-    let normal_mat = mat4x4<f32>(model.normal_mat_1,model.normal_mat_2,model.normal_mat_3,model.normal_mat_4);
+    let normal_mat = mat4x4<f32>(model.normal_mat_1, model.normal_mat_2, model.normal_mat_3, model.normal_mat_4);
     var out : VertexOutput;
     out.pos = (model_mat * vec4<f32>(model.position, 1.0)).rgb;
     out.normal = normalize((normal_mat * vec4<f32>(model.normal, 1.0)).rgb);
     out.clip_position = camera.proj * camera.view * model_mat * vec4<f32>(model.position, 1.0);
     out.uv = model.uv;
     out.tangent = normalize((normal_mat * vec4<f32>(model.tangent, 1.0)).rgb);
+//    out.tangent = model.tangent;
     return out;
 }
 
@@ -84,10 +85,11 @@ fn normal_mapping(normal : vec3<f32>, tangent : vec3<f32>, uv : vec2<f32>) -> ve
 fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
 
-    out.diffuse = textureSample(t_diffuse, s_diffuse, in.uv);
+//    out.diffuse = textureSample(t_diffuse, s_diffuse, in.uv);
+    out.diffuse = vec4<f32>(in.tangent, 1.0);
     // out.diffuse = vec4<f32>(1.0, 1.0, 1.0, 1.0);
     out.normal = normal_mapping(in.normal, in.tangent, in.uv);
-    // out.normal = vec4<f32>(in.normal, 1.0);
+//     out.normal = vec4<f32>(in.normal, 1.0);
     out.pos = vec4<f32>(in.pos, 1.0);
     out.mr = textureSample(t_mr, s_mr, in.uv);
 

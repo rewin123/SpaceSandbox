@@ -47,6 +47,8 @@ impl GltfAssetLoader for AssetServer {
         }
     }
 
+
+
     fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut specs::World) {
 
         let sponza = gltf::Gltf::open(&path).unwrap();
@@ -140,16 +142,19 @@ impl GltfAssetLoader for AssetServer {
                     }
                 }
                 //load diffuse texture
-
-                if tangent.len() == 0 {
-                    tangent = vec![0.0f32; pos.len()];
-                }
+                let vertex_count = pos.len() / 3;
+                let triangle_count = indices.len() / 3;
 
                 if uv.len() == 0 {
                     uv = vec![0.0f32; pos.len() / 3 * 2];
                 }
 
-                let vertex_count = pos.len() / 3;
+                if tangent.len() == 0 {
+                    tangent = vec![0.0f32; pos.len()];
+                    println!("[ERROR] No tangents for object!");
+                }
+
+
 
                 let mut verts = vec![];
                 for i in 0..vertex_count {

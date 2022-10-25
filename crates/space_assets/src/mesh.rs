@@ -46,7 +46,7 @@ impl GVertex {
             ],
         },
             wgpu::VertexBufferLayout {
-                array_stride: 16 * 4,
+                array_stride: 16 * 4 * 2,
                 step_mode: wgpu::VertexStepMode::Instance,
                 attributes: &[
                     wgpu::VertexAttribute {
@@ -61,12 +61,12 @@ impl GVertex {
                     },
                     wgpu::VertexAttribute {
                         format: wgpu::VertexFormat::Float32x4,
-                        offset : 8 * 4,
+                        offset : 4 * 4 * 2,
                         shader_location: 6
                     },
                     wgpu::VertexAttribute {
                         format: wgpu::VertexFormat::Float32x4,
-                        offset : 12 * 4,
+                        offset : 4 * 4 * 3,
                         shader_location: 7
                     },
                     wgpu::VertexAttribute {
@@ -160,7 +160,6 @@ impl Location {
 
         let res = tr * rot_mat * scale;
         let normal = rot_mat * Matrix4::identity();
-        println!("Normal: {:#?}", normal);
 
         let inst = LocationInstant {
             model : res.into(),
