@@ -101,6 +101,10 @@ impl SSAO {
         render_pass
     }
 
+    fn lerp(val : f32, start : f32, end : f32) -> f32 {
+        start + val * (end - start)
+    }
+
     pub fn new(
         render : &Arc<RenderBase>,
         format : wgpu::TextureFormat,
@@ -205,7 +209,7 @@ impl SSAO {
             
             v = v.normalize();
             let mut scale = (i as f32) / 32.0;
-            scale = 0.1 + scale * scale * (1.0 - 0.1);
+            scale = SSAO::lerp(scale * scale, 0.01, 1.0);
             v = v * scale;
             samples[i] = [v.x, v.y, v.z, 1.0];
         }
@@ -242,7 +246,7 @@ impl SSAO {
             render: render.clone(),
             bind: None,
             buffer : Arc::new(buffer),
-            scale : 30.0,
+            scale : 1.0,
             cached_uniform : def_uniform
         }
     }

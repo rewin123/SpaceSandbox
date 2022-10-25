@@ -18,6 +18,7 @@ use encase::{ShaderType, UniformBuffer};
 use space_assets::*;
 
 use nalgebra as na;
+use wgpu::MaintainBase;
 use space_core::{RenderBase, TaskServer};
 use space_render::{pipelines::*, Camera};
 use space_render::light::*;
@@ -221,8 +222,8 @@ impl State {
         };
 
         let mut world = World::new();
-        world.register::<Arc<GMesh>>();
-        world.register::<Arc<Material>>();
+        world.register::<GMeshPtr>();
+        world.register::<Material>();
         world.register::<Location>();
 
         let task_server = Arc::new(TaskServer::new());
@@ -234,15 +235,15 @@ impl State {
 
         let mut assets = AssetServer::new(&render, &task_server);
 
-        assets.wgpu_gltf_load(
-            &render.device,
-            "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
-            &mut world);
-
         // assets.wgpu_gltf_load(
         //     &render.device,
-        //     "res/bobik/bobik.gltf".into(),
+        //     "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
         //     &mut world);
+
+        assets.wgpu_gltf_load(
+            &render.device,
+            "res/bobik/bobik.gltf".into(),
+            &mut world);
 
         let gbuffer = GBufferFill::new(
             &render,
@@ -268,11 +269,11 @@ impl State {
             });
 
         let mut lights = vec![
-            PointLight::new(&render, [100.0, 100.0, 0.0].into(), true),
-            PointLight::new(&render, [-100.0, 100.0, 0.0].into(), true),
+            PointLight::new(&render, [0.0, 10.0, 0.0].into(), true),
+            // PointLight::new(&render, [0.0, 1.0, 0.0].into(), true),
         ];
-        lights[0].intensity = 1000.0;
-        lights[1].intensity = 1000.0;
+        lights[0].intensity = 1.0;
+        // lights[1].intensity = 1.0;
 
         let point_light_shadow = PointLightShadowPipeline::new(&render);
 
@@ -452,7 +453,7 @@ impl State {
     }
 
     fn update(&mut self) {
-        let speed = 0.3;
+        let speed = 0.3 / 5.0;
         if self.input_system.get_key_state(VirtualKeyCode::W) {
             self.camera.pos += self.camera.frw * speed;
         } 
@@ -471,6 +472,13 @@ impl State {
         if self.input_system.get_key_state(VirtualKeyCode::LShift) {
             self.camera.pos -= self.camera.up * speed;
         }
+
+        let mut loc_storage = self.scene.write_storage::<Location>();
+
+        for loc in (&mut loc_storage,).join() {
+            loc.0.update_buffer();
+        }
+        self.render.device.poll(wgpu::Maintain::Wait);
 
         let camera_unifrom = self.camera.build_uniform();
         let mut uniform = encase::UniformBuffer::new(vec![]);

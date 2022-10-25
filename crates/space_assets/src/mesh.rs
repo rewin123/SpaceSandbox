@@ -105,7 +105,7 @@ impl Location {
             scale : self.scale.clone(),
             buffer : Arc::new(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
-                contents: &[0u8; 16],
+                contents: &[0u8; 16 * 4],
                 usage: BufferUsages::MAP_WRITE | BufferUsages::VERTEX
             }))
         }
@@ -124,7 +124,7 @@ impl Location {
         }
     }
 
-    fn update_buffer(&mut self) {
+    pub fn update_buffer(&mut self) {
         let tr : Matrix4<f32> = Matrix::new_translation(&self.pos);
         let scale : Matrix4<f32> = Matrix::new_nonuniform_scaling(&self.scale);
 
@@ -187,6 +187,18 @@ pub struct Material {
     pub gbuffer_bind : Option<wgpu::BindGroup>
 }
 
+impl Clone for Material {
+    fn clone(&self) -> Self {
+        Material {
+            color : self.color.clone(),
+            normal : self.normal.clone(),
+            metallic_roughness : self.metallic_roughness.clone(),
+            version_sum : 0,
+            gbuffer_bind : None
+        }
+    }
+}
+
 impl Material {
     pub fn need_rebind(&self, assets : &AssetServer) -> bool {
         if self.gbuffer_bind.is_none() {
@@ -205,13 +217,8 @@ impl Material {
     }
 }
 
-#[derive(Clone)]
-pub struct MaterialPtr {
-    pub mat : Arc<Mutex<Material>>
-}
-
-impl Component for MaterialPtr {
-    type Storage = VecStorage<MaterialPtr>;
+impl Component for Material {
+    type Storage = VecStorage<Material>;
 }
 
 impl Asset for TextureBundle {

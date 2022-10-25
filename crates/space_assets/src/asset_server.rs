@@ -33,7 +33,7 @@ pub struct AssetServerDecriptor {
 pub struct AssetServerGlobal {
     pub destroy_queue : Mutex<Vec<HandleId>>,
     pub create_queue : Mutex<Vec<HandleId>>,
-    pub background_loading : Mutex<Option<Vec<(HandleUntyped, Box<dyn Asset>)>>>,
+    pub background_loading : Mutex<Vec<(HandleUntyped, Arc<dyn Asset>)>>,
     pub mark_to_update : Mutex<Vec<HandleId>>
 }
 
@@ -161,11 +161,11 @@ impl AssetServer {
         } 
         
         {
-            let mut add = self.memory_holder.background_loading.lock().unwrap().take().unwrap();
+            let mut add = self.memory_holder.background_loading.lock().unwrap();
             for idx in 0..add.len() {
-                let (handle, data) = add[idx];
+                let (handle, data) = &add[idx];
                 if let Some(h) = self.assets.get_mut(&handle.get_idx()) {
-                    h.update_data(data, &self.memory_holder);
+                    h.update_data(data.clone(), &self.memory_holder);
                 }
             }
             add.clear();
@@ -227,17 +227,13 @@ impl AssetServer {
         }
     }
 
-    pub fn get<T : Asset>(&self, handle : &Handle<T>) -> Option<&T> {
+    pub fn get<T : Asset>(&self, handle : &Handle<T>) -> Option<Arc<T>> {
         if let Some(val) = self.assets.get(&handle.get_idx()) {
-           val.get().downcast_ref::<T>()
-        } else {
-            None
-        }
-    }
-
-    pub fn get_mut<T : Asset>(&mut self, handle : &Handle<T>) -> Option<&mut T> {
-        if let Some(val) = self.assets.get_mut(&handle.get_idx()) {
-            val.get().downcast_mut::<T>()
+           if let Ok(res) = val.get().clone().downcast_arc::<T>() {
+               Some(res)
+           } else {
+               None
+           }
         } else {
             None
         }
@@ -259,7 +255,7 @@ impl AssetServer {
         }
     }
 
-    pub fn new_asset<T : Asset>(&mut self, val : Box<T>) -> Handle<T> {
+    pub fn new_asset<T : Asset>(&mut self, val : Arc<T>) -> Handle<T> {
         let holder = AssetHolder::new(val);
         self.counter += 1;
         self.assets.insert(self.counter, holder);
@@ -277,7 +273,7 @@ impl AssetServer {
         self.counter += 1;
 
         let copy_index = self.counter;
-        let handler = self.new_asset(Box::new(self.default_color.clone()));
+        let handler = self.new_asset(self.default_color.clone());
 
         let untyped = handler.get_untyped();
         let render = self.render.clone();

@@ -138,8 +138,8 @@ impl PointLightShadowPipeline {
                    encoder : &mut wgpu::CommandEncoder) {
 
         let mesh_st = world.read_storage::<GMeshPtr>();
-        let mut material_st = world.write_storage::<MaterialPtr>();
-        let loc_st = world.write_storage::<MaterialPtr>();
+        let mut material_st = world.write_storage::<Material>();
+        let loc_st = world.write_storage::<Location>();
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Point light renderpass"),
@@ -156,13 +156,13 @@ impl PointLightShadowPipeline {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &shadow.camera_binds[idx], &[]);
 
-        for (mesh_ptr, material_ptr, loc) in (&mesh_st, &mut material_st, &loc_st).join() {
+        for (mesh_ptr, material, loc) in (&mesh_st, &mut material_st, &loc_st).join() {
             let mesh = mesh_ptr.mesh.clone();
-            let mut material = material_ptr.mat.clone();
 
-            render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
-            render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
-            render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
+            render_pass.set_vertex_buffer(0, mesh_ptr.mesh.vertex.slice(..));
+            render_pass.set_vertex_buffer(1, loc.buffer.slice(..));
+            render_pass.set_index_buffer(mesh_ptr.mesh.index.slice(..), wgpu::IndexFormat::Uint32);
+            render_pass.draw_indexed(0..mesh_ptr.mesh.index_count, 0, 0..1);
         }
     }
 }

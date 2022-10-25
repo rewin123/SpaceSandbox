@@ -9,7 +9,7 @@ use specs::{Builder, Component, VecStorage, WorldExt};
 use wgpu::util::DeviceExt;
 use crate::asset_server::AssetServer;
 use crate::handle::Handle;
-use crate::{GMeshPtr, Location, MaterialPtr};
+use crate::{GMeshPtr, Location};
 use crate::mesh::{GMesh, GVertex, Material, TextureBundle};
 
 
@@ -195,7 +195,7 @@ impl GltfAssetLoader for AssetServer {
                     version_sum : 0
                 };
 
-                combined.push((GMeshPtr {mesh : Arc::new(model)}, MaterialPtr {mat : Arc::new(Mutex::new(material))}));
+                combined.push((GMeshPtr {mesh : Arc::new(model)}, material));
             }
             meshes.push(combined);
         }

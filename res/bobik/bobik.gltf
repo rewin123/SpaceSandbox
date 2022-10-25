@@ -24,19 +24,39 @@
                 0,
                 0,
                 0.7071068286895752
+            ],
+            "scale" : [
+                2,
+                2,
+                2
             ]
         },
         {
             "mesh" : 1,
-            "name" : "Cube"
+            "name" : "Cube",
+            "scale" : [
+                2,
+                2,
+                2
+            ]
         },
         {
             "mesh" : 2,
-            "name" : "Cylinder.002"
+            "name" : "Cylinder.002",
+            "scale" : [
+                2,
+                2,
+                2
+            ]
         },
         {
             "mesh" : 3,
-            "name" : "Cube.001"
+            "name" : "Cube.001",
+            "scale" : [
+                2,
+                2,
+                2
+            ]
         }
     ],
     "materials" : [

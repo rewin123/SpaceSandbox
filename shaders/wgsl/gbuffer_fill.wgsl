@@ -34,7 +34,7 @@ fn vs_main(
     let model_mat = mat4x4<f32>(model.model_mat_1,model.model_mat_2,model.model_mat_3,model.model_mat_4);
     var out : VertexOutput;
     out.normal = model.normal;
-    out.pos = model.position;
+    out.pos = (model_mat * vec4<f32>(model.position, 1.0)).rgb;
     out.clip_position = camera.proj * camera.view * model_mat * vec4<f32>(model.position, 1.0);
     out.uv = model.uv;
     out.tangent = model.tangent;
