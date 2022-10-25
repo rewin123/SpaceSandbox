@@ -231,7 +231,7 @@ impl SSAO {
 
         let buffer = render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: &bytemuck::bytes_of(&def_uniform),
+            contents: bytemuck::bytes_of(&def_uniform),
             usage: wgpu::BufferUsages::MAP_WRITE | wgpu::BufferUsages::UNIFORM,
         });
 
