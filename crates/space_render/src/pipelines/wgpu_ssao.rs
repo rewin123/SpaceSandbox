@@ -66,7 +66,7 @@ impl SSAO {
                     dimension: wgpu::TextureDimension::D2,
                     format: self.output_format,
                     usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
-                })
+                }, wgpu::FilterMode::Nearest)
             )
         }
 
@@ -204,12 +204,12 @@ impl SSAO {
             let mut v = nalgebra::Vector3::new(
                 thread_rng.gen_range(-1.0f32..=1.0),
                 thread_rng.gen_range(-1.0f32..=1.0),
-                thread_rng.gen_range(0.0f32..=1.0)
+                thread_rng.gen_range(0.1f32..=1.0)
             );
             
             v = v.normalize();
             let mut scale = (i as f32) / 32.0;
-            scale = SSAO::lerp(scale * scale, 0.01, 1.0);
+            scale = SSAO::lerp(scale * scale, 0.1, 1.0);
             v = v * scale;
             samples[i] = [v.x, v.y, v.z, 1.0];
         }

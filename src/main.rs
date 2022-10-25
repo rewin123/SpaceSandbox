@@ -305,8 +305,8 @@ impl State {
             &render,
             wgpu::TextureFormat::R8Unorm,
             wgpu::Extent3d {
-                width : extent.width / 2,
-                height : extent.height / 2,
+                width : extent.width,
+                height : extent.height,
                 depth_or_array_layers : 1
             },
             1,
@@ -317,7 +317,7 @@ impl State {
         let ssao_buffer = ssao_pipeline.spawn_framebuffer();
 
         let size_uniform = SmoothUniform {
-            size : [extent.width as i32 / 2, extent.height as i32 / 2]
+            size : [extent.width as i32, extent.height as i32]
         };
 
         let ssao_smooth_pipeline = TextureTransformPipeline::new(
@@ -413,8 +413,8 @@ impl State {
                 &self.render, 
                 wgpu::TextureFormat::R8Unorm, 
                 wgpu::Extent3d {
-                    width : size.width / 2,
-                    height : size.height / 2,
+                    width : size.width,
+                    height : size.height,
                     depth_or_array_layers : 1
                 }, 
                 1, 
@@ -429,15 +429,15 @@ impl State {
             self.ssao_framebuffer = self.ssao_pipeline.spawn_framebuffer();
 
             let size_uniform = SmoothUniform {
-                size : [size.width as i32 / 2, size.height as i32 / 2]
+                size : [size.width as i32, size.height as i32]
             };
 
             self.ssao_smooth_pipeline = TextureTransformPipeline::new(
                 &self.render, 
                 wgpu::TextureFormat::R8Unorm, 
                 wgpu::Extent3d {
-                    width : size.width / 2,
-                    height : size.height / 2,
+                    width : size.width,
+                    height : size.height,
                     depth_or_array_layers : 1
                 }, 
                 1, 
@@ -529,7 +529,7 @@ impl State {
         self.light_shadow.draw(&mut encoder, &mut self.point_lights, &self.scene);
         self.ssao_pipeline.draw(&mut encoder, &self.gbuffer, &self.ssao_framebuffer.dst[0]);
         self.ssao_smooth_pipeline.draw(&self.render.device, &mut encoder, &[&self.ssao_framebuffer.dst[0]], &[&self.ssao_smooth_framebuffer.dst[0]]);
-        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer, &self.ssao_smooth_framebuffer.dst[0]);
+        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer, &self.ssao_framebuffer.dst[0]);
         self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
         self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);

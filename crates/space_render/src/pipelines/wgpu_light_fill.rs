@@ -73,7 +73,7 @@ impl PointLightPipeline {
             dimension: TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba32Float,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
-        })
+        }, wgpu::FilterMode::Nearest)
     }
 
     fn get_texture_layout(device : &wgpu::Device) -> wgpu::BindGroupLayout {

@@ -38,10 +38,10 @@ impl GFramebuffer {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING
         };
 
-        let diffuse = TextureBundle::new(device, &color_desc);
-        let normal = TextureBundle::new(device, &noraml_desc);
-        let position = TextureBundle::new(device, &color_desc);
-        let mr = TextureBundle::new(device, &color_desc);
+        let diffuse = TextureBundle::new(device, &color_desc, wgpu::FilterMode::Nearest);
+        let normal = TextureBundle::new(device, &noraml_desc, wgpu::FilterMode::Nearest);
+        let position = TextureBundle::new(device, &color_desc, wgpu::FilterMode::Nearest);
+        let mr = TextureBundle::new(device, &color_desc, wgpu::FilterMode::Nearest);
 
         let depth = TextureBundle::new(device, &wgpu::TextureDescriptor {
             label: Some("gbuffer depth"),
@@ -51,7 +51,7 @@ impl GFramebuffer {
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Depth32Float,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING
-        });
+        }, wgpu::FilterMode::Nearest);
 
         Self {
             diffuse,

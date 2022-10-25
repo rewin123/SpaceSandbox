@@ -42,7 +42,7 @@ impl TextureTransformPipeline {
                     dimension: wgpu::TextureDimension::D2,
                     format: self.output_format,
                     usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
-                })
+                },wgpu::FilterMode::Nearest)
             )
         }
 

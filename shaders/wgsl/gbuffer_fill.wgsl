@@ -85,11 +85,11 @@ fn normal_mapping(normal : vec3<f32>, tangent : vec3<f32>, uv : vec2<f32>) -> ve
 fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
 
-//    out.diffuse = textureSample(t_diffuse, s_diffuse, in.uv);
-    out.diffuse = vec4<f32>(in.tangent, 1.0);
+    out.diffuse = textureSample(t_diffuse, s_diffuse, in.uv);
+//    out.diffuse = vec4<f32>(in.tangent, 1.0);
     // out.diffuse = vec4<f32>(1.0, 1.0, 1.0, 1.0);
-    out.normal = normal_mapping(in.normal, in.tangent, in.uv);
-//     out.normal = vec4<f32>(in.normal, 1.0);
+//    out.normal = normal_mapping(in.normal, in.tangent, in.uv);
+     out.normal = vec4<f32>(in.normal, 1.0);
     out.pos = vec4<f32>(in.pos, 1.0);
     out.mr = textureSample(t_mr, s_mr, in.uv);
 

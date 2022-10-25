@@ -42,13 +42,13 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     var res : f32 = 0.0;
 
-    for (var dx = -2; dx < 3; dx++) {
-        for (var dy = -2; dy < 3; dy++) {
+    for (var dx = -1; dx < 2; dx++) {
+        for (var dy = -1; dy < 2; dy++) {
             res += textureSample(t_ssao, s_ssao, in.uv + step * vec2<f32>(f32(dx), f32(dy))).r;
         }
     }
 
-    res /= 25.0;
+    res /= 9.0;
     res = pow(res, 2.0);
     out.diffuse = vec4<f32>(res, res, res, 1.0);
 
