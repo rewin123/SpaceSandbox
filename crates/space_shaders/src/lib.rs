@@ -34,3 +34,12 @@ unifrom_struct!(
     up : vec3,
     far : f32
 );
+
+unifrom_struct!(
+  DirLightUniform,
+  dir : vec3,
+  color : vec3,
+  intensity : f32,
+  shadow_dist : f32,
+  shadow_rect : f32
+);
