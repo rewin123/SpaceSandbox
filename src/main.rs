@@ -112,6 +112,7 @@ async fn run() {
 
 #[derive(Debug, PartialEq)]
 enum DrawState {
+    Full,
     DirectLight,
     AmbientOcclusion,
     Depth
@@ -258,15 +259,15 @@ impl State {
 
         let mut assets = AssetServer::new(&render, &task_server);
 
-        assets.wgpu_gltf_load(
-            &render.device,
-            "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
-            &mut world);
-
         // assets.wgpu_gltf_load(
         //     &render.device,
-        //     "res/bobik/bobik.gltf".into(),
+        //     "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
         //     &mut world);
+
+        assets.wgpu_gltf_load(
+            &render.device,
+            "res/bobik/bobik.gltf".into(),
+            &mut world);
 
         let gbuffer = GBufferFill::new(
             &render,
@@ -541,17 +542,21 @@ impl State {
         self.gbuffer_pipeline.draw(&self.assets,&mut encoder, &self.scene, &self.gbuffer);
         self.depth_calc.draw(&mut encoder, &[&self.gbuffer.position], &[&self.depth_buffer.dst[0]]);
         self.light_shadow.draw(&mut encoder, &mut self.point_lights, &self.scene);
-       
-        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
         self.ss_diffuse.draw(
             &mut encoder,
             &self.gbuffer,
             &self.light_buffer,
             &self.depth_buffer.dst[0],
             &self.ss_difuse_framebufer.dst[0]);
+       
+        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer, &self.ss_difuse_framebufer.dst[0]);
         // self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
         match &self.draw_state {
+            DrawState::Full => {
+                self.gamma_correction.draw(&mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+            }
             DrawState::DirectLight => {
                 self.gamma_correction.draw(&mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);

@@ -100,7 +100,7 @@ impl AssetServer {
                     format: wgpu::TextureFormat::Rgba8Unorm,
                     usage: wgpu::TextureUsages::TEXTURE_BINDING,
                 }, 
-                &[0, 0, 255, 255]);
+                &[255 / 2, 255 / 2, 255, 255]);
 
             let s_color = tex_color.create_view(&wgpu::TextureViewDescriptor::default());
             let sampler = render.device.create_sampler(&wgpu::SamplerDescriptor {

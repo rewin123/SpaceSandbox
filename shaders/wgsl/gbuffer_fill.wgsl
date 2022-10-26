@@ -77,6 +77,7 @@ fn normal_mapping(normal : vec3<f32>, tangent : vec3<f32>, uv : vec2<f32>) -> ve
     map = map * 2.0 - 1.0;
 
     let res = tangent * map.x + bitangent * map.y + normal * map.z;
+//    let res = normal * map.z;
 
     return vec4<f32>(normalize(res), 1.0);
 }

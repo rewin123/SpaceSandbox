@@ -93,9 +93,8 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
         let step_dist = length(step_pos - ssao.cam_pos.rgb);
         let tex_pos = (step_pos - ssao.cam_pos.rgb) / step_dist * tex_dist + ssao.cam_pos.rgb;
-        if (step_dist > (tex_dist + 0.01) && length(tex_pos - start_pos) <= ssao.scale) {
-            ambient -= 1.0;
-        }
+        let k = (step_dist > (tex_dist + 0.01) && length(tex_pos - start_pos) <= ssao.scale);
+        ambient -= 1.0 * f32(k);
     }
 
     ambient = ambient / 64.0;
