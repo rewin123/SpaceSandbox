@@ -60,46 +60,45 @@ var<uniform> ssao : SSDiffuse;
 fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
 
-    var dir = normalize(textureSample(t_noise, s_noise, in.uv * vec2<f32>(ssao.width, ssao.height) / 128.0).rgb);
 
     var sum = vec3<f32>(0.0, 0.0, 0.0);
     let start_pos = textureSample(t_position, s_position, in.uv).rgb;
     let start_color = textureSample(t_emissive, s_emissive, in.uv);
     let normal = textureSample(t_normal, s_normal, in.uv).rgb;
 
-    let normal_dot = min(dot(normal, dir), 0.0);
-    dir -= 2.0 * normal_dot * normal;
-
-    // if (start_color.w == 0.0) {
-    //     discard;
-    // }
 
     let cam_dist = length(start_pos - ssao.cam_pos.rgb);
-    dir = 0.05 * cam_dist * dir;
     let range = 0.05 * cam_dist;
 
     var bounce = vec3<f32>(0.0, 0.0, 0.0);
+    
+    for (var i = 0; i < 8; i++) {
+        var dir = normalize(textureSample(t_noise, s_noise, (in.uv * vec2<f32>(ssao.width, ssao.height) + vec2<f32>(f32(i), 0.0)) / 128.0).rgb);
+        let normal_dot = min(dot(normal, dir), 0.0);
+        dir -= 2.0 * normal_dot * normal;
+        dir = 0.05 * cam_dist * dir;
 
-    for (var idx = 0; idx < 25; idx++) {
-        let step_pos = start_pos + f32(idx) * dir;
-        let clip = ssao.proj_view * vec4<f32>(step_pos, 1.0);
-        let step_uv = clip.xy / clip.w * vec2<f32>(0.5, -0.5) + 0.5;
-        let tex_pos = textureSample(t_position, s_position, step_uv).rgb;
+        for (var idx = 0; idx < 25; idx++) {
+            let step_pos = start_pos + f32(idx) * dir;
+            let clip = ssao.proj_view * vec4<f32>(step_pos, 1.0);
+            let step_uv = clip.xy / clip.w * vec2<f32>(0.5, -0.5) + 0.5;
+            let tex_pos = textureSample(t_position, s_position, step_uv).rgb;
 
-        let step_dist = length(step_pos - ssao.cam_pos.rgb);
-        let tex_dist = length(tex_pos - ssao.cam_pos.rgb);
+            let step_dist = length(step_pos - ssao.cam_pos.rgb);
+            let tex_dist = length(tex_pos - ssao.cam_pos.rgb);
 
-        let tex_color = textureSample(t_emissive, s_emissive, step_uv);
+            let tex_color = textureSample(t_emissive, s_emissive, step_uv);
 
-        if (step_dist > (tex_dist + 0.05) && tex_color.w != 0.0) {
-            let bounce_dist = length(step_pos - start_pos);
-            if (length(step_pos - tex_pos) <= range) {
-                bounce = tex_color.rgb / bounce_dist / bounce_dist;
+            if (step_dist > (tex_dist + 0.05) && tex_color.w != 0.0) {
+                let bounce_dist = length(step_pos - start_pos);
+                if (length(step_pos - tex_pos) <= range) {
+                    bounce += tex_color.rgb / bounce_dist / bounce_dist;
+                }
+                break;
             }
-            break;
         }
     }
 
-    out.ao = vec4<f32>(bounce, start_color.w);
+    out.ao = vec4<f32>(bounce / 8.0, start_color.w);
     return out;
 }
