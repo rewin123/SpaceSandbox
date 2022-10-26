@@ -14,6 +14,7 @@ use encase::*;
 struct ScreenDiffuseUniform {
     proj_view : [[f32; 4]; 4],
     proj_view_inverse : [[f32; 4]; 4],
+    random_vecs : [[f32; 4]; 64],
     cam_pos : [f32; 4],
     tex_width : f32,
     tex_height : f32,
@@ -23,13 +24,34 @@ struct ScreenDiffuseUniform {
 
 impl Default for ScreenDiffuseUniform {
     fn default() -> Self {
+
+        let mut rnd = rand::thread_rng();
+
+        let mut random_vecs = [[0.0f32; 4]; 64];
+
+        for idx in 0..64 {
+            let mut v = nalgebra::Vector3::new(
+                rnd.gen_range(-1.0..=1.0f32),
+                rnd.gen_range(-1.0..=1.0f32),
+                rnd.gen_range(0.01..=1.0f32)).normalize();
+
+            let scale = (idx as f32) / 64.0;
+            v = v * SSDiffuse::lerp(scale * scale, 0.1, 1.0);
+
+            random_vecs[idx][0] = v.x;
+            random_vecs[idx][1] = v.y;
+            random_vecs[idx][2] = v.z;
+            random_vecs[idx][3] = 1.0;
+        }
+
         Self {
             proj_view : [[0.0; 4]; 4],
             proj_view_inverse : [[0.0; 4]; 4],
+            random_vecs,
             cam_pos : [0.0; 4],
             tex_width : 0.0,
             tex_height : 0.0,
-            scale : 0.0,
+            scale : 1.0,
             dummy1 : 0.0
         }
     }
@@ -157,7 +179,7 @@ impl SSDiffuse {
         let noise = SSDiffuse::create_noise_tex(render);
 
         let format = wgpu::TextureFormat::Rgba32Float;
-        let input_count = 4;
+        let input_count = 5;
         let mut binds = vec![];
         for idx in 0..input_count {
             binds.push(wgpu::BindGroupLayoutEntry {
@@ -293,6 +315,7 @@ impl SSDiffuse {
             encoder : &mut wgpu::CommandEncoder,
             src : &GFramebuffer,
             dir_light : &TextureBundle,
+            depth : &TextureBundle,
             dst : &TextureBundle) {
 
         let mut binds = vec![];
@@ -335,18 +358,30 @@ impl SSDiffuse {
         binds.push(
             wgpu::BindGroupEntry {
                 binding : 6,
-                resource : wgpu::BindingResource::TextureView(&self.noise_texture.view)
+                resource : wgpu::BindingResource::TextureView(&depth.view)
             },
         );
         binds.push(
             wgpu::BindGroupEntry {
                 binding : 7,
-                resource : wgpu::BindingResource::Sampler(&self.noise_texture.sampler)
+                resource : wgpu::BindingResource::Sampler(&depth.sampler)
             }
         );
         binds.push(
             wgpu::BindGroupEntry {
                 binding : 8,
+                resource : wgpu::BindingResource::TextureView(&self.noise_texture.view)
+            },
+        );
+        binds.push(
+            wgpu::BindGroupEntry {
+                binding : 9,
+                resource : wgpu::BindingResource::Sampler(&self.noise_texture.sampler)
+            }
+        );
+        binds.push(
+            wgpu::BindGroupEntry {
+                binding : 10,
                 resource : wgpu::BindingResource::Buffer(wgpu::BufferBinding {
                     buffer: &self.buffer,
                     offset: 0,

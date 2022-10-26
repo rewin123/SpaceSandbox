@@ -25,7 +25,7 @@ pub struct TextureTransformPipeline {
     render : Arc<RenderBase>,
     bind: Option<wgpu::BindGroup>,
 
-    buffer : Option<wgpu::Buffer>
+    buffer : Option<Arc<wgpu::Buffer>>
 }
 
 impl TextureTransformPipeline {
@@ -175,11 +175,11 @@ impl TextureTransformPipeline {
 
         let mut buffer = None;
         if let Some(s) = uniform {
-            buffer = Some(render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            buffer = Some(Arc::new(render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
                 contents: &s.get_bytes(),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::MAP_WRITE,
-            }));
+            })));
         }
 
         Self {
@@ -196,10 +196,21 @@ impl TextureTransformPipeline {
         }
     }
 
+    pub fn update(&mut self, uniform : Option<&dyn TextureTransformUniform>) {
+        if let Some(val) = uniform {
+            let buffer = self.buffer.as_ref().unwrap().clone();
+            let async_buffer = buffer.clone();
+            let bytes = val.get_bytes();
+            buffer.slice(..).map_async(wgpu::MapMode::Write, move|r| {
+                async_buffer.slice(..).get_mapped_range_mut().copy_from_slice(&bytes);
+                async_buffer.unmap();
+            });
+        }
+    }
+
 
     pub fn draw(
             &mut self,
-            device : &wgpu::Device,
             encoder : &mut wgpu::CommandEncoder,
             src : &[&TextureBundle],
             dst : &[&TextureBundle]) {
@@ -232,7 +243,7 @@ impl TextureTransformPipeline {
             )
         }
         
-        let tex_bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let tex_bind = self.render.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout : &self.texture_bind_group_layout,
             entries : &binds,
             label : Some("texture present bind")

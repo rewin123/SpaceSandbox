@@ -113,7 +113,8 @@ async fn run() {
 #[derive(Debug, PartialEq)]
 enum DrawState {
     DirectLight,
-    IndirectDiffuse
+    IndirectDiffuse,
+    Depth
 }
 
 struct State {
@@ -132,6 +133,8 @@ struct State {
 
     light_pipeline : PointLightPipeline,
     gamma_correction : TextureTransformPipeline,
+    depth_calc : TextureTransformPipeline,
+    depth_buffer : CommonFramebuffer,
     light_buffer : TextureBundle,
     gbuffer : GFramebuffer,
     present : TexturePresent,
@@ -166,6 +169,18 @@ impl InputSystem {
         } else {
             false
         }
+    }
+}
+
+
+#[derive(Default)]
+struct DepthCalcUniform {
+    pub cam_pos : [f32; 4]
+}
+
+impl TextureTransformUniform for DepthCalcUniform {
+    fn get_bytes(&self) -> Vec<u8> {
+        bytemuck::cast_slice(&self.cam_pos).to_vec()
     }
 }
 
@@ -243,15 +258,15 @@ impl State {
 
         let mut assets = AssetServer::new(&render, &task_server);
 
-        // assets.wgpu_gltf_load(
-        //     &render.device,
-        //     "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
-        //     &mut world);
-
         assets.wgpu_gltf_load(
             &render.device,
-            "res/bobik/bobik.gltf".into(),
+            "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
             &mut world);
+
+        // assets.wgpu_gltf_load(
+        //     &render.device,
+        //     "res/bobik/bobik.gltf".into(),
+        //     &mut world);
 
         let gbuffer = GBufferFill::new(
             &render,
@@ -308,6 +323,20 @@ impl State {
 
         let gamma_buffer = gamma_correction.spawn_framebuffer();
 
+        let mut depth_calc = TextureTransformPipeline::new(
+            &render,
+            wgpu::TextureFormat::R16Float,
+            extent,
+            1,
+            1,
+            Some(Box::new(DepthCalcUniform::default())),
+            include_str!("../shaders/wgsl/depth_calc.wgsl").into()
+        );
+
+        let depth_buffer = depth_calc.spawn_framebuffer();
+
+        let gamma_buffer = gamma_correction.spawn_framebuffer();
+
         let ss_pipeline = SSDiffuse::new(
             &render,
             wgpu::Extent3d {
@@ -321,7 +350,6 @@ impl State {
         );
 
         let ss_buffer = ss_pipeline.spawn_framebuffer();
-
 
         Self {
             surface,
@@ -347,7 +375,9 @@ impl State {
             device_name : adapter.get_info().name.clone(),
             ss_diffuse : ss_pipeline,
             ss_difuse_framebufer : ss_buffer,
-            draw_state : DrawState::DirectLight
+            draw_state : DrawState::DirectLight,
+            depth_calc,
+            depth_buffer
         }
     }
 
@@ -410,6 +440,18 @@ impl State {
             );
     
             self.ss_difuse_framebufer = self.ss_diffuse.spawn_framebuffer();
+
+            self.depth_calc = TextureTransformPipeline::new(
+                &self.render,
+                wgpu::TextureFormat::R16Float,
+                size,
+                1,
+                1,
+                Some(Box::new(DepthCalcUniform::default())),
+                include_str!("../shaders/wgsl/depth_calc.wgsl").into()
+            );
+
+            self.depth_buffer = self.depth_calc.spawn_framebuffer();
         }
     }
 
@@ -457,6 +499,13 @@ impl State {
             usage: wgpu::BufferUsages::COPY_SRC,
         });
 
+        let depth_buffer = DepthCalcUniform {
+            cam_pos : [self.camera.pos.x, self.camera.pos.y, self.camera.pos.z, 1.0]
+        };
+
+        self.depth_calc.update(Some(&depth_buffer));
+
+
         let mut encoder = self
         .render.device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -490,21 +539,31 @@ impl State {
             });
 
         self.gbuffer_pipeline.draw(&self.assets,&mut encoder, &self.scene, &self.gbuffer);
+        self.depth_calc.draw(&mut encoder, &[&self.gbuffer.position], &[&self.depth_buffer.dst[0]]);
         self.light_shadow.draw(&mut encoder, &mut self.point_lights, &self.scene);
        
         self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
-        self.ss_diffuse.draw(&mut encoder, &self.gbuffer, &self.light_buffer, &self.ss_difuse_framebufer.dst[0]);
+        self.ss_diffuse.draw(
+            &mut encoder,
+            &self.gbuffer,
+            &self.light_buffer,
+            &self.depth_buffer.dst[0],
+            &self.ss_difuse_framebufer.dst[0]);
         // self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
         match &self.draw_state {
             DrawState::DirectLight => {
-                self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
+                self.gamma_correction.draw(&mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
             },
             DrawState::IndirectDiffuse => {
-                self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.ss_difuse_framebufer.dst[0]], &[&self.gamma_buffer.dst[0]]);
+                self.gamma_correction.draw(&mut encoder, &[&self.ss_difuse_framebufer.dst[0]], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
             },
+            DrawState::Depth => {
+                self.gamma_correction.draw(&mut encoder, &[&self.depth_buffer.dst[0]], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+            }
         }
         // self.present.draw(&self.render.device, &mut encoder, &self.ssao_smooth_framebuffer.dst[0], &view);
 
@@ -520,11 +579,11 @@ impl State {
                         .show_ui(ui, |ui| {
                             ui.selectable_value(&mut self.draw_state, DrawState::DirectLight, "DirectLight");
                             ui.selectable_value(&mut self.draw_state, DrawState::IndirectDiffuse, "IndirectDiffuse");
+                            ui.selectable_value(&mut self.draw_state, DrawState::Depth, "Depth");
                         });
 
                     self.fps.draw(ui);
                     ui.label(&self.device_name);
-
                 });
 
                 let cam_uniform = self.camera.build_uniform();
