@@ -113,7 +113,7 @@ async fn run() {
 #[derive(Debug, PartialEq)]
 enum DrawState {
     DirectLight,
-    IndirectDiffuse,
+    AmbientOcclusion,
     Depth
 }
 
@@ -556,7 +556,7 @@ impl State {
                 self.gamma_correction.draw(&mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
             },
-            DrawState::IndirectDiffuse => {
+            DrawState::AmbientOcclusion => {
                 self.gamma_correction.draw(&mut encoder, &[&self.ss_difuse_framebufer.dst[0]], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
             },
@@ -578,7 +578,7 @@ impl State {
                         .selected_text(format!("{:?}", &self.draw_state))
                         .show_ui(ui, |ui| {
                             ui.selectable_value(&mut self.draw_state, DrawState::DirectLight, "DirectLight");
-                            ui.selectable_value(&mut self.draw_state, DrawState::IndirectDiffuse, "IndirectDiffuse");
+                            ui.selectable_value(&mut self.draw_state, DrawState::AmbientOcclusion, "AmbientOcclusion");
                             ui.selectable_value(&mut self.draw_state, DrawState::Depth, "Depth");
                         });
 
