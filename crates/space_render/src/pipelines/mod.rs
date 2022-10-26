@@ -7,6 +7,7 @@ pub mod wgpu_texture_present;
 pub mod wgpu_light_shadow;
 pub mod wgpu_textures_transform;
 pub mod wgpu_ssao;
+pub mod wgpu_sreen_diffuse;
 
 use space_assets::*;
 

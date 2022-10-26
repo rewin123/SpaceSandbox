@@ -11,24 +11,22 @@ use encase::*;
 
 #[repr(C)]
 #[derive(Zeroable, bytemuck::Pod, Clone, Copy)]
-struct SsaoUniform {
+struct ScreenDiffuseUniform {
     proj_view : [[f32; 4]; 4],
+    proj_view_inverse : [[f32; 4]; 4],
     cam_pos : [f32; 4],
-    samples : [[f32; 4]; 32],
-    random_vec  : [[f32; 4]; 16],
     tex_width : f32,
     tex_height : f32,
     scale : f32,
     dummy1 : f32
 }
 
-impl Default for SsaoUniform {
+impl Default for ScreenDiffuseUniform {
     fn default() -> Self {
         Self {
             proj_view : [[0.0; 4]; 4],
+            proj_view_inverse : [[0.0; 4]; 4],
             cam_pos : [0.0; 4],
-            samples : [[0.0; 4] ; 32],
-            random_vec : [[0.0; 4]; 16],
             tex_width : 0.0,
             tex_height : 0.0,
             scale : 0.0,
@@ -37,7 +35,7 @@ impl Default for SsaoUniform {
     }
 }
 
-pub struct SSAO {
+pub struct SSDiffuse {
     pub pipeline : wgpu::RenderPipeline,
     screen_mesh : ScreenMesh,
     texture_bind_group_layout : wgpu::BindGroupLayout,
@@ -49,10 +47,11 @@ pub struct SSAO {
     bind: Option<wgpu::BindGroup>,
     buffer : Arc<wgpu::Buffer>,
     pub scale : f32,
-    cached_uniform : SsaoUniform
+    cached_uniform : ScreenDiffuseUniform,
+    noise_texture : TextureBundle
 }
 
-impl SSAO {
+impl SSDiffuse {
 
     pub fn spawn_framebuffer(&self) -> CommonFramebuffer {
         let mut textures = vec![];
@@ -105,15 +104,60 @@ impl SSAO {
         start + val * (end - start)
     }
 
+    fn create_noise_tex(render : &Arc<RenderBase>) -> TextureBundle {
+        let size = 128;
+
+        let mut rnd = rand::thread_rng();
+
+        let data : Vec<u8> = (0..(size * size * 4)).map(|idx| {rnd.gen::<u8>()}).collect();
+
+        let tex = render.device.create_texture_with_data(&render.queue, 
+            &wgpu::TextureDescriptor {
+                label: Some("Noise texture"),
+                size: wgpu::Extent3d {
+                    width: size,
+                    height: size,
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8Snorm,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING,
+            }, 
+        &data);
+
+        let view = tex.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let sampler = render.device.create_sampler(&wgpu::SamplerDescriptor {
+            label: None,
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            lod_min_clamp: 0.0,
+            lod_max_clamp: 0.0,
+            compare: None,
+            anisotropy_clamp: None,
+            border_color: None,
+        });
+
+        TextureBundle { texture: tex, view, sampler }
+    }
+
     pub fn new(
         render : &Arc<RenderBase>,
-        format : wgpu::TextureFormat,
         size : wgpu::Extent3d,
         input_count : u32,
         output_count : u32,
         shader : String) -> Self {
 
-        let input_count = 2;
+        let noise = SSDiffuse::create_noise_tex(render);
+
+        let format = wgpu::TextureFormat::Rgba32Float;
+        let input_count = 4;
         let mut binds = vec![];
         for idx in 0..input_count {
             binds.push(wgpu::BindGroupLayoutEntry {
@@ -134,7 +178,7 @@ impl SSAO {
             });
         }
         binds.push(wgpu::BindGroupLayoutEntry {
-            binding: 4,
+            binding: binds.len() as u32,
             visibility: wgpu::ShaderStages::FRAGMENT,
             ty: wgpu::BindingType::Buffer { 
                 ty: wgpu::BufferBindingType::Uniform, 
@@ -174,7 +218,7 @@ impl SSAO {
                 entry_point : "fs_main",
                 targets : &[Some(wgpu::ColorTargetState {
                     format,
-                    blend : None,
+                    blend : Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask : wgpu::ColorWrites::ALL
                 }),]
             }),
@@ -196,38 +240,7 @@ impl SSAO {
             multiview: None
         });
 
-        let mut def_uniform = SsaoUniform::default();
-
-        let mut samples = [[0.0f32; 4]; 32];
-        let mut thread_rng = rand::thread_rng();
-        for i in 0..32 {
-            let mut v = nalgebra::Vector3::new(
-                thread_rng.gen_range(-1.0f32..=1.0),
-                thread_rng.gen_range(-1.0f32..=1.0),
-                thread_rng.gen_range(0.01f32..=1.0)
-            );
-            
-            v = v.normalize();
-            // let mut scale = (i as f32) / 32.0;
-            // scale = SSAO::lerp(scale * scale, 0.1, 1.0);
-            // v = v * scale;
-            samples[i] = [v.x, v.y, v.z, 1.0];
-        }
-
-        let mut random_vec = [[0.0f32; 4]; 16];
-        for i in 0..16 {
-            let mut v = nalgebra::Vector3::new(
-                thread_rng.gen_range(-1.0..=1.0),
-                thread_rng.gen_range(-1.0..=1.0),
-                thread_rng.gen_range(-1.0..=1.0)
-            );
-            v = v.normalize();
-            random_vec[i] = [v.x, v.y, v.z, 1.0];
-        }
-
-        def_uniform.random_vec = random_vec;
-        def_uniform.samples = samples;
-
+        let mut def_uniform = ScreenDiffuseUniform::default();
 
         let buffer = render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
@@ -237,7 +250,7 @@ impl SSAO {
 
         Self {
             pipeline,
-            screen_mesh : SSAO::create_screen_mesh(&render.device),
+            screen_mesh : SSDiffuse::create_screen_mesh(&render.device),
             texture_bind_group_layout,
             output_format : format,
             output_count,
@@ -247,7 +260,8 @@ impl SSAO {
             bind: None,
             buffer : Arc::new(buffer),
             scale : 1.0,
-            cached_uniform : def_uniform
+            cached_uniform : def_uniform,
+            noise_texture : noise
         }
     }
 
@@ -257,6 +271,7 @@ impl SSAO {
         let proj_view = cam_uniform.proj * cam_uniform.view;
 
         self.cached_uniform.proj_view = proj_view.into();
+        self.cached_uniform.proj_view_inverse = proj_view.try_inverse().unwrap().into();
         self.cached_uniform.tex_width = self.size.width as f32;
         self.cached_uniform.tex_height = self.size.height as f32;
         self.cached_uniform.scale = self.scale;
@@ -277,6 +292,7 @@ impl SSAO {
             &mut self,
             encoder : &mut wgpu::CommandEncoder,
             src : &GFramebuffer,
+            dir_light : &TextureBundle,
             dst : &TextureBundle) {
 
         let mut binds = vec![];
@@ -307,6 +323,30 @@ impl SSAO {
         binds.push(
             wgpu::BindGroupEntry {
                 binding : 4,
+                resource : wgpu::BindingResource::TextureView(&dir_light.view)
+            },
+        );
+        binds.push(
+            wgpu::BindGroupEntry {
+                binding : 5,
+                resource : wgpu::BindingResource::Sampler(&dir_light.sampler)
+            }
+        );
+        binds.push(
+            wgpu::BindGroupEntry {
+                binding : 6,
+                resource : wgpu::BindingResource::TextureView(&self.noise_texture.view)
+            },
+        );
+        binds.push(
+            wgpu::BindGroupEntry {
+                binding : 7,
+                resource : wgpu::BindingResource::Sampler(&self.noise_texture.sampler)
+            }
+        );
+        binds.push(
+            wgpu::BindGroupEntry {
+                binding : 8,
                 resource : wgpu::BindingResource::Buffer(wgpu::BufferBinding {
                     buffer: &self.buffer,
                     offset: 0,

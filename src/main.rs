@@ -7,6 +7,7 @@ use bytemuck::{Zeroable, Pod};
 use egui::epaint::ahash::HashMap;
 use egui_gizmo::GizmoMode;
 use egui_wgpu_backend::ScreenDescriptor;
+use space_render::pipelines::wgpu_sreen_diffuse::SSDiffuse;
 use space_shaders::*;
 use specs::*;
 use wgpu::util::DeviceExt;
@@ -109,6 +110,12 @@ async fn run() {
     });
 }
 
+#[derive(Debug, PartialEq)]
+enum DrawState {
+    DirectLight,
+    IndirectDiffuse
+}
+
 struct State {
     surface : wgpu::Surface,
     render : Arc<RenderBase>,
@@ -119,11 +126,9 @@ struct State {
     camera_buffer : wgpu::Buffer,
     gbuffer_pipeline : GBufferFill,
     light_shadow : PointLightShadowPipeline,
-    ssao_pipeline : SSAO,
-    ssao_framebuffer : CommonFramebuffer,
 
-    ssao_smooth_pipeline : TextureTransformPipeline,
-    ssao_smooth_framebuffer : CommonFramebuffer,
+    ss_diffuse : SSDiffuse,
+    ss_difuse_framebufer : CommonFramebuffer,
 
     light_pipeline : PointLightPipeline,
     gamma_correction : TextureTransformPipeline,
@@ -136,7 +141,9 @@ struct State {
     assets : AssetServer,
     gui : Gui,
     fps : FpsCounter,
-    device_name : String
+    device_name : String,
+
+    draw_state : DrawState
 }
 
 
@@ -301,9 +308,8 @@ impl State {
 
         let gamma_buffer = gamma_correction.spawn_framebuffer();
 
-        let ssao_pipeline = SSAO::new(
+        let ss_pipeline = SSDiffuse::new(
             &render,
-            wgpu::TextureFormat::R8Unorm,
             wgpu::Extent3d {
                 width : extent.width,
                 height : extent.height,
@@ -311,29 +317,11 @@ impl State {
             },
             1,
             1,
-            include_str!("../shaders/wgsl/ssao.wgsl").into()
+            include_str!("../shaders/wgsl/screen_diffuse_lighting.wgsl").into()
         );
 
-        let ssao_buffer = ssao_pipeline.spawn_framebuffer();
+        let ss_buffer = ss_pipeline.spawn_framebuffer();
 
-        let size_uniform = SmoothUniform {
-            size : [extent.width as i32, extent.height as i32]
-        };
-
-        let ssao_smooth_pipeline = TextureTransformPipeline::new(
-            &render, 
-            wgpu::TextureFormat::R8Unorm, 
-            wgpu::Extent3d {
-                width : extent.width / 2,
-                height : extent.height / 2,
-                depth_or_array_layers : 1
-            }, 
-            1, 
-            1, 
-            Some(Box::new(size_uniform)), 
-            include_str!("../shaders/wgsl/smooth.wgsl").into());
-
-        let ssao_smooth_framebuffer = ssao_smooth_pipeline.spawn_framebuffer();
 
         Self {
             surface,
@@ -356,11 +344,10 @@ impl State {
             light_shadow : point_light_shadow,
             gamma_correction,
             gamma_buffer,
-            ssao_pipeline,
-            ssao_framebuffer : ssao_buffer,
             device_name : adapter.get_info().name.clone(),
-            ssao_smooth_pipeline,
-            ssao_smooth_framebuffer
+            ss_diffuse : ss_pipeline,
+            ss_difuse_framebufer : ss_buffer,
+            draw_state : DrawState::DirectLight
         }
     }
 
@@ -409,43 +396,20 @@ impl State {
                 include_str!("../shaders/wgsl/gamma_correction.wgsl").into()
             );
 
-            self.ssao_pipeline = SSAO::new(
-                &self.render, 
-                wgpu::TextureFormat::R8Unorm, 
-                wgpu::Extent3d {
-                    width : size.width,
-                    height : size.height,
-                    depth_or_array_layers : 1
-                }, 
-                1, 
-                1, 
-                include_str!("../shaders/wgsl/ssao.wgsl").into()
-            );
-
+           
             self.gamma_buffer = self.gamma_correction.spawn_framebuffer();
 
             self.light_buffer = self.light_pipeline.spawn_framebuffer(&self.render.device, size);
 
-            self.ssao_framebuffer = self.ssao_pipeline.spawn_framebuffer();
-
-            let size_uniform = SmoothUniform {
-                size : [size.width as i32, size.height as i32]
-            };
-
-            self.ssao_smooth_pipeline = TextureTransformPipeline::new(
-                &self.render, 
-                wgpu::TextureFormat::R8Unorm, 
-                wgpu::Extent3d {
-                    width : size.width,
-                    height : size.height,
-                    depth_or_array_layers : 1
-                }, 
-                1, 
-                1, 
-                Some(Box::new(size_uniform)), 
-                include_str!("../shaders/wgsl/smooth.wgsl").into());
+            self.ss_diffuse = SSDiffuse::new(
+                &self.render,
+                size,
+                1,
+                1,
+                include_str!("../shaders/wgsl/screen_diffuse_lighting.wgsl").into()
+            );
     
-            self.ssao_smooth_framebuffer = self.ssao_smooth_pipeline.spawn_framebuffer();
+            self.ss_difuse_framebufer = self.ss_diffuse.spawn_framebuffer();
         }
     }
 
@@ -476,6 +440,7 @@ impl State {
 
         let mut loc_storage = self.scene.write_storage::<Location>();
 
+        self.ss_diffuse.update(&self.camera);
         for loc in (&mut loc_storage,).join() {
             loc.0.update_buffer();
         }
@@ -513,7 +478,6 @@ impl State {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        self.ssao_pipeline.update(&self.camera);
         for light in &mut self.point_lights {
             light.update_buffer(&self.render);
         }
@@ -527,12 +491,21 @@ impl State {
 
         self.gbuffer_pipeline.draw(&self.assets,&mut encoder, &self.scene, &self.gbuffer);
         self.light_shadow.draw(&mut encoder, &mut self.point_lights, &self.scene);
-        self.ssao_pipeline.draw(&mut encoder, &self.gbuffer, &self.ssao_framebuffer.dst[0]);
-        self.ssao_smooth_pipeline.draw(&self.render.device, &mut encoder, &[&self.ssao_framebuffer.dst[0]], &[&self.ssao_smooth_framebuffer.dst[0]]);
-        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer, &self.ssao_framebuffer.dst[0]);
-        self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
+       
+        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
+        self.ss_diffuse.draw(&mut encoder, &self.gbuffer, &self.light_buffer, &self.ss_difuse_framebufer.dst[0]);
+        // self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
-        self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+        match &self.draw_state {
+            DrawState::DirectLight => {
+                self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+            },
+            DrawState::IndirectDiffuse => {
+                self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.ss_difuse_framebufer.dst[0]], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+            },
+        }
         // self.present.draw(&self.render.device, &mut encoder, &self.ssao_smooth_framebuffer.dst[0], &view);
 
         self.gui.begin_frame();
@@ -541,10 +514,17 @@ impl State {
             &self.gui.platform.context(), |ui| {
 
                 ui.horizontal(|ui| {
+
+                    egui::ComboBox::from_label("Draw mode")
+                        .selected_text(format!("{:?}", &self.draw_state))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut self.draw_state, DrawState::DirectLight, "DirectLight");
+                            ui.selectable_value(&mut self.draw_state, DrawState::IndirectDiffuse, "IndirectDiffuse");
+                        });
+
                     self.fps.draw(ui);
                     ui.label(&self.device_name);
 
-                    ui.add(egui::Slider::new(&mut self.ssao_pipeline.scale, 0.0..=1000.0));
                 });
 
                 let cam_uniform = self.camera.build_uniform();
