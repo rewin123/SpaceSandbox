@@ -259,15 +259,15 @@ impl State {
 
         let mut assets = AssetServer::new(&render, &task_server);
 
-        // assets.wgpu_gltf_load(
-        //     &render.device,
-        //     "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
-        //     &mut world);
-
         assets.wgpu_gltf_load(
             &render.device,
-            "res/bobik/bobik.gltf".into(),
+            "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
             &mut world);
+
+        // assets.wgpu_gltf_load(
+        //     &render.device,
+        //     "res/bobik/bobik.gltf".into(),
+        //     &mut world);
 
         let gbuffer = GBufferFill::new(
             &render,
@@ -296,7 +296,7 @@ impl State {
             PointLight::new(&render, [0.0, 3.0, 0.0].into(), true),
             // PointLight::new(&render, [0.0, 1.0, 0.0].into(), true),
         ];
-        lights[0].intensity = 10.0;
+        lights[0].intensity = 20.0;
         // lights[1].intensity = 1.0;
 
         let point_light_shadow = PointLightShadowPipeline::new(&render);

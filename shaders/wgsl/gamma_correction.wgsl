@@ -32,8 +32,8 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
 
     var color = textureSample(t_diffuse, s_diffuse, in.uv).rgb;
-
-    color = pow(color, vec3(1.0 / 2.2));
+    let x = max(vec3<f32>(0.0), color - 0.004);
+    color = (x*(6.2*x+0.5))/(x*(6.2*x+1.7)+0.06);
     out.diffuse = vec4<f32>(color, 1.0);
 
     return out;
