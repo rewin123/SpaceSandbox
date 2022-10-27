@@ -20,7 +20,7 @@ use space_assets::*;
 
 use nalgebra as na;
 use nalgebra::Matrix4;
-use wgpu::MaintainBase;
+use wgpu::{BlendFactor, MaintainBase};
 use space_core::{RenderBase, TaskServer};
 use space_render::{pipelines::*, Camera};
 use space_render::light::*;
@@ -147,7 +147,9 @@ struct State {
     fps : FpsCounter,
     device_name : String,
 
-    draw_state : DrawState
+    draw_state : DrawState,
+    ambient_light : AmbientLight,
+    ambient_light_pipeline : TextureTransformPipeline
 }
 
 
@@ -312,26 +314,65 @@ impl State {
 
         let fps = FpsCounter::default();
 
+        let gamma_desc = TextureTransformDescriptor {
+            render : render.clone(),
+            format: wgpu::TextureFormat::Rgba32Float,
+            size: extent,
+            input_count: 1,
+            output_count: 1,
+            uniform: None,
+            shader: include_str!("../shaders/wgsl/gamma_correction.wgsl").into(),
+            blend : None,
+            start_op : TextureTransformStart::Clear
+        };
+
         let mut gamma_correction = TextureTransformPipeline::new(
-            &render,
-            wgpu::TextureFormat::Rgba32Float,
-            extent,
-            1,
-            1,
-            None,
-            include_str!("../shaders/wgsl/gamma_correction.wgsl").into()
+            &gamma_desc
         );
 
         let gamma_buffer = gamma_correction.spawn_framebuffer();
 
+        let depth_desc = TextureTransformDescriptor {
+            render : render.clone(),
+            format : wgpu::TextureFormat::R16Float,
+            size : extent,
+            input_count : 1,
+            output_count : 1,
+            uniform : Some(Arc::new(DepthCalcUniform::default())),
+            shader : include_str!("../shaders/wgsl/depth_calc.wgsl").into(),
+            blend : None,
+            start_op : TextureTransformStart::Clear
+        };
+
         let mut depth_calc = TextureTransformPipeline::new(
-            &render,
-            wgpu::TextureFormat::R16Float,
-            extent,
-            1,
-            1,
-            Some(Box::new(DepthCalcUniform::default())),
-            include_str!("../shaders/wgsl/depth_calc.wgsl").into()
+            &depth_desc
+        );
+
+        let ambient_desc = TextureTransformDescriptor {
+            render : render.clone(),
+            format : wgpu::TextureFormat::Rgba32Float,
+            size : extent,
+            input_count : 5,
+            output_count : 1,
+            uniform : Some(Arc::new(AmbientLightUniform::default())),
+            shader : include_str!("../shaders/wgsl/ambient_light.wgsl").into(),
+            blend : Some(wgpu::BlendState {
+                color: wgpu::BlendComponent {
+                    src_factor: BlendFactor::One,
+                    dst_factor: BlendFactor::One,
+                    operation: wgpu::BlendOperation::Add
+                },
+                alpha: wgpu::BlendComponent {
+                    src_factor: BlendFactor::One,
+                    dst_factor: BlendFactor::One,
+                    operation: wgpu::BlendOperation::Add
+                }
+            }),
+            start_op : TextureTransformStart::None
+        };
+
+        let mut ambient_light_pipeline = TextureTransformPipeline::new(
+            &ambient_desc
         );
 
         let depth_buffer = depth_calc.spawn_framebuffer();
@@ -378,7 +419,11 @@ impl State {
             ss_difuse_framebufer : ss_buffer,
             draw_state : DrawState::DirectLight,
             depth_calc,
-            depth_buffer
+            depth_buffer,
+            ambient_light : AmbientLight {
+                color : na::Vector3::new(1.0f32, 1.0, 1.0) * 0.1f32
+            },
+            ambient_light_pipeline
         }
     }
 
@@ -417,14 +462,10 @@ impl State {
                 size
             );
 
+            let mut gamma_desc = self.gamma_correction.get_desc();
+            gamma_desc.size = size;
             self.gamma_correction = TextureTransformPipeline::new(
-                &self.render,
-                wgpu::TextureFormat::Rgba32Float,
-                size,
-                1,
-                1,
-                None,
-                include_str!("../shaders/wgsl/gamma_correction.wgsl").into()
+                &gamma_desc
             );
 
            
@@ -442,17 +483,19 @@ impl State {
     
             self.ss_difuse_framebufer = self.ss_diffuse.spawn_framebuffer();
 
+            let mut depth_desc = self.depth_calc.get_desc();
+            depth_desc.size = size;
             self.depth_calc = TextureTransformPipeline::new(
-                &self.render,
-                wgpu::TextureFormat::R16Float,
-                size,
-                1,
-                1,
-                Some(Box::new(DepthCalcUniform::default())),
-                include_str!("../shaders/wgsl/depth_calc.wgsl").into()
+                &depth_desc
             );
 
             self.depth_buffer = self.depth_calc.spawn_framebuffer();
+
+            let mut ambient_desc = self.ambient_light_pipeline.get_desc();
+            ambient_desc.size = size;
+            self.ambient_light_pipeline = TextureTransformPipeline::new(
+                &ambient_desc
+            );
         }
     }
 
@@ -506,6 +549,12 @@ impl State {
 
         self.depth_calc.update(Some(&depth_buffer));
 
+        let ambient_uniform = AmbientLightUniform {
+            color: self.ambient_light.color.into(),
+            cam_pos: self.camera.pos.coords.clone()
+        };
+        self.ambient_light_pipeline.update(Some(&ambient_uniform));
+
 
         let mut encoder = self
         .render.device
@@ -549,7 +598,10 @@ impl State {
             &self.depth_buffer.dst[0],
             &self.ss_difuse_framebufer.dst[0]);
        
-        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer, &self.ss_difuse_framebufer.dst[0]);
+        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
+        self.ambient_light_pipeline.draw(&mut encoder,
+            &[&self.gbuffer.diffuse, &self.gbuffer.normal, &self.gbuffer.position, &self.gbuffer.mr, &self.ss_difuse_framebufer.dst[0]]
+        , &[&self.light_buffer]);
         // self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
         match &self.draw_state {

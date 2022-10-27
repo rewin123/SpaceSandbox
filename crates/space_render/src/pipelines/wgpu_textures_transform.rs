@@ -14,6 +14,25 @@ pub struct CommonFramebuffer {
     pub dst : Vec<TextureBundle>
 }
 
+#[derive(Clone)]
+pub enum TextureTransformStart {
+    None,
+    Clear
+}
+
+#[derive(Clone)]
+pub struct TextureTransformDescriptor {
+    pub render : Arc<RenderBase>,
+    pub format : wgpu::TextureFormat,
+    pub size : wgpu::Extent3d,
+    pub input_count : u32,
+    pub output_count : u32,
+    pub uniform : Option<Arc<dyn TextureTransformUniform>>,
+    pub shader : String,
+    pub blend : Option<wgpu::BlendState>,
+    pub start_op : TextureTransformStart
+}
+
 pub struct TextureTransformPipeline {
     pub pipeline : wgpu::RenderPipeline,
     screen_mesh : ScreenMesh,
@@ -25,7 +44,9 @@ pub struct TextureTransformPipeline {
     render : Arc<RenderBase>,
     bind: Option<wgpu::BindGroup>,
 
-    buffer : Option<Arc<wgpu::Buffer>>
+    buffer : Option<Arc<wgpu::Buffer>>,
+
+    desc : TextureTransformDescriptor
 }
 
 impl TextureTransformPipeline {
@@ -53,12 +74,15 @@ impl TextureTransformPipeline {
     
     pub fn spawn_renderpass<'a>(&'a self, encoder : &'a mut wgpu::CommandEncoder, dst : &'a [&TextureBundle]) -> wgpu::RenderPass {
 
-        let mut attachs = vec![];
-        for idx in 0..self.output_count {
-            attachs.push(Some(wgpu::RenderPassColorAttachment {
-                view: &dst[idx as usize].view,
-                resolve_target: None,
-                ops: wgpu::Operations {
+        let start_op = match self.desc.start_op {
+            TextureTransformStart::None => {
+                wgpu::Operations {
+                    load : wgpu::LoadOp::Load,
+                    store : true
+                }
+            }
+            TextureTransformStart::Clear => {
+                wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
                         r: 0.0,
                         g: 0.0,
@@ -66,7 +90,15 @@ impl TextureTransformPipeline {
                         a: 1.0,
                     }),
                     store: true,
-                },
+                }
+            }
+        };
+        let mut attachs = vec![];
+        for idx in 0..self.output_count {
+            attachs.push(Some(wgpu::RenderPassColorAttachment {
+                view: &dst[idx as usize].view,
+                resolve_target: None,
+                ops: start_op,
             }))
         }
 
@@ -80,16 +112,10 @@ impl TextureTransformPipeline {
     }
 
     pub fn new(
-        render : &Arc<RenderBase>,
-        format : wgpu::TextureFormat,
-        size : wgpu::Extent3d,
-        input_count : u32,
-        output_count : u32,
-        uniform : Option<Box<dyn TextureTransformUniform>>,
-        shader : String) -> Self {
+        desc : &TextureTransformDescriptor) -> Self {
 
         let mut binds = vec![];
-        for idx in 0..input_count {
+        for idx in 0..desc.input_count {
             binds.push(wgpu::BindGroupLayoutEntry {
                 binding: idx * 2,
                 visibility: wgpu::ShaderStages::FRAGMENT,
@@ -107,7 +133,7 @@ impl TextureTransformPipeline {
                 count : None
             });
         }
-        if let Some(u) = uniform.as_ref() {
+        if let Some(u) = desc.uniform.as_ref() {
             binds.push(wgpu::BindGroupLayoutEntry {
                 binding: binds.len() as u32,
                 visibility: wgpu::ShaderStages::FRAGMENT,
@@ -121,24 +147,24 @@ impl TextureTransformPipeline {
         }
         
 
-        let texture_bind_group_layout = render.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let texture_bind_group_layout = desc.render.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label : Some("Texture present binding"),
             entries : &binds
         });
 
-        let shader = render.device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        let shader = desc.render.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(shader.into())
+            source: wgpu::ShaderSource::Wgsl(desc.shader.clone().into())
         });
 
         let pipeline_layout =
-            render.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            desc.render.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label : Some("Texture transform"),
                 bind_group_layouts : &[&texture_bind_group_layout],
                 push_constant_ranges: &[]
             });
 
-        let pipeline = render.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let pipeline = desc.render.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
@@ -150,8 +176,8 @@ impl TextureTransformPipeline {
                 module : &shader,
                 entry_point : "fs_main",
                 targets : &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend : None,
+                    format : desc.format,
+                    blend : desc.blend,
                     write_mask : wgpu::ColorWrites::ALL
                 }),]
             }),
@@ -174,8 +200,8 @@ impl TextureTransformPipeline {
         });
 
         let mut buffer = None;
-        if let Some(s) = uniform {
-            buffer = Some(Arc::new(render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        if let Some(s) = desc.uniform.as_ref() {
+            buffer = Some(Arc::new(desc.render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
                 contents: &s.get_bytes(),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::MAP_WRITE,
@@ -184,16 +210,21 @@ impl TextureTransformPipeline {
 
         Self {
             pipeline,
-            screen_mesh : TextureTransformPipeline::create_screen_mesh(&render.device),
+            screen_mesh : TextureTransformPipeline::create_screen_mesh(&desc.render.device),
             texture_bind_group_layout,
-            output_format : format,
-            output_count,
-            input_count,
-            size,
-            render: render.clone(),
+            output_format : desc.format,
+            output_count : desc.output_count,
+            input_count : desc.input_count,
+            size : desc.size,
+            render: desc.render.clone(),
             bind: None,
-            buffer
+            buffer,
+            desc : desc.clone()
         }
+    }
+
+    pub fn get_desc(&self) -> TextureTransformDescriptor {
+        self.desc.clone()
     }
 
     pub fn update(&mut self, uniform : Option<&dyn TextureTransformUniform>) {

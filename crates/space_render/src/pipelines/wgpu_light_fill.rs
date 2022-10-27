@@ -144,29 +144,13 @@ impl PointLightPipeline {
                     ty : wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count : None
                 },
-                wgpu::BindGroupLayoutEntry {
-                    binding : 8,
-                    visibility : wgpu::ShaderStages::FRAGMENT,
-                    ty : wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false
-                    },
-                    count : None
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding : 9,
-                    visibility : wgpu::ShaderStages::FRAGMENT,
-                    ty : wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count : None
-                },
 
             ]
         });
         texture_bind_group_layout
     }
 
-    fn create_texture_group(&self, device : &wgpu::Device, src : &GFramebuffer, ssao : &TextureBundle) -> wgpu::BindGroup {
+    fn create_texture_group(&self, device : &wgpu::Device, src : &GFramebuffer) -> wgpu::BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout : &self.texture_bing_group_layout,
             entries : &[
@@ -202,14 +186,6 @@ impl PointLightPipeline {
                     binding : 7,
                     resource : wgpu::BindingResource::Sampler(&src.mr.sampler)
                 },
-                wgpu::BindGroupEntry {
-                    binding : 8,
-                    resource : wgpu::BindingResource::TextureView(&ssao.view)
-                },
-                wgpu::BindGroupEntry {
-                    binding : 9,
-                    resource : wgpu::BindingResource::Sampler(&ssao.sampler)
-                }
             ],
             label : Some("texture present bind")
         })
@@ -370,8 +346,7 @@ impl PointLightPipeline {
         encoder : &'a mut wgpu::CommandEncoder, 
         scene : &[PointLight], 
         dst : &TextureBundle, 
-        gbuffer : &GFramebuffer,
-        ssao : &TextureBundle) {
+        gbuffer : &GFramebuffer) {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Point light renderpass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment { 
@@ -394,7 +369,7 @@ impl PointLightPipeline {
             }),
         });
 
-        self.diffuse = Some(self.create_texture_group(device, &gbuffer, ssao));
+        self.diffuse = Some(self.create_texture_group(device, &gbuffer));
 
         render_pass.set_bind_group(2, &self.diffuse.as_ref().unwrap(), &[]);
 

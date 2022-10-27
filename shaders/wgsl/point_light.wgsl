@@ -63,11 +63,6 @@ var t_mr: texture_2d<f32>;
 @group(2) @binding(7)
 var s_mr: sampler;
 
-@group(2) @binding(8)
-var t_ssao: texture_2d<f32>;
-@group(2) @binding(9)
-var s_ssao: sampler;
-
 struct FragmentOutput {
 @location(0) color : vec4<f32>,
 };
@@ -175,15 +170,8 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var NdotL = max(dot(N, L), 0.0);
     var NdotV = max(dot(N, V), 0.0);
 
-     let diffuse_ambient = EnvBRDFApprox(tex_color, 1.0, NdotV);
-     let specular_ambient = EnvBRDFApprox(F0, mr.g, NdotV);
-
-     let ao = textureSample(t_ssao, s_ssao, screen_uv).r;
-
-     let ambient = (diffuse_ambient + specular_ambient) * (radiance * 0.1) * ao;
-
     var Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
-    Lo = Lo * shadow + ambient;
+    Lo = Lo * shadow;
     out.color = vec4<f32>(Lo, 1.0);
     return out;
 }
