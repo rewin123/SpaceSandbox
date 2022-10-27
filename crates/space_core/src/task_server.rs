@@ -68,7 +68,7 @@ impl TaskServer {
     }
 
     pub fn clone_task_list(&self) -> Vec<Arc<Task>> {
-        let iter = self.tasks.lock().unwrap().iter().map(|(k, v)| v).cloned().collect();
+        let iter = self.tasks.lock().unwrap().iter().map(|(_, v)| v).cloned().collect();
         iter
     }
 }

@@ -1,7 +1,6 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, DeriveInput};
-use quote::*;
+use syn::{parse_macro_input};
 
 #[proc_macro]
 pub fn make_answer(_item: TokenStream) -> TokenStream {

@@ -36,6 +36,7 @@ space_code_editor = {path = "crates/space_code_editor"}
 space_core = {path = "crates/space_core"}
 space_assets = {path = "crates/space_assets"}
 space_render = {path = "crates/space_render"}
+space_game = {path = "crates/space_game"}
 
 downcast-rs = "1.2.0"
 egui_wgpu_backend = "0.19"
