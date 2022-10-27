@@ -1,5 +1,4 @@
 use std::sync::{Arc, Mutex};
-use specs::{Component, VecStorage};
 use crate::asset_server::{Asset, AssetServer};
 use crate::handle::Handle;
 use nalgebra::*;
@@ -106,9 +105,6 @@ pub struct GMeshPtr {
     pub mesh : Arc<GMesh>
 }
 
-impl Component for GMeshPtr {
-    type Storage = VecStorage<GMeshPtr>;
-}
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -172,10 +168,6 @@ impl Location {
             buffer.unmap();
         });
     }
-}
-
-impl Component for Location {
-    type Storage = VecStorage<Location>;
 }
 
 
@@ -250,9 +242,6 @@ impl Material {
     }
 }
 
-impl Component for Material {
-    type Storage = VecStorage<Material>;
-}
 
 impl Asset for TextureBundle {
 

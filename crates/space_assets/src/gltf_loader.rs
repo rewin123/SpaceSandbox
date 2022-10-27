@@ -5,7 +5,6 @@ use byteorder::ByteOrder;
 use gltf::animation::Property::Rotation;
 use gltf::json::accessor::ComponentType;
 use gltf::Semantic;
-use specs::{Builder, Component, VecStorage, WorldExt};
 use wgpu::util::DeviceExt;
 use crate::asset_server::AssetServer;
 use crate::handle::Handle;
@@ -16,7 +15,7 @@ use crate::mesh::{GMesh, GVertex, Material, TextureBundle};
 pub trait GltfAssetLoader {
     fn load_gltf_color_texture(&mut self, base : &String, src : Option<gltf::texture::Info>, gamma : bool) -> Handle<TextureBundle>;
     fn load_gltf_normal_texture(&mut self, base : &String, src : Option<gltf::material::NormalTexture>) -> Handle<TextureBundle>;
-    fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut specs::World);
+    fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut legion::World);
 }
 
 impl GltfAssetLoader for AssetServer {
@@ -49,7 +48,7 @@ impl GltfAssetLoader for AssetServer {
 
 
 
-    fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut specs::World) {
+    fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut legion::World) {
 
         let sponza = gltf::Gltf::open(&path).unwrap();
         let base = PathBuf::from(&path).parent().unwrap().to_str().unwrap().to_string();
@@ -219,7 +218,7 @@ impl GltfAssetLoader for AssetServer {
 
                 for (p, m) in &meshes[mesh_idx.index()] {
 
-                    world.create_entity().with(location.clone(&device)).with(m.clone()).with(p.clone());
+                    world.push((p.clone(), location.clone(&device), m.clone()));
                 }
             }
         }

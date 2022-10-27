@@ -9,7 +9,6 @@ use egui_gizmo::GizmoMode;
 use egui_wgpu_backend::ScreenDescriptor;
 use space_render::pipelines::wgpu_sreen_diffuse::SSDiffuse;
 use space_shaders::*;
-use specs::*;
 use wgpu::util::DeviceExt;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -25,6 +24,8 @@ use space_core::{RenderBase, TaskServer};
 use space_render::{pipelines::*, Camera};
 use space_render::light::*;
 use space_render::pipelines::wgpu_ssao::SSAO;
+
+use legion::*;
 
 #[repr(C)]
 #[derive(Clone, Zeroable, Pod, Copy)]
@@ -247,10 +248,7 @@ impl State {
             depth_or_array_layers : 1
         };
 
-        let mut world = World::new();
-        world.register::<GMeshPtr>();
-        world.register::<Material>();
-        world.register::<Location>();
+        let mut world = World::default();
 
         let task_server = Arc::new(TaskServer::new());
 
@@ -524,10 +522,10 @@ impl State {
             self.camera.pos -= self.camera.up * speed;
         }
 
-        let mut loc_storage = self.scene.write_storage::<Location>();
+        let mut loc_query = <(&mut Location,)>::query();
 
         self.ss_diffuse.update(&self.camera);
-        for loc in (&mut loc_storage,).join() {
+        for loc in loc_query.iter_mut(&mut self.scene) {
             loc.0.update_buffer();
         }
         self.render.device.poll(wgpu::Maintain::Wait);
@@ -588,7 +586,7 @@ impl State {
                 label: Some("Render Encoder"),
             });
 
-        self.gbuffer_pipeline.draw(&self.assets,&mut encoder, &self.scene, &self.gbuffer);
+        self.gbuffer_pipeline.draw(&self.assets,&mut encoder, &mut self.scene, &self.gbuffer);
         self.depth_calc.draw(&mut encoder, &[&self.gbuffer.position], &[&self.depth_buffer.dst[0]]);
         self.light_shadow.draw(&mut encoder, &mut self.point_lights, &self.scene);
         self.ss_diffuse.draw(

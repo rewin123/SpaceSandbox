@@ -1,9 +1,10 @@
 use std::{num::NonZeroU32, sync::{Arc, Mutex}};
 use std::collections::HashMap;
 use wgpu::Extent3d;
-use specs::*;
 use space_assets::*;
 use space_core::RenderBase;
+
+use legion::*;
 
 pub struct GFramebuffer {
     pub diffuse : TextureBundle,
@@ -308,10 +309,8 @@ impl GBufferFill {
 
 
 
-    pub fn draw(&mut self, assets : &AssetServer, encoder : &mut wgpu::CommandEncoder, scene : &World, dst : &GFramebuffer) {
-        let mesh_st = scene.read_storage::<GMeshPtr>();
-        let mut material_st = scene.write_storage::<Material>();
-        let mut pos_st = scene.read_storage::<Location>();
+    pub fn draw(&mut self, assets : &AssetServer, encoder : &mut wgpu::CommandEncoder, scene : &mut World, dst : &GFramebuffer) {
+        let mut query = <(&GMeshPtr, &mut Material, &Location)>::query();
 
         let mut render_pass = dst.spawn_renderpass(encoder);
 
@@ -319,7 +318,7 @@ impl GBufferFill {
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
 
 
-        for (mesh_ptr, material, loc) in (&mesh_st, &mut material_st, &pos_st).join() {
+        for (mesh_ptr, material, loc) in query.iter_mut(scene) {
             let mesh = mesh_ptr.mesh.clone();
             if material.need_rebind(assets) {
                 let group = self.render.device.create_bind_group(&wgpu::BindGroupDescriptor {

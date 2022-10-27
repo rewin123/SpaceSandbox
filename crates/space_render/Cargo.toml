@@ -9,7 +9,7 @@ edition = "2021"
 wgpu = {version = "0.13", features = ["webgl"]}
 nalgebra = "0.31.1"
 encase = {version = "0.3.0", features = ["nalgebra"] }
-specs = "0.18.0"
+legion = "0.4.0"
 downcast-rs = "1.2.0"
 bytemuck = { version = "1.4.1", features = [ "derive" ] }
 rand = "0.8.3"

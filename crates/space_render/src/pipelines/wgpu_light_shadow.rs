@@ -3,10 +3,9 @@ use std::sync::Arc;
 use wgpu::{Extent3d, TextureDimension};
 use crate::light::{PointLight, PointLightShadow};
 use space_shaders::*;
-use specs::*;
 use space_core::RenderBase;
 use space_assets::*;
-
+use legion::*;
 
 pub struct PointLightShadowPipeline {
     pub pipeline : wgpu::RenderPipeline,
@@ -136,10 +135,8 @@ impl PointLightShadowPipeline {
                    idx : usize,
                    world : &World,
                    encoder : &mut wgpu::CommandEncoder) {
+        let mut query = <(&GMeshPtr, &Material, &Location)>::query();
 
-        let mesh_st = world.read_storage::<GMeshPtr>();
-        let mut material_st = world.write_storage::<Material>();
-        let loc_st = world.write_storage::<Location>();
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Point light renderpass"),
@@ -156,7 +153,7 @@ impl PointLightShadowPipeline {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &shadow.camera_binds[idx], &[]);
 
-        for (mesh_ptr, material, loc) in (&mesh_st, &mut material_st, &loc_st).join() {
+        for (mesh_ptr, material, loc) in query.iter(world) {
             let mesh = mesh_ptr.mesh.clone();
 
             render_pass.set_vertex_buffer(0, mesh_ptr.mesh.vertex.slice(..));

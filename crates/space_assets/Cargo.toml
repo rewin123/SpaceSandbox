@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 byteorder = "1.4.3"
 downcast-rs = "1.2.0"
-specs = "0.18.0"
+legion = "0.4.0"
 wgpu = {version = "0.13", features = ["webgl"]}
 image = "0.22"
 bytemuck = { version = "1.4.1", features = [ "derive" ] }

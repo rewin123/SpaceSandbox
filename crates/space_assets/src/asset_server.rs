@@ -7,7 +7,6 @@ use std::sync::{Arc, Mutex};
 use byteorder::ByteOrder;
 use downcast_rs::{DowncastSync, impl_downcast};
 use space_core::{RenderBase, SpaceResult};
-use specs::WorldExt;
 use space_core::TaskServer;
 use std::hash::Hash;
 use std::num::NonZeroU32;

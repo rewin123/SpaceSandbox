@@ -12,7 +12,6 @@ const AppName : &str = "SpaceSandbox";
 
 pub mod ui;
 
-use specs::*;
 
 pub struct Game {
 
