@@ -2,7 +2,7 @@ use std::iter;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use SpaceSandbox::ui::{Gui, FpsCounter};
+use SpaceSandbox::ui::{FpsCounter};
 use bytemuck::{Zeroable, Pod};
 use egui::epaint::ahash::HashMap;
 use egui_gizmo::GizmoMode;
@@ -15,6 +15,7 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{Window, WindowBuilder};
 use SpaceSandbox::{init_logger};
 use encase::{ShaderType, UniformBuffer};
+use image::gif::Encoder;
 use space_assets::*;
 
 use nalgebra as na;
@@ -26,6 +27,7 @@ use space_render::light::*;
 use space_render::pipelines::wgpu_ssao::SSAO;
 
 use legion::*;
+use space_game::{Game, RenderPlugin};
 
 #[repr(C)]
 #[derive(Clone, Zeroable, Pod, Copy)]
@@ -45,70 +47,14 @@ async fn run() {
     rayon::ThreadPoolBuilder::default()
         .num_threads(3)
         .build_global().unwrap();
-    
-
-    let event_loop = EventLoop::new();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
-
-    window.set_title("Space sandbox");
 
     // State::new uses async code, so we're going to wait for it to finish
-    let mut state = State::new(&window).await;
+    let mut state = State::new().await;
 
-    event_loop.run(move |event, _, control_flow| {
-        state.gui.platform.handle_event(&event);
-        match event {
-            Event::WindowEvent {
-                ref event,
-                window_id,
-            } if window_id == window.id() => {
-                if !state.input(event) {
-                    // UPDATED!
-                    match event {
-                        WindowEvent::CloseRequested
-                        | WindowEvent::KeyboardInput {
-                            input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
-                                ..
-                            },
-                            ..
-                        } => *control_flow = ControlFlow::Exit,
-                        WindowEvent::Resized(physical_size) => {
-                            state.resize(*physical_size);
-                        }
-                        WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                            // new_inner_size is &&mut so w have to dereference it twice
-                            state.resize(**new_inner_size);
-                        }
-                        WindowEvent::KeyboardInput { device_id, input, is_synthetic } => {
-                            state.input_system.process_event(input);
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            Event::RedrawRequested(window_id) if window_id == window.id() => {
-                state.update();
-                match state.render(&window) {
-                    Ok(_) => {}
-                    // Reconfigure the surface if it's lost or outdated
-                    Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => state.resize(state.size),
-                    // The system is out of memory, we should probably quit
-                    Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+    let mut game = state.game.take().unwrap();
+    game.add_render_plugin(state);
 
-                    Err(wgpu::SurfaceError::Timeout) => log::warn!("Surface timeout"),
-                }
-            }
-            Event::RedrawEventsCleared => {
-                // RedrawRequested will only trigger once, unless we manually
-                // request it.
-                window.request_redraw();
-            }
-            _ => {}
-        }
-    });
+    game.run();
 }
 
 #[derive(Debug, PartialEq)]
@@ -120,10 +66,8 @@ enum DrawState {
 }
 
 struct State {
-    surface : wgpu::Surface,
+    game : Option<Game>,
     render : Arc<RenderBase>,
-    config : wgpu::SurfaceConfiguration,
-    size : winit::dpi::PhysicalSize<u32>,
     scene : World,
     camera : Camera,
     camera_buffer : wgpu::Buffer,
@@ -142,9 +86,7 @@ struct State {
     present : TexturePresent,
     gamma_buffer : CommonFramebuffer,
     point_lights : Vec<PointLight>,
-    input_system : InputSystem,
     assets : AssetServer,
-    gui : Gui,
     fps : FpsCounter,
     device_name : String,
 
@@ -154,27 +96,6 @@ struct State {
 }
 
 
-#[derive(Default)]
-struct InputSystem {
-    key_state : HashMap<winit::event::VirtualKeyCode, bool>
-}
-
-impl InputSystem {
-    pub fn process_event(&mut self, input : &KeyboardInput) {
-        if let Some(key) = input.virtual_keycode {
-            // log::info!("New {:?} state {:?}", &key, &input.state);
-            self.key_state.insert(key, input.state == ElementState::Pressed);
-        }
-    }
-
-    fn get_key_state(&self, key : VirtualKeyCode) -> bool {
-        if let Some(state) = self.key_state.get(&key) {
-            *state
-        } else {
-            false
-        }
-    }
-}
 
 
 #[derive(Default)]
@@ -190,44 +111,9 @@ impl TextureTransformUniform for DepthCalcUniform {
 
 impl State {
     // Creating some of the wgpu types requires async code
-    async fn new(window: &Window) -> Self {
-        let size = window.inner_size();
-
-        let instance = wgpu::Instance::new(wgpu::Backends::VULKAN);
-        
-        let surface = unsafe {
-            instance.create_surface(window)
-        };
-        let adapter = instance.request_adapter(
-            &wgpu::RequestAdapterOptions {
-                power_preference : wgpu::PowerPreference::HighPerformance,
-                compatible_surface : Some(&surface),
-                force_fallback_adapter: false
-            }
-        ).await.unwrap();
-        
-
-        let (device, queue) = adapter.request_device(
-            &wgpu::DeviceDescriptor {
-                features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
-                limits: if cfg!(target_arch = "wasm32") {
-                    wgpu::Limits::downlevel_webgl2_defaults()
-                } else {
-                    wgpu::Limits::default()
-                },
-                label: None
-            },
-            None
-        ).await.unwrap();
-
-        let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface.get_supported_formats(&adapter)[0],
-            width: size.width,
-            height: size.height,
-            present_mode: wgpu::PresentMode::Immediate,
-        };
-        surface.configure(&device, &config);
+    async fn new() -> Self {
+        let game = Game::default();
+        let render = game.get_render_base();
 
 
         let camera = Camera::default();
@@ -236,26 +122,21 @@ impl State {
         let mut camera_cpu_buffer = UniformBuffer::new(vec![0u8;100]);
         camera_cpu_buffer.write(&camera_uniform);
 
-        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let camera_buffer = render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label : Some("Camera uniform buffer"),
             contents : &camera_cpu_buffer.into_inner(),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
         });
 
         let extent = wgpu::Extent3d {
-            width : config.width,
-            height : config.height,
+            width : game.api.config.width,
+            height : game.api.config.height,
             depth_or_array_layers : 1
         };
 
         let mut world = World::default();
 
         let task_server = Arc::new(TaskServer::new());
-
-        let render = Arc::new(RenderBase {
-            device,
-            queue,
-        });
 
         let mut assets = AssetServer::new(&render, &task_server);
 
@@ -272,10 +153,10 @@ impl State {
         let gbuffer = GBufferFill::new(
             &render,
             &camera_buffer,
-            config.format,
+            game.api.config.format,
             wgpu::Extent3d {
-                width : config.width,
-                height : config.height,
+                width : game.api.config.width,
+                height : game.api.config.height,
                 depth_or_array_layers : 1
             });
 
@@ -284,11 +165,11 @@ impl State {
             extent);
 
         let present = TexturePresent::new(
-            &render.device, 
-            config.format, 
+            &render.device,
+            game.api.config.format,
             wgpu::Extent3d {
-                width : config.width,
-                height : config.height,
+                width : game.api.config.width,
+                height : game.api.config.height,
                 depth_or_array_layers : 1
             });
 
@@ -304,11 +185,7 @@ impl State {
         let light_pipeline = PointLightPipeline::new(&render, &camera_buffer, extent);
         let light_buffer = light_pipeline.spawn_framebuffer(&render.device, extent);
 
-        let gui = Gui::new(
-            &render, 
-            config.format, 
-            extent, 
-            window.scale_factor());
+
 
         let fps = FpsCounter::default();
 
@@ -391,10 +268,10 @@ impl State {
 
         let ss_buffer = ss_pipeline.spawn_framebuffer();
 
+        let device_name = game.api.adapter.get_info().name;
+
         Self {
-            surface,
-            config,
-            size,
+            game : Some(game),
             scene : world,
             camera : Camera::default(),
             camera_buffer,
@@ -404,15 +281,13 @@ impl State {
             point_lights : lights,
             light_pipeline,
             light_buffer,
-            input_system : InputSystem::default(),
             assets,
             render,
-            gui,
             fps,
             light_shadow : point_light_shadow,
             gamma_correction,
             gamma_buffer,
-            device_name : adapter.get_info().name.clone(),
+            device_name,
             ss_diffuse : ss_pipeline,
             ss_difuse_framebufer : ss_buffer,
             draw_state : DrawState::DirectLight,
@@ -424,101 +299,27 @@ impl State {
             ambient_light_pipeline
         }
     }
+}
 
-    fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        if new_size.width > 0 && new_size.height > 0 {
-            self.size = new_size;
-            self.config.width = new_size.width;
-            self.config.height = new_size.height;
-            self.surface.configure(&self.render.device, &self.config);
-
-            let size = wgpu::Extent3d {
-                width : self.config.width,
-                height : self.config.height,
-                depth_or_array_layers : 1
-            };
-
-            self.gbuffer_pipeline = GBufferFill::new(
-                &self.render,
-                &self.camera_buffer,
-                self.config.format,
-                size.clone()
-            );
-
-            self.gbuffer = GBufferFill::spawn_framebuffer(
-                &self.render.device,
-            size.clone());
-
-            self.present = TexturePresent::new(
-                &self.render.device, 
-                self.config.format, 
-                size);
-
-            self.light_pipeline = PointLightPipeline::new(
-                &self.render,
-                &self.camera_buffer,
-                size
-            );
-
-            let mut gamma_desc = self.gamma_correction.get_desc();
-            gamma_desc.size = size;
-            self.gamma_correction = TextureTransformPipeline::new(
-                &gamma_desc
-            );
-
-           
-            self.gamma_buffer = self.gamma_correction.spawn_framebuffer();
-
-            self.light_buffer = self.light_pipeline.spawn_framebuffer(&self.render.device, size);
-
-            self.ss_diffuse = SSDiffuse::new(
-                &self.render,
-                size,
-                1,
-                1,
-                include_str!("../shaders/wgsl/screen_diffuse_lighting.wgsl").into()
-            );
-    
-            self.ss_difuse_framebufer = self.ss_diffuse.spawn_framebuffer();
-
-            let mut depth_desc = self.depth_calc.get_desc();
-            depth_desc.size = size;
-            self.depth_calc = TextureTransformPipeline::new(
-                &depth_desc
-            );
-
-            self.depth_buffer = self.depth_calc.spawn_framebuffer();
-
-            let mut ambient_desc = self.ambient_light_pipeline.get_desc();
-            ambient_desc.size = size;
-            self.ambient_light_pipeline = TextureTransformPipeline::new(
-                &ambient_desc
-            );
-        }
-    }
-
-    fn input(&mut self, event: &WindowEvent) -> bool {
-        false
-    }
-
-    fn update(&mut self) {
+impl RenderPlugin for State {
+    fn update(&mut self, game : &mut Game) {
         let speed = 0.3 / 5.0;
-        if self.input_system.get_key_state(VirtualKeyCode::W) {
+        if game.input.get_key_state(VirtualKeyCode::W) {
             self.camera.pos += self.camera.frw * speed;
-        } 
-        if self.input_system.get_key_state(VirtualKeyCode::S) {
+        }
+        if game.input.get_key_state(VirtualKeyCode::S) {
             self.camera.pos -= self.camera.frw * speed;
         }
-        if self.input_system.get_key_state(VirtualKeyCode::D) {
+        if game.input.get_key_state(VirtualKeyCode::D) {
             self.camera.pos += self.camera.get_right() * speed;
         }
-        if self.input_system.get_key_state(VirtualKeyCode::A) {
+        if game.input.get_key_state(VirtualKeyCode::A) {
             self.camera.pos -= self.camera.get_right() * speed;
         }
-        if self.input_system.get_key_state(VirtualKeyCode::Space) {
+        if game.input.get_key_state(VirtualKeyCode::Space) {
             self.camera.pos += self.camera.up  * speed;
         }
-        if self.input_system.get_key_state(VirtualKeyCode::LShift) {
+        if game.input.get_key_state(VirtualKeyCode::LShift) {
             self.camera.pos -= self.camera.up * speed;
         }
 
@@ -561,71 +362,62 @@ impl State {
             });
 
         encoder.copy_buffer_to_buffer(
-            &tmp_buffer, 
-            0, 
-            &self.camera_buffer, 
-            0, 
+            &tmp_buffer,
+            0,
+            &self.camera_buffer,
+            0,
             inner.len() as wgpu::BufferAddress);
         self.render.queue.submit(iter::once(encoder.finish()));
     }
 
-    fn render(&mut self, window : &Window) -> Result<(), wgpu::SurfaceError> {
-        let output = self.surface.get_current_texture()?;
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+    fn render(&mut self, game : &mut Game, encoder : &mut wgpu::CommandEncoder) {
+        let view = game.render_view.as_ref().unwrap();
 
         for light in &mut self.point_lights {
             light.update_buffer(&self.render);
         }
         self.render.device.poll(wgpu::Maintain::Wait);
 
-        let mut encoder = self
-        .render.device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            });
-
-        self.gbuffer_pipeline.draw(&self.assets,&mut encoder, &mut self.scene, &self.gbuffer);
-        self.depth_calc.draw(&mut encoder, &[&self.gbuffer.position], &[&self.depth_buffer.dst[0]]);
-        self.light_shadow.draw(&mut encoder, &mut self.point_lights, &self.scene);
+        self.gbuffer_pipeline.draw(&self.assets, encoder, &mut self.scene, &self.gbuffer);
+        self.depth_calc.draw(encoder, &[&self.gbuffer.position], &[&self.depth_buffer.dst[0]]);
+        self.light_shadow.draw(encoder, &mut self.point_lights, &self.scene);
         self.ss_diffuse.draw(
-            &mut encoder,
+            encoder,
             &self.gbuffer,
             &self.light_buffer,
             &self.depth_buffer.dst[0],
             &self.ss_difuse_framebufer.dst[0]);
-       
-        self.light_pipeline.draw(&self.render.device, &mut encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
-        self.ambient_light_pipeline.draw(&mut encoder,
+
+        self.light_pipeline.draw(&self.render.device, encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
+        self.ambient_light_pipeline.draw(encoder,
             &[&self.gbuffer.diffuse, &self.gbuffer.normal, &self.gbuffer.position, &self.gbuffer.mr, &self.ss_difuse_framebufer.dst[0]]
         , &[&self.light_buffer]);
         // self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
         match &self.draw_state {
             DrawState::Full => {
-                self.gamma_correction.draw(&mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+                self.gamma_correction.draw(encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
             }
             DrawState::DirectLight => {
-                self.gamma_correction.draw(&mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+                self.gamma_correction.draw(encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
             },
             DrawState::AmbientOcclusion => {
-                self.gamma_correction.draw(&mut encoder, &[&self.ss_difuse_framebufer.dst[0]], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+                self.gamma_correction.draw(encoder, &[&self.ss_difuse_framebufer.dst[0]], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
             },
             DrawState::Depth => {
-                self.gamma_correction.draw(&mut encoder, &[&self.depth_buffer.dst[0]], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+                self.gamma_correction.draw(encoder, &[&self.depth_buffer.dst[0]], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
             }
         }
         // self.present.draw(&self.render.device, &mut encoder, &self.ssao_smooth_framebuffer.dst[0], &view);
 
-        self.gui.begin_frame();
+        game.gui.begin_frame();
 
         egui::TopBottomPanel::top("top_panel").show(
-            &self.gui.platform.context(), |ui| {
+            &game.gui.platform.context(), |ui| {
 
                 ui.horizontal(|ui| {
 
@@ -659,26 +451,91 @@ impl State {
 
         });
 
-        let gui_output = self.gui.end_frame(Some(window));
-        self.gui.draw(gui_output, 
+        let gui_output = game.gui.end_frame(Some(&game.window));
+        game.gui.draw(gui_output,
             ScreenDescriptor {
-                physical_width: self.config.width,
-                physical_height: self.config.height,
-                scale_factor: window.scale_factor() as f32,
-            }, 
-            &mut encoder, 
+                physical_width: game.api.config.width,
+                physical_height: game.api.config.height,
+                scale_factor: game.window.scale_factor() as f32,
+            },
+            encoder,
             &view);
 
-        self.render.queue.submit(iter::once(encoder.finish()));
-        output.present();
-
         self.assets.sync_tick();
+    }
 
-        Ok(())
+    fn window_resize(&mut self, game : &mut Game, new_size: winit::dpi::PhysicalSize<u32>) {
+        if new_size.width > 0 && new_size.height > 0 {
+            game.api.size = new_size;
+            game.api.config.width = new_size.width;
+            game.api.config.height = new_size.height;
+            game.api.surface.configure(&self.render.device, &game.api.config);
+
+            let size = wgpu::Extent3d {
+                width : game.api.config.width,
+                height : game.api.config.height,
+                depth_or_array_layers : 1
+            };
+
+            self.gbuffer_pipeline = GBufferFill::new(
+                &self.render,
+                &self.camera_buffer,
+                game.api.config.format,
+                size.clone()
+            );
+
+            self.gbuffer = GBufferFill::spawn_framebuffer(
+                &self.render.device,
+            size.clone());
+
+            self.present = TexturePresent::new(
+                &self.render.device,
+                game.api.config.format,
+                size);
+
+            self.light_pipeline = PointLightPipeline::new(
+                &self.render,
+                &self.camera_buffer,
+                size
+            );
+
+            let mut gamma_desc = self.gamma_correction.get_desc();
+            gamma_desc.size = size;
+            self.gamma_correction = TextureTransformPipeline::new(
+                &gamma_desc
+            );
+
+
+            self.gamma_buffer = self.gamma_correction.spawn_framebuffer();
+
+            self.light_buffer = self.light_pipeline.spawn_framebuffer(&self.render.device, size);
+
+            self.ss_diffuse = SSDiffuse::new(
+                &self.render,
+                size,
+                1,
+                1,
+                include_str!("../shaders/wgsl/screen_diffuse_lighting.wgsl").into()
+            );
+
+            self.ss_difuse_framebufer = self.ss_diffuse.spawn_framebuffer();
+
+            let mut depth_desc = self.depth_calc.get_desc();
+            depth_desc.size = size;
+            self.depth_calc = TextureTransformPipeline::new(
+                &depth_desc
+            );
+
+            self.depth_buffer = self.depth_calc.spawn_framebuffer();
+
+            let mut ambient_desc = self.ambient_light_pipeline.get_desc();
+            ambient_desc.size = size;
+            self.ambient_light_pipeline = TextureTransformPipeline::new(
+                &ambient_desc
+            );
+        }
     }
 }
-
-
 
 fn main() {
     pollster::block_on(run());

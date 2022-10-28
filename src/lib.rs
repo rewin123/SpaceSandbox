@@ -13,10 +13,6 @@ const AppName : &str = "SpaceSandbox";
 pub mod ui;
 
 
-pub struct Game {
-
-}
-
 pub fn init_logger() {
     let _ = CombinedLogger::init(
         vec![

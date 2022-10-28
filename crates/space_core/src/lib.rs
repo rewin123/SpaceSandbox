@@ -7,7 +7,7 @@ pub use task_server::*;
 #[derive(Debug)]
 pub struct RenderBase {
     pub device : wgpu::Device,
-    pub queue : wgpu::Queue
+    pub queue : wgpu::Queue,
 }
 
 
