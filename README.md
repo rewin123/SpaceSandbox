@@ -1,4 +1,4 @@
-![alt text](https://github.com/rewin123/SpaceSandbox/blob/main/sponza.png?raw=true)
+![alt text](https://github.com/rewin123/SpaceSandbox/blob/main/sponza.jpg?raw=true)
 
 Полезные ссылки:
 1. https://github.com/bombomby/optick - профайлер для игр
