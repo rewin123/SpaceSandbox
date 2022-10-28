@@ -23,7 +23,8 @@ pub struct Game {
     pub input : InputSystem,
     pub gui : Gui,
     plugins : Option<PluginBase>,
-    pub render_view : Option<TextureView>
+    pub render_view : Option<TextureView>,
+    pub assets : AssetServer,
 }
 
 impl Default for Game {

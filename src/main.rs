@@ -86,7 +86,6 @@ struct State {
     present : TexturePresent,
     gamma_buffer : CommonFramebuffer,
     point_lights : Vec<PointLight>,
-    assets : AssetServer,
     fps : FpsCounter,
     device_name : String,
 
