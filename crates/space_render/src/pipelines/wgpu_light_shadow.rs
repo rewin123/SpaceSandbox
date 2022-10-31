@@ -6,6 +6,8 @@ use space_shaders::*;
 use space_core::RenderBase;
 use space_assets::*;
 use legion::*;
+use legion::world::SubWorld;
+
 
 pub struct PointLightShadowPipeline {
     pub pipeline : wgpu::RenderPipeline,
@@ -95,7 +97,7 @@ impl PointLightShadowPipeline {
     pub fn draw<'a>(
         &mut self,
         encoder : &'a mut wgpu::CommandEncoder,
-        world : &mut World) {
+        world : &mut SubWorld) {
 
         let mut lights_mut = <(&mut PointLight)>::query();
         let mut lights = <(&PointLight)>::query();
@@ -138,7 +140,7 @@ impl PointLightShadowPipeline {
     fn shadow_draw(&mut self,
                    shadow : &PointLightShadow,
                    idx : usize,
-                   world : &World,
+                   world : &SubWorld,
                    encoder : &mut wgpu::CommandEncoder) {
         let mut query = <(&GMeshPtr, &Material, &Location)>::query();
 

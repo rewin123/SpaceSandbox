@@ -10,6 +10,8 @@ use space_core::RenderBase;
 use crate::pipelines::{Pipeline, PipelineDesc};
 use crate::pipelines::wgpu_gbuffer_fill::GFramebuffer;
 
+
+
 #[derive(Clone, Debug)]
 pub struct PointLightPipelineDesc {
     shader_path : AssetPath,

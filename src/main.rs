@@ -29,6 +29,7 @@ use space_render::pipelines::wgpu_ssao::SSAO;
 use legion::*;
 use space_game::{Game, RenderPlugin};
 use space_game::plugins::LocUpdateSystem;
+use space_render::pipelines::point_light_plugin::PointLightPlugin;
 
 #[repr(C)]
 #[derive(Clone, Zeroable, Pod, Copy)]
@@ -56,6 +57,7 @@ async fn run() {
     game.add_render_plugin(state);
     game.add_schedule_plugin(LocUpdateSystem{});
     game.add_schedule_plugin(GBufferPlugin{});
+    game.add_schedule_plugin(PointLightPlugin{});
     game.update_scene_scheldue();
 
     game.run();
@@ -346,7 +348,7 @@ impl RenderPlugin for State {
         let gbuffer = game.scene.resources.get::<GFramebuffer>().unwrap();
         // self.gbuffer_pipeline.draw(&game.assets, encoder, &mut game.scene.world, &self.gbuffer);
         self.depth_calc.draw(encoder, &[&gbuffer.position], &[&self.depth_buffer.dst[0]]);
-        self.light_shadow.draw(encoder, &mut game.scene.world);
+        // self.light_shadow.draw(encoder, &mut game.scene.world);
         self.ss_diffuse.draw(
             encoder,
             &gbuffer,

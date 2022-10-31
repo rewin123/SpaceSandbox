@@ -8,6 +8,7 @@ pub mod wgpu_light_shadow;
 pub mod wgpu_textures_transform;
 pub mod wgpu_ssao;
 pub mod wgpu_sreen_diffuse;
+pub mod point_light_plugin;
 
 use space_assets::*;
 
