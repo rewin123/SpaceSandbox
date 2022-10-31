@@ -1,5 +1,6 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
+use legion::world::SubWorld;
 use wgpu::{Buffer, Extent3d, TextureDimension};
 use crate::light::PointLight;
 use downcast_rs::*;
@@ -10,7 +11,9 @@ use space_core::RenderBase;
 use crate::pipelines::{Pipeline, PipelineDesc};
 use crate::pipelines::wgpu_gbuffer_fill::GFramebuffer;
 
-
+pub struct DirLightTexture {
+    pub tex : TextureBundle
+}
 
 #[derive(Clone, Debug)]
 pub struct PointLightPipelineDesc {
@@ -44,7 +47,7 @@ pub struct PointLightPipeline {
     diffuse : Option<wgpu::BindGroup>,
     normal : Option<wgpu::BindGroup>,
     position : Option<wgpu::BindGroup>,
-    render : Arc<RenderBase>,
+    pub render : Arc<RenderBase>,
     size : wgpu::Extent3d
 }
 
@@ -347,7 +350,7 @@ impl PointLightPipeline {
         &mut self, 
         device : &wgpu::Device, 
         encoder : &'a mut wgpu::CommandEncoder, 
-        scene : &World,
+        scene : &SubWorld,
         dst : &TextureBundle, 
         gbuffer : &GFramebuffer) {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

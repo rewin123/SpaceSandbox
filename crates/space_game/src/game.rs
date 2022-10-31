@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::iter;
+use std::ops::DerefMut;
 use std::sync::Arc;
 use atomic_refcell::AtomicRefMut;
 use egui::color::gamma_from_linear;
@@ -16,6 +17,7 @@ use crate::{ApiBase, Gui, GuiPlugin, InputSystem, PluginType, RenderPlugin, Sche
 use encase::*;
 use wgpu::util::DeviceExt;
 use legion::*;
+use wgpu_profiler::*;
 
 #[derive(Default)]
 pub struct PluginBase {
@@ -93,6 +95,12 @@ impl Default for Game {
         };
 
         scene.resources.insert(AssetServer::new(&render_base, &task_server));
+
+        scene.resources.insert(
+            GpuProfiler::new(
+                4, 
+                render_base.queue.get_timestamp_period(), 
+                render_base.device.features()));
 
         Self {
             window,
@@ -202,15 +210,29 @@ impl Game {
             label: None
         }));
         self.scene.resources.get_mut::<AssetServer>().unwrap().sync_tick();
+        self.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope(
+            "Global scopre", 
+            self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut(),
+            &self.render_base.device);
         self.scene.scheduler.execute(&mut self.scene.world, &mut self.scene.resources);
+        self.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(
+            self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut());
 
-        self.render_base.queue.submit(iter::once(self.scene.resources.remove::<wgpu::CommandEncoder>().unwrap().finish()));
+        self.scene.resources.get_mut::<GpuProfiler>().unwrap().resolve_queries(
+            self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut()
+        );
+
+        let sub_idx = self.render_base.queue.submit(Some(self.scene.resources.remove::<wgpu::CommandEncoder>().unwrap().finish()));
+
+        self.render_base.device.poll(wgpu::Maintain::WaitForSubmissionIndex(sub_idx));
+        
 
         let mut plugins = self.plugins.take().unwrap();
         for plugin in &mut plugins.render_plugin {
             plugin.update(self);
         }
         self.plugins = Some(plugins);
+
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -234,6 +256,16 @@ impl Game {
 
         self.render_base.queue.submit(iter::once(encoder.finish()));
         output.present();
+
+        self.scene.resources.get_mut::<GpuProfiler>().unwrap().end_frame().unwrap();
+
+        if let Some(profiling_data) =  self.scene.resources.get_mut::<GpuProfiler>().unwrap().process_finished_frame() {
+            if self.input.get_key_state(winit::event::VirtualKeyCode::G) {
+                wgpu_profiler::chrometrace::write_chrometrace(
+                    std::path::Path::new("mytrace.json"), &profiling_data).unwrap();
+            }
+            // println!("Profile {}", profiling_data.len());
+        }
 
         Ok(())
     }
@@ -321,6 +353,8 @@ impl Game {
         for plugin in &plugins.scheldue_plugin {
             if plugin.get_plugin_type() == PluginType::RenderPrepare {
                 plugin.add_system(self, &mut builder);
+            } else {
+                plugin.add_prepare_system(self, &mut builder);
             }
         }
         builder.flush();

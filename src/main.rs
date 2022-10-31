@@ -7,7 +7,7 @@ use bytemuck::{Zeroable, Pod};
 use egui::epaint::ahash::HashMap;
 use egui_gizmo::GizmoMode;
 use egui_wgpu_backend::ScreenDescriptor;
-use space_render::pipelines::wgpu_sreen_diffuse::SSDiffuse;
+use space_render::pipelines::wgpu_sreen_diffuse::{SSDiffuse, DepthTexture, SSDiffuseSystem};
 use space_shaders::*;
 use wgpu::util::DeviceExt;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
@@ -24,7 +24,7 @@ use wgpu::{BlendFactor, MaintainBase};
 use space_core::{RenderBase, TaskServer};
 use space_render::{pipelines::*};
 use space_render::light::*;
-use space_render::pipelines::wgpu_ssao::SSAO;
+use space_render::pipelines::wgpu_ssao::{SSAO, SSAOFrame};
 
 use legion::*;
 use space_game::{Game, RenderPlugin};
@@ -58,6 +58,8 @@ async fn run() {
     game.add_schedule_plugin(LocUpdateSystem{});
     game.add_schedule_plugin(GBufferPlugin{});
     game.add_schedule_plugin(PointLightPlugin{});
+    game.add_schedule_plugin(FastDepthPlugin{});
+    // game.add_schedule_plugin(SSDiffuseSystem{});
     game.update_scene_scheldue();
 
     game.run();
@@ -74,16 +76,11 @@ enum DrawState {
 struct State {
     game : Option<Game>,
     render : Arc<RenderBase>,
-    light_shadow : PointLightShadowPipeline,
 
     ss_diffuse : SSDiffuse,
-    ss_difuse_framebufer : CommonFramebuffer,
+    ss_difuse_framebufer : SSAOFrame,
 
-    light_pipeline : PointLightPipeline,
     gamma_correction : TextureTransformPipeline,
-    depth_calc : TextureTransformPipeline,
-    depth_buffer : CommonFramebuffer,
-    light_buffer : TextureBundle,
     present : TexturePresent,
     gamma_buffer : CommonFramebuffer,
     fps : FpsCounter,
@@ -95,16 +92,6 @@ struct State {
 }
 
 
-#[derive(Default)]
-struct DepthCalcUniform {
-    pub cam_pos : [f32; 4]
-}
-
-impl TextureTransformUniform for DepthCalcUniform {
-    fn get_bytes(&self) -> Vec<u8> {
-        bytemuck::cast_slice(&self.cam_pos).to_vec()
-    }
-}
 
 impl State {
     // Creating some of the wgpu types requires async code
@@ -180,21 +167,6 @@ impl State {
 
         let gamma_buffer = gamma_correction.spawn_framebuffer();
 
-        let depth_desc = TextureTransformDescriptor {
-            render : render.clone(),
-            format : wgpu::TextureFormat::R16Float,
-            size : extent,
-            input_count : 1,
-            output_count : 1,
-            uniform : Some(Arc::new(DepthCalcUniform::default())),
-            shader : include_str!("../shaders/wgsl/depth_calc.wgsl").into(),
-            blend : None,
-            start_op : TextureTransformStart::Clear
-        };
-
-        let mut depth_calc = TextureTransformPipeline::new(
-            &depth_desc
-        );
 
         let ambient_desc = TextureTransformDescriptor {
             render : render.clone(),
@@ -223,8 +195,6 @@ impl State {
             &ambient_desc
         );
 
-        let depth_buffer = depth_calc.spawn_framebuffer();
-
         let gamma_buffer = gamma_correction.spawn_framebuffer();
 
         let ss_pipeline = SSDiffuse::new(
@@ -246,19 +216,14 @@ impl State {
         Self {
             game : Some(game),
             present,
-            light_pipeline,
-            light_buffer,
             render,
             fps,
-            light_shadow : point_light_shadow,
             gamma_correction,
             gamma_buffer,
             device_name,
             ss_diffuse : ss_pipeline,
             ss_difuse_framebufer : ss_buffer,
             draw_state : DrawState::DirectLight,
-            depth_calc,
-            depth_buffer,
             ambient_light : AmbientLight {
                 color : na::Vector3::new(1.0f32, 1.0, 1.0) * 0.1f32
             },
@@ -284,7 +249,7 @@ impl RenderPlugin for State {
             cam_pos : [game.scene.camera.pos.x, game.scene.camera.pos.y, game.scene.camera.pos.z, 1.0]
         };
 
-        self.depth_calc.update(Some(&depth_buffer));
+        game.scene.resources.insert(depth_buffer);
 
         let ambient_uniform = AmbientLightUniform {
             color: self.ambient_light.color.into(),
@@ -307,36 +272,35 @@ impl RenderPlugin for State {
 
         let gbuffer = game.scene.resources.get::<GFramebuffer>().unwrap();
         // self.gbuffer_pipeline.draw(&game.assets, encoder, &mut game.scene.world, &self.gbuffer);
-        self.depth_calc.draw(encoder, &[&gbuffer.position], &[&self.depth_buffer.dst[0]]);
         // self.light_shadow.draw(encoder, &mut game.scene.world);
         self.ss_diffuse.draw(
             encoder,
             &gbuffer,
-            &self.light_buffer,
-            &self.depth_buffer.dst[0],
-            &self.ss_difuse_framebufer.dst[0]);
+            &game.scene.resources.get::<DirLightTexture>().unwrap().tex,
+            &game.scene.resources.get::<DepthTexture>().unwrap().tex,
+            &self.ss_difuse_framebufer.tex);
 
-        self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &gbuffer);
+        // self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &gbuffer);
         self.ambient_light_pipeline.draw(encoder,
-            &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &self.ss_difuse_framebufer.dst[0]]
-        , &[&self.light_buffer]);
+            &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &self.ss_difuse_framebufer.tex]
+        , &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex]);
         // self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
         match &self.draw_state {
             DrawState::Full => {
-                self.gamma_correction.draw(encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
+                self.gamma_correction.draw(encoder, &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
             }
             DrawState::DirectLight => {
-                self.gamma_correction.draw(encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
+                self.gamma_correction.draw(encoder, &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
             },
             DrawState::AmbientOcclusion => {
-                self.gamma_correction.draw(encoder, &[&self.ss_difuse_framebufer.dst[0]], &[&self.gamma_buffer.dst[0]]);
+                self.gamma_correction.draw(encoder, &[&self.ss_difuse_framebufer.tex], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
             },
             DrawState::Depth => {
-                self.gamma_correction.draw(encoder, &[&self.depth_buffer.dst[0]], &[&self.gamma_buffer.dst[0]]);
+                self.gamma_correction.draw(encoder, &[&game.scene.resources.get::<DepthTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
             }
         }
@@ -405,11 +369,7 @@ impl RenderPlugin for State {
                 game.api.config.format,
                 size);
 
-            self.light_pipeline = PointLightPipeline::new(
-                &self.render,
-                &game.scene.camera_buffer,
-                size
-            );
+           
 
             let mut gamma_desc = self.gamma_correction.get_desc();
             gamma_desc.size = size;
@@ -420,8 +380,6 @@ impl RenderPlugin for State {
 
             self.gamma_buffer = self.gamma_correction.spawn_framebuffer();
 
-            self.light_buffer = self.light_pipeline.spawn_framebuffer(&self.render.device, size);
-
             self.ss_diffuse = SSDiffuse::new(
                 &self.render,
                 size,
@@ -431,14 +389,6 @@ impl RenderPlugin for State {
             );
 
             self.ss_difuse_framebufer = self.ss_diffuse.spawn_framebuffer();
-
-            let mut depth_desc = self.depth_calc.get_desc();
-            depth_desc.size = size;
-            self.depth_calc = TextureTransformPipeline::new(
-                &depth_desc
-            );
-
-            self.depth_buffer = self.depth_calc.spawn_framebuffer();
 
             let mut ambient_desc = self.ambient_light_pipeline.get_desc();
             ambient_desc.size = size;

@@ -13,6 +13,7 @@ legion = "0.4.0"
 downcast-rs = "1.2.0"
 bytemuck = { version = "1.4.1", features = [ "derive" ] }
 rand = "0.8.3"
+wgpu-profiler = "0.9.1"
 
 space_assets = {path = "../space_assets"}
 space_core = {path = "../space_core"}

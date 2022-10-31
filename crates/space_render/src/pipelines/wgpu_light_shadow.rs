@@ -1,6 +1,7 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
 use wgpu::{Extent3d, TextureDimension};
+use wgpu_profiler::GpuProfiler;
 use crate::light::{PointLight, PointLightShadow};
 use space_shaders::*;
 use space_core::RenderBase;
@@ -12,7 +13,7 @@ use legion::world::SubWorld;
 pub struct PointLightShadowPipeline {
     pub pipeline : wgpu::RenderPipeline,
     light_part_layout : wgpu::BindGroupLayout,
-    render : Arc<RenderBase>
+    pub render : Arc<RenderBase>
 }
 
 impl PointLightShadowPipeline {
@@ -97,7 +98,8 @@ impl PointLightShadowPipeline {
     pub fn draw<'a>(
         &mut self,
         encoder : &'a mut wgpu::CommandEncoder,
-        world : &mut SubWorld) {
+        world : &mut SubWorld,
+        profiler : &mut GpuProfiler) {
 
         let mut lights_mut = <(&mut PointLight)>::query();
         let mut lights = <(&PointLight)>::query();
@@ -130,7 +132,9 @@ impl PointLightShadowPipeline {
         for light in lights.iter(world) {
             if let Some(shadow) = light.shadow.as_ref() {
                 for camera_idx in 0..6 {
+                    profiler.begin_scope("Shadow pass", encoder, &self.render.device);
                     self.shadow_draw(shadow, camera_idx, world, encoder);
+                    profiler.end_scope(encoder);
                 }
             }
         }

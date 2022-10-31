@@ -1,0 +1,15 @@
+{
+"traceEvents": [
+{ "pid":1, "tid":1, "ts":1667251253651984.3, "dur":3012.418746948242, "ph":"X", "name":"Global scopre" },
+{ "pid":1, "tid":1, "ts":1667251253651987.3, "dur":709.53369140625, "ph":"X", "name":"GBuffer fill" },
+{ "pid":1, "tid":1, "ts":1667251253652699, "dur":1771.4500427246094, "ph":"X", "name":"Point light shadow" },
+{ "pid":1, "tid":1, "ts":1667251253652702.5, "dur":344.0380096435547, "ph":"X", "name":"Shadow pass" },
+{ "pid":1, "tid":1, "ts":1667251253653047, "dur":386.95335388183594, "ph":"X", "name":"Shadow pass" },
+{ "pid":1, "tid":1, "ts":1667251253653436.3, "dur":275.8502960205078, "ph":"X", "name":"Shadow pass" },
+{ "pid":1, "tid":1, "ts":1667251253653712.8, "dur":270.1282501220703, "ph":"X", "name":"Shadow pass" },
+{ "pid":1, "tid":1, "ts":1667251253653985, "dur":267.5056457519531, "ph":"X", "name":"Shadow pass" },
+{ "pid":1, "tid":1, "ts":1667251253654253.3, "dur":216.7224884033203, "ph":"X", "name":"Shadow pass" },
+{ "pid":1, "tid":1, "ts":1667251253654472.5, "dur":415.802001953125, "ph":"X", "name":"Point light fill" },
+{ "pid":1, "tid":1, "ts":1667251253654890, "dur":106.33468627929688, "ph":"X", "name":"Fast depth" }
+]
+}

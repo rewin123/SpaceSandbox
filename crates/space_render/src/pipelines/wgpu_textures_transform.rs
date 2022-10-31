@@ -27,7 +27,7 @@ pub struct TextureTransformDescriptor {
     pub size : wgpu::Extent3d,
     pub input_count : u32,
     pub output_count : u32,
-    pub uniform : Option<Arc<dyn TextureTransformUniform>>,
+    pub uniform : Option<Arc<dyn TextureTransformUniform + Sync + Send>>,
     pub shader : String,
     pub blend : Option<wgpu::BlendState>,
     pub start_op : TextureTransformStart
@@ -41,7 +41,7 @@ pub struct TextureTransformPipeline {
     output_count : u32,
     input_count : u32,
     size : Extent3d,
-    render : Arc<RenderBase>,
+    pub render : Arc<RenderBase>,
     bind: Option<wgpu::BindGroup>,
 
     buffer : Option<Arc<wgpu::Buffer>>,

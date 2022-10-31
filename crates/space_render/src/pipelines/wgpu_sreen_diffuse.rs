@@ -3,11 +3,16 @@ use std::num::NonZeroU32;
 use std::sync::Arc;
 use bytemuck::Zeroable;
 use rand::Rng;
+use space_game::{SchedulePlugin, PluginName};
 use wgpu::{Extent3d, util::DeviceExt};
 use space_assets::*;
 use space_core::{Camera, RenderBase};
 use crate::{pipelines::{CommonFramebuffer, GFramebuffer}};
 use encase::*;
+use legion::*;
+use wgpu_profiler::GpuProfiler;
+
+use super::{wgpu_ssao::SSAOFrame, DirLightTexture};
 
 #[repr(C)]
 #[derive(Zeroable, bytemuck::Pod, Clone, Copy)]
@@ -20,6 +25,62 @@ struct ScreenDiffuseUniform {
     tex_height : f32,
     scale : f32,
     dummy1 : f32
+}
+
+pub struct DepthTexture {
+    pub tex : TextureBundle
+}
+
+#[system]
+fn ssao_impl( 
+    #[state] ssao_pipeline : &mut SSDiffuse,
+    #[resource] encoder : &mut wgpu::CommandEncoder,
+    #[resource] profiler : &mut GpuProfiler,
+    #[resource] gbuffer : &GFramebuffer,
+    #[resource] ssao_frame : &SSAOFrame,
+    #[resource] dir_light : &DirLightTexture,
+    #[resource] depth : &DepthTexture) {
+
+    profiler.begin_scope("SSAO", encoder, &ssao_pipeline.render.device);
+    ssao_pipeline.draw(encoder, gbuffer, &dir_light.tex, &depth.tex, &ssao_frame.tex);
+    profiler.end_scope(encoder);
+}
+
+pub struct SSDiffuseSystem {
+
+}
+
+impl SchedulePlugin for SSDiffuseSystem {
+    fn get_name(&self) -> space_game::PluginName {
+        PluginName::Text("SSAO".into())
+    }
+
+    fn get_plugin_type(&self) -> space_game::PluginType {
+        space_game::PluginType::Render
+    }
+
+    fn add_system(&self, game : &mut space_game::Game, builder : &mut legion::systems::Builder) {
+        let pipeline = SSDiffuse::new(
+            &game.render_base, 
+            wgpu::Extent3d {
+                width : game.api.size.width,
+                height : game.api.size.height,
+                depth_or_array_layers : 1,
+            }, 
+            1, 
+            1, 
+            include_str!("../../../../shaders/wgsl/screen_diffuse_lighting.wgsl").into());
+
+        let frame = pipeline.spawn_framebuffer();
+        
+        game.scene.resources.insert(frame);
+
+        builder.add_system(ssao_impl_system(pipeline));
+    }
+
+    fn add_prepare_system(&self, game : &mut space_game::Game, builder : &mut legion::systems::Builder) {
+        
+    }
 }
 
 impl Default for ScreenDiffuseUniform {
@@ -75,24 +136,17 @@ pub struct SSDiffuse {
 
 impl SSDiffuse {
 
-    pub fn spawn_framebuffer(&self) -> CommonFramebuffer {
-        let mut textures = vec![];
-        for idx in 0..self.output_count {
-            textures.push(
-                TextureBundle::new(&self.render.device, &wgpu::TextureDescriptor {
-                    label: None,
-                    size: self.size,
-                    mip_level_count: 1,
-                    sample_count: 1,
-                    dimension: wgpu::TextureDimension::D2,
-                    format: self.output_format,
-                    usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
-                }, wgpu::FilterMode::Nearest)
-            )
-        }
-
-        CommonFramebuffer {
-            dst : textures
+    pub fn spawn_framebuffer(&self) -> SSAOFrame {
+        SSAOFrame {
+            tex : TextureBundle::new(&self.render.device, &wgpu::TextureDescriptor {
+                label: None,
+                size: self.size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: self.output_format,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
+            }, wgpu::FilterMode::Nearest)
         }
     }
     

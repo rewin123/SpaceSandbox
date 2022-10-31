@@ -29,6 +29,7 @@ pub enum PluginName {
 pub trait SchedulePlugin {
     fn get_name(&self) -> PluginName;
     fn get_plugin_type(&self) -> PluginType;
+    fn add_prepare_system(&self, game : &mut Game, builder : &mut legion::systems::Builder) {}
     fn add_system(&self, game : &mut Game, builder : &mut legion::systems::Builder);
 }
 

@@ -3,11 +3,14 @@ use std::num::NonZeroU32;
 use std::sync::Arc;
 use bytemuck::Zeroable;
 use rand::Rng;
+use space_game::{SchedulePlugin, PluginName};
 use wgpu::{Extent3d, util::DeviceExt};
 use space_assets::*;
 use space_core::{Camera, RenderBase};
+use wgpu_profiler::GpuProfiler;
 use crate::{pipelines::{CommonFramebuffer, GFramebuffer}};
 use encase::*;
+use legion::{*, world::SubWorld};
 
 #[repr(C)]
 #[derive(Zeroable, bytemuck::Pod, Clone, Copy)]
@@ -37,6 +40,10 @@ impl Default for SsaoUniform {
     }
 }
 
+pub struct SSAOFrame {
+    pub tex : TextureBundle
+}
+
 pub struct SSAO {
     pub pipeline : wgpu::RenderPipeline,
     screen_mesh : ScreenMesh,
@@ -52,27 +59,56 @@ pub struct SSAO {
     cached_uniform : SsaoUniform
 }
 
+#[system]
+fn ssao_impl( 
+    #[state] ssao_pipeline : &mut SSAO,
+    #[resource] encoder : &mut wgpu::CommandEncoder,
+    #[resource] profiler : &mut GpuProfiler,
+    #[resource] gbuffer : &GFramebuffer,
+    #[resource] ssao_frame : &SSAOFrame) {
+
+    profiler.begin_scope("SSAO", encoder, &ssao_pipeline.render.device);
+    ssao_pipeline.draw(encoder, gbuffer, &ssao_frame.tex);
+    profiler.end_scope(encoder);
+}
+
+pub struct SSAOSystem {
+
+}
+
+impl SchedulePlugin for SSAOSystem {
+    fn get_name(&self) -> space_game::PluginName {
+        PluginName::Text("SSAO".into())
+    }
+
+    fn get_plugin_type(&self) -> space_game::PluginType {
+        space_game::PluginType::Render
+    }
+
+    fn add_system(&self, game : &mut space_game::Game, builder : &mut legion::systems::Builder) {
+        
+    }
+
+    fn add_prepare_system(&self, game : &mut space_game::Game, builder : &mut legion::systems::Builder) {
+        
+    }
+}
+
+
 impl SSAO {
 
-    pub fn spawn_framebuffer(&self) -> CommonFramebuffer {
-        let mut textures = vec![];
-        for idx in 0..self.output_count {
-            textures.push(
-                TextureBundle::new(&self.render.device, &wgpu::TextureDescriptor {
-                    label: None,
-                    size: self.size,
-                    mip_level_count: 1,
-                    sample_count: 1,
-                    dimension: wgpu::TextureDimension::D2,
-                    format: self.output_format,
-                    usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
-                }, wgpu::FilterMode::Nearest)
-            )
-        }
-
-        CommonFramebuffer {
-            dst : textures
-        }
+    pub fn spawn_framebuffer(&self) -> SSAOFrame {
+        SSAOFrame { 
+            tex : TextureBundle::new(&self.render.device, &wgpu::TextureDescriptor {
+                label: None,
+                size: self.size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: self.output_format,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
+            }, wgpu::FilterMode::Nearest)
+        }  
     }
     
     pub fn spawn_renderpass<'a>(&'a self, encoder : &'a mut wgpu::CommandEncoder, dst : &'a TextureBundle) -> wgpu::RenderPass {

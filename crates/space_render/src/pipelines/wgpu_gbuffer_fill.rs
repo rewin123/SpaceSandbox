@@ -8,7 +8,7 @@ use legion::*;
 use legion::systems::Builder;
 use legion::world::SubWorld;
 use space_game::{Game, PluginName, PluginType, SchedulePlugin};
-
+use wgpu_profiler::GpuProfiler;
 
 pub struct GFramebuffer {
     pub diffuse : TextureBundle,
@@ -154,9 +154,12 @@ fn gbuffer_filling(
     world : &mut SubWorld,
     #[resource] gbuffer : &mut GFramebuffer,
     #[resource] assets : &mut AssetServer,
-    #[resource] encoder : &mut wgpu::CommandEncoder) {
+    #[resource] encoder : &mut wgpu::CommandEncoder,
+    #[resource] profiler : &mut GpuProfiler) {
 
+    profiler.begin_scope("GBuffer fill", encoder, &fill.render.device);
     fill.draw(assets, encoder, world, gbuffer);
+    profiler.end_scope(encoder);
 }
 
 pub struct GBufferPlugin {
