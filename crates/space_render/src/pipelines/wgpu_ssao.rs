@@ -5,8 +5,8 @@ use bytemuck::Zeroable;
 use rand::Rng;
 use wgpu::{Extent3d, util::DeviceExt};
 use space_assets::*;
-use space_core::RenderBase;
-use crate::{pipelines::{CommonFramebuffer, GFramebuffer}, Camera};
+use space_core::{Camera, RenderBase};
+use crate::{pipelines::{CommonFramebuffer, GFramebuffer}};
 use encase::*;
 
 #[repr(C)]

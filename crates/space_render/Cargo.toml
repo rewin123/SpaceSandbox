@@ -17,6 +17,7 @@ rand = "0.8.3"
 space_assets = {path = "../space_assets"}
 space_core = {path = "../space_core"}
 space_shaders = {path = "../space_shaders"}
+space_game = {path = "../space_game"}
 #
 #[lib]
 #crate-type = ["dylib"]

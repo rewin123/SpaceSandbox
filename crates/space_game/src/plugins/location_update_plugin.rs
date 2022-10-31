@@ -22,7 +22,7 @@ impl SchedulePlugin for LocUpdateSystem {
         PluginType::RenderPrepare
     }
 
-    fn add_system(&self, game: &Game, builder: &mut Builder) {
+    fn add_system(&self, game: &mut Game, builder: &mut Builder) {
         builder.add_system(update_loc_buffer_system());
     }
 }

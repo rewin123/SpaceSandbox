@@ -22,7 +22,7 @@ use nalgebra as na;
 use nalgebra::Matrix4;
 use wgpu::{BlendFactor, MaintainBase};
 use space_core::{RenderBase, TaskServer};
-use space_render::{pipelines::*, Camera};
+use space_render::{pipelines::*};
 use space_render::light::*;
 use space_render::pipelines::wgpu_ssao::SSAO;
 
@@ -55,6 +55,7 @@ async fn run() {
     let mut game = state.game.take().unwrap();
     game.add_render_plugin(state);
     game.add_schedule_plugin(LocUpdateSystem{});
+    game.add_schedule_plugin(GBufferPlugin{});
     game.update_scene_scheldue();
 
     game.run();
@@ -71,9 +72,6 @@ enum DrawState {
 struct State {
     game : Option<Game>,
     render : Arc<RenderBase>,
-    camera : Camera,
-    camera_buffer : wgpu::Buffer,
-    gbuffer_pipeline : GBufferFill,
     light_shadow : PointLightShadowPipeline,
 
     ss_diffuse : SSDiffuse,
@@ -84,7 +82,6 @@ struct State {
     depth_calc : TextureTransformPipeline,
     depth_buffer : CommonFramebuffer,
     light_buffer : TextureBundle,
-    gbuffer : GFramebuffer,
     present : TexturePresent,
     gamma_buffer : CommonFramebuffer,
     fps : FpsCounter,
@@ -114,17 +111,6 @@ impl State {
         let render = game.get_render_base();
 
 
-        let camera = Camera::default();
-        let camera_uniform = camera.build_uniform();
-
-        let mut camera_cpu_buffer = UniformBuffer::new(vec![0u8;100]);
-        camera_cpu_buffer.write(&camera_uniform);
-
-        let camera_buffer = render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label : Some("Camera uniform buffer"),
-            contents : &camera_cpu_buffer.into_inner(),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
-        });
 
         let extent = wgpu::Extent3d {
             width : game.api.config.width,
@@ -132,25 +118,19 @@ impl State {
             depth_or_array_layers : 1
         };
 
-        game.assets.wgpu_gltf_load(
-            &render.device,
-            "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
-            &mut game.scene.world);
+        {
+            let mut assets = game.scene.resources.get_mut::<AssetServer>().unwrap();
+
+            assets.wgpu_gltf_load(
+                &render.device,
+                "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
+                &mut game.scene.world);
+        }
 
         // assets.wgpu_gltf_load(
         //     &render.device,
         //     "res/bobik/bobik.gltf".into(),
         //     &mut world);
-
-        let gbuffer = GBufferFill::new(
-            &render,
-            &camera_buffer,
-            game.api.config.format,
-            wgpu::Extent3d {
-                width : game.api.config.width,
-                height : game.api.config.height,
-                depth_or_array_layers : 1
-            });
 
         let framebuffer = GBufferFill::spawn_framebuffer(
             &render.device,
@@ -175,10 +155,8 @@ impl State {
 
         let point_light_shadow = PointLightShadowPipeline::new(&render);
 
-        let light_pipeline = PointLightPipeline::new(&render, &camera_buffer, extent);
+        let light_pipeline = PointLightPipeline::new(&render, &game.scene.camera_buffer, extent);
         let light_buffer = light_pipeline.spawn_framebuffer(&render.device, extent);
-
-
 
         let fps = FpsCounter::default();
 
@@ -265,10 +243,6 @@ impl State {
 
         Self {
             game : Some(game),
-            camera : Camera::default(),
-            camera_buffer,
-            gbuffer_pipeline : gbuffer,
-            gbuffer : framebuffer,
             present,
             light_pipeline,
             light_buffer,
@@ -295,33 +269,33 @@ impl RenderPlugin for State {
     fn update(&mut self, game : &mut Game) {
         let speed = 0.3 / 5.0;
         if game.input.get_key_state(VirtualKeyCode::W) {
-            self.camera.pos += self.camera.frw * speed;
+            game.scene.camera.pos += game.scene.camera.frw * speed;
         }
         if game.input.get_key_state(VirtualKeyCode::S) {
-            self.camera.pos -= self.camera.frw * speed;
+            game.scene.camera.pos -= game.scene.camera.frw * speed;
         }
         if game.input.get_key_state(VirtualKeyCode::D) {
-            self.camera.pos += self.camera.get_right() * speed;
+            game.scene.camera.pos += game.scene.camera.get_right() * speed;
         }
         if game.input.get_key_state(VirtualKeyCode::A) {
-            self.camera.pos -= self.camera.get_right() * speed;
+            game.scene.camera.pos -= game.scene.camera.get_right() * speed;
         }
         if game.input.get_key_state(VirtualKeyCode::Space) {
-            self.camera.pos += self.camera.up  * speed;
+            game.scene.camera.pos += game.scene.camera.up  * speed;
         }
         if game.input.get_key_state(VirtualKeyCode::LShift) {
-            self.camera.pos -= self.camera.up * speed;
+            game.scene.camera.pos -= game.scene.camera.up * speed;
         }
 
         // let mut loc_query = <(&mut Location,)>::query();
 
-        self.ss_diffuse.update(&self.camera);
+        self.ss_diffuse.update(&game.scene.camera);
         // for loc in loc_query.iter_mut(&mut game.scene.world) {
         //     loc.0.update_buffer();
         // }
         self.render.device.poll(wgpu::Maintain::Wait);
 
-        let camera_unifrom = self.camera.build_uniform();
+        let camera_unifrom = game.scene.camera.build_uniform();
         let mut uniform = encase::UniformBuffer::new(vec![]);
         uniform.write(&camera_unifrom).unwrap();
         let inner = uniform.into_inner();
@@ -333,14 +307,14 @@ impl RenderPlugin for State {
         });
 
         let depth_buffer = DepthCalcUniform {
-            cam_pos : [self.camera.pos.x, self.camera.pos.y, self.camera.pos.z, 1.0]
+            cam_pos : [game.scene.camera.pos.x, game.scene.camera.pos.y, game.scene.camera.pos.z, 1.0]
         };
 
         self.depth_calc.update(Some(&depth_buffer));
 
         let ambient_uniform = AmbientLightUniform {
             color: self.ambient_light.color.into(),
-            cam_pos: self.camera.pos.coords.clone()
+            cam_pos: game.scene.camera.pos.coords.clone()
         };
         self.ambient_light_pipeline.update(Some(&ambient_uniform));
 
@@ -354,7 +328,7 @@ impl RenderPlugin for State {
         encoder.copy_buffer_to_buffer(
             &tmp_buffer,
             0,
-            &self.camera_buffer,
+            &game.scene.camera_buffer,
             0,
             inner.len() as wgpu::BufferAddress);
         self.render.queue.submit(iter::once(encoder.finish()));
@@ -369,19 +343,20 @@ impl RenderPlugin for State {
         }
         self.render.device.poll(wgpu::Maintain::Wait);
 
-        self.gbuffer_pipeline.draw(&game.assets, encoder, &mut game.scene.world, &self.gbuffer);
-        self.depth_calc.draw(encoder, &[&self.gbuffer.position], &[&self.depth_buffer.dst[0]]);
+        let gbuffer = game.scene.resources.get::<GFramebuffer>().unwrap();
+        // self.gbuffer_pipeline.draw(&game.assets, encoder, &mut game.scene.world, &self.gbuffer);
+        self.depth_calc.draw(encoder, &[&gbuffer.position], &[&self.depth_buffer.dst[0]]);
         self.light_shadow.draw(encoder, &mut game.scene.world);
         self.ss_diffuse.draw(
             encoder,
-            &self.gbuffer,
+            &gbuffer,
             &self.light_buffer,
             &self.depth_buffer.dst[0],
             &self.ss_difuse_framebufer.dst[0]);
 
-        self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &self.gbuffer);
+        self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &gbuffer);
         self.ambient_light_pipeline.draw(encoder,
-            &[&self.gbuffer.diffuse, &self.gbuffer.normal, &self.gbuffer.position, &self.gbuffer.mr, &self.ss_difuse_framebufer.dst[0]]
+            &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &self.ss_difuse_framebufer.dst[0]]
         , &[&self.light_buffer]);
         // self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
@@ -448,8 +423,6 @@ impl RenderPlugin for State {
             },
             encoder,
             &view);
-
-        game.assets.sync_tick();
     }
 
     fn window_resize(&mut self, game : &mut Game, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -465,16 +438,16 @@ impl RenderPlugin for State {
                 depth_or_array_layers : 1
             };
 
-            self.gbuffer_pipeline = GBufferFill::new(
-                &self.render,
-                &self.camera_buffer,
-                game.api.config.format,
-                size.clone()
-            );
+            // self.gbuffer_pipeline = GBufferFill::new(
+            //     &self.render,
+            //     &self.camera_buffer,
+            //     game.api.config.format,
+            //     size.clone()
+            // );
 
-            self.gbuffer = GBufferFill::spawn_framebuffer(
-                &self.render.device,
-            size.clone());
+            // self.gbuffer = GBufferFill::spawn_framebuffer(
+            //     &self.render.device,
+            // size.clone());
 
             self.present = TexturePresent::new(
                 &self.render.device,
@@ -483,7 +456,7 @@ impl RenderPlugin for State {
 
             self.light_pipeline = PointLightPipeline::new(
                 &self.render,
-                &self.camera_buffer,
+                &game.scene.camera_buffer,
                 size
             );
 

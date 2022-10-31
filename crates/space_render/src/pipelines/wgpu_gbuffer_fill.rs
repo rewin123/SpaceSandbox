@@ -1,10 +1,14 @@
 use std::{num::NonZeroU32, sync::{Arc, Mutex}};
 use std::collections::HashMap;
-use wgpu::Extent3d;
+use wgpu::{Extent3d, TextureFormat};
 use space_assets::*;
 use space_core::RenderBase;
 
 use legion::*;
+use legion::systems::Builder;
+use legion::world::SubWorld;
+use space_game::{Game, PluginName, PluginType, SchedulePlugin};
+
 
 pub struct GFramebuffer {
     pub diffuse : TextureBundle,
@@ -141,7 +145,56 @@ pub struct GBufferFill {
     render : Arc<RenderBase>
 }
 
+#[system]
+#[read_component(GMeshPtr)]
+#[write_component(Material)]
+#[read_component(Location)]
+fn gbuffer_filling(
+    #[state] fill : &mut GBufferFill,
+    world : &mut SubWorld,
+    #[resource] gbuffer : &mut GFramebuffer,
+    #[resource] assets : &mut AssetServer,
+    #[resource] encoder : &mut wgpu::CommandEncoder) {
+
+    fill.draw(assets, encoder, world, gbuffer);
+}
+
+pub struct GBufferPlugin {
+
+}
+
+impl SchedulePlugin for GBufferPlugin {
+    fn get_name(&self) -> PluginName {
+        PluginName::Text("GBiffer filling".into())
+    }
+
+    fn get_plugin_type(&self) -> PluginType {
+        PluginType::Render
+    }
+
+    fn add_system(&self, game: &mut Game, builder: &mut Builder) {
+        let pipeline = GBufferFill::new(&game.render_base,
+                         &game.scene.camera_buffer,
+                         TextureFormat::Rgba32Float,
+                         wgpu::Extent3d {
+                             width : game.api.size.width,
+                             height : game.api.size.height,
+                             depth_or_array_layers : 1
+                         });
+        game.scene.resources.insert(GBufferFill::spawn_framebuffer(&game.render_base.device, wgpu::Extent3d {
+            width : game.api.size.width,
+            height : game.api.size.height,
+            depth_or_array_layers : 1
+        }));
+        builder.add_system(gbuffer_filling_system(
+            pipeline
+        ));
+
+    }
+}
+
 impl GBufferFill {
+
 
     pub fn spawn_framebuffer(device : &wgpu::Device, size : Extent3d) -> GFramebuffer {
         GFramebuffer::new(device, size)
@@ -309,7 +362,7 @@ impl GBufferFill {
 
 
 
-    pub fn draw(&mut self, assets : &AssetServer, encoder : &mut wgpu::CommandEncoder, scene : &mut World, dst : &GFramebuffer) {
+    pub fn draw(&mut self, assets : &AssetServer, encoder : &mut wgpu::CommandEncoder, scene : &mut SubWorld, dst : &GFramebuffer) {
         let mut query = <(&GMeshPtr, &mut Material, &Location)>::query();
 
         let mut render_pass = dst.spawn_renderpass(encoder);

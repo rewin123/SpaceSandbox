@@ -1,16 +1,21 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::iter;
 use std::sync::Arc;
-use legion::{Resources, Schedule, World};
+use atomic_refcell::AtomicRefMut;
+use egui::color::gamma_from_linear;
 use legion::systems::Builder;
-use wgpu::{SurfaceTexture, TextureView};
+use wgpu::{Extent3d, SurfaceTexture, TextureView};
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use space_assets::AssetServer;
-use space_core::{RenderBase, TaskServer};
+use space_core::{Camera, RenderBase, TaskServer};
 use crate::{ApiBase, Gui, GuiPlugin, InputSystem, PluginType, RenderPlugin, SchedulePlugin};
+use encase::*;
+use wgpu::util::DeviceExt;
+use legion::*;
 
 #[derive(Default)]
 pub struct PluginBase {
@@ -23,6 +28,8 @@ pub struct GameScene {
     pub world : World,
     pub resources : Resources,
     pub scheduler : Schedule,
+    pub camera : Camera,
+    pub camera_buffer : wgpu::Buffer,
 }
 
 
@@ -36,8 +43,12 @@ pub struct Game {
     plugins : Option<PluginBase>,
     pub render_view : Option<TextureView>,
     pub task_server : Arc<TaskServer>,
-    pub assets : AssetServer,
     pub scene : GameScene
+}
+
+#[system]
+fn poll_device(#[resource] render_base : &Arc<RenderBase>) {
+    render_base.device.poll(wgpu::Maintain::Wait);
 }
 
 impl Default for Game {
@@ -60,13 +71,28 @@ impl Default for Game {
         let task_server = Arc::new(TaskServer::new());
         let assets = AssetServer::new(&render_base, &task_server);
 
+        let camera = Camera::default();
+        let camera_uniform = camera.build_uniform();
+
+        let mut camera_cpu_buffer = UniformBuffer::new(vec![0u8;100]);
+        camera_cpu_buffer.write(&camera_uniform);
+
+        let camera_buffer = render_base.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label : Some("Camera uniform buffer"),
+            contents : &camera_cpu_buffer.into_inner(),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
+        });
 
 
-        let scene = GameScene {
+        let mut scene = GameScene {
             world : World::default(),
             resources : Resources::default(),
-            scheduler : Schedule::builder().build()
+            scheduler : Schedule::builder().build(),
+            camera : Camera::default(),
+            camera_buffer
         };
+
+        scene.resources.insert(AssetServer::new(&render_base, &task_server));
 
         Self {
             window,
@@ -78,13 +104,16 @@ impl Default for Game {
             plugins : Some(PluginBase::default()),
             render_view : None,
             task_server,
-            assets,
             scene
         }
     }
 }
 
 impl Game {
+
+    pub fn get_assets(&self) -> AtomicRefMut<AssetServer> {
+        self.scene.resources.get_mut::<AssetServer>().unwrap()
+    }
 
     pub fn add_render_plugin<T>(&mut self, plugin : T)
         where T : RenderPlugin + 'static {
@@ -107,15 +136,24 @@ impl Game {
     }
 
     fn resize_event(&mut self, new_size : PhysicalSize<u32>) {
+        self.scene.resources.insert(new_size);
         let mut plugins = self.plugins.take().unwrap();
         for plugin in &mut plugins.render_plugin {
             plugin.window_resize(self, new_size);
         }
         self.plugins = Some(plugins);
+        self.update_scene_scheldue();
     }
 
     fn update(&mut self) {
+        self.scene.resources.insert(self.render_base.clone());
+        self.scene.resources.insert(self.render_base.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: None
+        }));
+        self.scene.resources.get_mut::<AssetServer>().unwrap().sync_tick();
         self.scene.scheduler.execute(&mut self.scene.world, &mut self.scene.resources);
+
+        self.render_base.queue.submit(iter::once(self.scene.resources.remove::<wgpu::CommandEncoder>().unwrap().finish()));
 
         let mut plugins = self.plugins.take().unwrap();
         for plugin in &mut plugins.render_plugin {
@@ -225,22 +263,25 @@ impl Game {
     }
 
     pub fn update_scene_scheldue(&mut self) {
-        let mut plugins = self.plugins.as_ref().unwrap();
+        let mut plugins = self.plugins.take().unwrap();
 
         let mut builder = Schedule::builder();
         //push render prepare
         for plugin in &plugins.scheldue_plugin {
             if plugin.get_plugin_type() == PluginType::RenderPrepare {
-                plugin.add_system(&self, &mut builder);
+                plugin.add_system(self, &mut builder);
             }
         }
         builder.flush();
+        builder.add_system(poll_device_system());
+        builder.flush();
         for plugin in &plugins.scheldue_plugin {
             if plugin.get_plugin_type() != PluginType::RenderPrepare {
-                plugin.add_system(&self, &mut builder);
+                plugin.add_system(self, &mut builder);
             }
         }
         builder.flush();
         self.scene.scheduler = builder.build();
+        self.plugins = Some(plugins);
     }
 }
