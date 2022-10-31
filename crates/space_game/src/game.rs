@@ -145,7 +145,58 @@ impl Game {
         self.update_scene_scheldue();
     }
 
+    fn camera_update(&mut self) {
+        let speed = 0.3 / 5.0;
+        if self.input.get_key_state(VirtualKeyCode::W) {
+            self.scene.camera.pos += self.scene.camera.frw * speed;
+        }
+        if self.input.get_key_state(VirtualKeyCode::S) {
+            self.scene.camera.pos -= self.scene.camera.frw * speed;
+        }
+        if self.input.get_key_state(VirtualKeyCode::D) {
+            self.scene.camera.pos += self.scene.camera.get_right() * speed;
+        }
+        if self.input.get_key_state(VirtualKeyCode::A) {
+            self.scene.camera.pos -= self.scene.camera.get_right() * speed;
+        }
+        if self.input.get_key_state(VirtualKeyCode::Space) {
+            self.scene.camera.pos += self.scene.camera.up  * speed;
+        }
+        if self.input.get_key_state(VirtualKeyCode::LShift) {
+            self.scene.camera.pos -= self.scene.camera.up * speed;
+        }
+
+        let mut encoder = self
+            .render_base.device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Update encoder"),
+            });
+
+        let camera_unifrom = self.scene.camera.build_uniform();
+        let mut uniform = encase::UniformBuffer::new(vec![]);
+        uniform.write(&camera_unifrom).unwrap();
+        let inner = uniform.into_inner();
+
+        let tmp_buffer = self.render_base.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: &inner,
+            usage: wgpu::BufferUsages::COPY_SRC,
+        });
+
+        encoder.copy_buffer_to_buffer(
+            &tmp_buffer,
+            0,
+            &self.scene.camera_buffer,
+            0,
+            inner.len() as wgpu::BufferAddress);
+        self.render_base.queue.submit(iter::once(encoder.finish()));
+
+    }
+
+
     fn update(&mut self) {
+        self.camera_update();
+
         self.scene.resources.insert(self.render_base.clone());
         self.scene.resources.insert(self.render_base.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: None

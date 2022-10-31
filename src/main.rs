@@ -269,25 +269,7 @@ impl State {
 
 impl RenderPlugin for State {
     fn update(&mut self, game : &mut Game) {
-        let speed = 0.3 / 5.0;
-        if game.input.get_key_state(VirtualKeyCode::W) {
-            game.scene.camera.pos += game.scene.camera.frw * speed;
-        }
-        if game.input.get_key_state(VirtualKeyCode::S) {
-            game.scene.camera.pos -= game.scene.camera.frw * speed;
-        }
-        if game.input.get_key_state(VirtualKeyCode::D) {
-            game.scene.camera.pos += game.scene.camera.get_right() * speed;
-        }
-        if game.input.get_key_state(VirtualKeyCode::A) {
-            game.scene.camera.pos -= game.scene.camera.get_right() * speed;
-        }
-        if game.input.get_key_state(VirtualKeyCode::Space) {
-            game.scene.camera.pos += game.scene.camera.up  * speed;
-        }
-        if game.input.get_key_state(VirtualKeyCode::LShift) {
-            game.scene.camera.pos -= game.scene.camera.up * speed;
-        }
+
 
         // let mut loc_query = <(&mut Location,)>::query();
 
@@ -297,16 +279,6 @@ impl RenderPlugin for State {
         // }
         self.render.device.poll(wgpu::Maintain::Wait);
 
-        let camera_unifrom = game.scene.camera.build_uniform();
-        let mut uniform = encase::UniformBuffer::new(vec![]);
-        uniform.write(&camera_unifrom).unwrap();
-        let inner = uniform.into_inner();
-
-        let tmp_buffer = self.render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: &inner,
-            usage: wgpu::BufferUsages::COPY_SRC,
-        });
 
         let depth_buffer = DepthCalcUniform {
             cam_pos : [game.scene.camera.pos.x, game.scene.camera.pos.y, game.scene.camera.pos.z, 1.0]
@@ -321,19 +293,7 @@ impl RenderPlugin for State {
         self.ambient_light_pipeline.update(Some(&ambient_uniform));
 
 
-        let mut encoder = self
-        .render.device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Update encoder"),
-            });
 
-        encoder.copy_buffer_to_buffer(
-            &tmp_buffer,
-            0,
-            &game.scene.camera_buffer,
-            0,
-            inner.len() as wgpu::BufferAddress);
-        self.render.queue.submit(iter::once(encoder.finish()));
     }
 
     fn render(&mut self, game : &mut Game, encoder : &mut wgpu::CommandEncoder) {
@@ -439,17 +399,6 @@ impl RenderPlugin for State {
                 height : game.api.config.height,
                 depth_or_array_layers : 1
             };
-
-            // self.gbuffer_pipeline = GBufferFill::new(
-            //     &self.render,
-            //     &self.camera_buffer,
-            //     game.api.config.format,
-            //     size.clone()
-            // );
-
-            // self.gbuffer = GBufferFill::spawn_framebuffer(
-            //     &self.render.device,
-            // size.clone());
 
             self.present = TexturePresent::new(
                 &self.render.device,
