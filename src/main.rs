@@ -27,7 +27,7 @@ use space_render::light::*;
 use space_render::pipelines::wgpu_ssao::SSAO;
 
 use legion::*;
-use space_game::{Game, RenderPlugin};
+use space_game::{Game, LocUpdateSystem, RenderPlugin};
 
 #[repr(C)]
 #[derive(Clone, Zeroable, Pod, Copy)]
@@ -53,6 +53,8 @@ async fn run() {
 
     let mut game = state.game.take().unwrap();
     game.add_render_plugin(state);
+    game.add_schedule_plugin(LocUpdateSystem{});
+    game.update_scene_scheldue();
 
     game.run();
 }
@@ -310,12 +312,12 @@ impl RenderPlugin for State {
             self.camera.pos -= self.camera.up * speed;
         }
 
-        let mut loc_query = <(&mut Location,)>::query();
+        // let mut loc_query = <(&mut Location,)>::query();
 
         self.ss_diffuse.update(&self.camera);
-        for loc in loc_query.iter_mut(&mut game.scene.world) {
-            loc.0.update_buffer();
-        }
+        // for loc in loc_query.iter_mut(&mut game.scene.world) {
+        //     loc.0.update_buffer();
+        // }
         self.render.device.poll(wgpu::Maintain::Wait);
 
         let camera_unifrom = self.camera.build_uniform();

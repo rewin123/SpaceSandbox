@@ -1,6 +1,7 @@
 use std::iter;
 use std::sync::Arc;
-use legion::World;
+use legion::{Resources, Schedule, World};
+use legion::systems::Builder;
 use wgpu::{SurfaceTexture, TextureView};
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
@@ -8,16 +9,19 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use space_assets::AssetServer;
 use space_core::{RenderBase, TaskServer};
-use crate::{ApiBase, Gui, GuiPlugin, InputSystem, RenderPlugin};
+use crate::{ApiBase, Gui, GuiPlugin, InputSystem, RenderPlugin, SchedulePlugin};
 
 #[derive(Default)]
 pub struct PluginBase {
     gui_plugins : Vec<Box<dyn GuiPlugin>>,
-    render_plugin : Vec<Box<dyn RenderPlugin>>
+    render_plugin : Vec<Box<dyn RenderPlugin>>,
+    scheldue_plugin : Vec<Box<dyn SchedulePlugin>>
 }
 
 pub struct GameScene {
     pub world : World,
+    pub resources : Resources,
+    pub scheduler : Schedule
 }
 
 
@@ -55,8 +59,12 @@ impl Default for Game {
         let task_server = Arc::new(TaskServer::new());
         let assets = AssetServer::new(&render_base, &task_server);
 
+
+
         let scene = GameScene {
-            world : World::default()
+            world : World::default(),
+            resources : Resources::default(),
+            scheduler : Schedule::builder().build()
         };
 
         Self {
@@ -106,6 +114,9 @@ impl Game {
     }
 
     fn update(&mut self) {
+
+        self.scene.scheduler.execute(&mut self.scene.world, &mut self.scene.resources);
+
         let mut plugins = self.plugins.take().unwrap();
         for plugin in &mut plugins.render_plugin {
             plugin.update(self);
@@ -205,5 +216,20 @@ impl Game {
         window.set_title("Space sandbox");
 
         (window, event_loop)
+    }
+
+    pub fn add_schedule_plugin<T : SchedulePlugin + 'static>(&mut self, plugin : T) {
+        let mut plugins = self.plugins.take().unwrap();
+        plugins.scheldue_plugin.push(Box::new(plugin));
+        self.plugins = Some(plugins);
+    }
+
+    pub fn update_scene_scheldue(&mut self) {
+        let mut plugins = self.plugins.as_ref().unwrap();
+        let mut builder = Schedule::builder();
+        for plugin in &plugins.scheldue_plugin {
+            plugin.add_system(&self, &mut builder);
+        }
+        self.scene.scheduler = builder.build();
     }
 }
