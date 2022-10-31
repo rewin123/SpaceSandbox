@@ -1,17 +1,23 @@
 use std::iter;
 use std::sync::Arc;
+use legion::World;
 use wgpu::{SurfaceTexture, TextureView};
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
-use space_core::RenderBase;
+use space_assets::AssetServer;
+use space_core::{RenderBase, TaskServer};
 use crate::{ApiBase, Gui, GuiPlugin, InputSystem, RenderPlugin};
 
 #[derive(Default)]
 pub struct PluginBase {
     gui_plugins : Vec<Box<dyn GuiPlugin>>,
     render_plugin : Vec<Box<dyn RenderPlugin>>
+}
+
+pub struct GameScene {
+    pub world : World,
 }
 
 
@@ -24,7 +30,9 @@ pub struct Game {
     pub gui : Gui,
     plugins : Option<PluginBase>,
     pub render_view : Option<TextureView>,
+    pub task_server : Arc<TaskServer>,
     pub assets : AssetServer,
+    pub scene : GameScene
 }
 
 impl Default for Game {
@@ -44,6 +52,12 @@ impl Default for Game {
                 depth_or_array_layers : 1
             },
             window.scale_factor());
+        let task_server = Arc::new(TaskServer::new());
+        let assets = AssetServer::new(&render_base, &task_server);
+
+        let scene = GameScene {
+            world : World::default()
+        };
 
         Self {
             window,
@@ -53,7 +67,10 @@ impl Default for Game {
             input : InputSystem::default(),
             gui,
             plugins : Some(PluginBase::default()),
-            render_view : None
+            render_view : None,
+            task_server,
+            assets,
+            scene
         }
     }
 }

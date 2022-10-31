@@ -68,7 +68,6 @@ enum DrawState {
 struct State {
     game : Option<Game>,
     render : Arc<RenderBase>,
-    scene : World,
     camera : Camera,
     camera_buffer : wgpu::Buffer,
     gbuffer_pipeline : GBufferFill,
@@ -85,7 +84,6 @@ struct State {
     gbuffer : GFramebuffer,
     present : TexturePresent,
     gamma_buffer : CommonFramebuffer,
-    point_lights : Vec<PointLight>,
     fps : FpsCounter,
     device_name : String,
 
@@ -93,8 +91,6 @@ struct State {
     ambient_light : AmbientLight,
     ambient_light_pipeline : TextureTransformPipeline
 }
-
-
 
 
 #[derive(Default)]
@@ -111,7 +107,7 @@ impl TextureTransformUniform for DepthCalcUniform {
 impl State {
     // Creating some of the wgpu types requires async code
     async fn new() -> Self {
-        let game = Game::default();
+        let mut game = Game::default();
         let render = game.get_render_base();
 
 
@@ -133,16 +129,10 @@ impl State {
             depth_or_array_layers : 1
         };
 
-        let mut world = World::default();
-
-        let task_server = Arc::new(TaskServer::new());
-
-        let mut assets = AssetServer::new(&render, &task_server);
-
-        assets.wgpu_gltf_load(
+        game.assets.wgpu_gltf_load(
             &render.device,
             "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
-            &mut world);
+            &mut game.scene.world);
 
         // assets.wgpu_gltf_load(
         //     &render.device,
@@ -172,11 +162,12 @@ impl State {
                 depth_or_array_layers : 1
             });
 
-        let mut lights = vec![
-            PointLight::new(&render, [0.0, 3.0, 0.0].into(), true),
+        let mut light =
+            PointLight::new(&render, [0.0, 3.0, 0.0].into(), true);
             // PointLight::new(&render, [0.0, 1.0, 0.0].into(), true),
-        ];
-        lights[0].intensity = 20.0;
+
+        light.intensity = 20.0;
+        game.scene.world.push((light,));
         // lights[1].intensity = 1.0;
 
         let point_light_shadow = PointLightShadowPipeline::new(&render);
@@ -271,16 +262,13 @@ impl State {
 
         Self {
             game : Some(game),
-            scene : world,
             camera : Camera::default(),
             camera_buffer,
             gbuffer_pipeline : gbuffer,
             gbuffer : framebuffer,
             present,
-            point_lights : lights,
             light_pipeline,
             light_buffer,
-            assets,
             render,
             fps,
             light_shadow : point_light_shadow,
@@ -325,7 +313,7 @@ impl RenderPlugin for State {
         let mut loc_query = <(&mut Location,)>::query();
 
         self.ss_diffuse.update(&self.camera);
-        for loc in loc_query.iter_mut(&mut self.scene) {
+        for loc in loc_query.iter_mut(&mut game.scene.world) {
             loc.0.update_buffer();
         }
         self.render.device.poll(wgpu::Maintain::Wait);
@@ -372,14 +360,15 @@ impl RenderPlugin for State {
     fn render(&mut self, game : &mut Game, encoder : &mut wgpu::CommandEncoder) {
         let view = game.render_view.as_ref().unwrap();
 
-        for light in &mut self.point_lights {
+        let mut light_queue = <(&mut PointLight)>::query();
+        for light in light_queue.iter_mut(&mut game.scene.world) {
             light.update_buffer(&self.render);
         }
         self.render.device.poll(wgpu::Maintain::Wait);
 
-        self.gbuffer_pipeline.draw(&self.assets, encoder, &mut self.scene, &self.gbuffer);
+        self.gbuffer_pipeline.draw(&game.assets, encoder, &mut game.scene.world, &self.gbuffer);
         self.depth_calc.draw(encoder, &[&self.gbuffer.position], &[&self.depth_buffer.dst[0]]);
-        self.light_shadow.draw(encoder, &mut self.point_lights, &self.scene);
+        self.light_shadow.draw(encoder, &mut game.scene.world);
         self.ss_diffuse.draw(
             encoder,
             &self.gbuffer,
@@ -387,7 +376,7 @@ impl RenderPlugin for State {
             &self.depth_buffer.dst[0],
             &self.ss_difuse_framebufer.dst[0]);
 
-        self.light_pipeline.draw(&self.render.device, encoder, &self.point_lights, &self.light_buffer, &self.gbuffer);
+        self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &self.gbuffer);
         self.ambient_light_pipeline.draw(encoder,
             &[&self.gbuffer.diffuse, &self.gbuffer.normal, &self.gbuffer.position, &self.gbuffer.mr, &self.ss_difuse_framebufer.dst[0]]
         , &[&self.light_buffer]);
@@ -432,22 +421,19 @@ impl RenderPlugin for State {
                     ui.label(&self.device_name);
                 });
 
-                let cam_uniform = self.camera.build_uniform();
-                let gizmo = egui_gizmo::Gizmo::new("light gizmo").projection_matrix(
-                    cam_uniform.proj
-                ).view_matrix(cam_uniform.view)
-                    .model_matrix(na::Matrix4::new_translation(&self.point_lights[0].pos))
-                    .mode(GizmoMode::Translate);
-
-                if let Some(responce) = gizmo.interact(ui) {
-                    let mat : Matrix4<f32> = responce.transform.into();
-                    self.point_lights[0].pos.x = mat.m14;
-                    self.point_lights[0].pos.y = mat.m24;
-                    self.point_lights[0].pos.z = mat.m34;
-
-                }
-
-
+                // let cam_uniform = self.camera.build_uniform();
+                // let gizmo = egui_gizmo::Gizmo::new("light gizmo").projection_matrix(
+                //     cam_uniform.proj
+                // ).view_matrix(cam_uniform.view)
+                //     .model_matrix(na::Matrix4::new_translation(&self.point_lights[0].pos))
+                //     .mode(GizmoMode::Translate);
+                //
+                // if let Some(responce) = gizmo.interact(ui) {
+                //     let mat : Matrix4<f32> = responce.transform.into();
+                //     self.point_lights[0].pos.x = mat.m14;
+                //     self.point_lights[0].pos.y = mat.m24;
+                //     self.point_lights[0].pos.z = mat.m34;
+                // }
         });
 
         let gui_output = game.gui.end_frame(Some(&game.window));
@@ -460,7 +446,7 @@ impl RenderPlugin for State {
             encoder,
             &view);
 
-        self.assets.sync_tick();
+        game.assets.sync_tick();
     }
 
     fn window_resize(&mut self, game : &mut Game, new_size: winit::dpi::PhysicalSize<u32>) {

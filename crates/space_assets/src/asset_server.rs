@@ -20,6 +20,7 @@ use crate::mipmap_generator::MipmapGenerator;
 pub trait Asset : DowncastSync {
 
 }
+
 impl_downcast!(sync Asset);
 
 

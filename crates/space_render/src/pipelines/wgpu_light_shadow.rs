@@ -94,13 +94,14 @@ impl PointLightShadowPipeline {
 
     pub fn draw<'a>(
         &mut self,
-        encoder : &'a mut wgpu::CommandEncoder, 
-        scene : &mut Vec<PointLight>,
-        world : &World) {
+        encoder : &'a mut wgpu::CommandEncoder,
+        world : &mut World) {
 
-        for (idx, light) in scene.iter_mut().enumerate() {
+        let mut lights_mut = <(&mut PointLight)>::query();
+        let mut lights = <(&PointLight)>::query();
+
+        for light in lights_mut.iter_mut(world) {
             if let Some(shadow) = light.shadow.as_mut() {
-                
                 if shadow.camera_binds.len() == 0 {
                     //create bind group
                     for idx in 0..6 {
@@ -110,7 +111,7 @@ impl PointLightShadowPipeline {
                             entries: &[
                                 wgpu::BindGroupEntry {
                                     binding: 0,
-                                    resource: wgpu::BindingResource::Buffer( wgpu::BufferBinding {
+                                    resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
                                         buffer: &shadow.camera_buffers[idx],
                                         offset: 0,
                                         size: None
@@ -121,7 +122,11 @@ impl PointLightShadowPipeline {
                         shadow.camera_binds.push(bind);
                     }
                 }
-                
+            }
+        }
+
+        for light in lights.iter(world) {
+            if let Some(shadow) = light.shadow.as_ref() {
                 for camera_idx in 0..6 {
                     self.shadow_draw(shadow, camera_idx, world, encoder);
                 }
@@ -131,7 +136,7 @@ impl PointLightShadowPipeline {
 
 
     fn shadow_draw(&mut self,
-                   shadow : &mut PointLightShadow,
+                   shadow : &PointLightShadow,
                    idx : usize,
                    world : &World,
                    encoder : &mut wgpu::CommandEncoder) {
