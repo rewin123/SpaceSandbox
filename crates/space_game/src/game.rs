@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::iter;
 use std::sync::Arc;
 use legion::{Resources, Schedule, World};
@@ -9,7 +10,7 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use space_assets::AssetServer;
 use space_core::{RenderBase, TaskServer};
-use crate::{ApiBase, Gui, GuiPlugin, InputSystem, RenderPlugin, SchedulePlugin};
+use crate::{ApiBase, Gui, GuiPlugin, InputSystem, PluginType, RenderPlugin, SchedulePlugin};
 
 #[derive(Default)]
 pub struct PluginBase {
@@ -21,7 +22,7 @@ pub struct PluginBase {
 pub struct GameScene {
     pub world : World,
     pub resources : Resources,
-    pub scheduler : Schedule
+    pub scheduler : Schedule,
 }
 
 
@@ -114,7 +115,6 @@ impl Game {
     }
 
     fn update(&mut self) {
-
         self.scene.scheduler.execute(&mut self.scene.world, &mut self.scene.resources);
 
         let mut plugins = self.plugins.take().unwrap();
@@ -226,10 +226,21 @@ impl Game {
 
     pub fn update_scene_scheldue(&mut self) {
         let mut plugins = self.plugins.as_ref().unwrap();
+
         let mut builder = Schedule::builder();
+        //push render prepare
         for plugin in &plugins.scheldue_plugin {
-            plugin.add_system(&self, &mut builder);
+            if plugin.get_plugin_type() == PluginType::RenderPrepare {
+                plugin.add_system(&self, &mut builder);
+            }
         }
+        builder.flush();
+        for plugin in &plugins.scheldue_plugin {
+            if plugin.get_plugin_type() != PluginType::RenderPrepare {
+                plugin.add_system(&self, &mut builder);
+            }
+        }
+        builder.flush();
         self.scene.scheduler = builder.build();
     }
 }

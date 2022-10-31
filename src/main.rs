@@ -27,7 +27,8 @@ use space_render::light::*;
 use space_render::pipelines::wgpu_ssao::SSAO;
 
 use legion::*;
-use space_game::{Game, LocUpdateSystem, RenderPlugin};
+use space_game::{Game, RenderPlugin};
+use space_game::plugins::LocUpdateSystem;
 
 #[repr(C)]
 #[derive(Clone, Zeroable, Pod, Copy)]
