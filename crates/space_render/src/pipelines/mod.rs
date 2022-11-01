@@ -1,5 +1,6 @@
 use std::{fmt::Debug, sync::Arc};
 use downcast_rs::{Downcast, impl_downcast};
+use encase::*;
 
 pub mod wgpu_gbuffer_fill;
 pub mod wgpu_light_fill;
@@ -13,7 +14,7 @@ pub mod point_light_plugin;
 use space_assets::*;
 
 use space_core::Camera;
-use space_game::SchedulePlugin;
+use space_game::{Game, PluginName, PluginType, SchedulePlugin};
 pub use wgpu_gbuffer_fill::*;
 pub use wgpu_light_fill::*;
 use wgpu_profiler::GpuProfiler;
@@ -22,6 +23,8 @@ pub use wgpu_light_shadow::*;
 pub use wgpu_textures_transform::*;
 
 use legion::*;
+use legion::systems::Builder;
+use crate::pipelines::wgpu_ssao::SSAOFrame;
 
 use self::wgpu_sreen_diffuse::DepthTexture;
 
@@ -130,5 +133,83 @@ impl SchedulePlugin for FastDepthPlugin {
         });
 
         game.scene.resources.insert(frame);
+    }
+}
+
+pub struct SSAOFiltered {
+    pub tex : TextureBundle
+}
+
+pub struct SSAOFilter {
+    pub pipeline : TextureTransformPipeline
+}
+
+#[system]
+fn ssao_filter_impl(
+    #[state] fill : &mut SSAOFilter,
+    #[resource] dst : &SSAOFiltered,
+    #[resource] ssao : &SSAOFrame,
+    #[resource] depth : &DepthTexture,
+    #[resource] encoder : &mut wgpu::CommandEncoder,
+    #[resource] profiler : &mut GpuProfiler
+) {
+    profiler.begin_scope("SSAO smooth", encoder, &fill.pipeline.render.device);
+    fill.pipeline.draw(encoder, &[&ssao.tex, &depth.tex], &[&dst.tex]);
+    profiler.end_scope(encoder);
+}
+
+pub struct SSAOFilterSystem {
+
+}
+
+#[derive(ShaderType)]
+pub struct SmoothUniform {
+    pub size : nalgebra::Vector2<f32>
+}
+
+impl TextureTransformUniform for SmoothUniform {
+    fn get_bytes(&self) -> Vec<u8> {
+        let mut uniform = UniformBuffer::new(vec![]);
+        uniform.write(&self);
+        uniform.into_inner()
+    }
+}
+
+impl SchedulePlugin for SSAOFilterSystem {
+    fn get_name(&self) -> PluginName {
+        PluginName::Text("SSAO Filter".into())
+    }
+
+    fn get_plugin_type(&self) -> PluginType {
+        PluginType::Render
+    }
+
+    fn add_system(&self, game: &mut Game, builder: &mut Builder) {
+
+        let uniform = SmoothUniform {
+            size : nalgebra::Vector2::new(game.api.size.width as f32, game.api.size.height as f32)
+        };
+
+        let pipeline = TextureTransformPipeline::new(&TextureTransformDescriptor {
+            render: game.render_base.clone(),
+            format: wgpu::TextureFormat::Rgba32Float,
+            size: wgpu::Extent3d {
+                width : game.api.size.width,
+                height : game.api.size.height,
+                depth_or_array_layers : 1
+            },
+            input_count: 2,
+            output_count: 1,
+            uniform: Some(Arc::new(uniform)),
+            shader: include_str!("../../../../shaders/wgsl/smooth.wgsl").to_string(),
+            blend: None,
+            start_op: TextureTransformStart::Clear
+        });
+
+        let buffer = pipeline.spawn_framebuffer().dst.remove(0);
+
+        game.scene.resources.insert(SSAOFiltered {tex : buffer});
+
+        builder.add_system(ssao_filter_impl_system(SSAOFilter {pipeline}));
     }
 }

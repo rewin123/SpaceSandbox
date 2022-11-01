@@ -66,7 +66,6 @@ var<uniform> ssao : SSDiffuse;
 fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
 
-
     var sum = vec3<f32>(0.0, 0.0, 0.0);
     let start_pos = textureSample(t_position, s_position, in.uv).rgb;
     let start_color = textureSample(t_emissive, s_emissive, in.uv);
@@ -76,7 +75,6 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     let bitangent = cross(tangent, normal);
     let tbn = mat3x3(tangent, bitangent, normal);
 
-
     let cam_dist = length(start_pos - ssao.cam_pos.rgb);
     let range = 0.05 * cam_dist;
 
@@ -84,7 +82,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var ambient : f32 = 64.0;
     
     for (var i = 0; i < 64; i++) {
-        var dir = tbn * ssao.random_vec[i] * ssao.scale;
+        var dir = tbn * ssao.random_vec[i] * (ssao.scale + range);
 
         let step_pos = start_pos + dir;
         let clip = ssao.proj_view * vec4<f32>(step_pos, 1.0);

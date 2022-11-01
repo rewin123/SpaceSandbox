@@ -27,29 +27,43 @@ var t_ssao: texture_2d<f32>;
 @group(0) @binding(1)
 var s_ssao: sampler;
 
+@group(0) @binding(2)
+var t_depth: texture_2d<f32>;
+@group(0) @binding(3)
+var s_depth: sampler;
+
 struct SmoothUniform {
-    size : vec2<i32>
+    size : vec2<f32>
 }
 
-@group(0) @binding(2)
+@group(0) @binding(4)
 var<uniform> u : SmoothUniform;
 
 @fragment
 fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
 
-    let step = vec2<f32>(1.0 / f32(u.size.x), 1.0 / f32(u.size.y));
+    let step = vec2<f32>(1.0 / u.size.x, 1.0 / u.size.y);
 
     var res : f32 = 0.0;
+    var weight_sum : f32 = 0.0;
+    let center_depth = textureSample(t_depth, s_depth, in.uv).r;
 
-    for (var dx = -1; dx < 2; dx++) {
-        for (var dy = -1; dy < 2; dy++) {
-            res += textureSample(t_ssao, s_ssao, in.uv + step * vec2<f32>(f32(dx), f32(dy))).r;
+
+    for (var dx = -3; dx < 4; dx++) {
+        for (var dy = -3; dy < 4; dy++) {
+            let dist = f32(dx * dx + dy * dy);
+            let duv = in.uv + step * vec2<f32>(f32(dx), f32(dy));
+            let depth = textureSample(t_depth, s_depth, duv).r;
+            let k = exp(-(depth - center_depth) * (depth - center_depth));
+            res += textureSample(t_ssao, s_ssao, duv).r * k;
+            weight_sum += k;
         }
     }
 
-    res /= 9.0;
-    res = pow(res, 2.0);
+    res /= weight_sum;
+//    res = textureSample(t_ssao, s_ssao, in.uv).r;
+//    res = pow(res, 4.0);
     out.diffuse = vec4<f32>(res, res, res, 1.0);
 
     return out;

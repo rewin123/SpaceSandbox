@@ -31,18 +31,7 @@ use space_game::{Game, RenderPlugin};
 use space_game::plugins::LocUpdateSystem;
 use space_render::pipelines::point_light_plugin::PointLightPlugin;
 
-#[repr(C)]
-#[derive(Clone, Zeroable, Pod, Copy)]
-pub struct SmoothUniform {
-    size : [i32; 2]
-}
 
-impl TextureTransformUniform for SmoothUniform {
-    fn get_bytes(&self) -> Vec<u8> {
-        let bytes = bytemuck::bytes_of(self);
-        bytes.to_vec()
-    }
-}
 
 async fn run() {
     init_logger();
@@ -60,6 +49,7 @@ async fn run() {
     game.add_schedule_plugin(PointLightPlugin{});
     game.add_schedule_plugin(FastDepthPlugin{});
     game.add_schedule_plugin(SSDiffuseSystem{});
+    game.add_schedule_plugin(SSAOFilterSystem{});
     game.update_scene_scheldue();
 
     game.run();
@@ -70,6 +60,7 @@ enum DrawState {
     Full,
     DirectLight,
     AmbientOcclusion,
+    AmbientOcclusionSmooth,
     Depth
 }
 
@@ -267,7 +258,7 @@ impl RenderPlugin for State {
 
         // self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &gbuffer);
         self.ambient_light_pipeline.draw(encoder,
-            &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &game.scene.resources.get::<SSAOFrame>().unwrap().tex]
+            &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &game.scene.resources.get::<SSAOFiltered>().unwrap().tex]
         , &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex]);
         // self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
@@ -288,6 +279,10 @@ impl RenderPlugin for State {
                 self.gamma_correction.draw(encoder, &[&game.scene.resources.get::<DepthTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
             }
+            DrawState::AmbientOcclusionSmooth => {
+                self.gamma_correction.draw(encoder, &[&game.scene.resources.get::<SSAOFiltered>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
+            }
         }
         // self.present.draw(&self.render.device, &mut encoder, &self.ssao_smooth_framebuffer.dst[0], &view);
 
@@ -303,6 +298,7 @@ impl RenderPlugin for State {
                         .show_ui(ui, |ui| {
                             ui.selectable_value(&mut self.draw_state, DrawState::DirectLight, "DirectLight");
                             ui.selectable_value(&mut self.draw_state, DrawState::AmbientOcclusion, "AmbientOcclusion");
+                            ui.selectable_value(&mut self.draw_state, DrawState::AmbientOcclusionSmooth, "AmbientOcclusionSmooth");
                             ui.selectable_value(&mut self.draw_state, DrawState::Depth, "Depth");
                         });
 
