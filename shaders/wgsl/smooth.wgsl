@@ -48,6 +48,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var res : f32 = 0.0;
     var weight_sum : f32 = 0.0;
     let center_depth = textureSample(t_depth, s_depth, in.uv).r;
+    let center_ssao = textureSample(t_ssao, s_ssao, in.uv).r;
 
 
     for (var dx = -3; dx < 4; dx++) {
@@ -55,8 +56,10 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
             let dist = f32(dx * dx + dy * dy);
             let duv = in.uv + step * vec2<f32>(f32(dx), f32(dy));
             let depth = textureSample(t_depth, s_depth, duv).r;
-            let k = exp(-(depth - center_depth) * (depth - center_depth));
-            res += textureSample(t_ssao, s_ssao, duv).r * k;
+            let pix_ssao = textureSample(t_ssao, s_ssao, duv).r;
+            let k = exp(-(depth - center_depth) * (depth - center_depth))
+                * exp(-(pix_ssao - center_ssao) * (pix_ssao - center_ssao));
+            res += pix_ssao * k;
             weight_sum += k;
         }
     }
