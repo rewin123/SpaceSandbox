@@ -189,7 +189,7 @@ impl GltfAssetLoader for AssetServer {
 
                 let color = self.load_gltf_color_texture(&base, p.material().pbr_metallic_roughness().base_color_texture(), true);
 
-                let mr = self.load_gltf_color_texture(&base, p.material().pbr_metallic_roughness().metallic_roughness_texture(), false);
+                let mr = self.load_gltf_color_texture(&base, p.material().pbr_metallic_roughness().metallic_roughness_texture(), true);
 
                 let material = Material {
                     color,
