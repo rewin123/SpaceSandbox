@@ -12,6 +12,7 @@ pub mod point_light_plugin;
 
 use space_assets::*;
 
+use space_core::Camera;
 use space_game::SchedulePlugin;
 pub use wgpu_gbuffer_fill::*;
 pub use wgpu_light_fill::*;
@@ -69,9 +70,12 @@ fn fast_depth(
 #[system]
 fn fast_depth_update(
     #[resource] fill : &mut DepthPipeline,
-    #[resource] uniform : &DepthCalcUniform
+    #[resource] camera : &Camera,
 ) {
-    fill.pipeline.update(Some(uniform));
+    let depth_buffer = DepthCalcUniform {
+        cam_pos : [camera.pos.x, camera.pos.y, camera.pos.z, 1.0]
+    };
+    fill.pipeline.update(Some(&depth_buffer));
 }
 
 pub struct FastDepthPlugin {
@@ -124,7 +128,6 @@ impl SchedulePlugin for FastDepthPlugin {
         game.scene.resources.insert(DepthPipeline {
             pipeline : depth_calc
         });
-        game.scene.resources.insert(DepthCalcUniform::default());
 
         game.scene.resources.insert(frame);
     }

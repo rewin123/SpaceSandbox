@@ -33,7 +33,7 @@ pub struct DepthTexture {
 
 #[system]
 fn ssao_impl( 
-    #[state] ssao_pipeline : &mut SSDiffuse,
+    #[resource] ssao_pipeline : &mut SSDiffuse,
     #[resource] encoder : &mut wgpu::CommandEncoder,
     #[resource] profiler : &mut GpuProfiler,
     #[resource] gbuffer : &GFramebuffer,
@@ -44,6 +44,14 @@ fn ssao_impl(
     profiler.begin_scope("SSAO", encoder, &ssao_pipeline.render.device);
     ssao_pipeline.draw(encoder, gbuffer, &dir_light.tex, &depth.tex, &ssao_frame.tex);
     profiler.end_scope(encoder);
+}
+
+#[system]
+fn ssao_update(
+    #[resource] ssao_pipeline : &mut SSDiffuse,
+    #[resource] camera : &Camera,
+) {
+    ssao_pipeline.update(camera);
 }
 
 pub struct SSDiffuseSystem {
@@ -63,8 +71,8 @@ impl SchedulePlugin for SSDiffuseSystem {
         let pipeline = SSDiffuse::new(
             &game.render_base, 
             wgpu::Extent3d {
-                width : game.api.size.width,
-                height : game.api.size.height,
+                width : game.api.size.width / 2,
+                height : game.api.size.height / 2,
                 depth_or_array_layers : 1,
             }, 
             1, 
@@ -74,12 +82,13 @@ impl SchedulePlugin for SSDiffuseSystem {
         let frame = pipeline.spawn_framebuffer();
         
         game.scene.resources.insert(frame);
+        game.scene.resources.insert(pipeline);
 
-        builder.add_system(ssao_impl_system(pipeline));
+        builder.add_system(ssao_impl_system());
     }
 
     fn add_prepare_system(&self, game : &mut space_game::Game, builder : &mut legion::systems::Builder) {
-        
+        builder.add_system(ssao_update_system());
     }
 }
 

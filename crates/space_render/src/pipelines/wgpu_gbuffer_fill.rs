@@ -411,6 +411,8 @@ impl GBufferFill {
                 material.gbuffer_bind = Some(group);
             }
 
+            render_pass.execute_bundles(render_bundles)
+
 
             render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
             render_pass.set_vertex_buffer(0, mesh_ptr.mesh.vertex.slice(..));

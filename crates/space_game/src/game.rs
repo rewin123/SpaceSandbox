@@ -198,6 +198,7 @@ impl Game {
             0,
             inner.len() as wgpu::BufferAddress);
         self.render_base.queue.submit(iter::once(encoder.finish()));
+        self.render_base.device.poll(wgpu::Maintain::Wait);
 
     }
 
@@ -205,6 +206,7 @@ impl Game {
     fn update(&mut self) {
         self.camera_update();
 
+        self.scene.resources.insert(self.scene.camera.clone());
         self.scene.resources.insert(self.render_base.clone());
         self.scene.resources.insert(self.render_base.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: None
@@ -218,10 +220,10 @@ impl Game {
         self.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(
             self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut());
 
+        
         self.scene.resources.get_mut::<GpuProfiler>().unwrap().resolve_queries(
             self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut()
         );
-
         let sub_idx = self.render_base.queue.submit(Some(self.scene.resources.remove::<wgpu::CommandEncoder>().unwrap().finish()));
 
         self.render_base.device.poll(wgpu::Maintain::WaitForSubmissionIndex(sub_idx));
@@ -253,7 +255,6 @@ impl Game {
             plugin.render(self, &mut encoder);
         }
         self.plugins = Some(plugins);
-
         self.render_base.queue.submit(iter::once(encoder.finish()));
         output.present();
 
