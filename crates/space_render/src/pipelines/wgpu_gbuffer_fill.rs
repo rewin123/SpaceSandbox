@@ -29,6 +29,16 @@ impl GFramebuffer {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING
+        };
+
+        let pos_desc = wgpu::TextureDescriptor {
+            label: Some("gbuffer color attachment"),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba32Float,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING
         };
@@ -45,7 +55,7 @@ impl GFramebuffer {
 
         let diffuse = TextureBundle::new(device, &color_desc, wgpu::FilterMode::Nearest);
         let normal = TextureBundle::new(device, &noraml_desc, wgpu::FilterMode::Nearest);
-        let position = TextureBundle::new(device, &color_desc, wgpu::FilterMode::Nearest);
+        let position = TextureBundle::new(device, &pos_desc, wgpu::FilterMode::Nearest);
         let mr = TextureBundle::new(device, &color_desc, wgpu::FilterMode::Nearest);
 
         let depth = TextureBundle::new(device, &wgpu::TextureDescriptor {
@@ -309,7 +319,7 @@ impl GBufferFill {
                 module : &shader,
                 entry_point : "fs_main",
                 targets : &[Some(wgpu::ColorTargetState {
-                    format : wgpu::TextureFormat::Rgba32Float,
+                    format : wgpu::TextureFormat::Rgba8Unorm,
                     blend : None,
                     write_mask : wgpu::ColorWrites::ALL
                 }),
@@ -324,7 +334,7 @@ impl GBufferFill {
                     write_mask : wgpu::ColorWrites::ALL
                 }),
                 Some(wgpu::ColorTargetState {
-                    format : wgpu::TextureFormat::Rgba32Float,
+                    format : wgpu::TextureFormat::Rgba8Unorm,
                     blend : None,
                     write_mask : wgpu::ColorWrites::ALL
                 }),]
@@ -373,9 +383,7 @@ impl GBufferFill {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
 
-
         for (mesh_ptr, material, loc) in query.iter_mut(scene) {
-            let mesh = mesh_ptr.mesh.clone();
             if material.need_rebind(assets) {
                 let group = self.render.device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: None,
@@ -410,7 +418,6 @@ impl GBufferFill {
 
                 material.gbuffer_bind = Some(group);
             }
-
 
             render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
             render_pass.set_vertex_buffer(0, mesh_ptr.mesh.vertex.slice(..));

@@ -221,12 +221,7 @@ impl Game {
             self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut());
 
         
-        self.scene.resources.get_mut::<GpuProfiler>().unwrap().resolve_queries(
-            self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut()
-        );
-        let sub_idx = self.render_base.queue.submit(Some(self.scene.resources.remove::<wgpu::CommandEncoder>().unwrap().finish()));
-
-        self.render_base.device.poll(wgpu::Maintain::WaitForSubmissionIndex(sub_idx));
+        
         
 
         let mut plugins = self.plugins.take().unwrap();
@@ -245,17 +240,21 @@ impl Game {
 
         self.render_view = Some(view);
 
-        let mut encoder = self
-            .render_base.device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            });
         let mut plugins = self.plugins.take().unwrap();
-        for plugin in &mut plugins.render_plugin {
-            plugin.render(self, &mut encoder);
+        {
+            for plugin in &mut plugins.render_plugin {
+                plugin.render(self);
+            }
         }
         self.plugins = Some(plugins);
-        self.render_base.queue.submit(iter::once(encoder.finish()));
+        self.scene.resources.get_mut::<GpuProfiler>().unwrap().resolve_queries(
+            self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut()
+        );
+
+        self.render_base.queue.submit(Some(
+            self.scene.resources.remove::<wgpu::CommandEncoder>().unwrap().finish()
+        ));
+        
         output.present();
 
         self.scene.resources.get_mut::<GpuProfiler>().unwrap().end_frame().unwrap();

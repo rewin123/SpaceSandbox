@@ -59,40 +59,6 @@ pub struct SSAO {
     cached_uniform : SsaoUniform
 }
 
-#[system]
-fn ssao_impl( 
-    #[state] ssao_pipeline : &mut SSAO,
-    #[resource] encoder : &mut wgpu::CommandEncoder,
-    #[resource] profiler : &mut GpuProfiler,
-    #[resource] gbuffer : &GFramebuffer,
-    #[resource] ssao_frame : &SSAOFrame) {
-
-    profiler.begin_scope("SSAO", encoder, &ssao_pipeline.render.device);
-    ssao_pipeline.draw(encoder, gbuffer, &ssao_frame.tex);
-    profiler.end_scope(encoder);
-}
-
-pub struct SSAOSystem {
-
-}
-
-impl SchedulePlugin for SSAOSystem {
-    fn get_name(&self) -> space_game::PluginName {
-        PluginName::Text("SSAO".into())
-    }
-
-    fn get_plugin_type(&self) -> space_game::PluginType {
-        space_game::PluginType::Render
-    }
-
-    fn add_system(&self, game : &mut space_game::Game, builder : &mut legion::systems::Builder) {
-        
-    }
-
-    fn add_prepare_system(&self, game : &mut space_game::Game, builder : &mut legion::systems::Builder) {
-        
-    }
-}
 
 
 impl SSAO {

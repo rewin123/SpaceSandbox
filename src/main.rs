@@ -1,5 +1,5 @@
 use std::iter;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 
 use SpaceSandbox::ui::{FpsCounter};
@@ -17,6 +17,7 @@ use SpaceSandbox::{init_logger};
 use encase::{ShaderType, UniformBuffer};
 use image::gif::Encoder;
 use space_assets::*;
+use wgpu_profiler::*;
 
 use nalgebra as na;
 use nalgebra::Matrix4;
@@ -229,20 +230,16 @@ impl RenderPlugin for State {
         // }
         self.render.device.poll(wgpu::Maintain::Wait);
 
-
-        
-
         let ambient_uniform = AmbientLightUniform {
             color: self.ambient_light.color.into(),
             cam_pos: game.scene.camera.pos.coords.clone()
         };
         self.ambient_light_pipeline.update(Some(&ambient_uniform));
-
-
-
     }
 
-    fn render(&mut self, game : &mut Game, encoder : &mut wgpu::CommandEncoder) {
+    fn render(&mut self, game : &mut Game) {
+        let mut encoder_ref = game.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap();
+        let encoder = encoder_ref.deref_mut();
         let view = game.render_view.as_ref().unwrap();
 
         let mut light_queue = <(&mut PointLight)>::query();
@@ -256,12 +253,15 @@ impl RenderPlugin for State {
         // self.light_shadow.draw(encoder, &mut game.scene.world);
 
 
+        game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Ambient", encoder, &self.render.device);
         // self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &gbuffer);
         self.ambient_light_pipeline.draw(encoder,
             &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &game.scene.resources.get::<SSAOFiltered>().unwrap().tex]
         , &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex]);
+        game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
         // self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
+        game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Final", encoder, &self.render.device);
         match &self.draw_state {
             DrawState::Full => {
                 self.gamma_correction.draw(encoder, &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
@@ -284,6 +284,7 @@ impl RenderPlugin for State {
                 self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
             }
         }
+        game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
         // self.present.draw(&self.render.device, &mut encoder, &self.ssao_smooth_framebuffer.dst[0], &view);
 
         game.gui.begin_frame();
@@ -322,6 +323,7 @@ impl RenderPlugin for State {
         });
 
         let gui_output = game.gui.end_frame(Some(&game.window));
+        game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Gui", encoder, &self.render.device);
         game.gui.draw(gui_output,
             ScreenDescriptor {
                 physical_width: game.api.config.width,
@@ -330,6 +332,7 @@ impl RenderPlugin for State {
             },
             encoder,
             &view);
+        game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
     }
 
     fn window_resize(&mut self, game : &mut Game, new_size: winit::dpi::PhysicalSize<u32>) {

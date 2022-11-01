@@ -42,6 +42,6 @@ pub trait RenderPlugin {
     fn update(&mut self, game : &mut Game) {}
     fn show_top_panel(&mut self, game : &mut Game, ui : &mut egui::Ui) {}
     fn show_ui(&mut self, game : &mut Game, ctx : egui::Context) {}
-    fn render(&mut self, game : &mut Game, encoder : &mut wgpu::CommandEncoder) {}
+    fn render(&mut self, game : &mut Game) {}
     fn window_resize(&mut self, game : &mut Game, new_size : PhysicalSize<u32>) {}
 }
