@@ -43,7 +43,7 @@ var<uniform> u : SmoothUniform;
 fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
 
-    let step = vec2<f32>(1.0 / u.size.x, 1.0 / u.size.y);
+    let step = vec2<f32>(1.0 / u.size.x, 1.0 / u.size.y) * 2.0;
 
     var res : f32 = 0.0;
     var weight_sum : f32 = 0.0;

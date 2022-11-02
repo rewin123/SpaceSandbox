@@ -1,6 +1,6 @@
 use std::{num::NonZeroU32, sync::{Arc, Mutex}};
 use std::collections::HashMap;
-use wgpu::{Extent3d, TextureFormat};
+use wgpu::{Extent3d, Texture, TextureFormat};
 use space_assets::*;
 use space_core::RenderBase;
 
@@ -9,6 +9,7 @@ use legion::systems::Builder;
 use legion::world::SubWorld;
 use space_game::{Game, PluginName, PluginType, SchedulePlugin};
 use wgpu_profiler::GpuProfiler;
+use space_game::PluginName::Text;
 
 pub struct GFramebuffer {
     pub diffuse : TextureBundle,
