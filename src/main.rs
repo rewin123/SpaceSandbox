@@ -31,8 +31,9 @@ use legion::*;
 use space_game::{Game, RenderPlugin};
 use space_game::plugins::LocUpdateSystem;
 use space_render::pipelines::point_light_plugin::PointLightPlugin;
+use space_render::pipelines::wgpu_dir_light::{DirLight, DirLightSystem};
 
-
+use space_shaders::*;
 
 async fn run() {
     init_logger();
@@ -51,6 +52,7 @@ async fn run() {
     game.add_schedule_plugin(FastDepthPlugin{});
     game.add_schedule_plugin(SSDiffuseSystem{});
     game.add_schedule_plugin(SSAOFilterSystem{});
+    game.add_schedule_plugin(DirLightSystem{});
     game.update_scene_scheldue();
 
     game.run();
@@ -123,12 +125,30 @@ impl State {
                 depth_or_array_layers : 1
             });
 
-        let mut light =
-            PointLight::new(&render, [0.0, 3.0, 0.0].into(), true);
-            // PointLight::new(&render, [0.0, 1.0, 0.0].into(), true),
+        // let mut light =
+        //     PointLight::new(&render, [0.0, 3.0, 0.0].into(), true);
+        //     // PointLight::new(&render, [0.0, 1.0, 0.0].into(), true),
+        //
+        // light.intensity = 20.0;
+        // game.scene.world.push((light,));
 
-        light.intensity = 20.0;
-        game.scene.world.push((light,));
+        game.scene.world.push((DirLight {
+            dir : nalgebra::Vector3::new(1.0, 1.0, 1.0).normalize(),
+            color : nalgebra::Vector3::new(1.0, 1.0, 1.0).normalize(),
+            intesity : 1.0,
+            shadow_dist : 10000.0,
+            buffer : Arc::new(render.device.create_buffer(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: &(DirLightUniform {
+                    color : [0.0, 0.0, 0.0].into(),
+                    dir : [0.0, 0.0, 0.0].into(),
+                    pos : [0.0, 0.0, 0.0].into(),
+                    intensity : 1.0,
+                    shadow_dist : 1000.0
+                }).,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::MAP_WRITE
+            }))
+        },));
         // lights[1].intensity = 1.0;
 
         let point_light_shadow = PointLightShadowPipeline::new(&render);

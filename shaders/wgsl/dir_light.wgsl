@@ -5,6 +5,7 @@ struct CameraUniform {
 };
 
 struct DirLightUniform {
+    position : vec3<f32>,
     dir : vec3<f32>,
     color : vec3<f32>,
     intensity : f32,
@@ -15,7 +16,7 @@ struct DirLightUniform {
 var<uniform> camera : CameraUniform;
 
 @group(1) @binding(0)
-var<uniform> light : PointLightUniform;
+var<uniform> light : DirLightUniform;
 
 struct VertexInput {
     @location(0) position : vec3<f32>,
@@ -112,19 +113,19 @@ fn fresnelSchlick( cosTheta : f32, F0 : vec3<f32>) -> vec3<f32>
 }
 
 
-fn sample_shadow(pos : vec3<f32>, N : vec3<f32>, dist : f32) -> f32 {
-    var res : f32 = 0.0;
-
-    let normal_move = 0.01 * N * dist;
-    let depth_move = 0.01 * normalize(light.position - pos);
-
-    let offset_pos = pos + normal_move + depth_move;
-
-    let offset_dist = length(offset_pos - light.position);
-
-    res = textureSampleCompare(t_shadow, s_shadow, normalize(offset_pos - light.position), offset_dist / light.shadow_far);
-    return res;
-}
+//fn sample_shadow(pos : vec3<f32>, N : vec3<f32>, dist : f32) -> f32 {
+//    var res : f32 = 0.0;
+//
+//    let normal_move = 0.01 * N * dist;
+//    let depth_move = 0.01 * normalize(light.dir);
+//
+//    let offset_pos = pos + normal_move + depth_move;
+//
+//    let offset_dist = length(offset_pos - light.position);
+//
+//    res = textureSampleCompare(t_shadow, s_shadow, normalize(light.dir), offset_dist / light.shadow_far);
+//    return res;
+//}
 
 @fragment
 fn fs_main(in: VertexOutput) -> FragmentOutput {
@@ -134,17 +135,15 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     var N = textureSample(t_normal, s_diffuse, screen_uv).rgb;
     var pos = textureSample(t_position, s_position, screen_uv).rgb;
-    var L = normalize(light.position - pos);
+    var L = normalize(light.dir);
     var V = normalize(camera.pos - pos);
-    var dist = length(light.position - pos);
 
-    var shadow = sample_shadow(pos, N, dist);
+//    var shadow = sample_shadow(pos, N, dist);
 
     var tex_color = textureSample(t_diffuse, s_diffuse, screen_uv).rgb;
     var mr = textureSample(t_mr, s_mr, screen_uv).rgb;
 //    mr.g *= 0.1;
-    var attenuation = 1.0 / (dist * dist);
-    var radiance = light.intensity * attenuation * vec3(1.0,1.0,1.0);
+    var radiance = light.intensity;
     var H = normalize(L + V);
 
     var F0 = vec3<f32>(0.04,0.04,0.04);
@@ -166,7 +165,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     var NdotV = max(dot(N, V), 0.0);
 
     var Lo = (kD * tex_color / PI + specular) * radiance * NdotL;
-    Lo = Lo * shadow;
+//    Lo = Lo * shadow;
     out.color = vec4<f32>(Lo, 1.0);
     return out;
 }
