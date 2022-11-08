@@ -126,12 +126,11 @@ impl State {
                 depth_or_array_layers : 1
             });
 
-        // let mut light =
-        //     PointLight::new(&render, [0.0, 3.0, 0.0].into(), true);
-        //     // PointLight::new(&render, [0.0, 1.0, 0.0].into(), true),
-        //
-        // light.intensity = 20.0;
-        // game.scene.world.push((light,));
+        let mut light =
+            PointLight::new(&render, [0.0, 3.0, 0.0].into(), true);
+
+        light.intensity = 20.0;
+        game.scene.world.push((light,));
 
 
         let mut dir_light = DirLight::default(&render);
