@@ -17,7 +17,7 @@ pub fn unifrom_struct(item : TokenStream) -> TokenStream {
 
     let plain_text = item.to_string();
 
-    result += "#[derive(ShaderType)]\n";
+    result += "#[derive(ShaderType, Default)]\n";
 
     let mut first_token = true;
 

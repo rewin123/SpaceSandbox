@@ -83,7 +83,6 @@ struct State {
 }
 
 
-
 impl State {
     // Creating some of the wgpu types requires async code
     async fn new() -> Self {
@@ -132,23 +131,10 @@ impl State {
         // light.intensity = 20.0;
         // game.scene.world.push((light,));
 
-        game.scene.world.push((DirLight {
-            dir : nalgebra::Vector3::new(1.0, 1.0, 1.0).normalize(),
-            color : nalgebra::Vector3::new(1.0, 1.0, 1.0).normalize(),
-            intesity : 1.0,
-            shadow_dist : 10000.0,
-            buffer : Arc::new(render.device.create_buffer(&wgpu::util::BufferInitDescriptor {
-                label: None,
-                contents: &(DirLightUniform {
-                    color : [0.0, 0.0, 0.0].into(),
-                    dir : [0.0, 0.0, 0.0].into(),
-                    pos : [0.0, 0.0, 0.0].into(),
-                    intensity : 1.0,
-                    shadow_dist : 1000.0
-                }).,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::MAP_WRITE
-            }))
-        },));
+
+        let mut dir_light = DirLight::default(&render);
+
+        game.scene.world.push((dir_light,));
         // lights[1].intensity = 1.0;
 
         let point_light_shadow = PointLightShadowPipeline::new(&render);
@@ -273,12 +259,12 @@ impl RenderPlugin for State {
         // self.light_shadow.draw(encoder, &mut game.scene.world);
 
 
-        game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Ambient", encoder, &self.render.device);
-        // self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &gbuffer);
-        self.ambient_light_pipeline.draw(encoder,
-            &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &game.scene.resources.get::<SSAOFiltered>().unwrap().tex]
-        , &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex]);
-        game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
+        // game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Ambient", encoder, &self.render.device);
+        // // self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &gbuffer);
+        // self.ambient_light_pipeline.draw(encoder,
+        //     &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &game.scene.resources.get::<SSAOFiltered>().unwrap().tex]
+        // , &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex]);
+        // game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
         // self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
 
         game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Final", encoder, &self.render.device);

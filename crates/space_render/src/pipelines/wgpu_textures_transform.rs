@@ -287,7 +287,7 @@ impl TextureTransformPipeline {
         render_pass.draw(0..6, 0..1);
     }
 
-    fn create_screen_mesh(device : &wgpu::Device) -> ScreenMesh {
+    pub fn create_screen_mesh(device : &wgpu::Device) -> ScreenMesh {
         let vertex = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Screen vertex"),
             contents: bytemuck::cast_slice(&[

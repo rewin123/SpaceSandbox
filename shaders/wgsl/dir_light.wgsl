@@ -5,11 +5,9 @@ struct CameraUniform {
 };
 
 struct DirLightUniform {
-    position : vec3<f32>,
     dir : vec3<f32>,
     color : vec3<f32>,
     intensity : f32,
-    shadow_far : f32
 }
 
 @group(0) @binding(0)
@@ -24,7 +22,7 @@ struct VertexInput {
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) pos: vec4<f32>,
+    @location(0) uv: vec2<f32>,
 }
 
 @vertex
@@ -32,12 +30,11 @@ fn vs_main(
     model : VertexInput
 ) -> VertexOutput {
     var out : VertexOutput;
-    out.clip_position = camera.view * vec4<f32>(model.position * light.shadow_far, 1.0);
-    out.clip_position.z = min(-0.1, out.clip_position.z);
-    out.clip_position = camera.proj * out.clip_position;
-    out.pos = out.clip_position;
+    out.uv = vec2<f32>(model.position.x / 2.0 + 0.5, -model.position.y / 2.0 + 0.5);
+    out.clip_position = vec4<f32>(model.position, 1.0);
     return out;
 }
+
 
 @group(2) @binding(0)
 var t_diffuse: texture_2d<f32>;
@@ -131,7 +128,7 @@ fn fresnelSchlick( cosTheta : f32, F0 : vec3<f32>) -> vec3<f32>
 fn fs_main(in: VertexOutput) -> FragmentOutput {
     var out : FragmentOutput;
     
-    var screen_uv = vec2<f32>(in.pos.x / in.pos.w / 2.0 + 0.5, -in.pos.y / in.pos.w / 2.0 + 0.5);
+    var screen_uv = in.uv;
 
     var N = textureSample(t_normal, s_diffuse, screen_uv).rgb;
     var pos = textureSample(t_position, s_position, screen_uv).rgb;

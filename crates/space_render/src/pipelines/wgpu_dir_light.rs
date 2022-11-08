@@ -8,19 +8,58 @@ use legion::{IntoQuery, World};
 use legion::systems::Builder;
 use space_assets::*;
 use space_assets::wavefront::wgpu_load_gray_obj;
-use space_core::RenderBase;
+use space_core::{RenderBase, ScreenMesh};
 use space_game::{Game, PluginName, PluginType, SchedulePlugin};
-use crate::pipelines::{DirLightTexture, Pipeline, PipelineDesc};
+use crate::pipelines::{DirLightTexture, Pipeline, PipelineDesc, TextureTransformPipeline};
 use crate::pipelines::wgpu_gbuffer_fill::GFramebuffer;
 use legion::*;
 use wgpu_profiler::GpuProfiler;
+use nalgebra as na;
+use encase::*;
+use wgpu::util::DeviceExt;
+
+#[derive(ShaderType, Default)]
+pub struct DirLightUniform {
+    pub dir : na::Vector3<f32>,
+    pub color : na::Vector3<f32>,
+    pub intensity : f32,
+}
+
 
 pub struct DirLight {
     pub dir : nalgebra::Vector3<f32>,
     pub color : nalgebra::Vector3<f32>,
     pub intesity : f32,
-    pub shadow_dist : f32,
     pub buffer : Arc<wgpu::Buffer>
+}
+
+impl DirLight {
+    pub fn default(render : &Arc<RenderBase>) -> Self {
+        let dir = -na::Vector3::new(1.0f32, 0.0, 1.0).normalize();
+        let color = na::Vector3::new(253.0f32, 184.0, 19.0) / 255.0f32;
+        let intesity = 1.0f32;
+
+        let mut uniform_struct = DirLightUniform::default();
+        uniform_struct.color = color;
+        uniform_struct.dir = dir;
+        uniform_struct.intensity = intesity;
+
+        let mut uniform = UniformBuffer::new(vec![]);
+        uniform.write(&uniform_struct).unwrap();
+
+        let buffer = render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Dir light uniform"),
+            contents: &uniform.into_inner(),
+            usage: wgpu::BufferUsages::MAP_WRITE | wgpu::BufferUsages::UNIFORM
+        });
+
+        Self {
+            dir,
+            color,
+            intesity,
+            buffer : Arc::new(buffer)
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -86,7 +125,7 @@ pub struct DirLightPipeline {
     camera_bind_group_layout : wgpu::BindGroupLayout,
     light_bind_group_layout : wgpu::BindGroupLayout,
     camera_bind_group : wgpu::BindGroup,
-    sphere : Arc<GMesh>,
+    screen : ScreenMesh,
     light_groups : Vec<wgpu::BindGroup>,
     texture_bing_group_layout : wgpu::BindGroupLayout,
     diffuse : Option<wgpu::BindGroup>,
@@ -309,7 +348,7 @@ impl DirLightPipeline {
             vertex: wgpu::VertexState {
                 module : &shader,
                 entry_point : "vs_main",
-                buffers: &[GVertex::desc()[0].clone()]
+                buffers: &[space_core::SimpleVertex::desc()]
             },
             fragment: Some(wgpu::FragmentState {
                 module : &shader,
@@ -335,18 +374,12 @@ impl DirLightPipeline {
                 topology : wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format : None,
                 front_face : wgpu::FrontFace::Ccw,
-                cull_mode : Some(wgpu::Face::Back),
+                cull_mode : None,
                 polygon_mode : wgpu::PolygonMode::Fill,
                 unclipped_depth : false,
                 conservative : false
             },
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format : wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: false,
-                depth_compare: wgpu::CompareFunction::Less,
-                stencil: wgpu::StencilState::default(),
-                bias: wgpu::DepthBiasState::default()
-            }),
+            depth_stencil: None,
             multisample: wgpu::MultisampleState {
                 count: 1,
                 mask: !0,
@@ -355,15 +388,12 @@ impl DirLightPipeline {
             multiview: None
         });
 
-        let sphere = wgpu_load_gray_obj(
-            &render.device, 
-            "res/base_models/sphere.obj".into()).unwrap();
 
         Self {
             pipeline,
             camera_bind_group,
             camera_bind_group_layout,
-            sphere : sphere[0].clone(),
+            screen : TextureTransformPipeline::create_screen_mesh(&render.device),
             light_bind_group_layout,
             light_groups : vec![],
             texture_bing_group_layout,
@@ -392,16 +422,12 @@ impl DirLightPipeline {
                         r: 0.0,
                         g: 0.0,
                         b: 0.0,
-                        a: 1.0,
+                        a: 0.0,
                     }), 
                     store: true 
                 }
             })],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment { 
-                view: &gbuffer.depth.view, 
-                depth_ops: None, 
-                stencil_ops: None
-            }),
+            depth_stencil_attachment: None,
         });
 
         self.diffuse = Some(self.create_texture_group(device, &gbuffer));
@@ -424,14 +450,6 @@ impl DirLightPipeline {
                             size: None,
                         }),
                     },
-                    // wgpu::BindGroupEntry {
-                    //     binding: 1,
-                    //     resource: wgpu::BindingResource::TextureView(&shadow.cube_view)
-                    // },
-                    // wgpu::BindGroupEntry {
-                    //     binding: 2,
-                    //     resource: wgpu::BindingResource::Sampler(&shadow.sampler)
-                    // }
                 ],
             });
 
@@ -440,11 +458,11 @@ impl DirLightPipeline {
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-        render_pass.set_vertex_buffer(0, self.sphere.vertex.slice(..));
-        render_pass.set_index_buffer(self.sphere.index.slice(..), wgpu::IndexFormat::Uint32);
+        render_pass.set_vertex_buffer(0, self.screen.vertex.slice(..));
+        // render_pass.set_index_buffer(self.sphere.index.slice(..), wgpu::IndexFormat::Uint32);
         for (idx, light) in lights.iter(scene).enumerate() {
             render_pass.set_bind_group(1, &self.light_groups[idx], &[]);
-            render_pass.draw_indexed(0..self.sphere.index_count, 0, 0..1);
+            render_pass.draw(0..6, 0..1);
         }
     }
 }
