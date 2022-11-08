@@ -53,69 +53,6 @@ fn poll_device(#[resource] render_base : &Arc<RenderBase>) {
     render_base.device.poll(wgpu::Maintain::Wait);
 }
 
-impl Default for Game {
-    fn default() -> Self {
-
-        let (window, event_loop) = Game::create_window();
-
-        let api = ApiBase::new(&window);
-        let render_base = api.render_base.clone();
-
-        let gui = Gui::new(
-            &render_base,
-            api.config.format,
-            wgpu::Extent3d {
-                width : api.size.width,
-                height : api.size.height,
-                depth_or_array_layers : 1
-            },
-            window.scale_factor());
-        let task_server = Arc::new(TaskServer::new());
-        let assets = AssetServer::new(&render_base, &task_server);
-
-        let camera = Camera::default();
-        let camera_uniform = camera.build_uniform();
-
-        let mut camera_cpu_buffer = UniformBuffer::new(vec![0u8;100]);
-        camera_cpu_buffer.write(&camera_uniform);
-
-        let camera_buffer = render_base.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label : Some("Camera uniform buffer"),
-            contents : &camera_cpu_buffer.into_inner(),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
-        });
-
-
-        let mut scene = GameScene {
-            world : World::default(),
-            resources : Resources::default(),
-            scheduler : Schedule::builder().build(),
-            camera : Camera::default(),
-            camera_buffer
-        };
-
-        scene.resources.insert(AssetServer::new(&render_base, &task_server));
-
-        scene.resources.insert(
-            GpuProfiler::new(
-                4, 
-                render_base.queue.get_timestamp_period(), 
-                render_base.device.features()));
-
-        Self {
-            window,
-            event_loop : Some(event_loop),
-            api,
-            render_base,
-            input : InputSystem::default(),
-            gui,
-            plugins : Some(PluginBase::default()),
-            render_view : None,
-            task_server,
-            scene
-        }
-    }
-}
 
 impl Game {
 
@@ -368,5 +305,71 @@ impl Game {
         builder.flush();
         self.scene.scheduler = builder.build();
         self.plugins = Some(plugins);
+    }
+}
+
+
+impl Default for Game {
+
+    fn default() -> Self {
+
+        let (window, event_loop) = Game::create_window();
+
+        let api = ApiBase::new(&window);
+        let render_base = api.render_base.clone();
+
+        let gui = Gui::new(
+            &render_base,
+            api.config.format,
+            wgpu::Extent3d {
+                width : api.size.width,
+                height : api.size.height,
+                depth_or_array_layers : 1
+            },
+            window.scale_factor());
+        let task_server = Arc::new(TaskServer::new());
+        let assets = AssetServer::new(&render_base, &task_server);
+
+        let camera = Camera::default();
+        let camera_uniform = camera.build_uniform();
+
+        let mut camera_cpu_buffer = UniformBuffer::new(vec![0u8;100]);
+        camera_cpu_buffer.write(&camera_uniform);
+
+        let camera_buffer = render_base.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label : Some("Camera uniform buffer"),
+            contents : &camera_cpu_buffer.into_inner(),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
+        });
+
+
+        let mut scene = GameScene {
+            world : World::default(),
+            resources : Resources::default(),
+            scheduler : Schedule::builder().build(),
+            camera : Camera::default(),
+            camera_buffer
+        };
+
+        scene.resources.insert(AssetServer::new(&render_base, &task_server));
+
+        scene.resources.insert(
+            GpuProfiler::new(
+                4,
+                render_base.queue.get_timestamp_period(),
+                render_base.device.features()));
+
+        Self {
+            window,
+            event_loop : Some(event_loop),
+            api,
+            render_base,
+            input : InputSystem::default(),
+            gui,
+            plugins : Some(PluginBase::default()),
+            render_view : None,
+            task_server,
+            scene
+        }
     }
 }

@@ -28,6 +28,7 @@ use space_render::light::*;
 use space_render::pipelines::wgpu_ssao::{SSAO, SSAOFrame};
 
 use legion::*;
+use space_assets::wavefront::wgpu_load_gray_obj;
 use space_game::{Game, RenderPlugin};
 use space_game::plugins::LocUpdateSystem;
 use space_render::pipelines::point_light_plugin::PointLightPlugin;
@@ -54,6 +55,26 @@ async fn run() {
     game.add_schedule_plugin(SSAOFilterSystem{});
     game.add_schedule_plugin(DirLightSystem{});
     game.update_scene_scheldue();
+
+    let sphere = GMeshPtr { mesh : wgpu_load_gray_obj(
+        &game.render_base.device,
+        "res/base_models/sphere.obj".into()).unwrap()[0].clone() };
+    let mut location = Location::new(&game.render_base.device);
+    location.pos.x = 10.0;
+    let mut material = {
+        let mut assets_ref = game.get_assets();
+        let mut assets = assets_ref.deref_mut();
+        Material {
+            color: assets.new_asset(assets.default_color.clone()),
+            normal: assets.new_asset(assets.default_normal.clone()),
+            metallic_roughness: assets.new_asset(assets.default_color.clone()),
+            version_sum: 0,
+            gbuffer_bind: None
+        }
+    };
+    game.scene.world.push((location, sphere, material));
+
+
 
     game.run();
 }
@@ -88,8 +109,6 @@ impl State {
     async fn new() -> Self {
         let mut game = Game::default();
         let render = game.get_render_base();
-
-
 
         let extent = wgpu::Extent3d {
             width : game.api.config.width,

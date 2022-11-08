@@ -24,7 +24,7 @@ pub fn wgpu_load_gray_obj(device : &wgpu::Device, path : String) -> SpaceResult<
             GVertex {
                 pos: [mesh.positions[shift], mesh.positions[shift + 1],mesh.positions[shift + 2]],
                 normal: [mesh.normals[shift], mesh.normals[shift + 1],mesh.normals[shift + 2]],
-                tangent: [0.0, 0.0, 0.0],
+                tangent: [1.0, 0.0, 0.0],
                 uv: [mesh.texcoords[uv_shift], mesh.texcoords[uv_shift + 1]],
             }
         }).collect();

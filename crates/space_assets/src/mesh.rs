@@ -138,7 +138,7 @@ impl Location {
         Location {
             pos : [0.0, 0.0, 0.0].into(),
             rotation : [0.0, 0.0, 0.0].into(),
-            scale : [0.0, 0.0, 0.0].into(),
+            scale : [1.0, 1.0, 1.0].into(),
             buffer : Arc::new(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
                 contents: &[0u8; 16 * 4 * 2],
