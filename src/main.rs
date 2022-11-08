@@ -31,6 +31,7 @@ use legion::*;
 use space_assets::wavefront::wgpu_load_gray_obj;
 use space_game::{Game, RenderPlugin};
 use space_game::plugins::LocUpdateSystem;
+use space_render::hdri::HDRISystem;
 use space_render::pipelines::point_light_plugin::PointLightPlugin;
 use space_render::pipelines::wgpu_dir_light::{DirLight, DirLightSystem};
 
@@ -54,18 +55,8 @@ async fn run() {
     game.add_schedule_plugin(SSDiffuseSystem{});
     game.add_schedule_plugin(SSAOFilterSystem{});
     game.add_schedule_plugin(DirLightSystem{});
+    game.add_schedule_plugin(HDRISystem{path : "res/hdri/space/outer-space-background.jpg".into()});
     game.update_scene_scheldue();
-
-    let sphere = wgpu_load_gray_obj(
-        &game.render_base.device,
-        "res/base_models/sphere.obj".into()).unwrap()[0].clone();
-    let mut location = Location::new(&game.render_base.device);
-    location.pos.x = 10.0;
-    location.scale *= -9000.0;
-    let mut material = game.get_default_material();
-    material.color =
-        game.get_assets().deref_mut().load_color_texture("res/hdri/space/outer-space-background.jpg".into(), true);
-    game.scene.world.push((location, sphere, material));
 
     game.run();
 }
