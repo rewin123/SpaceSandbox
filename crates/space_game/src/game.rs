@@ -11,7 +11,7 @@ use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
-use space_assets::AssetServer;
+use space_assets::{AssetServer, Material};
 use space_core::{Camera, RenderBase, TaskServer};
 use crate::{ApiBase, Gui, GuiPlugin, InputSystem, PluginType, RenderPlugin, SchedulePlugin};
 use encase::*;
@@ -55,6 +55,18 @@ fn poll_device(#[resource] render_base : &Arc<RenderBase>) {
 
 
 impl Game {
+
+    pub fn get_default_material(&self) -> Material {
+        let mut assets_ref = self.get_assets();
+        let mut assets = assets_ref.deref_mut();
+        Material {
+            color: assets.new_asset(assets.default_color.clone()),
+            normal: assets.new_asset(assets.default_normal.clone()),
+            metallic_roughness: assets.new_asset(assets.default_color.clone()),
+            version_sum: 0,
+            gbuffer_bind: None
+        }
+    }
 
     pub fn get_assets(&self) -> AtomicRefMut<AssetServer> {
         self.scene.resources.get_mut::<AssetServer>().unwrap()

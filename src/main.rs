@@ -56,25 +56,16 @@ async fn run() {
     game.add_schedule_plugin(DirLightSystem{});
     game.update_scene_scheldue();
 
-    let sphere = GMeshPtr { mesh : wgpu_load_gray_obj(
+    let sphere = wgpu_load_gray_obj(
         &game.render_base.device,
-        "res/base_models/sphere.obj".into()).unwrap()[0].clone() };
+        "res/base_models/sphere.obj".into()).unwrap()[0].clone();
     let mut location = Location::new(&game.render_base.device);
     location.pos.x = 10.0;
-    let mut material = {
-        let mut assets_ref = game.get_assets();
-        let mut assets = assets_ref.deref_mut();
-        Material {
-            color: assets.new_asset(assets.default_color.clone()),
-            normal: assets.new_asset(assets.default_normal.clone()),
-            metallic_roughness: assets.new_asset(assets.default_color.clone()),
-            version_sum: 0,
-            gbuffer_bind: None
-        }
-    };
+    location.scale *= -9000.0;
+    let mut material = game.get_default_material();
+    material.color =
+        game.get_assets().deref_mut().load_color_texture("res/hdri/space/outer-space-background.jpg".into(), true);
     game.scene.world.push((location, sphere, material));
-
-
 
     game.run();
 }

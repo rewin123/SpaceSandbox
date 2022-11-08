@@ -41,7 +41,7 @@ pub struct PointLightPipeline {
     camera_bind_group_layout : wgpu::BindGroupLayout,
     light_bind_group_layout : wgpu::BindGroupLayout,
     camera_bind_group : wgpu::BindGroup,
-    sphere : Arc<GMesh>,
+    sphere : GMeshPtr,
     light_groups : Vec<wgpu::BindGroup>,
     texture_bing_group_layout : wgpu::BindGroupLayout,
     diffuse : Option<wgpu::BindGroup>,
@@ -411,11 +411,11 @@ impl PointLightPipeline {
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-        render_pass.set_vertex_buffer(0, self.sphere.vertex.slice(..));
-        render_pass.set_index_buffer(self.sphere.index.slice(..), wgpu::IndexFormat::Uint32);
+        render_pass.set_vertex_buffer(0, self.sphere.mesh.vertex.slice(..));
+        render_pass.set_index_buffer(self.sphere.mesh.index.slice(..), wgpu::IndexFormat::Uint32);
         for (idx, light) in lights.iter(scene).enumerate() {
             render_pass.set_bind_group(1, &self.light_groups[idx], &[]);
-            render_pass.draw_indexed(0..self.sphere.index_count, 0, 0..1);
+            render_pass.draw_indexed(0..self.sphere.mesh.index_count, 0, 0..1);
         }
     }
 }
