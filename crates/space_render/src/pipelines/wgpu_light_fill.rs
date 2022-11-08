@@ -48,7 +48,10 @@ pub struct PointLightPipeline {
     normal : Option<wgpu::BindGroup>,
     position : Option<wgpu::BindGroup>,
     pub render : Arc<RenderBase>,
-    size : wgpu::Extent3d
+    size : wgpu::Extent3d,
+    empty_shadow : wgpu::Texture,
+    empty_shadow_view : wgpu::TextureView,
+    empty_shadow_sample : wgpu::Sampler
 }
 
 impl Pipeline for PointLightPipeline {
@@ -330,6 +333,76 @@ impl PointLightPipeline {
             &render.device, 
             "res/base_models/sphere.obj".into()).unwrap();
 
+        let tex = render.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Depth texture"),
+            size: wgpu::Extent3d {
+                width : 1,
+                height : 1,
+                depth_or_array_layers : 6
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::RENDER_ATTACHMENT
+        });
+
+        let cube_view = tex.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("point light cube view"),
+            format: None,
+            dimension: Some(wgpu::TextureViewDimension::Cube),
+            aspect: Default::default(),
+            base_mip_level: 0,
+            mip_level_count: None,
+            base_array_layer: 0,
+            array_layer_count: Some(NonZeroU32::new(6).unwrap())
+        });
+
+        let cube_sampler = render.device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Shadow cube sampler"),
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            lod_min_clamp: 0.0,
+            lod_max_clamp: 0.0,
+            compare: Some(wgpu::CompareFunction::LessEqual),
+            anisotropy_clamp: None,
+            border_color: None
+        });
+
+        let mut encoder = render.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: None
+        });
+
+        for idx in 0..6 {
+            let view = tex.create_view(&wgpu::TextureViewDescriptor {
+                label: Some("point light side view"),
+                format: None,
+                dimension: Some(wgpu::TextureViewDimension::D2),
+                aspect: Default::default(),
+                base_mip_level: 0,
+                mip_level_count: Some(NonZeroU32::new(1).unwrap()),
+                base_array_layer: idx,
+                array_layer_count: Some(NonZeroU32::new(1).unwrap())
+            });
+            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: true
+                    }),
+                    stencil_ops: None
+                })
+            });
+        }
+        render.queue.submit(Some(encoder.finish()));
+
         Self {
             pipeline,
             camera_bind_group,
@@ -343,6 +416,9 @@ impl PointLightPipeline {
             position : None,
             render : render.clone(),
             size,
+            empty_shadow : tex,
+            empty_shadow_view : cube_view,
+            empty_shadow_sample : cube_sampler
         }
     }
 
@@ -382,33 +458,56 @@ impl PointLightPipeline {
         self.light_groups.clear();
         let mut lights = <(&PointLight)>::query();
         for light in lights.iter(scene) {
-            let shadow = light.shadow.as_ref().unwrap();
-            let light_uniform= device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("light"),
-                layout: &self.light_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                            buffer: &light.buffer,
-                            offset: 0,
-                            size: None,
-                        }),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::TextureView(&shadow.cube_view)
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::Sampler(&shadow.sampler)
-                    }
-                ],
-            });
-
-            self.light_groups.push(light_uniform);
+            if let Some(shadow) = light.shadow.as_ref() {
+                let light_uniform = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("light"),
+                    layout: &self.light_bind_group_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                                buffer: &light.buffer,
+                                offset: 0,
+                                size: None,
+                            }),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::TextureView(&shadow.cube_view)
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: wgpu::BindingResource::Sampler(&shadow.sampler)
+                        }
+                    ],
+                });
+                self.light_groups.push(light_uniform);
+            } else {
+                let light_uniform = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("light"),
+                    layout: &self.light_bind_group_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                                buffer: &light.buffer,
+                                offset: 0,
+                                size: None,
+                            }),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::TextureView(&self.empty_shadow_view)
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: wgpu::BindingResource::Sampler(&self.empty_shadow_sample)
+                        }
+                    ],
+                });
+                self.light_groups.push(light_uniform);
+            }
         }
-
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.sphere.mesh.vertex.slice(..));

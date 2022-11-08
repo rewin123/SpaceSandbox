@@ -127,7 +127,7 @@ impl State {
             });
 
         let mut light =
-            PointLight::new(&render, [0.0, 3.0, 0.0].into(), true);
+            PointLight::new(&render, [0.0, 3.0, 0.0].into(), false);
 
         light.intensity = 20.0;
         game.scene.world.push((light,));
