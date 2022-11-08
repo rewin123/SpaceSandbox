@@ -35,7 +35,7 @@ pub struct DirLight {
 
 impl DirLight {
     pub fn default(render : &Arc<RenderBase>) -> Self {
-        let dir = -na::Vector3::new(1.0f32, 0.0, 1.0).normalize();
+        let dir = -na::Vector3::new(0.0f32, 1.0f32, 1.0).normalize();
         let color = na::Vector3::new(253.0f32, 184.0, 19.0) / 255.0f32;
         let intesity = 1.0f32;
 

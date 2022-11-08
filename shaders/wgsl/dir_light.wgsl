@@ -132,7 +132,7 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
 
     var N = textureSample(t_normal, s_diffuse, screen_uv).rgb;
     var pos = textureSample(t_position, s_position, screen_uv).rgb;
-    var L = normalize(light.dir);
+    var L = normalize(-light.dir);
     var V = normalize(camera.pos - pos);
 
 //    var shadow = sample_shadow(pos, N, dist);

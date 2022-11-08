@@ -100,16 +100,17 @@ impl State {
         {
             let mut assets = game.scene.resources.get_mut::<AssetServer>().unwrap();
 
+            // assets.wgpu_gltf_load(
+            //     &render.device,
+            //     "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
+            //     &mut game.scene.world);
+
             assets.wgpu_gltf_load(
                 &render.device,
-                "res/test_res/models/sponza/glTF/Sponza.gltf".into(),
+                "res/bobik/bobik.gltf".into(),
                 &mut game.scene.world);
         }
 
-        // assets.wgpu_gltf_load(
-        //     &render.device,
-        //     "res/bobik/bobik.gltf".into(),
-        //     &mut world);
 
         let framebuffer = GBufferFill::spawn_framebuffer(
             &render.device,
@@ -218,7 +219,7 @@ impl State {
             device_name,
             draw_state : DrawState::DirectLight,
             ambient_light : AmbientLight {
-                color : na::Vector3::new(1.0f32, 1.0, 1.0) * 0.1f32
+                color : na::Vector3::new(1.0f32, 1.0, 1.0) * 0.05f32
             },
             ambient_light_pipeline
         }
@@ -259,13 +260,12 @@ impl RenderPlugin for State {
         // self.light_shadow.draw(encoder, &mut game.scene.world);
 
 
-        // game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Ambient", encoder, &self.render.device);
-        // // self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &gbuffer);
-        // self.ambient_light_pipeline.draw(encoder,
-        //     &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &game.scene.resources.get::<SSAOFiltered>().unwrap().tex]
-        // , &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex]);
-        // game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
-        // self.gamma_correction.draw(&self.render.device, &mut encoder, &[&self.light_buffer], &[&self.gamma_buffer.dst[0]]);
+        game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Ambient", encoder, &self.render.device);
+        // self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &gbuffer);
+        self.ambient_light_pipeline.draw(encoder,
+            &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &game.scene.resources.get::<SSAOFiltered>().unwrap().tex]
+        , &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex]);
+        game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
 
         game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Final", encoder, &self.render.device);
         match &self.draw_state {
