@@ -194,12 +194,18 @@ impl Game {
             egui::TopBottomPanel::top("top_panel").show(
                 &self.gui.platform.context(), |ui| {
                     ui.horizontal(|ui| {
+                        for plugin in &mut plugins.gui_plugins {
+                            plugin.shot_top_panel(self, ui);
+                        }
                         for plugin in &mut plugins.render_plugin {
                             plugin.show_top_panel(self, ui);
                         }
                     });
                 });
 
+            for plugin in &mut plugins.gui_plugins {
+                plugin.show_ui(self, self.gui.platform.context());
+            }
             for plugin in &mut plugins.render_plugin {
                 plugin.show_ui(self, self.gui.platform.context());
             }
