@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::iter;
+use std::mem::swap;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use atomic_refcell::AtomicRefMut;
@@ -13,7 +14,7 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use space_assets::{AssetServer, Material};
 use space_core::{Camera, RenderBase, TaskServer};
-use crate::{ApiBase, Gui, GuiPlugin, InputSystem, PluginType, RenderPlugin, SchedulePlugin};
+use crate::{ApiBase, GameCommands, Gui, GuiPlugin, InputSystem, PluginType, RenderPlugin, SchedulePlugin};
 use encase::*;
 use wgpu::util::DeviceExt;
 use legion::*;
@@ -45,7 +46,9 @@ pub struct Game {
     plugins : Option<PluginBase>,
     pub render_view : Option<TextureView>,
     pub task_server : Arc<TaskServer>,
-    pub scene : GameScene
+    pub scene : GameScene,
+    pub commands : Vec<GameCommands>,
+    pub is_exit_state : bool
 }
 
 #[system]
@@ -55,6 +58,25 @@ fn poll_device(#[resource] render_base : &Arc<RenderBase>) {
 
 
 impl Game {
+
+    pub fn exec_commands(&mut self) {
+        let mut cmds = vec![];
+        swap(&mut cmds, &mut self.commands);
+
+        for cmd in &cmds {
+            match cmd {
+                GameCommands::Exit => {
+                    self.is_exit_state = true;
+                }
+            }
+        }
+    }
+
+    pub fn add_gui_plugin<T : GuiPlugin + 'static>(&mut self, plugin : T) {
+        let mut plugins = self.plugins.take().unwrap();
+        plugins.gui_plugins.push(Box::new(plugin));
+        self.plugins = Some(plugins);
+    }
 
     pub fn get_default_material(&self) -> Material {
         let mut assets_ref = self.get_assets();
@@ -153,6 +175,8 @@ impl Game {
 
 
     fn update(&mut self) {
+        self.exec_commands();
+
         self.camera_update();
 
         self.scene.resources.insert(self.scene.camera.clone());
@@ -195,7 +219,9 @@ impl Game {
                 &self.gui.platform.context(), |ui| {
                     ui.horizontal(|ui| {
                         for plugin in &mut plugins.gui_plugins {
-                            plugin.shot_top_panel(self, ui);
+                            let cmds =
+                                plugin.shot_top_panel(self, ui);
+                            self.commands.extend(cmds);
                         }
                         for plugin in &mut plugins.render_plugin {
                             plugin.show_top_panel(self, ui);
@@ -204,7 +230,9 @@ impl Game {
                 });
 
             for plugin in &mut plugins.gui_plugins {
-                plugin.show_ui(self, self.gui.platform.context());
+                let cmds =
+                    plugin.show_ui(self, self.gui.platform.context());
+                self.commands.extend(cmds);
             }
             for plugin in &mut plugins.render_plugin {
                 plugin.show_ui(self, self.gui.platform.context());
@@ -297,6 +325,10 @@ impl Game {
                         Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
 
                         Err(wgpu::SurfaceError::Timeout) => {},
+                    }
+
+                    if self.is_exit_state {
+                        *control_flow = ControlFlow::Exit;
                     }
                 }
                 Event::RedrawEventsCleared => {
@@ -411,7 +443,9 @@ impl Default for Game {
             plugins : Some(PluginBase::default()),
             render_view : None,
             task_server,
-            scene
+            scene,
+            commands : vec![],
+            is_exit_state : false
         }
     }
 }

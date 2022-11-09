@@ -34,8 +34,8 @@ pub trait SchedulePlugin {
 }
 
 pub trait GuiPlugin {
-    fn shot_top_panel(&mut self, game : &mut Game, ui : &mut egui::Ui);
-    fn show_ui(&mut self, game : &mut Game, ctx : egui::Context) {}
+    fn shot_top_panel(&mut self, game : &mut Game, ui : &mut egui::Ui) -> Vec<GameCommands> {vec![]}
+    fn show_ui(&mut self, game : &mut Game, ctx : egui::Context) -> Vec<GameCommands> {vec![]}
 }
 
 pub trait RenderPlugin {
@@ -44,4 +44,8 @@ pub trait RenderPlugin {
     fn show_ui(&mut self, game : &mut Game, ctx : egui::Context) {}
     fn render(&mut self, game : &mut Game) {}
     fn window_resize(&mut self, game : &mut Game, new_size : PhysicalSize<u32>) {}
+}
+
+pub enum GameCommands {
+    Exit
 }

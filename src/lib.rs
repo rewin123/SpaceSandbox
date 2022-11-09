@@ -1,3 +1,5 @@
+pub mod ui;
+
 use std::fs::File;
 use std::ops::Deref;
 use std::os::raw::c_char;
