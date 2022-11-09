@@ -16,7 +16,9 @@ impl GuiPlugin for StationBuildMenu {
         let mut cmds = vec![];
 
         egui::SidePanel::left("Build panel").show(&ctx, |ui| {
+            egui::Grid::new("Floor block grid").show(ui, |ui| {
 
+            });
         });
 
         cmds
