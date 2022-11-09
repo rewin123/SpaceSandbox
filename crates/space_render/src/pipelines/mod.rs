@@ -231,7 +231,6 @@ enum DrawState {
 }
 
 pub struct State {
-    pub game : Option<Game>,
     render : Arc<RenderBase>,
 
     gamma_correction : TextureTransformPipeline,
@@ -248,8 +247,7 @@ pub struct State {
 
 impl State {
     // Creating some of the wgpu types requires async code
-    pub async fn new() -> Self {
-        let mut game = Game::default();
+    pub async fn new(game : &mut Game) -> Self {
         let render = game.get_render_base();
 
         let extent = wgpu::Extent3d {
@@ -343,7 +341,6 @@ impl State {
         let device_name = game.api.adapter.get_info().name;
 
         Self {
-            game : Some(game),
             present,
             render,
             fps,

@@ -22,7 +22,7 @@ use nalgebra as na;
 use nalgebra::Matrix4;
 use wgpu::{BlendFactor, MaintainBase};
 use space_core::{RenderBase, TaskServer};
-use space_render::{pipelines::*};
+use space_render::{add_game_render_plugins, pipelines::*};
 use space_render::light::*;
 use space_render::pipelines::wgpu_ssao::{SSAO, SSAOFrame};
 
@@ -42,39 +42,11 @@ async fn run() {
     rayon::ThreadPoolBuilder::default()
         .num_threads(3)
         .build_global().unwrap();
-
-    // State::new uses async code, so we're going to wait for it to finish
-    let mut state = State::new().await;
-
-    let mut game = state.game.take().unwrap();
-    game.add_render_plugin(state);
-    game.add_schedule_plugin(LocUpdateSystem{});
-    game.add_schedule_plugin(GBufferPlugin{});
-    game.add_schedule_plugin(PointLightPlugin{});
-    game.add_schedule_plugin(FastDepthPlugin{});
-    game.add_schedule_plugin(SSDiffuseSystem{});
-    game.add_schedule_plugin(SSAOFilterSystem{});
-    game.add_schedule_plugin(DirLightSystem{});
-    game.add_schedule_plugin(HDRISystem{path : "res/hdri/space/outer-space-background.jpg".into()});
+    let mut game = Game::default();
+    add_game_render_plugins(&mut game).await;
     game.update_scene_scheldue();
-
-    {
-        let mut assets = game.scene.resources.get_mut::<AssetServer>().unwrap();
-        assets.wgpu_gltf_load(
-            &game.render_base.device,
-            "res/bobik/bobik.gltf".into(),
-            &mut game.scene.world);
-    }
-    let mut light =
-        PointLight::new(&game.render_base, [0.0, 3.0, 0.0].into(), false);
-    light.intensity = 20.0;
-    game.scene.world.push((light,));
-    let mut dir_light = DirLight::default(&game.render_base);
-    game.scene.world.push((dir_light,));
-
     game.run();
 }
-
 
 fn main() {
     pollster::block_on(run());
