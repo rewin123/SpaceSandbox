@@ -10,8 +10,6 @@ use simplelog::*;
 const EngineName : &str = "Rewin engine";
 const AppName : &str = "SpaceSandbox";
 
-pub mod ui;
-
 
 pub fn init_logger() {
     let _ = CombinedLogger::init(
