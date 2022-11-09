@@ -9,8 +9,8 @@ use legion::systems::Builder;
 use space_game::{Game, PluginName, PluginType, SchedulePlugin};
 
 
-pub async fn add_game_render_plugins(game : &mut Game) {
-    let mut state = crate::pipelines::State::new(game).await;
+pub fn add_game_render_plugins(game : &mut Game) {
+    let mut state = pollster::block_on(crate::pipelines::State::new(game));
     game.add_render_plugin(state);
     game.add_schedule_plugin(space_game::plugins::LocUpdateSystem {});
     game.add_schedule_plugin(crate::pipelines::GBufferPlugin {});

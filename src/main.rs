@@ -10,7 +10,7 @@ async fn run() {
         .num_threads(3)
         .build_global().unwrap();
     let mut game = Game::default();
-    add_game_render_plugins(&mut game).await;
+    add_game_render_plugins(&mut game);
     game.update_scene_scheldue();
 
     game.add_gui_plugin(MainMenu{});

@@ -1,4 +1,5 @@
 pub mod ui;
+pub mod scenes;
 
 use std::fs::File;
 use std::ops::Deref;

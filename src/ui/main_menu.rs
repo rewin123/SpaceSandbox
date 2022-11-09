@@ -1,5 +1,6 @@
 use egui::*;
 use space_game::{Game, GameCommands, GuiPlugin};
+use crate::scenes::setup_station_build_scene;
 
 pub struct MainMenu {
 
@@ -18,7 +19,14 @@ impl GuiPlugin for MainMenu {
             .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
             .show(&ctx, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.button("New station");
+                    if ui.button("New station").clicked() {
+                        let cmd = GameCommands::AbstractChange(Box::new(
+                           |game| {
+                               setup_station_build_scene(game);
+                           }
+                        ));
+                        cmds.push(cmd);
+                    }
                     ui.button("Load station");
                     ui.button("Connect to server");
                     if ui.button("Exit").clicked() {

@@ -47,5 +47,6 @@ pub trait RenderPlugin {
 }
 
 pub enum GameCommands {
+    AbstractChange(Box<dyn FnOnce(&mut Game)>),
     Exit
 }

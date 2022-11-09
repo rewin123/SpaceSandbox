@@ -59,14 +59,21 @@ fn poll_device(#[resource] render_base : &Arc<RenderBase>) {
 
 impl Game {
 
+    pub fn clear_plugins(&mut self) {
+        self.plugins = Some(PluginBase::default());
+    }
+
     pub fn exec_commands(&mut self) {
         let mut cmds = vec![];
         swap(&mut cmds, &mut self.commands);
 
-        for cmd in &cmds {
+        for cmd in cmds {
             match cmd {
                 GameCommands::Exit => {
                     self.is_exit_state = true;
+                }
+                GameCommands::AbstractChange(func) => {
+                    func(self);
                 }
             }
         }
@@ -172,7 +179,6 @@ impl Game {
         self.render_base.device.poll(wgpu::Maintain::Wait);
 
     }
-
 
     fn update(&mut self) {
         self.exec_commands();
