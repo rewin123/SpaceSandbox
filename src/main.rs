@@ -12,9 +12,7 @@ async fn run() {
     let mut game = Game::default();
     add_game_render_plugins(&mut game);
     game.update_scene_scheldue();
-
     game.add_gui_plugin(MainMenu{});
-
     game.run();
 }
 
