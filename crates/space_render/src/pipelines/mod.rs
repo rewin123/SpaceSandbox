@@ -1,6 +1,7 @@
 use std::{fmt::Debug, sync::Arc};
 use std::ops::DerefMut;
 use downcast_rs::{Downcast, impl_downcast};
+use egui::{Context, Ui};
 use encase::*;
 use nalgebra as na;
 
@@ -360,13 +361,6 @@ impl State {
 
 impl space_game::RenderPlugin for State {
     fn update(&mut self, game : &mut Game) {
-
-
-        // let mut loc_query = <(&mut Location,)>::query();
-
-        // for loc in loc_query.iter_mut(&mut game.scene.world) {
-        //     loc.0.update_buffer();
-        // }
         self.render.device.poll(wgpu::Maintain::Wait);
 
         let ambient_uniform = AmbientLightUniform {
@@ -425,52 +419,7 @@ impl space_game::RenderPlugin for State {
         game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
         // self.present.draw(&self.render.device, &mut encoder, &self.ssao_smooth_framebuffer.dst[0], &view);
 
-        game.gui.begin_frame();
 
-        egui::TopBottomPanel::top("top_panel").show(
-            &game.gui.platform.context(), |ui| {
-
-                ui.horizontal(|ui| {
-
-                    egui::ComboBox::from_label("Draw mode")
-                        .selected_text(format!("{:?}", &self.draw_state))
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut self.draw_state, DrawState::DirectLight, "DirectLight");
-                            ui.selectable_value(&mut self.draw_state, DrawState::AmbientOcclusion, "AmbientOcclusion");
-                            ui.selectable_value(&mut self.draw_state, DrawState::AmbientOcclusionSmooth, "AmbientOcclusionSmooth");
-                            ui.selectable_value(&mut self.draw_state, DrawState::Depth, "Depth");
-                        });
-
-                    self.fps.draw(ui);
-                    ui.label(&self.device_name);
-                });
-
-                // let cam_uniform = self.camera.build_uniform();
-                // let gizmo = egui_gizmo::Gizmo::new("light gizmo").projection_matrix(
-                //     cam_uniform.proj
-                // ).view_matrix(cam_uniform.view)
-                //     .model_matrix(na::Matrix4::new_translation(&self.point_lights[0].pos))
-                //     .mode(GizmoMode::Translate);
-                //
-                // if let Some(responce) = gizmo.interact(ui) {
-                //     let mat : Matrix4<f32> = responce.transform.into();
-                //     self.point_lights[0].pos.x = mat.m14;
-                //     self.point_lights[0].pos.y = mat.m24;
-                //     self.point_lights[0].pos.z = mat.m34;
-                // }
-            });
-
-        let gui_output = game.gui.end_frame(Some(&game.window));
-        game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Gui", encoder, &self.render.device);
-        game.gui.draw(gui_output,
-                      egui_wgpu_backend::ScreenDescriptor {
-                          physical_width: game.api.config.width,
-                          physical_height: game.api.config.height,
-                          scale_factor: game.window.scale_factor() as f32,
-                      },
-                      encoder,
-                      &view);
-        game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
     }
 
     fn window_resize(&mut self, game : &mut Game, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -508,5 +457,19 @@ impl space_game::RenderPlugin for State {
                 &ambient_desc
             );
         }
+    }
+
+    fn show_top_panel(&mut self, game: &mut Game, ui: &mut Ui) {
+        egui::ComboBox::from_label("Draw mode")
+            .selected_text(format!("{:?}", &self.draw_state))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(&mut self.draw_state, DrawState::DirectLight, "DirectLight");
+                ui.selectable_value(&mut self.draw_state, DrawState::AmbientOcclusion, "AmbientOcclusion");
+                ui.selectable_value(&mut self.draw_state, DrawState::AmbientOcclusionSmooth, "AmbientOcclusionSmooth");
+                ui.selectable_value(&mut self.draw_state, DrawState::Depth, "Depth");
+            });
+
+        self.fps.draw(ui);
+        ui.label(&self.device_name);
     }
 }

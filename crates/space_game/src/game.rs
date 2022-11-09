@@ -169,16 +169,11 @@ impl Game {
         self.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(
             self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut());
 
-        
-        
-        
-
         let mut plugins = self.plugins.take().unwrap();
         for plugin in &mut plugins.render_plugin {
             plugin.update(self);
         }
         self.plugins = Some(plugins);
-
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -194,8 +189,37 @@ impl Game {
             for plugin in &mut plugins.render_plugin {
                 plugin.render(self);
             }
+
+            self.gui.begin_frame();
+            egui::TopBottomPanel::top("top_panel").show(
+                &self.gui.platform.context(), |ui| {
+                    ui.horizontal(|ui| {
+                        for plugin in &mut plugins.render_plugin {
+                            plugin.show_top_panel(self, ui);
+                        }
+                    });
+                });
+
+            for plugin in &mut plugins.render_plugin {
+                plugin.show_ui(self, self.gui.platform.context());
+            }
         }
         self.plugins = Some(plugins);
+
+        { //gui draw
+            let gui_output = self.gui.end_frame(Some(&self.window));
+            let mut encoder_ref = self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap();
+            let encoder = encoder_ref.deref_mut();
+            self.gui.draw(gui_output,
+                          egui_wgpu_backend::ScreenDescriptor {
+                              physical_width: self.api.config.width,
+                              physical_height: self.api.config.height,
+                              scale_factor: self.window.scale_factor() as f32,
+                          },
+                          encoder,
+                          &self.render_view.as_ref().unwrap());
+        }
+
         self.scene.resources.get_mut::<GpuProfiler>().unwrap().resolve_queries(
             self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut()
         );
