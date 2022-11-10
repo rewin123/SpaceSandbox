@@ -10,7 +10,6 @@ use space_core::{Camera, RenderBase};
 use wgpu_profiler::GpuProfiler;
 use crate::{pipelines::{CommonFramebuffer, GFramebuffer}};
 use encase::*;
-use legion::{*, world::SubWorld};
 
 #[repr(C)]
 #[derive(Zeroable, bytemuck::Pod, Clone, Copy)]

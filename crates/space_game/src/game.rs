@@ -6,19 +6,18 @@ use std::ops::DerefMut;
 use std::sync::Arc;
 use atomic_refcell::AtomicRefMut;
 use egui::color::gamma_from_linear;
-use legion::systems::Builder;
-use wgpu::{Extent3d, SurfaceTexture, TextureView};
+use wgpu::{Extent3d, ShaderStages, SurfaceTexture, TextureView};
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use space_assets::{AssetServer, Material};
 use space_core::{Camera, RenderBase, TaskServer};
-use crate::{ApiBase, GameCommands, Gui, GuiPlugin, InputSystem, PluginType, RenderPlugin, SchedulePlugin};
+use crate::*;
 use encase::*;
 use wgpu::util::DeviceExt;
-use legion::*;
 use wgpu_profiler::*;
+use space_core::ecs::*;
 
 #[derive(Default)]
 pub struct PluginBase {
@@ -29,7 +28,6 @@ pub struct PluginBase {
 
 pub struct GameScene {
     pub world : World,
-    pub resources : Resources,
     pub scheduler : Schedule,
     pub camera : Camera,
     pub camera_buffer : wgpu::Buffer,
@@ -51,8 +49,7 @@ pub struct Game {
     pub is_exit_state : bool
 }
 
-#[system]
-fn poll_device(#[resource] render_base : &Arc<RenderBase>) {
+fn poll_device( render_base : Res<Arc<RenderBase>>) {
     render_base.device.poll(wgpu::Maintain::Wait);
 }
 
@@ -85,7 +82,7 @@ impl Game {
         self.plugins = Some(plugins);
     }
 
-    pub fn get_default_material(&self) -> Material {
+    pub fn get_default_material(&mut self) -> Material {
         let mut assets_ref = self.get_assets();
         let mut assets = assets_ref.deref_mut();
         Material {
@@ -97,8 +94,8 @@ impl Game {
         }
     }
 
-    pub fn get_assets(&self) -> AtomicRefMut<AssetServer> {
-        self.scene.resources.get_mut::<AssetServer>().unwrap()
+    pub fn get_assets(&mut self) -> Mut<AssetServer> {
+        self.scene.world.get_resource_mut::<AssetServer>().unwrap()
     }
 
     pub fn add_render_plugin<T>(&mut self, plugin : T)
@@ -122,7 +119,7 @@ impl Game {
     }
 
     fn resize_event(&mut self, new_size : PhysicalSize<u32>) {
-        self.scene.resources.insert(new_size);
+        self.scene.world.insert_resource(new_size);
         let mut plugins = self.plugins.take().unwrap();
         for plugin in &mut plugins.render_plugin {
             plugin.window_resize(self, new_size);
@@ -185,19 +182,14 @@ impl Game {
 
         self.camera_update();
 
-        self.scene.resources.insert(self.scene.camera.clone());
-        self.scene.resources.insert(self.render_base.clone());
-        self.scene.resources.insert(self.render_base.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        self.scene.world.insert_resource(self.scene.camera.clone());
+        self.scene.world.insert_resource(self.render_base.clone());
+        self.scene.world.insert_resource(self.render_base.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: None
         }));
-        self.scene.resources.get_mut::<AssetServer>().unwrap().sync_tick();
-        self.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope(
-            "Global scopre", 
-            self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut(),
-            &self.render_base.device);
-        self.scene.scheduler.execute(&mut self.scene.world, &mut self.scene.resources);
-        self.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(
-            self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut());
+        self.scene.world.get_resource_mut::<AssetServer>().unwrap().sync_tick();
+
+        self.scene.scheduler.run(&mut self.scene.world);
 
         let mut plugins = self.plugins.take().unwrap();
         for plugin in &mut plugins.render_plugin {
@@ -248,7 +240,7 @@ impl Game {
 
         { //gui draw
             let gui_output = self.gui.end_frame(Some(&self.window));
-            let mut encoder_ref = self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap();
+            let mut encoder_ref = self.scene.world.get_resource_mut::<wgpu::CommandEncoder>().unwrap();
             let encoder = encoder_ref.deref_mut();
             self.gui.draw(gui_output,
                           egui_wgpu_backend::ScreenDescriptor {
@@ -260,19 +252,15 @@ impl Game {
                           &self.render_view.as_ref().unwrap());
         }
 
-        self.scene.resources.get_mut::<GpuProfiler>().unwrap().resolve_queries(
-            self.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap().deref_mut()
-        );
-
         self.render_base.queue.submit(Some(
-            self.scene.resources.remove::<wgpu::CommandEncoder>().unwrap().finish()
+            self.scene.world.remove_resource::<wgpu::CommandEncoder>().unwrap().finish()
         ));
         
         output.present();
 
-        self.scene.resources.get_mut::<GpuProfiler>().unwrap().end_frame().unwrap();
+        self.scene.world.get_resource_mut::<GpuProfiler>().unwrap().end_frame().unwrap();
 
-        if let Some(profiling_data) =  self.scene.resources.get_mut::<GpuProfiler>().unwrap().process_finished_frame() {
+        if let Some(profiling_data) =  self.scene.world.get_resource_mut::<GpuProfiler>().unwrap().process_finished_frame() {
             if self.input.get_key_state(winit::event::VirtualKeyCode::G) {
                 wgpu_profiler::chrometrace::write_chrometrace(
                     std::path::Path::new("mytrace.json"), &profiling_data).unwrap();
@@ -365,25 +353,19 @@ impl Game {
     pub fn update_scene_scheldue(&mut self) {
         let mut plugins = self.plugins.take().unwrap();
 
-        let mut builder = Schedule::builder();
+        let mut builder = Schedule::default();
+        builder.add_stage(GlobalStageStep::RenderPrepare, SystemStage::parallel());
+        builder.add_stage_after(GlobalStageStep::RenderPrepare,GlobalStageStep::Logic, SystemStage::parallel());
+        builder.add_stage_after(GlobalStageStep::RenderPrepare, GlobalStageStep::RenderStart, SystemStage::parallel());
+        builder.add_stage_after(GlobalStageStep::RenderStart, GlobalStageStep::Render, SystemStage::single_threaded());
         //push render prepare
         for plugin in &plugins.scheldue_plugin {
-            if plugin.get_plugin_type() == PluginType::RenderPrepare {
-                plugin.add_system(self, &mut builder);
-            } else {
-                plugin.add_prepare_system(self, &mut builder);
-            }
+            plugin.add_system(self, &mut builder);
         }
-        builder.flush();
-        builder.add_system(poll_device_system());
-        builder.flush();
-        for plugin in &plugins.scheldue_plugin {
-            if plugin.get_plugin_type() != PluginType::RenderPrepare {
-                plugin.add_system(self, &mut builder);
-            }
-        }
-        builder.flush();
-        self.scene.scheduler = builder.build();
+
+        builder.add_system_to_stage(GlobalStageStep::RenderStart, poll_device);
+
+        self.scene.scheduler = builder;
         self.plugins = Some(plugins);
     }
 }
@@ -425,15 +407,14 @@ impl Default for Game {
 
         let mut scene = GameScene {
             world : World::default(),
-            resources : Resources::default(),
-            scheduler : Schedule::builder().build(),
+            scheduler : Schedule::default(),
             camera : Camera::default(),
             camera_buffer
         };
 
-        scene.resources.insert(AssetServer::new(&render_base, &task_server));
+        scene.world.insert_resource(AssetServer::new(&render_base, &task_server));
 
-        scene.resources.insert(
+        scene.world.insert_resource(
             GpuProfiler::new(
                 4,
                 render_base.queue.get_timestamp_period(),

@@ -1,12 +1,11 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
-use legion::world::SubWorld;
 use wgpu::{Buffer, Extent3d, TextureDimension};
 use crate::light::PointLight;
 use downcast_rs::*;
-use legion::{IntoQuery, World};
 use space_assets::*;
 use space_assets::wavefront::wgpu_load_gray_obj;
+use space_core::ecs::{Query, World};
 use space_core::RenderBase;
 use crate::pipelines::{Pipeline, PipelineDesc};
 use crate::pipelines::wgpu_gbuffer_fill::GFramebuffer;
@@ -426,7 +425,7 @@ impl PointLightPipeline {
         &mut self, 
         device : &wgpu::Device, 
         encoder : &'a mut wgpu::CommandEncoder, 
-        scene : &SubWorld,
+        mut scene : Query<(&PointLight)>,
         dst : &TextureBundle, 
         gbuffer : &GFramebuffer) {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -456,8 +455,7 @@ impl PointLightPipeline {
         render_pass.set_bind_group(2, &self.diffuse.as_ref().unwrap(), &[]);
 
         self.light_groups.clear();
-        let mut lights = <(&PointLight)>::query();
-        for light in lights.iter(scene) {
+        for light in &mut scene {
             if let Some(shadow) = light.shadow.as_ref() {
                 let light_uniform = device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: Some("light"),
@@ -512,7 +510,7 @@ impl PointLightPipeline {
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.sphere.mesh.vertex.slice(..));
         render_pass.set_index_buffer(self.sphere.mesh.index.slice(..), wgpu::IndexFormat::Uint32);
-        for (idx, light) in lights.iter(scene).enumerate() {
+        for (idx, light) in scene.iter().enumerate() {
             render_pass.set_bind_group(1, &self.light_groups[idx], &[]);
             render_pass.draw_indexed(0..self.sphere.mesh.index_count, 0, 0..1);
         }

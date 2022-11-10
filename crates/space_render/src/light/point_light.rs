@@ -10,9 +10,9 @@ use wgpu::util::DeviceExt;
 use space_core::RenderBase;
 
 use space_shaders::LightCamera;
+use space_core::ecs::*;
 
-
-
+#[derive(Component)]
 pub struct PointLight {
     inner : PointLightUniform,
     pub buffer : Arc<wgpu::Buffer>,

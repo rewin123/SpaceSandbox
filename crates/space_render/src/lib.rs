@@ -5,8 +5,7 @@ pub mod ui;
 
 use nalgebra as na;
 use encase::*;
-use legion::systems::Builder;
-use space_game::{Game, PluginName, PluginType, SchedulePlugin};
+use space_game::*;
 
 
 pub fn add_game_render_plugins(game : &mut Game) {

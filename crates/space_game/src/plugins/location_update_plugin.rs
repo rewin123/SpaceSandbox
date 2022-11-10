@@ -1,11 +1,11 @@
 use space_assets::Location;
-use crate::{Game, PluginName, PluginType, SchedulePlugin};
-use legion::*;
-use legion::systems::Builder;
+use crate::*;
+use space_core::ecs::*;
 
-#[system(for_each)]
-fn update_loc_buffer(loc : &mut Location) {
-    loc.update_buffer();
+fn update_loc_buffer(mut query: Query<&mut Location>) {
+    for mut loc in &mut query {
+        loc.update_buffer();
+    }
 }
 
 
@@ -18,12 +18,8 @@ impl SchedulePlugin for LocUpdateSystem {
         PluginName::Text("LocUpdateSystem".into())
     }
 
-    fn get_plugin_type(&self) -> PluginType {
-        PluginType::RenderPrepare
-    }
-
-    fn add_system(&self, game: &mut Game, builder: &mut Builder) {
-        builder.add_system(update_loc_buffer_system());
+    fn add_system(&self, game: &mut Game, builder:  &mut space_core::ecs::Schedule) {
+        builder.add_system_to_stage(GlobalStageStep::Logic,update_loc_buffer);
     }
 }
 

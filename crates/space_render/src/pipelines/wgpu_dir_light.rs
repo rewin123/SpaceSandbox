@@ -1,22 +1,19 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
-use legion::world::SubWorld;
 use wgpu::{Buffer, Extent3d, TextureDimension};
 use crate::light::PointLight;
 use downcast_rs::*;
-use legion::{IntoQuery, World};
-use legion::systems::Builder;
 use space_assets::*;
 use space_assets::wavefront::wgpu_load_gray_obj;
 use space_core::{RenderBase, ScreenMesh};
-use space_game::{Game, PluginName, PluginType, SchedulePlugin};
+use space_game::*;
 use crate::pipelines::{DirLightTexture, Pipeline, PipelineDesc, TextureTransformPipeline};
 use crate::pipelines::wgpu_gbuffer_fill::GFramebuffer;
-use legion::*;
 use wgpu_profiler::GpuProfiler;
 use nalgebra as na;
 use encase::*;
 use wgpu::util::DeviceExt;
+use space_core::ecs::*;
 
 #[derive(ShaderType, Default)]
 pub struct DirLightUniform {
@@ -81,20 +78,20 @@ impl PipelineDesc for DirLightPipelineDesc {
     }
 }
 
-#[system]
-#[read_component(DirLight)]
+
 fn dir_light_impl(
-    #[state] fill : &mut DirLightPipeline,
-    world : &mut SubWorld,
-    #[resource] encoder : &mut wgpu::CommandEncoder,
-    #[resource] profiler : &mut GpuProfiler,
-    #[resource] dst : &DirLightTexture,
-    #[resource] gbuffer : &GFramebuffer
+    mut fill : ResMut<DirLightPipeline>,
+    mut mesh_query : Query<(&GMeshPtr, &Material, &Location)>,
+    mut light_query: Query<(&mut PointLight)>,
+    mut encoder : ResMut<wgpu::CommandEncoder>,
+    mut  profiler : ResMut<GpuProfiler>,
+    dst : Res<DirLightTexture>,
+    gbuffer : Res<GFramebuffer>
 ) {
-    profiler.begin_scope("Dir light fill", encoder, &fill.render.device);
+    // profiler.begin_scope("Dir light fill", encoder, &fill.render.device);
     let render = fill.render.clone();
-    fill.draw(&render.device, encoder, world, &dst.tex, gbuffer);
-    profiler.end_scope(encoder);
+    fill.draw(&render.device, encoder.as_mut(), mesh_query, light_query, &dst.tex, gbuffer.as_ref());
+    // profiler.end_scope(encoder);
 }
 
 pub struct DirLightSystem {}
@@ -104,11 +101,7 @@ impl SchedulePlugin for DirLightSystem {
         PluginName::Text("Directional light".into())
     }
 
-    fn get_plugin_type(&self) -> PluginType {
-        PluginType::Render
-    }
-
-    fn add_system(&self, game: &mut Game, builder: &mut Builder) {
+    fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
         let pipeline = DirLightPipeline::new(&game.render_base, &game.scene.camera_buffer,
             wgpu::Extent3d {
                 width : game.api.size.width,
@@ -116,7 +109,8 @@ impl SchedulePlugin for DirLightSystem {
                 depth_or_array_layers : 1
             });
 
-        builder.add_system(dir_light_impl_system(pipeline));
+        builder.add_system_to_stage(GlobalStageStep::Render, dir_light_impl);
+        game.scene.world.insert_resource(pipeline);
     }
 }
 
@@ -406,11 +400,12 @@ impl DirLightPipeline {
     }
 
     pub fn draw<'a>(
-        &mut self, 
-        device : &wgpu::Device, 
-        encoder : &'a mut wgpu::CommandEncoder, 
-        scene : &SubWorld,
-        dst : &TextureBundle, 
+        &mut self,
+        device : &wgpu::Device,
+        encoder : &'a mut wgpu::CommandEncoder,
+        mut mesh_query : Query<(&GMeshPtr, &Material, &Location)>,
+        mut light_query: Query<(&mut PointLight)>,
+        dst : &TextureBundle,
         gbuffer : &GFramebuffer) {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Dir light renderpass"),
@@ -430,8 +425,7 @@ impl DirLightPipeline {
         render_pass.set_bind_group(2, &self.diffuse.as_ref().unwrap(), &[]);
 
         self.light_groups.clear();
-        let mut lights = <(&DirLight)>::query();
-        for light in lights.iter(scene) {
+        for light in &mut light_query {
             // let shadow = light.shadow.as_ref().unwrap();
             let light_uniform= device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("light"),
@@ -455,7 +449,7 @@ impl DirLightPipeline {
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.screen.vertex.slice(..));
         // render_pass.set_index_buffer(self.sphere.index.slice(..), wgpu::IndexFormat::Uint32);
-        for (idx, light) in lights.iter(scene).enumerate() {
+        for (idx, light) in (&mut light_query).iter().enumerate() {
             render_pass.set_bind_group(1, &self.light_groups[idx], &[]);
             render_pass.draw(0..6, 0..1);
         }

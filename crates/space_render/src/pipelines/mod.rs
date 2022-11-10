@@ -18,7 +18,7 @@ pub mod wgpu_dir_light;
 use space_assets::*;
 
 use space_core::{Camera, RenderBase};
-use space_game::{Game, PluginName, PluginType, SchedulePlugin};
+use space_game::*;
 pub use wgpu_gbuffer_fill::*;
 pub use wgpu_light_fill::*;
 use wgpu_profiler::GpuProfiler;
@@ -26,13 +26,13 @@ pub use wgpu_texture_present::*;
 pub use wgpu_light_shadow::*;
 pub use wgpu_textures_transform::*;
 
-use legion::*;
-use legion::systems::Builder;
 use crate::light::{AmbientLightUniform, PointLight};
 use crate::pipelines::wgpu_ssao::SSAOFrame;
 use crate::ui::FpsCounter;
 
 use self::wgpu_sreen_diffuse::DepthTexture;
+
+use space_core::ecs::*;
 
 pub trait PipelineDesc : Downcast + Debug {
     fn get_shader_path(&self) -> AssetPath;
@@ -61,25 +61,23 @@ pub struct DepthPipeline {
     pipeline : TextureTransformPipeline
 }
 
-#[system]
 fn fast_depth(
-    #[resource] fill : &mut DepthPipeline,
-    #[resource] gbuffer : &GFramebuffer,
-    #[resource] encoder : &mut wgpu::CommandEncoder,
-    #[resource] dst : &DepthTexture,
-    #[resource] profiler : &mut GpuProfiler
+    mut fill : ResMut<DepthPipeline>,
+    gbuffer : Res<GFramebuffer>,
+    mut encoder : ResMut<wgpu::CommandEncoder>,
+    dst : Res<DepthTexture>,
+    mut profiler : ResMut<GpuProfiler>
 ) {
 
-    profiler.begin_scope("Fast depth", encoder, &fill.pipeline.render.device);
-    fill.pipeline.draw(encoder, &[&gbuffer.position], &[&dst.tex]);
-    profiler.end_scope(encoder);
+    // profiler.begin_scope("Fast depth", encoder, &fill.pipeline.render.device);
+    fill.pipeline.draw(encoder.as_mut(), &[&gbuffer.position], &[&dst.tex]);
+    // profiler.end_scope(encoder);
 
 }
 
-#[system]
 fn fast_depth_update(
-    #[resource] fill : &mut DepthPipeline,
-    #[resource] camera : &Camera,
+    mut fill : ResMut<DepthPipeline>,
+    camera : Res<Camera>,
 ) {
     let depth_buffer = DepthCalcUniform {
         cam_pos : [camera.pos.x, camera.pos.y, camera.pos.z, 1.0]
@@ -96,15 +94,7 @@ impl SchedulePlugin for FastDepthPlugin {
         space_game::PluginName::Text("FastDepth".into())
     }
 
-    fn get_plugin_type(&self) -> space_game::PluginType {
-        space_game::PluginType::Render
-    }
-
-    fn add_prepare_system(&self, game : &mut space_game::Game, builder : &mut legion::systems::Builder) {
-        builder.add_system(fast_depth_update_system());
-    }
-
-    fn add_system(&self, game : &mut space_game::Game, builder : &mut legion::systems::Builder) {
+    fn add_system(&self, game : &mut space_game::Game, builder : &mut Schedule) {
         let depth_desc = TextureTransformDescriptor {
             render : game.render_base.clone(),
             format : wgpu::TextureFormat::R16Float,
@@ -132,13 +122,11 @@ impl SchedulePlugin for FastDepthPlugin {
             tex
         };
 
-        builder.add_system(fast_depth_system());
+        builder.add_system_to_stage(GlobalStageStep::Render, fast_depth);
+        builder.add_system_to_stage(GlobalStageStep::RenderPrepare, fast_depth_update);
 
-        game.scene.resources.insert(DepthPipeline {
-            pipeline : depth_calc
-        });
-
-        game.scene.resources.insert(frame);
+        game.scene.world.insert_resource(DepthPipeline {pipeline : depth_calc});
+        game.scene.world.insert_resource(frame);
     }
 }
 
@@ -150,18 +138,15 @@ pub struct SSAOFilter {
     pub pipeline : TextureTransformPipeline
 }
 
-#[system]
 fn ssao_filter_impl(
-    #[state] fill : &mut SSAOFilter,
-    #[resource] dst : &SSAOFiltered,
-    #[resource] ssao : &SSAOFrame,
-    #[resource] depth : &DepthTexture,
-    #[resource] encoder : &mut wgpu::CommandEncoder,
-    #[resource] profiler : &mut GpuProfiler
+    mut fill : ResMut<SSAOFilter>,
+    dst : Res<SSAOFiltered>,
+    ssao : Res<SSAOFrame>,
+    depth : Res<DepthTexture>,
+    mut encoder : ResMut<wgpu::CommandEncoder>,
+    mut profiler : ResMut<GpuProfiler>
 ) {
-    profiler.begin_scope("SSAO smooth", encoder, &fill.pipeline.render.device);
-    fill.pipeline.draw(encoder, &[&ssao.tex, &depth.tex], &[&dst.tex]);
-    profiler.end_scope(encoder);
+    fill.pipeline.draw(encoder.as_mut(), &[&ssao.tex, &depth.tex], &[&dst.tex]);
 }
 
 pub struct SSAOFilterSystem {
@@ -186,11 +171,7 @@ impl SchedulePlugin for SSAOFilterSystem {
         PluginName::Text("SSAO Filter".into())
     }
 
-    fn get_plugin_type(&self) -> PluginType {
-        PluginType::Render
-    }
-
-    fn add_system(&self, game: &mut Game, builder: &mut Builder) {
+    fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
 
         let uniform = SmoothUniform {
             size : nalgebra::Vector2::new(game.api.size.width as f32, game.api.size.height as f32)
@@ -214,9 +195,10 @@ impl SchedulePlugin for SSAOFilterSystem {
 
         let buffer = pipeline.spawn_framebuffer().dst.remove(0);
 
-        game.scene.resources.insert(SSAOFiltered {tex : buffer});
+        game.scene.world.insert_resource(SSAOFiltered {tex : buffer});
+        game.scene.world.insert_resource(SSAOFilter {pipeline});
 
-        builder.add_system(ssao_filter_impl_system(SSAOFilter {pipeline}));
+        builder.add_system_to_stage(GlobalStageStep::Render, ssao_filter_impl);
     }
 }
 
@@ -368,55 +350,51 @@ impl space_game::RenderPlugin for State {
     }
 
     fn render(&mut self, game : &mut Game) {
-        let mut encoder_ref = game.scene.resources.get_mut::<wgpu::CommandEncoder>().unwrap();
-        let encoder = encoder_ref.deref_mut();
+        let mut encoder = game.scene.world.remove_resource::<wgpu::CommandEncoder>().unwrap();
         let view = game.render_view.as_ref().unwrap();
 
-        let mut light_queue = <(&mut PointLight)>::query();
-        for light in light_queue.iter_mut(&mut game.scene.world) {
+        let mut light_queue = game.scene.world.query::<(&mut PointLight)>();
+        for mut light in light_queue.iter_mut(&mut game.scene.world) {
             light.update_buffer(&self.render);
         }
         self.render.device.poll(wgpu::Maintain::Wait);
 
-        let gbuffer = game.scene.resources.get::<GFramebuffer>().unwrap();
+        let gbuffer = game.scene.world.get_resource::<GFramebuffer>().unwrap();
         // self.gbuffer_pipeline.draw(&game.assets, encoder, &mut game.scene.world, &self.gbuffer);
         // self.light_shadow.draw(encoder, &mut game.scene.world);
 
 
-        game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Ambient", encoder, &self.render.device);
+        // game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Ambient", encoder, &self.render.device);
         // self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &gbuffer);
-        self.ambient_light_pipeline.draw(encoder,
-                                         &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &game.scene.resources.get::<SSAOFiltered>().unwrap().tex]
-                                         , &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex]);
-        game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
+        self.ambient_light_pipeline.draw(&mut encoder,
+                                         &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &game.scene.world.get_resource::<SSAOFiltered>().unwrap().tex]
+                                         , &[&game.scene.world.get_resource::<DirLightTexture>().unwrap().tex]);
+        // game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
 
-        game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Final", encoder, &self.render.device);
+        // game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Final", encoder, &self.render.device);
         match &self.draw_state {
             DrawState::Full => {
-                self.gamma_correction.draw(encoder, &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
+                self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
             }
             DrawState::DirectLight => {
-                self.gamma_correction.draw(encoder, &[&game.scene.resources.get::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
+                self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
             },
             DrawState::AmbientOcclusion => {
-                self.gamma_correction.draw(encoder, &[&game.scene.resources.get::<SSAOFrame>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
+                self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<SSAOFrame>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
             },
             DrawState::Depth => {
-                self.gamma_correction.draw(encoder, &[&game.scene.resources.get::<DepthTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
+                self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<DepthTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
             }
             DrawState::AmbientOcclusionSmooth => {
-                self.gamma_correction.draw(encoder, &[&game.scene.resources.get::<SSAOFiltered>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, encoder, &self.gamma_buffer.dst[0], &view);
+                self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<SSAOFiltered>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
+                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
             }
         }
-        game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
-        // self.present.draw(&self.render.device, &mut encoder, &self.ssao_smooth_framebuffer.dst[0], &view);
-
-
+        game.scene.world.insert_resource(encoder);
     }
 
     fn window_resize(&mut self, game : &mut Game, new_size: winit::dpi::PhysicalSize<u32>) {

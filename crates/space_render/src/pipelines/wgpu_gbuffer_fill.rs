@@ -4,12 +4,11 @@ use wgpu::{Extent3d, Texture, TextureFormat};
 use space_assets::*;
 use space_core::RenderBase;
 
-use legion::*;
-use legion::systems::Builder;
-use legion::world::SubWorld;
-use space_game::{Game, PluginName, PluginType, SchedulePlugin};
+use space_game::*;
 use wgpu_profiler::GpuProfiler;
 use space_game::PluginName::Text;
+
+use space_core::ecs::*;
 
 pub struct GFramebuffer {
     pub diffuse : TextureBundle,
@@ -156,21 +155,18 @@ pub struct GBufferFill {
     render : Arc<RenderBase>
 }
 
-#[system]
-#[read_component(GMeshPtr)]
-#[write_component(Material)]
-#[read_component(Location)]
-fn gbuffer_filling(
-    #[state] fill : &mut GBufferFill,
-    world : &mut SubWorld,
-    #[resource] gbuffer : &mut GFramebuffer,
-    #[resource] assets : &mut AssetServer,
-    #[resource] encoder : &mut wgpu::CommandEncoder,
-    #[resource] profiler : &mut GpuProfiler) {
 
-    profiler.begin_scope("GBuffer fill", encoder, &fill.render.device);
-    fill.draw(assets, encoder, world, gbuffer);
-    profiler.end_scope(encoder);
+fn gbuffer_filling(
+    mut fill : ResMut<GBufferFill>,
+    mut query : Query<(&GMeshPtr, &mut Material, &Location)>,
+    mut gbuffer : ResMut<GFramebuffer>,
+    mut assets : ResMut<AssetServer>,
+    mut encoder : ResMut<wgpu::CommandEncoder>,
+    mut profiler : ResMut<GpuProfiler>) {
+
+    // profiler.begin_scope("GBuffer fill", encoder, &fill.render.device);
+    fill.draw(query, gbuffer, assets, encoder);
+    // profiler.end_scope(encoder);
 }
 
 pub struct GBufferPlugin {
@@ -182,11 +178,7 @@ impl SchedulePlugin for GBufferPlugin {
         PluginName::Text("GBiffer filling".into())
     }
 
-    fn get_plugin_type(&self) -> PluginType {
-        PluginType::Render
-    }
-
-    fn add_system(&self, game: &mut Game, builder: &mut Builder) {
+    fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
         let pipeline = GBufferFill::new(&game.render_base,
                          &game.scene.camera_buffer,
                          TextureFormat::Rgba32Float,
@@ -195,15 +187,13 @@ impl SchedulePlugin for GBufferPlugin {
                              height : game.api.size.height,
                              depth_or_array_layers : 1
                          });
-        game.scene.resources.insert(GBufferFill::spawn_framebuffer(&game.render_base.device, wgpu::Extent3d {
+        game.scene.world.insert_resource(GBufferFill::spawn_framebuffer(&game.render_base.device, wgpu::Extent3d {
             width : game.api.size.width,
             height : game.api.size.height,
             depth_or_array_layers : 1
         }));
-        builder.add_system(gbuffer_filling_system(
-            pipeline
-        ));
-
+        game.scene.world.insert_resource(pipeline);
+        builder.add_system_to_stage( GlobalStageStep::Render, gbuffer_filling);
     }
 }
 
@@ -376,16 +366,19 @@ impl GBufferFill {
 
 
 
-    pub fn draw(&mut self, assets : &AssetServer, encoder : &mut wgpu::CommandEncoder, scene : &mut SubWorld, dst : &GFramebuffer) {
-        let mut query = <(&GMeshPtr, &mut Material, &Location)>::query();
+    pub fn draw(&mut self,
+                mut query : Query<(&GMeshPtr, &mut Material, &Location)>,
+                mut gbuffer : ResMut<GFramebuffer>,
+                mut assets : ResMut<AssetServer>,
+                mut encoder : ResMut<wgpu::CommandEncoder>,) {
 
-        let mut render_pass = dst.spawn_renderpass(encoder);
+        let mut render_pass = gbuffer.spawn_renderpass(encoder.as_mut());
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
 
-        for (mesh_ptr, material, loc) in query.iter_mut(scene) {
-            if material.need_rebind(assets) {
+        for (mesh_ptr, mut material, loc) in &mut query {
+            if material.need_rebind(assets.as_ref()) {
                 let group = self.render.device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: None,
                     layout: &self.texture_bind_group_layout,
@@ -420,7 +413,7 @@ impl GBufferFill {
                 material.gbuffer_bind = Some(group);
             }
 
-            render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
+            render_pass.set_bind_group(1, material.into_inner().gbuffer_bind.as_ref().unwrap(), &[]);
             render_pass.set_vertex_buffer(0, mesh_ptr.mesh.vertex.slice(..));
             render_pass.set_vertex_buffer(1, loc.buffer.slice(..));
             render_pass.set_index_buffer(mesh_ptr.mesh.index.slice(..), wgpu::IndexFormat::Uint32);

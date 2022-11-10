@@ -15,7 +15,7 @@ use crate::mesh::{GMesh, GVertex, Material, TextureBundle};
 pub trait GltfAssetLoader {
     fn load_gltf_color_texture(&mut self, base : &String, src : Option<gltf::texture::Info>, gamma : bool) -> Handle<TextureBundle>;
     fn load_gltf_normal_texture(&mut self, base : &String, src : Option<gltf::material::NormalTexture>) -> Handle<TextureBundle>;
-    fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut legion::World);
+    fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut space_core::ecs::World);
 }
 
 impl GltfAssetLoader for AssetServer {
@@ -48,7 +48,7 @@ impl GltfAssetLoader for AssetServer {
 
 
 
-    fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut legion::World) {
+    fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut space_core::ecs::World) {
 
         let sponza = gltf::Gltf::open(&path).unwrap();
         let base = PathBuf::from(&path).parent().unwrap().to_str().unwrap().to_string();
@@ -218,7 +218,10 @@ impl GltfAssetLoader for AssetServer {
 
                 for (p, m) in &meshes[mesh_idx.index()] {
 
-                    world.push((p.clone(), location.clone(&device), m.clone()));
+                    world.spawn()
+                        .insert(p.clone())
+                        .insert(location.clone(&device))
+                        .insert(m.clone());
                 }
             }
         }

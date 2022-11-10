@@ -5,6 +5,7 @@ use nalgebra::*;
 use wgpu::util::DeviceExt;
 use wgpu::{BufferUsages, VertexFormat};
 use space_core::RenderBase;
+use space_core::ecs::*;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -100,7 +101,7 @@ pub struct GMesh {
     pub index_count : u32
 }
 
-#[derive(Clone)]
+#[derive(Clone, Component)]
 pub struct GMeshPtr {
     pub mesh : Arc<GMesh>
 }
@@ -113,6 +114,7 @@ struct LocationInstant {
     normal : [[f32; 4]; 4]
 }
 
+#[derive(Component)]
 pub struct Location {
     pub pos : Vector3<f32>,
     pub rotation : Vector3<f32>,
@@ -204,6 +206,7 @@ impl TextureBundle {
     }
 }
 
+#[derive(Component)]
 pub struct Material {
     pub color : Handle<TextureBundle>,
     pub normal : Handle<TextureBundle>,

@@ -12,7 +12,6 @@ wgpu  = {version = "0.13", features = ["webgl"]}
 egui_wgpu_backend = "0.19"
 egui_winit_platform = "0.16"
 pollster = "0.2"
-legion = "0.4.0"
 encase = {version = "0.3.0", features = ["nalgebra"] }
 atomic_refcell = "0.1.8"
 wgpu-profiler = "0.9.1"

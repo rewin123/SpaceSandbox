@@ -3,15 +3,15 @@ use std::num::NonZeroU32;
 use std::sync::Arc;
 use bytemuck::Zeroable;
 use rand::Rng;
-use space_game::{SchedulePlugin, PluginName};
+use space_game::{SchedulePlugin, PluginName, GlobalStageStep};
 use wgpu::{Extent3d, util::DeviceExt};
 use space_assets::*;
 use space_core::{Camera, RenderBase};
 use crate::{pipelines::{CommonFramebuffer, GFramebuffer}};
 use encase::*;
-use legion::*;
 use wgpu_profiler::GpuProfiler;
 
+use space_core::ecs::*;
 use super::{wgpu_ssao::SSAOFrame, DirLightTexture};
 
 #[repr(C)]
@@ -31,27 +31,25 @@ pub struct DepthTexture {
     pub tex : TextureBundle
 }
 
-#[system]
 fn ssao_impl( 
-    #[resource] ssao_pipeline : &mut SSDiffuse,
-    #[resource] encoder : &mut wgpu::CommandEncoder,
-    #[resource] profiler : &mut GpuProfiler,
-    #[resource] gbuffer : &GFramebuffer,
-    #[resource] ssao_frame : &SSAOFrame,
-    #[resource] dir_light : &DirLightTexture,
-    #[resource] depth : &DepthTexture) {
+    mut ssao_pipeline : ResMut<SSDiffuse>,
+    mut encoder : ResMut<wgpu::CommandEncoder>,
+    mut profiler : ResMut<GpuProfiler>,
+    gbuffer : Res<GFramebuffer>,
+    ssao_frame : Res<SSAOFrame>,
+    dir_light : Res<DirLightTexture>,
+    depth : Res<DepthTexture>) {
 
-    profiler.begin_scope("SSAO", encoder, &ssao_pipeline.render.device);
-    ssao_pipeline.draw(encoder, gbuffer, &dir_light.tex, &depth.tex, &ssao_frame.tex);
-    profiler.end_scope(encoder);
+    // profiler.begin_scope("SSAO", encoder, &ssao_pipeline.render.device);
+    ssao_pipeline.draw(encoder.as_mut(), gbuffer.as_ref(), &dir_light.tex, &depth.tex, &ssao_frame.tex);
+    // profiler.end_scope(encoder);
 }
 
-#[system]
 fn ssao_update(
-    #[resource] ssao_pipeline : &mut SSDiffuse,
-    #[resource] camera : &Camera,
+    mut ssao_pipeline : ResMut<SSDiffuse>,
+    mut camera : Res<Camera>,
 ) {
-    ssao_pipeline.update(camera);
+    ssao_pipeline.update(camera.as_ref());
 }
 
 pub struct SSDiffuseSystem {
@@ -63,11 +61,7 @@ impl SchedulePlugin for SSDiffuseSystem {
         PluginName::Text("SSAO".into())
     }
 
-    fn get_plugin_type(&self) -> space_game::PluginType {
-        space_game::PluginType::Render
-    }
-
-    fn add_system(&self, game : &mut space_game::Game, builder : &mut legion::systems::Builder) {
+    fn add_system(&self, game : &mut space_game::Game, builder : &mut Schedule) {
         let pipeline = SSDiffuse::new(
             &game.render_base, 
             wgpu::Extent3d {
@@ -81,14 +75,11 @@ impl SchedulePlugin for SSDiffuseSystem {
 
         let frame = pipeline.spawn_framebuffer();
         
-        game.scene.resources.insert(frame);
-        game.scene.resources.insert(pipeline);
+        game.scene.world.insert_resource(frame);
+        game.scene.world.insert_resource(pipeline);
 
-        builder.add_system(ssao_impl_system());
-    }
-
-    fn add_prepare_system(&self, game : &mut space_game::Game, builder : &mut legion::systems::Builder) {
-        builder.add_system(ssao_update_system());
+        builder.add_system_to_stage(GlobalStageStep::Render, ssao_impl);
+        builder.add_system_to_stage(GlobalStageStep::RenderPrepare, ssao_update);
     }
 }
 

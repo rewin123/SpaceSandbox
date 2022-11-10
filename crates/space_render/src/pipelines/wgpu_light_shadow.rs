@@ -6,8 +6,7 @@ use crate::light::{PointLight, PointLightShadow};
 use space_shaders::*;
 use space_core::RenderBase;
 use space_assets::*;
-use legion::*;
-use legion::world::SubWorld;
+use space_core::ecs::*;
 
 
 pub struct PointLightShadowPipeline {
@@ -98,13 +97,11 @@ impl PointLightShadowPipeline {
     pub fn draw<'a>(
         &mut self,
         encoder : &'a mut wgpu::CommandEncoder,
-        world : &mut SubWorld,
+        mut mesh_query : Query<(&GMeshPtr, &Material, &Location)>,
+        mut light_query : Query<(&mut PointLight)>,
         profiler : &mut GpuProfiler) {
 
-        let mut lights_mut = <(&mut PointLight)>::query();
-        let mut lights = <(&PointLight)>::query();
-
-        for light in lights_mut.iter_mut(world) {
+        for mut light in light_query.iter_mut() {
             if let Some(shadow) = light.shadow.as_mut() {
                 if shadow.camera_binds.len() == 0 {
                     //create bind group
@@ -129,11 +126,11 @@ impl PointLightShadowPipeline {
             }
         }
 
-        for light in lights.iter(world) {
+        for light in light_query.iter() {
             if let Some(shadow) = light.shadow.as_ref() {
                 for camera_idx in 0..6 {
                     profiler.begin_scope("Shadow pass", encoder, &self.render.device);
-                    self.shadow_draw(shadow, camera_idx, world, encoder);
+                    self.shadow_draw(shadow, camera_idx, &mut mesh_query, encoder);
                     profiler.end_scope(encoder);
                 }
             }
@@ -144,10 +141,8 @@ impl PointLightShadowPipeline {
     fn shadow_draw(&mut self,
                    shadow : &PointLightShadow,
                    idx : usize,
-                   world : &SubWorld,
+                   query : &mut Query<(&GMeshPtr, &Material, &Location)>,
                    encoder : &mut wgpu::CommandEncoder) {
-        let mut query = <(&GMeshPtr, &Material, &Location)>::query();
-
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Point light renderpass"),
@@ -164,7 +159,7 @@ impl PointLightShadowPipeline {
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &shadow.camera_binds[idx], &[]);
 
-        for (mesh_ptr, material, loc) in query.iter(world) {
+        for (mesh_ptr, material, loc) in query.iter() {
             let mesh = mesh_ptr.mesh.clone();
 
             render_pass.set_vertex_buffer(0, mesh_ptr.mesh.vertex.slice(..));

@@ -1,7 +1,4 @@
-use legion::systems::Builder;
-use space_game::{Game, PluginName, PluginType, SchedulePlugin};
-use legion::*;
-use legion::world::SubWorld;
+use space_game::*;
 use crate::light::PointLightShadow;
 use crate::pipelines::PointLightShadowPipeline;
 
@@ -11,41 +8,37 @@ use space_assets::Location;
 use crate::light::PointLight;
 
 use wgpu_profiler::GpuProfiler;
+use space_core::ecs::*;
 
 use super::DirLightTexture;
 use super::GFramebuffer;
 use super::PointLightPipeline;
 
-#[system]
-#[read_component(GMeshPtr)]
-#[read_component(Material)]
-#[read_component(Location)]
-#[write_component(PointLight)]
+
 fn point_light_shadow(
-    #[state] shadow_fill : &mut PointLightShadowPipeline,
-    world : &mut SubWorld,
-    #[resource] encoder : &mut wgpu::CommandEncoder,
-    #[resource] profiler : &mut GpuProfiler
+    mut shadow_fill : ResMut<PointLightShadowPipeline>,
+    mesh_query : Query<(&GMeshPtr, &Material, &Location)>,
+    light_query : Query<(&mut PointLight)>,
+    mut encoder : ResMut<wgpu::CommandEncoder>,
+    mut profiler : ResMut<GpuProfiler>
 ) {
-    profiler.begin_scope("Point light shadow", encoder, &shadow_fill.render.device);
-    shadow_fill.draw(encoder, world, profiler);
-    profiler.end_scope(encoder);
+    // profiler.begin_scope("Point light shadow", encoder, &shadow_fill.render.device);
+    shadow_fill.draw(encoder.as_mut(), mesh_query, light_query, profiler.as_mut());
+    // profiler.end_scope(encoder);
 }
 
-#[system]
-#[read_component(PointLight)]
 fn point_light_impl(
-    #[state] fill : &mut PointLightPipeline,
-    world : &mut SubWorld,
-    #[resource] encoder : &mut wgpu::CommandEncoder,
-    #[resource] profiler : &mut GpuProfiler,
-    #[resource] dst : &DirLightTexture,
-    #[resource] gbuffer : &GFramebuffer
+    mut fill : ResMut<PointLightPipeline>,
+    query : Query<&PointLight>,
+    mut encoder : ResMut<wgpu::CommandEncoder>,
+    profiler : ResMut<GpuProfiler>,
+    dst : Res<DirLightTexture>,
+    gbuffer : Res<GFramebuffer>
 ) {
-    profiler.begin_scope("Point light fill", encoder, &fill.render.device);
+    // profiler.begin_scope("Point light fill", encoder, &fill.render.device);
     let render = fill.render.clone();
-    fill.draw(&render.device, encoder, world, &dst.tex, gbuffer);
-    profiler.end_scope(encoder);
+    fill.draw(&render.device, encoder.as_mut(), query, &dst.tex, gbuffer.as_ref());
+    // profiler.end_scope(encoder);
 }
 
 
@@ -58,13 +51,11 @@ impl SchedulePlugin for PointLightPlugin {
         PluginName::Text("Point light".into())
     }
 
-    fn get_plugin_type(&self) -> PluginType {
-        PluginType::Render
-    }
-
-    fn add_system(&self, game: &mut Game, builder: &mut Builder) {
+    fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
         let pipeline = PointLightShadowPipeline::new(&game.render_base);
-        builder.add_system(point_light_shadow_system(pipeline));
+        builder.add_system_to_stage(GlobalStageStep::Render, point_light_shadow);
+
+        game.scene.world.insert_resource(pipeline);
 
         let pipeline = PointLightPipeline::new(&game.render_base, &game.scene.camera_buffer, wgpu::Extent3d {
             width : game.api.size.width,
@@ -78,8 +69,9 @@ impl SchedulePlugin for PointLightPlugin {
             depth_or_array_layers : 1
         });
 
-        builder.add_system(point_light_impl_system(pipeline));
-        game.scene.resources.insert( DirLightTexture {
+        builder.add_system_to_stage( GlobalStageStep::Render,point_light_impl);
+        game.scene.world.insert_resource(pipeline);
+        game.scene.world.insert_resource( DirLightTexture {
             tex
         });
     }

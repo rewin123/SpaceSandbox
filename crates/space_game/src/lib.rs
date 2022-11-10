@@ -4,21 +4,31 @@ mod input_system;
 mod gui;
 pub mod plugins;
 
-use legion::systems::Builder;
 use winit::dpi::PhysicalSize;
 pub use api_base::*;
 pub use game::*;
 pub use input_system::*;
 pub use gui::*;
 use space_assets::Location;
-
-use legion::*;
+use space_core::ecs::StageLabel;
 
 #[derive(PartialEq, Debug)]
-pub enum PluginType {
+pub enum GlobalStageStep {
     RenderPrepare,
+    RenderStart,
     Render,
     Logic
+}
+
+impl StageLabel for GlobalStageStep {
+    fn as_str(&self) -> &'static str {
+        match self {
+            GlobalStageStep::RenderPrepare => {"RenderPrepare"}
+            GlobalStageStep::RenderStart => {"RenderStart"}
+            GlobalStageStep::Render => {"Render"}
+            GlobalStageStep::Logic => {"Logick"}
+        }
+    }
 }
 
 #[derive(PartialEq)]
@@ -28,9 +38,7 @@ pub enum PluginName {
 
 pub trait SchedulePlugin {
     fn get_name(&self) -> PluginName;
-    fn get_plugin_type(&self) -> PluginType;
-    fn add_prepare_system(&self, game : &mut Game, builder : &mut legion::systems::Builder) {}
-    fn add_system(&self, game : &mut Game, builder : &mut legion::systems::Builder);
+    fn add_system(&self, game : &mut Game, builder : &mut space_core::ecs::Schedule);
 }
 
 pub trait GuiPlugin {
