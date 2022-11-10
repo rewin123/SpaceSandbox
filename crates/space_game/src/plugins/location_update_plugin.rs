@@ -19,7 +19,7 @@ impl SchedulePlugin for LocUpdateSystem {
     }
 
     fn add_system(&self, game: &mut Game, builder:  &mut space_core::ecs::Schedule) {
-        builder.add_system_to_stage(GlobalStageStep::Logic,update_loc_buffer);
+        builder.add_system_to_stage(GlobalStageStep::Update,update_loc_buffer);
     }
 }
 

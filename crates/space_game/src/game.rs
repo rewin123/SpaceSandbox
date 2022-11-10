@@ -19,10 +19,7 @@ use wgpu::util::DeviceExt;
 use wgpu_profiler::*;
 use space_core::ecs::*;
 
-fn start_gui_frame(
-    mut gui : ResMut<Gui>) {
-    gui.begin_frame();
-}
+
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SceneType {
@@ -63,7 +60,6 @@ pub struct GameScene {
 
 
 pub struct Game {
-    pub window : winit::window::Window,
     pub api : ApiBase,
     event_loop : Option<winit::event_loop::EventLoop<()>>,
     pub render_base : Arc<RenderBase>,
@@ -79,7 +75,6 @@ pub struct Game {
 fn poll_device( render_base : Res<Arc<RenderBase>>) {
     render_base.device.poll(wgpu::Maintain::Wait);
 }
-
 
 impl Game {
 
@@ -199,6 +194,14 @@ impl Game {
     }
 
     fn update(&mut self) {
+        let output = self.api.surface.get_current_texture().unwrap();
+        let view = output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+
+        self.scene.world.insert_resource(RenderTarget {view, output});
+
         self.exec_commands();
 
         self.camera_update();
@@ -220,13 +223,10 @@ impl Game {
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let output = self.api.surface.get_current_texture()?;
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-
+        let target = self.scene.world.remove_resource::<RenderTarget>().unwrap();
+        let view = target.view;
+        let output = target.output;
         self.render_view = Some(view);
-
         
         let mut plugins = self.plugins.take().unwrap();
         for p in plugins.render_plugin.iter_mut() {
@@ -235,19 +235,22 @@ impl Game {
         self.plugins = Some(plugins);
 
         { //gui draw
-            let gui_output = self.scene.world.get_resource_mut::<Gui>().unwrap().end_frame(Some(&self.window));
-            let mut encoder = self.scene.world.remove_resource::<wgpu::CommandEncoder>().unwrap();
+            // let mut gui = self.scene.world.remove_resource::<Gui>().unwrap();
+            // let gui_output = gui.end_frame(self.scene.world.get_resource());
+            // let mut encoder = self.scene.world.remove_resource::<wgpu::CommandEncoder>().unwrap();
 
+            // let scale_factor = self.scene.world.get_non_send_resource::<winit::window::Window>().unwrap().scale_factor();
 
-            self.scene.world.get_resource_mut::<Gui>().unwrap().draw(gui_output,
-                          egui_wgpu_backend::ScreenDescriptor {
-                              physical_width: self.api.config.width,
-                              physical_height: self.api.config.height,
-                              scale_factor: self.window.scale_factor() as f32,
-                          },
-                          &mut encoder,
-                          &self.render_view.as_ref().unwrap());
-            self.scene.world.insert_resource(encoder);
+            // gui.draw(gui_output,
+            //               egui_wgpu_backend::ScreenDescriptor {
+            //                   physical_width: self.api.config.width,
+            //                   physical_height: self.api.config.height,
+            //                   scale_factor: scale_factor as f32,
+            //               },
+            //               &mut encoder,
+            //               &self.render_view.as_ref().unwrap());
+            // self.scene.world.insert_resource(encoder);
+            // self.scene.world.insert_resource(gui);
 
         }
 
@@ -276,11 +279,12 @@ impl Game {
 
         event_loop.run(move |event, _, control_flow| {
             self.scene.world.get_resource_mut::<Gui>().unwrap().platform.handle_event(&event);
+            let id = self.scene.world.get_resource::<winit::window::Window>().unwrap().id();
             match event {
                 Event::WindowEvent {
                     ref event,
                     window_id,
-                } if window_id == self.window.id() => {
+                } if window_id == id => {
                     match event {
                         WindowEvent::CloseRequested
                         | WindowEvent::KeyboardInput {
@@ -305,7 +309,7 @@ impl Game {
                         _ => {}
                     }
                 }
-                Event::RedrawRequested(window_id) if window_id == self.window.id() => {
+                Event::RedrawRequested(window_id) if window_id == id => {
                     self.update();
                     match self.render() {
                         Ok(_) => {}
@@ -327,7 +331,8 @@ impl Game {
                 Event::RedrawEventsCleared => {
                     // RedrawRequested will only trigger once, unless we manually
                     // request it.
-                    self.window.request_redraw();
+                    self.scene.world.get_resource_mut::<winit::window::Window>()
+                        .unwrap().request_redraw();
                 }
                 _ => {}
             }
@@ -354,18 +359,18 @@ impl Game {
 
         let mut builder = Schedule::default();
         builder.add_stage(GlobalStageStep::RenderPrepare, SystemStage::parallel());
-        builder.add_stage_after(GlobalStageStep::RenderPrepare,GlobalStageStep::Logic, SystemStage::parallel());
+        builder.add_stage_after(GlobalStageStep::RenderPrepare,GlobalStageStep::Update, SystemStage::parallel());
+        builder.add_stage_after(GlobalStageStep::Update,GlobalStageStep::PostUpdate, SystemStage::parallel());
         builder.add_stage_after(GlobalStageStep::RenderPrepare, GlobalStageStep::RenderStart, SystemStage::parallel());
         builder.add_stage_after(GlobalStageStep::RenderStart, GlobalStageStep::Render, SystemStage::single_threaded());
         //push render prepare
         for plugin in &plugins.scheldue_plugin {
             plugin.add_system(self, &mut builder);
         }
+        setup_gui(&mut self.scene.world, &mut builder);
 
         builder.add_system_to_stage(GlobalStageStep::RenderStart, poll_device);
-        builder.add_system_to_stage(GlobalStageStep::RenderPrepare, start_gui_frame);
-
-        State::<SceneType>::get_driver();
+        
 
         self.scene.scheduler = builder;
         self.plugins = Some(plugins);
@@ -424,9 +429,9 @@ impl Default for Game {
 
         scene.world.insert_resource(EguiContext {ctx : gui.platform.context()});
         scene.world.insert_resource(gui);
+        scene.world.insert_non_send_resource(window);
 
         Self {
-            window,
             event_loop : Some(event_loop),
             api,
             render_base,

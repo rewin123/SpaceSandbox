@@ -114,7 +114,6 @@ impl TexturePresent {
 
     pub fn draw(
             &mut self,
-            device : &wgpu::Device,
             encoder : &mut wgpu::CommandEncoder,
             src : &TextureBundle,
             dst : &wgpu::TextureView) {
