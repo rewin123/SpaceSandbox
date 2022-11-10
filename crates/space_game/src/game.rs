@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::iter;
 use std::mem::swap;
-use std::ops::DerefMut;
-use std::sync::Arc;
+use std::ops::{DerefMut, Deref};
+use std::sync::{Arc, RwLock};
 use atomic_refcell::AtomicRefMut;
 use egui::color::gamma_from_linear;
 use wgpu::{Extent3d, ShaderStages, SurfaceTexture, TextureView};
@@ -19,11 +19,33 @@ use wgpu::util::DeviceExt;
 use wgpu_profiler::*;
 use space_core::ecs::*;
 
+fn start_gui_frame(
+    mut gui : ResMut<Gui>) {
+    gui.begin_frame();
+}
+
 #[derive(Default)]
 pub struct PluginBase {
-    gui_plugins : Vec<Box<dyn GuiPlugin>>,
     render_plugin : Vec<Box<dyn RenderPlugin>>,
     scheldue_plugin : Vec<Box<dyn SchedulePlugin>>
+}
+
+pub struct EguiContext {
+    ctx : egui::Context
+}
+
+impl Deref for EguiContext {
+    type Target = egui::Context;
+
+    fn deref(&self) -> &Self::Target {
+        &self.ctx
+    }
+}
+
+impl DerefMut for EguiContext {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.ctx
+    }
 }
 
 pub struct GameScene {
@@ -40,7 +62,6 @@ pub struct Game {
     event_loop : Option<winit::event_loop::EventLoop<()>>,
     pub render_base : Arc<RenderBase>,
     pub input : InputSystem,
-    pub gui : Gui,
     plugins : Option<PluginBase>,
     pub render_view : Option<TextureView>,
     pub task_server : Arc<TaskServer>,
@@ -74,12 +95,6 @@ impl Game {
                 }
             }
         }
-    }
-
-    pub fn add_gui_plugin<T : GuiPlugin + 'static>(&mut self, plugin : T) {
-        let mut plugins = self.plugins.take().unwrap();
-        plugins.gui_plugins.push(Box::new(plugin));
-        self.plugins = Some(plugins);
     }
 
     pub fn get_default_material(&mut self) -> Material {
@@ -206,50 +221,21 @@ impl Game {
 
         self.render_view = Some(view);
 
-        let mut plugins = self.plugins.take().unwrap();
-        {
-            for plugin in &mut plugins.render_plugin {
-                plugin.render(self);
-            }
-
-            self.gui.begin_frame();
-            egui::TopBottomPanel::top("top_panel").show(
-                &self.gui.platform.context(), |ui| {
-                    ui.horizontal(|ui| {
-                        for plugin in &mut plugins.gui_plugins {
-                            let cmds =
-                                plugin.shot_top_panel(self, ui);
-                            self.commands.extend(cmds);
-                        }
-                        for plugin in &mut plugins.render_plugin {
-                            plugin.show_top_panel(self, ui);
-                        }
-                    });
-                });
-
-            for plugin in &mut plugins.gui_plugins {
-                let cmds =
-                    plugin.show_ui(self, self.gui.platform.context());
-                self.commands.extend(cmds);
-            }
-            for plugin in &mut plugins.render_plugin {
-                plugin.show_ui(self, self.gui.platform.context());
-            }
-        }
-        self.plugins = Some(plugins);
-
         { //gui draw
-            let gui_output = self.gui.end_frame(Some(&self.window));
-            let mut encoder_ref = self.scene.world.get_resource_mut::<wgpu::CommandEncoder>().unwrap();
-            let encoder = encoder_ref.deref_mut();
-            self.gui.draw(gui_output,
+
+
+
+            let gui_output = self.scene.world.get_resource_mut::<Gui>().unwrap().end_frame(Some(&self.window));
+            let mut encoder = self.scene.world.remove_resource::<wgpu::CommandEncoder>().unwrap();
+            self.scene.world.get_resource_mut::<Gui>().unwrap().draw(gui_output,
                           egui_wgpu_backend::ScreenDescriptor {
                               physical_width: self.api.config.width,
                               physical_height: self.api.config.height,
                               scale_factor: self.window.scale_factor() as f32,
                           },
-                          encoder,
+                          &mut encoder,
                           &self.render_view.as_ref().unwrap());
+            self.scene.world.insert_resource(encoder);
         }
 
         self.render_base.queue.submit(Some(
@@ -276,7 +262,7 @@ impl Game {
         let mut event_loop = self.event_loop.take().unwrap();
 
         event_loop.run(move |event, _, control_flow| {
-            self.gui.platform.handle_event(&event);
+            self.scene.world.get_resource_mut::<Gui>().unwrap().platform.handle_event(&event);
             match event {
                 Event::WindowEvent {
                     ref event,
@@ -364,6 +350,7 @@ impl Game {
         }
 
         builder.add_system_to_stage(GlobalStageStep::RenderStart, poll_device);
+        builder.add_system_to_stage(GlobalStageStep::RenderPrepare, start_gui_frame);
 
         self.scene.scheduler = builder;
         self.plugins = Some(plugins);
@@ -420,13 +407,15 @@ impl Default for Game {
                 render_base.queue.get_timestamp_period(),
                 render_base.device.features()));
 
+        scene.world.insert_resource(EguiContext {ctx : gui.platform.context()});
+        scene.world.insert_resource(gui);
+
         Self {
             window,
             event_loop : Some(event_loop),
             api,
             render_base,
             input : InputSystem::default(),
-            gui,
             plugins : Some(PluginBase::default()),
             render_view : None,
             task_server,
