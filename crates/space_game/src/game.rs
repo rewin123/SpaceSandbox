@@ -24,6 +24,12 @@ fn start_gui_frame(
     gui.begin_frame();
 }
 
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub enum SceneType {
+    MainMenu,
+    StationBuilding
+}
+
 #[derive(Default)]
 pub struct PluginBase {
     render_plugin : Vec<Box<dyn RenderPlugin>>,
@@ -221,12 +227,18 @@ impl Game {
 
         self.render_view = Some(view);
 
+        
+        let mut plugins = self.plugins.take().unwrap();
+        for p in plugins.render_plugin.iter_mut() {
+            p.render(self);
+        }
+        self.plugins = Some(plugins);
+
         { //gui draw
-
-
-
             let gui_output = self.scene.world.get_resource_mut::<Gui>().unwrap().end_frame(Some(&self.window));
             let mut encoder = self.scene.world.remove_resource::<wgpu::CommandEncoder>().unwrap();
+
+
             self.scene.world.get_resource_mut::<Gui>().unwrap().draw(gui_output,
                           egui_wgpu_backend::ScreenDescriptor {
                               physical_width: self.api.config.width,
@@ -236,6 +248,7 @@ impl Game {
                           &mut encoder,
                           &self.render_view.as_ref().unwrap());
             self.scene.world.insert_resource(encoder);
+
         }
 
         self.render_base.queue.submit(Some(
@@ -351,6 +364,8 @@ impl Game {
 
         builder.add_system_to_stage(GlobalStageStep::RenderStart, poll_device);
         builder.add_system_to_stage(GlobalStageStep::RenderPrepare, start_gui_frame);
+
+        State::<SceneType>::get_driver();
 
         self.scene.scheduler = builder;
         self.plugins = Some(plugins);
