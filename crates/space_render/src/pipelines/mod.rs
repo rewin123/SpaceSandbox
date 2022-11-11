@@ -28,7 +28,6 @@ pub use wgpu_textures_transform::*;
 
 use crate::light::{AmbientLightUniform, PointLight};
 use crate::pipelines::wgpu_ssao::SSAOFrame;
-use crate::ui::FpsCounter;
 
 use self::wgpu_sreen_diffuse::DepthTexture;
 
@@ -218,7 +217,6 @@ pub struct State {
     gamma_correction : TextureTransformPipeline,
     present : TexturePresent,
     gamma_buffer : CommonFramebuffer,
-    fps : crate::ui::FpsCounter,
     device_name : String,
 
     draw_state : DrawState,
@@ -255,8 +253,6 @@ impl State {
 
         let light_pipeline = PointLightPipeline::new(&render, &game.scene.camera_buffer, extent);
         let light_buffer = light_pipeline.spawn_framebuffer(&render.device, extent);
-
-        let fps = FpsCounter::default();
 
         let gamma_desc = TextureTransformDescriptor {
             render : render.clone(),
@@ -325,7 +321,6 @@ impl State {
         Self {
             present,
             render,
-            fps,
             gamma_correction,
             gamma_buffer,
             device_name,
@@ -523,7 +518,6 @@ impl space_game::RenderPlugin for State {
                 ui.selectable_value(&mut self.draw_state, DrawState::Depth, "Depth");
             });
 
-        self.fps.draw(ui);
         ui.label(&self.device_name);
     }
 }

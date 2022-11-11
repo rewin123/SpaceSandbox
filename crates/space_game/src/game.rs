@@ -20,7 +20,6 @@ use wgpu_profiler::*;
 use space_core::ecs::*;
 
 
-
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SceneType {
     MainMenu,
@@ -364,6 +363,7 @@ impl Game {
         builder.add_stage_after(GlobalStageStep::RenderPrepare, GlobalStageStep::RenderStart, SystemStage::parallel());
         builder.add_stage_after(GlobalStageStep::RenderStart, GlobalStageStep::Render, SystemStage::single_threaded());
         builder.add_stage_after(GlobalStageStep::Render, GlobalStageStep::PostRender, SystemStage::single_threaded());
+        builder.add_stage_after(GlobalStageStep::Update, GlobalStageStep::Gui, SystemStage::single_threaded());
         //push render prepare
         for plugin in &plugins.scheldue_plugin {
             plugin.add_system(self, &mut builder);

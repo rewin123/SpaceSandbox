@@ -1,5 +1,34 @@
 use std::time::Instant;
+use space_core::ecs::*;
 use egui::Ui;
+use crate::{EguiContext, Game, GlobalStageStep, PluginName, SchedulePlugin};
+
+fn fps_counter_system(
+    mut ctx : Res<EguiContext>,
+    mut fps : ResMut<FpsCounter>
+) {
+    egui::TopBottomPanel::top("FpsCounter").show(&ctx, |ui| {
+        fps.draw(ui);
+    });
+}
+
+
+pub struct FpsCounterSystem {
+
+}
+
+impl SchedulePlugin for FpsCounterSystem {
+    fn get_name(&self) -> PluginName {
+        PluginName::Text("FpsCounter".into())
+    }
+
+    fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
+        let fps = FpsCounter::default();
+        game.scene.world.insert_resource(fps);
+
+        builder.add_system_to_stage(GlobalStageStep::Gui, fps_counter_system);
+    }
+}
 
 #[derive(Default)]
 pub struct FpsCounter {
