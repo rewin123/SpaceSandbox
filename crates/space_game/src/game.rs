@@ -359,11 +359,11 @@ impl Game {
         let mut builder = Schedule::default();
         builder.add_stage(GlobalStageStep::RenderPrepare, SystemStage::parallel());
         builder.add_stage_after(GlobalStageStep::RenderPrepare,GlobalStageStep::Update, SystemStage::parallel());
-        builder.add_stage_after(GlobalStageStep::Update,GlobalStageStep::PostUpdate, SystemStage::parallel());
         builder.add_stage_after(GlobalStageStep::RenderPrepare, GlobalStageStep::RenderStart, SystemStage::parallel());
         builder.add_stage_after(GlobalStageStep::RenderStart, GlobalStageStep::Render, SystemStage::single_threaded());
         builder.add_stage_after(GlobalStageStep::Render, GlobalStageStep::PostRender, SystemStage::single_threaded());
         builder.add_stage_after(GlobalStageStep::Update, GlobalStageStep::Gui, SystemStage::single_threaded());
+        builder.add_stage_after(GlobalStageStep::Gui,GlobalStageStep::PostUpdate, SystemStage::parallel());
         //push render prepare
         for plugin in &plugins.scheldue_plugin {
             plugin.add_system(self, &mut builder);
