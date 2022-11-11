@@ -217,7 +217,7 @@ impl Game {
         }));
         self.scene.app.world.get_resource_mut::<AssetServer>().unwrap().sync_tick();
 
-        self.scene.app.schedule.run(&mut self.scene.app.world);
+        self.scene.app.update();
 
         let mut plugins = self.plugins.take().unwrap();
         for plugin in &mut plugins.render_plugin {
