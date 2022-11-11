@@ -124,8 +124,8 @@ impl SchedulePlugin for FastDepthPlugin {
         builder.add_system_to_stage(GlobalStageStep::Render, fast_depth);
         builder.add_system_to_stage(GlobalStageStep::RenderPrepare, fast_depth_update);
 
-        game.scene.world.insert_resource(DepthPipeline {pipeline : depth_calc});
-        game.scene.world.insert_resource(frame);
+        game.scene.app.insert_resource(DepthPipeline {pipeline : depth_calc});
+        game.scene.app.insert_resource(frame);
     }
 }
 
@@ -194,8 +194,8 @@ impl SchedulePlugin for SSAOFilterSystem {
 
         let buffer = pipeline.spawn_framebuffer().dst.remove(0);
 
-        game.scene.world.insert_resource(SSAOFiltered {tex : buffer});
-        game.scene.world.insert_resource(SSAOFilter {pipeline});
+        game.scene.app.insert_resource(SSAOFiltered {tex : buffer});
+        game.scene.app.insert_resource(SSAOFilter {pipeline});
 
         builder.add_system_to_stage(GlobalStageStep::Render, ssao_filter_impl);
     }
@@ -408,7 +408,7 @@ impl space_game::SchedulePlugin for StateSystem {
         
         builder.add_system_to_stage(GlobalStageStep::RenderPrepare, state_update);
         builder.add_system_to_stage(GlobalStageStep::Render, state_render);
-        game.scene.world.insert_resource(state);
+        game.scene.app.insert_resource(state);
     }
 }
 
@@ -424,16 +424,16 @@ impl space_game::RenderPlugin for State {
     }
 
     fn render(&mut self, game : &mut Game) {
-        let mut encoder = game.scene.world.remove_resource::<wgpu::CommandEncoder>().unwrap();
+        let mut encoder = game.scene.app.world.remove_resource::<wgpu::CommandEncoder>().unwrap();
         let view = game.render_view.as_ref().unwrap();
 
-        let mut light_queue = game.scene.world.query::<(&mut PointLight)>();
-        for mut light in light_queue.iter_mut(&mut game.scene.world) {
+        let mut light_queue = game.scene.app.world.query::<(&mut PointLight)>();
+        for mut light in light_queue.iter_mut(&mut game.scene.app.world) {
             light.update_buffer(&self.render);
         }
         self.render.device.poll(wgpu::Maintain::Wait);
 
-        let gbuffer = game.scene.world.get_resource::<GFramebuffer>().unwrap();
+        let gbuffer = game.scene.app.world.get_resource::<GFramebuffer>().unwrap();
         // self.gbuffer_pipeline.draw(&game.assets, encoder, &mut game.scene.world, &self.gbuffer);
         // self.light_shadow.draw(encoder, &mut game.scene.world);
 
@@ -441,34 +441,34 @@ impl space_game::RenderPlugin for State {
         // game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Ambient", encoder, &self.render.device);
         // self.light_pipeline.draw(&self.render.device, encoder, &game.scene.world, &self.light_buffer, &gbuffer);
         self.ambient_light_pipeline.draw(&mut encoder,
-                                         &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &game.scene.world.get_resource::<SSAOFiltered>().unwrap().tex]
-                                         , &[&game.scene.world.get_resource::<DirLightTexture>().unwrap().tex]);
+                                         &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &game.scene.app.world.get_resource::<SSAOFiltered>().unwrap().tex]
+                                         , &[&game.scene.app.world.get_resource::<DirLightTexture>().unwrap().tex]);
         // game.scene.resources.get_mut::<GpuProfiler>().unwrap().end_scope(encoder);
 
         // game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Final", encoder, &self.render.device);
         match &self.draw_state {
             DrawState::Full => {
-                self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
+                self.gamma_correction.draw(&mut encoder, &[&game.scene.app.world.get_resource::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&mut encoder, &self.gamma_buffer.dst[0], &view);
             }
             DrawState::DirectLight => {
-                self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
+                self.gamma_correction.draw(&mut encoder, &[&game.scene.app.world.get_resource::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&mut encoder, &self.gamma_buffer.dst[0], &view);
             },
             DrawState::AmbientOcclusion => {
-                self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<SSAOFrame>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
+                self.gamma_correction.draw(&mut encoder, &[&game.scene.app.world.get_resource::<SSAOFrame>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw( &mut encoder, &self.gamma_buffer.dst[0], &view);
             },
             DrawState::Depth => {
-                self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<DepthTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
+                self.gamma_correction.draw(&mut encoder, &[&game.scene.app.world.get_resource::<DepthTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw(&mut encoder, &self.gamma_buffer.dst[0], &view);
             }
             DrawState::AmbientOcclusionSmooth => {
-                self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<SSAOFiltered>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
+                self.gamma_correction.draw(&mut encoder, &[&game.scene.app.world.get_resource::<SSAOFiltered>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
                 self.present.draw( &mut encoder, &self.gamma_buffer.dst[0], &view);
             }
         }
-        game.scene.world.insert_resource(encoder);
+        game.scene.app.insert_resource(encoder);
     }
 
     fn window_resize(&mut self, game : &mut Game, new_size: winit::dpi::PhysicalSize<u32>) {

@@ -16,6 +16,7 @@ encase = {version = "0.3.0", features = ["nalgebra"] }
 atomic_refcell = "0.1.8"
 wgpu-profiler = "0.9.1"
 bevy_ecs = "*"
+bevy_app = "0.8.1"
 
 space_core = {path = "../space_core"}
 space_assets = {path = "../space_assets"}

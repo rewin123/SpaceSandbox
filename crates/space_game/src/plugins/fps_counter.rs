@@ -24,7 +24,7 @@ impl SchedulePlugin for FpsCounterSystem {
 
     fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
         let fps = FpsCounter::default();
-        game.scene.world.insert_resource(fps);
+        game.scene.app.insert_resource(fps);
 
         builder.add_system_to_stage(GlobalStageStep::Gui, fps_counter_system);
     }

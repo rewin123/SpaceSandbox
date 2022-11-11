@@ -5,6 +5,7 @@ use std::mem::swap;
 use std::ops::{DerefMut, Deref};
 use std::sync::{Arc, RwLock};
 use atomic_refcell::AtomicRefMut;
+use bevy_app::App;
 use egui::color::gamma_from_linear;
 use wgpu::{Extent3d, ShaderStages, SurfaceTexture, TextureView};
 use winit::dpi::PhysicalSize;
@@ -51,8 +52,7 @@ impl DerefMut for EguiContext {
 }
 
 pub struct GameScene {
-    pub world : World,
-    pub scheduler : Schedule,
+    pub app : App,
     pub camera : Camera,
     pub camera_buffer : wgpu::Buffer,
 }
@@ -110,7 +110,7 @@ impl Game {
     }
 
     pub fn get_assets(&mut self) -> Mut<AssetServer> {
-        self.scene.world.get_resource_mut::<AssetServer>().unwrap()
+        self.scene.app.world.get_resource_mut::<AssetServer>().unwrap()
     }
 
     pub fn add_render_plugin<T>(&mut self, plugin : T)
@@ -134,7 +134,7 @@ impl Game {
     }
 
     fn resize_event(&mut self, new_size : PhysicalSize<u32>) {
-        self.scene.world.insert_resource(new_size);
+        self.scene.app.insert_resource(new_size);
         let mut plugins = self.plugins.take().unwrap();
         for plugin in &mut plugins.render_plugin {
             plugin.window_resize(self, new_size);
@@ -204,20 +204,20 @@ impl Game {
             .create_view(&wgpu::TextureViewDescriptor::default());
 
 
-        self.scene.world.insert_resource(RenderTarget {view, output});
+        self.scene.app.insert_resource(RenderTarget {view, output});
 
         self.exec_commands();
 
         self.camera_update();
 
-        self.scene.world.insert_resource(self.scene.camera.clone());
-        self.scene.world.insert_resource(self.render_base.clone());
-        self.scene.world.insert_resource(self.render_base.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        self.scene.app.insert_resource(self.scene.camera.clone());
+        self.scene.app.insert_resource(self.render_base.clone());
+        self.scene.app.insert_resource(self.render_base.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: None
         }));
-        self.scene.world.get_resource_mut::<AssetServer>().unwrap().sync_tick();
+        self.scene.app.world.get_resource_mut::<AssetServer>().unwrap().sync_tick();
 
-        self.scene.scheduler.run(&mut self.scene.world);
+        self.scene.app.schedule.run(&mut self.scene.app.world);
 
         let mut plugins = self.plugins.take().unwrap();
         for plugin in &mut plugins.render_plugin {
@@ -228,7 +228,7 @@ impl Game {
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let target;
-        if let Some(val) = self.scene.world.remove_resource::<RenderTarget>() {
+        if let Some(val) = self.scene.app.world.remove_resource::<RenderTarget>() {
             target = val;
         } else {
             return Ok(());
@@ -264,14 +264,14 @@ impl Game {
         }
         self.render_base.device.poll(wgpu::Maintain::Wait);
         self.render_base.queue.submit(Some(
-            self.scene.world.remove_resource::<wgpu::CommandEncoder>().unwrap().finish()
+            self.scene.app.world.remove_resource::<wgpu::CommandEncoder>().unwrap().finish()
         ));
         
         output.present();
 
-        self.scene.world.get_resource_mut::<GpuProfiler>().unwrap().end_frame().unwrap();
+        self.scene.app.world.get_resource_mut::<GpuProfiler>().unwrap().end_frame().unwrap();
 
-        if let Some(profiling_data) =  self.scene.world.get_resource_mut::<GpuProfiler>().unwrap().process_finished_frame() {
+        if let Some(profiling_data) =  self.scene.app.world.get_resource_mut::<GpuProfiler>().unwrap().process_finished_frame() {
             if self.input.get_key_state(winit::event::VirtualKeyCode::G) {
                 wgpu_profiler::chrometrace::write_chrometrace(
                     std::path::Path::new("mytrace.json"), &profiling_data).unwrap();
@@ -287,8 +287,8 @@ impl Game {
         let mut event_loop = self.event_loop.take().unwrap();
 
         event_loop.run(move |event, _, control_flow| {
-            self.scene.world.get_resource_mut::<Gui>().unwrap().platform.handle_event(&event);
-            let id = self.scene.world.get_resource::<winit::window::Window>().unwrap().id();
+            self.scene.app.world.get_resource_mut::<Gui>().unwrap().platform.handle_event(&event);
+            let id = self.scene.app.world.get_resource::<winit::window::Window>().unwrap().id();
             match event {
                 Event::WindowEvent {
                     ref event,
@@ -340,7 +340,7 @@ impl Game {
                 Event::RedrawEventsCleared => {
                     // RedrawRequested will only trigger once, unless we manually
                     // request it.
-                    self.scene.world.get_resource_mut::<winit::window::Window>()
+                    self.scene.app.world.get_resource_mut::<winit::window::Window>()
                         .unwrap().request_redraw();
                 }
                 _ => {}
@@ -378,12 +378,12 @@ impl Game {
         for plugin in &plugins.scheldue_plugin {
             plugin.add_system(self, &mut builder);
         }
-        setup_gui(&mut self.scene.world, &mut builder);
+        setup_gui(&mut self.scene.app.world, &mut builder);
 
         builder.add_system_to_stage(GlobalStageStep::RenderStart, poll_device);
         
 
-        self.scene.scheduler = builder;
+        self.scene.app.schedule = builder;
         self.plugins = Some(plugins);
     }
 }
@@ -424,23 +424,22 @@ impl Default for Game {
 
 
         let mut scene = GameScene {
-            world : World::default(),
-            scheduler : Schedule::default(),
+            app : App::default(),
             camera : Camera::default(),
             camera_buffer
         };
 
-        scene.world.insert_resource(AssetServer::new(&render_base, &task_server));
+        scene.app.insert_resource(AssetServer::new(&render_base, &task_server));
 
-        scene.world.insert_resource(
+        scene.app.insert_resource(
             GpuProfiler::new(
                 4,
                 render_base.queue.get_timestamp_period(),
                 render_base.device.features()));
 
-        scene.world.insert_resource(EguiContext {ctx : gui.platform.context()});
-        scene.world.insert_resource(gui);
-        scene.world.insert_non_send_resource(window);
+        scene.app.insert_resource(EguiContext {ctx : gui.platform.context()});
+        scene.app.insert_resource(gui);
+        scene.app.insert_non_send_resource(window);
 
         Self {
             event_loop : Some(event_loop),

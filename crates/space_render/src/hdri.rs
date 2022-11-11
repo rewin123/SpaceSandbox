@@ -33,12 +33,12 @@ impl SchedulePlugin for HDRISystem {
 
     fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
         { //clearing
-            let mut query = game.scene.world.query::<(Entity, &HDRISphere, )>();
-            let del_list: Vec<Entity> = query.iter(&game.scene.world).map(|(e, h)| {
+            let mut query = game.scene.app.world.query::<(Entity, &HDRISphere, )>();
+            let del_list: Vec<Entity> = query.iter(&game.scene.app.world).map(|(e, h)| {
                 e.clone()
             }).collect();
             for e in del_list {
-                game.scene.world.despawn(e);
+                game.scene.app.world.despawn(e);
             }
         }
 
@@ -51,7 +51,7 @@ impl SchedulePlugin for HDRISystem {
         let mut material = game.get_default_material();
         material.color =
             game.get_assets().deref_mut().load_color_texture(self.path.clone(), true);
-        game.scene.world.spawn().insert_bundle((location, sphere, material, HDRISphere {}));
+        game.scene.app.world.spawn().insert_bundle((location, sphere, material, HDRISphere {}));
 
         builder.add_system_to_stage(GlobalStageStep::RenderPrepare, hdri_update);
     }

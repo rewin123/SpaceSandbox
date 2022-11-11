@@ -55,7 +55,7 @@ impl SchedulePlugin for PointLightPlugin {
         let pipeline = PointLightShadowPipeline::new(&game.render_base);
         builder.add_system_to_stage(GlobalStageStep::Render, point_light_shadow);
 
-        game.scene.world.insert_resource(pipeline);
+        game.scene.app.insert_resource(pipeline);
 
         let pipeline = PointLightPipeline::new(&game.render_base, &game.scene.camera_buffer, wgpu::Extent3d {
             width : game.api.size.width,
@@ -70,8 +70,8 @@ impl SchedulePlugin for PointLightPlugin {
         });
 
         builder.add_system_to_stage( GlobalStageStep::Render,point_light_impl);
-        game.scene.world.insert_resource(pipeline);
-        game.scene.world.insert_resource( DirLightTexture {
+        game.scene.app.insert_resource(pipeline);
+        game.scene.app.insert_resource( DirLightTexture {
             tex
         });
     }

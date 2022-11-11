@@ -110,7 +110,7 @@ impl SchedulePlugin for DirLightSystem {
             });
 
         builder.add_system_to_stage(GlobalStageStep::Render, dir_light_impl);
-        game.scene.world.insert_resource(pipeline);
+        game.scene.app.insert_resource(pipeline);
     }
 }
 

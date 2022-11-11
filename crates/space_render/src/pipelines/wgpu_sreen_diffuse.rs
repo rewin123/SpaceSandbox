@@ -75,8 +75,8 @@ impl SchedulePlugin for SSDiffuseSystem {
 
         let frame = pipeline.spawn_framebuffer();
         
-        game.scene.world.insert_resource(frame);
-        game.scene.world.insert_resource(pipeline);
+        game.scene.app.insert_resource(frame);
+        game.scene.app.insert_resource(pipeline);
 
         builder.add_system_to_stage(GlobalStageStep::Render, ssao_impl);
         builder.add_system_to_stage(GlobalStageStep::RenderPrepare, ssao_update);

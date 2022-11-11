@@ -187,12 +187,12 @@ impl SchedulePlugin for GBufferPlugin {
                              height : game.api.size.height,
                              depth_or_array_layers : 1
                          });
-        game.scene.world.insert_resource(GBufferFill::spawn_framebuffer(&game.render_base.device, wgpu::Extent3d {
+        game.scene.app.insert_resource(GBufferFill::spawn_framebuffer(&game.render_base.device, wgpu::Extent3d {
             width : game.api.size.width,
             height : game.api.size.height,
             depth_or_array_layers : 1
         }));
-        game.scene.world.insert_resource(pipeline);
+        game.scene.app.insert_resource(pipeline);
         builder.add_system_to_stage( GlobalStageStep::Render, gbuffer_filling);
     }
 }
