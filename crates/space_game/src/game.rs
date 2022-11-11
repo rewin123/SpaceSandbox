@@ -193,7 +193,12 @@ impl Game {
     }
 
     fn update(&mut self) {
-        let output = self.api.surface.get_current_texture().unwrap();
+        let output;
+        if let Ok(val) = self.api.surface.get_current_texture() {
+            output = val;
+        } else {
+            return;
+        }
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -222,7 +227,12 @@ impl Game {
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let target = self.scene.world.remove_resource::<RenderTarget>().unwrap();
+        let target;
+        if let Some(val) = self.scene.world.remove_resource::<RenderTarget>() {
+            target = val;
+        } else {
+            return Ok(());
+        }
         let view = target.view;
         let output = target.output;
         self.render_view = Some(view);
