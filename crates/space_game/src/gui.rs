@@ -21,7 +21,7 @@ fn end_gui_frame(
     mut gui : ResMut<Gui>,
     window : Res<winit::window::Window>,
     mut egui_cmds : ResMut<EguiRenderCmds>) {
-    // egui_cmds.output = gui.end_frame(Some(window.as_ref()));
+    egui_cmds.output = gui.end_frame(Some(window.as_ref()));
 }
 
 #[derive(Component)]
@@ -37,14 +37,14 @@ fn egui_draw(
     render_target : Res<RenderTarget>,
     output : Res<EguiRenderCmds>
 ) {
-    // gui.draw(output.output.clone(),
-    //     egui_wgpu_backend::ScreenDescriptor {
-    //         physical_width: window.as_ref().inner_size().width,
-    //         physical_height: window.inner_size().height,
-    //         scale_factor: window.scale_factor() as f32,
-    //     },
-    //     &mut encoder,
-    //     &render_target.view);
+    gui.draw(output.output.clone(),
+        egui_wgpu_backend::ScreenDescriptor {
+            physical_width: window.as_ref().inner_size().width,
+            physical_height: window.inner_size().height,
+            scale_factor: window.scale_factor() as f32,
+        },
+        &mut encoder,
+        &render_target.view);
 }
 
 pub fn setup_gui(world : &mut World, schedule : &mut Schedule) {
@@ -53,7 +53,7 @@ pub fn setup_gui(world : &mut World, schedule : &mut Schedule) {
     
     schedule.add_system_to_stage(GlobalStageStep::RenderPrepare, start_gui_frame);
     schedule.add_system_to_stage(GlobalStageStep::PostUpdate, end_gui_frame);
-    schedule.add_system_to_stage(GlobalStageStep::Render, egui_draw);
+    schedule.add_system_to_stage(GlobalStageStep::PostRender, egui_draw);
 }
 
 pub struct Gui {

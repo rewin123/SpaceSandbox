@@ -11,8 +11,8 @@ async fn run() {
         .build_global().unwrap();
     let mut game = Game::default();
     add_game_render_plugins(&mut game);
-    game.update_scene_scheldue();
     game.add_schedule_plugin(MainMenu{});
+    game.update_scene_scheldue();
     game.run();
 }
 

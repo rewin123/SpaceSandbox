@@ -39,6 +39,6 @@ impl SchedulePlugin for MainMenu {
     }
 
     fn add_system(&self, game : &mut Game, builder : &mut space_core::ecs::Schedule) {
-        builder.add_system_to_stage(GlobalStageStep::Render, main_menu);
+        builder.add_system_to_stage(GlobalStageStep::Update, main_menu);
     }
 }

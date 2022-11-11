@@ -17,6 +17,7 @@ pub enum GlobalStageStep {
     RenderPrepare,
     RenderStart,
     Render,
+    PostRender,
     Update,
     PostUpdate
 }
@@ -29,6 +30,7 @@ impl StageLabel for GlobalStageStep {
             GlobalStageStep::Render => {"Render"}
             GlobalStageStep::Update => {"Update"}
             GlobalStageStep::PostUpdate => {"PostUpdate"},
+            GlobalStageStep::PostRender => {"PostRender"}
         }
     }
 }

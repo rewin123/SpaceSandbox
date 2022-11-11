@@ -253,7 +253,7 @@ impl Game {
             // self.scene.world.insert_resource(gui);
 
         }
-
+        self.render_base.device.poll(wgpu::Maintain::Wait);
         self.render_base.queue.submit(Some(
             self.scene.world.remove_resource::<wgpu::CommandEncoder>().unwrap().finish()
         ));
@@ -363,6 +363,7 @@ impl Game {
         builder.add_stage_after(GlobalStageStep::Update,GlobalStageStep::PostUpdate, SystemStage::parallel());
         builder.add_stage_after(GlobalStageStep::RenderPrepare, GlobalStageStep::RenderStart, SystemStage::parallel());
         builder.add_stage_after(GlobalStageStep::RenderStart, GlobalStageStep::Render, SystemStage::single_threaded());
+        builder.add_stage_after(GlobalStageStep::Render, GlobalStageStep::PostRender, SystemStage::single_threaded());
         //push render prepare
         for plugin in &plugins.scheldue_plugin {
             plugin.add_system(self, &mut builder);

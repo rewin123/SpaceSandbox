@@ -6,11 +6,12 @@ pub mod ui;
 use nalgebra as na;
 use encase::*;
 use space_game::*;
+use crate::pipelines::StateSystem;
 
 
 pub fn add_game_render_plugins(game : &mut Game) {
-    let mut state = pollster::block_on(crate::pipelines::State::new(game));
-    game.add_render_plugin(state);
+    // let mut state = pollster::block_on(crate::pipelines::State::new(game));
+    game.add_schedule_plugin(StateSystem{});
     game.add_schedule_plugin(space_game::plugins::LocUpdateSystem {});
     game.add_schedule_plugin(crate::pipelines::GBufferPlugin {});
     game.add_schedule_plugin(crate::pipelines::point_light_plugin::PointLightPlugin {});

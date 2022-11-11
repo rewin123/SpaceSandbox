@@ -244,7 +244,7 @@ impl State {
             extent);
 
         let present = TexturePresent::new(
-            &render.device,
+            &render,
             game.api.config.format,
             wgpu::Extent3d {
                 width : game.api.config.width,
@@ -356,6 +356,8 @@ fn state_update(
         cam_pos: camera.pos.coords.clone()
     };
     state.ambient_light_pipeline.update(Some(&ambient_uniform));
+
+    state.render.device.poll(wgpu::Maintain::Wait);
 }
 
 fn state_render(
@@ -371,15 +373,19 @@ fn state_render(
                                          , &[&dir_light.tex]);
         
 
+        let mut gamma_buffer = CommonFramebuffer {
+            dst: vec![]
+        };
+        std::mem::swap(&mut gamma_buffer, &mut state.gamma_buffer);
         // game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Final", encoder, &self.render.device);
         match &state.draw_state {
             DrawState::Full => {
-                state.gamma_correction.draw(&mut encoder, &[&dir_light.tex], &[&state.gamma_buffer.dst[0]]);
-                state.present.draw(&state.render.device, &mut encoder, &state.gamma_buffer.dst[0], &render_target.view);
+                state.gamma_correction.draw(&mut encoder, &[&dir_light.tex], &[&gamma_buffer.dst[0]]);
+                state.present.draw(&mut encoder, &gamma_buffer.dst[0], &render_target.view);
             }
             DrawState::DirectLight => {
-                state.gamma_correction.draw(&mut encoder, &[&dir_light.tex], &[&state.gamma_buffer.dst[0]]);
-                state.present.draw(&state.render.device, &mut encoder, &state.gamma_buffer.dst[0], &render_target.view);
+                state.gamma_correction.draw(&mut encoder, &[&dir_light.tex], &[&gamma_buffer.dst[0]]);
+                state.present.draw( &mut encoder, &gamma_buffer.dst[0], &render_target.view);
             },
             DrawState::AmbientOcclusion => {
                 // state.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<SSAOFrame>().unwrap().tex], &[&state.gamma_buffer.dst[0]]);
@@ -390,10 +396,11 @@ fn state_render(
                 // state.present.draw(&state.render.device, &mut encoder, &state.gamma_buffer.dst[0], &view);
             }
             DrawState::AmbientOcclusionSmooth => {
-                state.gamma_correction.draw(&mut encoder, &[&ssao.tex], &[&state.gamma_buffer.dst[0]]);
-                state.present.draw(&state.render.device, &mut encoder, &state.gamma_buffer.dst[0], &render_target.view);
+                state.gamma_correction.draw(&mut encoder, &[&ssao.tex], &[&gamma_buffer.dst[0]]);
+                state.present.draw( &mut encoder, &gamma_buffer.dst[0], &render_target.view);
             }
         }
+    std::mem::swap(&mut gamma_buffer, &mut state.gamma_buffer);
 }
 
 impl space_game::SchedulePlugin for StateSystem {
@@ -402,9 +409,11 @@ impl space_game::SchedulePlugin for StateSystem {
     }
 
     fn add_system(&self, game : &mut Game, builder : &mut space_core::ecs::Schedule) {
-        let state = State::new(game);
+        let state = pollster::block_on(State::new(game));
         
         builder.add_system_to_stage(GlobalStageStep::RenderPrepare, state_update);
+        builder.add_system_to_stage(GlobalStageStep::Render, state_render);
+        game.scene.world.insert_resource(state);
     }
 }
 
@@ -445,23 +454,23 @@ impl space_game::RenderPlugin for State {
         match &self.draw_state {
             DrawState::Full => {
                 self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+                self.present.draw(&mut encoder, &self.gamma_buffer.dst[0], &view);
             }
             DrawState::DirectLight => {
                 self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<DirLightTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+                self.present.draw(&mut encoder, &self.gamma_buffer.dst[0], &view);
             },
             DrawState::AmbientOcclusion => {
                 self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<SSAOFrame>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+                self.present.draw( &mut encoder, &self.gamma_buffer.dst[0], &view);
             },
             DrawState::Depth => {
                 self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<DepthTexture>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+                self.present.draw(&mut encoder, &self.gamma_buffer.dst[0], &view);
             }
             DrawState::AmbientOcclusionSmooth => {
                 self.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<SSAOFiltered>().unwrap().tex], &[&self.gamma_buffer.dst[0]]);
-                self.present.draw(&self.render.device, &mut encoder, &self.gamma_buffer.dst[0], &view);
+                self.present.draw( &mut encoder, &self.gamma_buffer.dst[0], &view);
             }
         }
         game.scene.world.insert_resource(encoder);
@@ -481,7 +490,7 @@ impl space_game::RenderPlugin for State {
             };
 
             self.present = TexturePresent::new(
-                &self.render.device,
+                &self.render,
                 game.api.config.format,
                 size);
 

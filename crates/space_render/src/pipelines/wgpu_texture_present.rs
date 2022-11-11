@@ -1,12 +1,15 @@
 use std::num::NonZeroU32;
+use std::sync::Arc;
 use wgpu::{Extent3d, util::DeviceExt};
 use space_assets::*;
+use space_core::RenderBase;
 
 
 pub struct TexturePresent {
     pub pipeline : wgpu::RenderPipeline,
     screen_mesh : ScreenMesh,
-    texture_bind_group_layout : wgpu::BindGroupLayout
+    texture_bind_group_layout : wgpu::BindGroupLayout,
+    render : Arc<RenderBase>
 }
 
 impl TexturePresent {
@@ -34,9 +37,9 @@ impl TexturePresent {
         render_pass
     }
 
-    pub fn new(device : &wgpu::Device, format : wgpu::TextureFormat, size : wgpu::Extent3d) -> Self {
+    pub fn new(render : &Arc<RenderBase>, format : wgpu::TextureFormat, size : wgpu::Extent3d) -> Self {
 
-        let texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let texture_bind_group_layout = render.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label : Some("Texture present binding"),
             entries : &[
                 wgpu::BindGroupLayoutEntry {
@@ -58,19 +61,19 @@ impl TexturePresent {
             ]
         });
 
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        let shader = render.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../../../shaders/wgsl/present_texture.wgsl").into())
         });
 
         let pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            render.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label : Some("Texture present"),
                 bind_group_layouts : &[&texture_bind_group_layout],
                 push_constant_ranges: &[]
             });
 
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let pipeline = render.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
@@ -107,8 +110,9 @@ impl TexturePresent {
 
         Self {
             pipeline,
-            screen_mesh : TexturePresent::create_screen_mesh(device),
-            texture_bind_group_layout
+            screen_mesh : TexturePresent::create_screen_mesh(&render.device),
+            texture_bind_group_layout,
+            render : render.clone()
         }
     }
 
@@ -118,7 +122,7 @@ impl TexturePresent {
             src : &TextureBundle,
             dst : &wgpu::TextureView) {
         
-        let tex_bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let tex_bind = self.render.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout : &self.texture_bind_group_layout,
             entries : &[
                 wgpu::BindGroupEntry {
