@@ -6,8 +6,7 @@ pub use task_server::*;
 pub use camera::*;
 
 pub use bevy_ecs::prelude as ecs;
-pub use bevy_ecs as ecs_core;
-pub use bevy_ecs;
+pub use bevy_app::prelude as app;
 
 
 

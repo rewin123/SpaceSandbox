@@ -1,3 +1,4 @@
+use space_core::app::App;
 use space_game::*;
 use crate::light::PointLightShadow;
 use crate::pipelines::PointLightShadowPipeline;
@@ -51,27 +52,35 @@ impl SchedulePlugin for PointLightPlugin {
         PluginName::Text("Point light".into())
     }
 
-    fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
-        let pipeline = PointLightShadowPipeline::new(&game.render_base);
-        builder.add_system_to_stage(GlobalStageStep::Render, point_light_shadow);
+    fn add_system(&self, app: &mut App) {
 
-        game.scene.app.insert_resource(pipeline);
+        let render = app.world.get_resource_mut::<RenderApi>().unwrap().base.clone();
+        let size = app.world.get_resource::<ScreenSize>().unwrap().size.clone();
 
-        let pipeline = PointLightPipeline::new(&game.render_base, &game.scene.camera_buffer, wgpu::Extent3d {
-            width : game.api.size.width,
-            height : game.api.size.height,
+        let pipeline = PointLightShadowPipeline::new(
+            &render);
+        app.add_system_to_stage(GlobalStageStep::Render, point_light_shadow);
+
+        app.insert_resource(pipeline);
+
+        let pipeline = PointLightPipeline::new(
+            &render, 
+            &app.world.get_resource::<CameraBuffer>().unwrap().buffer, 
+            wgpu::Extent3d {
+                width : size.width,
+                height : size.height,
+                depth_or_array_layers : 1
+            });
+
+        let tex = pipeline.spawn_framebuffer(&render.device, wgpu::Extent3d {
+            width : size.width,
+            height : size.height,
             depth_or_array_layers : 1
         });
 
-        let tex = pipeline.spawn_framebuffer(&game.render_base.device, wgpu::Extent3d {
-            width : game.api.size.width,
-            height : game.api.size.height,
-            depth_or_array_layers : 1
-        });
-
-        builder.add_system_to_stage( GlobalStageStep::Render,point_light_impl);
-        game.scene.app.insert_resource(pipeline);
-        game.scene.app.insert_resource( DirLightTexture {
+        app.add_system_to_stage( GlobalStageStep::Render,point_light_impl);
+        app.insert_resource(pipeline);
+        app.insert_resource( DirLightTexture {
             tex
         });
     }

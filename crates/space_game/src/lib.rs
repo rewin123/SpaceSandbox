@@ -4,36 +4,53 @@ mod input_system;
 mod gui;
 pub mod plugins;
 
+use std::{sync::Arc, ops::Deref};
+
+use bevy_ecs::prelude::Component;
 use winit::dpi::PhysicalSize;
 pub use api_base::*;
 pub use game::*;
 pub use input_system::*;
 pub use gui::*;
 use space_assets::Location;
-use space_core::ecs::StageLabel;
+use space_core::{ecs::StageLabel, RenderBase};
 
 #[derive(PartialEq, Debug)]
 pub enum GlobalStageStep {
-    RenderPrepare,
-    RenderStart,
+    PreRender,
     Render,
     PostRender,
-    Update,
-    PostUpdate,
     Gui
 }
 
 impl StageLabel for GlobalStageStep {
     fn as_str(&self) -> &'static str {
         match self {
-            GlobalStageStep::RenderPrepare => {"RenderPrepare"}
-            GlobalStageStep::RenderStart => {"RenderStart"}
+            GlobalStageStep::PreRender => {"PreRender"}
             GlobalStageStep::Render => {"Render"}
-            GlobalStageStep::Update => {"Update"}
-            GlobalStageStep::PostUpdate => {"PostUpdate"},
             GlobalStageStep::PostRender => {"PostRender"}
             GlobalStageStep::Gui => {"Gui"}
         }
+    }
+}
+
+pub struct CameraBuffer {
+    pub buffer : wgpu::Buffer
+}
+pub struct ScreenSize {
+    pub size : winit::dpi::PhysicalSize<u32>,
+    pub format : wgpu::TextureFormat
+}
+
+pub struct RenderApi {
+    pub base : Arc<RenderBase>
+}
+
+impl Deref for RenderApi {
+    type Target = Arc<RenderBase>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
     }
 }
 
@@ -44,7 +61,7 @@ pub enum PluginName {
 
 pub trait SchedulePlugin {
     fn get_name(&self) -> PluginName;
-    fn add_system(&self, game : &mut Game, builder : &mut space_core::ecs::Schedule);
+    fn add_system(&self, app : &mut space_core::app::App);
 }
 
 pub trait GuiPlugin {

@@ -12,7 +12,7 @@ use std::hash::Hash;
 use std::num::NonZeroU32;
 use wgpu::util::DeviceExt;
 use crate::asset_holder::AssetHolder;
-use crate::AssetPath;
+use crate::{AssetPath, Material};
 use crate::handle::*;
 use crate::mesh::TextureBundle;
 use crate::mipmap_generator::MipmapGenerator;
@@ -50,6 +50,17 @@ pub struct AssetServer {
 }
 
 impl AssetServer {
+
+    pub fn get_default_material(&mut self) -> Material {
+        Material {
+            color: self.new_asset(self.default_color.clone()),
+            normal: self.new_asset(self.default_normal.clone()),
+            metallic_roughness: self.new_asset(self.default_color.clone()),
+            version_sum: 0,
+            gbuffer_bind: None
+        }
+    }
+
     pub fn new(
             render : &Arc<RenderBase>,
             task_server : &Arc<TaskServer>) -> AssetServer {

@@ -2,7 +2,7 @@ use std::{num::NonZeroU32, sync::{Arc, Mutex}};
 use std::collections::HashMap;
 use wgpu::{Extent3d, Texture, TextureFormat};
 use space_assets::*;
-use space_core::RenderBase;
+use space_core::{RenderBase, app::App};
 
 use space_game::*;
 use wgpu_profiler::GpuProfiler;
@@ -178,22 +178,25 @@ impl SchedulePlugin for GBufferPlugin {
         PluginName::Text("GBiffer filling".into())
     }
 
-    fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
-        let pipeline = GBufferFill::new(&game.render_base,
-                         &game.scene.camera_buffer,
+    fn add_system(&self, app: &mut App) {
+        let render = app.world.get_resource::<RenderApi>().unwrap().base.clone();
+        let size = app.world.get_resource::<ScreenSize>().unwrap().size.clone();
+
+        let pipeline = GBufferFill::new(&render,
+                         &app.world.get_resource::<CameraBuffer>().unwrap().buffer,
                          TextureFormat::Rgba32Float,
                          wgpu::Extent3d {
-                             width : game.api.size.width,
-                             height : game.api.size.height,
+                             width : size.width,
+                             height : size.height,
                              depth_or_array_layers : 1
                          });
-        game.scene.app.insert_resource(GBufferFill::spawn_framebuffer(&game.render_base.device, wgpu::Extent3d {
-            width : game.api.size.width,
-            height : game.api.size.height,
+        app.insert_resource(GBufferFill::spawn_framebuffer(&render.device, wgpu::Extent3d {
+            width : size.width,
+            height : size.height,
             depth_or_array_layers : 1
         }));
-        game.scene.app.insert_resource(pipeline);
-        builder.add_system_to_stage( GlobalStageStep::Render, gbuffer_filling);
+        app.insert_resource(pipeline);
+        app.add_system_to_stage( GlobalStageStep::Render, gbuffer_filling);
     }
 }
 

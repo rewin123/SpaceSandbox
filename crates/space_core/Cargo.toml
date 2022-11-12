@@ -12,6 +12,7 @@ bytemuck = { version = "1.4.1", features = [ "derive" ] }
 encase = {version = "0.3.0", features = ["nalgebra"] }
 nalgebra = "0.31.1"
 bevy_ecs = "0.8.1"
+bevy_app = "0.8.1"
 
 #[lib]
 #crate-type = ["dylib"]

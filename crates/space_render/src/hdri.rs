@@ -1,6 +1,6 @@
 use std::ops::DerefMut;
-use space_assets::Location;
-use space_core::Camera;
+use space_assets::{Location, AssetServer};
+use space_core::{Camera, app::App};
 use space_game::*;
 use space_core::ecs::*;
 
@@ -31,28 +31,32 @@ impl SchedulePlugin for HDRISystem {
         PluginName::Text("HDRI".into())
     }
 
-    fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
+    fn add_system(&self, app: &mut App) {
+        
+        let render = app.world.get_resource::<RenderApi>().unwrap().base.clone();
+        let size = app.world.get_resource::<ScreenSize>().unwrap().size.clone();
+
         { //clearing
-            let mut query = game.scene.app.world.query::<(Entity, &HDRISphere, )>();
-            let del_list: Vec<Entity> = query.iter(&game.scene.app.world).map(|(e, h)| {
+            let mut query = app.world.query::<(Entity, &HDRISphere, )>();
+            let del_list: Vec<Entity> = query.iter(&app.world).map(|(e, h)| {
                 e.clone()
             }).collect();
             for e in del_list {
-                game.scene.app.world.despawn(e);
+                app.world.despawn(e);
             }
         }
 
         let sphere = space_assets::wavefront::wgpu_load_gray_obj(
-            &game.render_base.device,
+            &render.device,
             "res/base_models/sphere.obj".into()).unwrap()[0].clone();
-        let mut location = Location::new(&game.render_base.device);
+        let mut location = Location::new(&render.device);
         location.pos.x = 10.0;
         location.scale *= -9000.0;
-        let mut material = game.get_default_material();
+        let mut material = app.world.get_resource_mut::<AssetServer>().unwrap().get_default_material();
         material.color =
-            game.get_assets().deref_mut().load_color_texture(self.path.clone(), true);
-        game.scene.app.world.spawn().insert_bundle((location, sphere, material, HDRISphere {}));
+            app.world.get_resource_mut::<AssetServer>().unwrap().load_color_texture(self.path.clone(), true);
+        app.world.spawn().insert_bundle((location, sphere, material, HDRISphere {}));
 
-        builder.add_system_to_stage(GlobalStageStep::RenderPrepare, hdri_update);
+        app.add_system_to_stage(GlobalStageStep::PreRender, hdri_update);
     }
 }

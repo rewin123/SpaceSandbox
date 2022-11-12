@@ -1,7 +1,7 @@
 use egui::{Context, Ui};
 use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, EguiContext};
 use space_render::add_game_render_plugins;
-use space_core::ecs::*;
+use space_core::{ecs::*, app::App};
 
 pub fn setup_station_build_scene(game : &mut Game) {
     game.clear_plugins();
@@ -27,8 +27,8 @@ impl SchedulePlugin for StationBuildMenu {
         space_game::PluginName::Text("Station build menu".into())
     }
 
-    fn add_system(&self, game : &mut Game, builder : &mut space_core::ecs::Schedule) {
-        builder.add_system_to_stage(GlobalStageStep::Render, station_menu);
+    fn add_system(&self, app : &mut App) {
+        app.add_system_to_stage(GlobalStageStep::Render, station_menu);
     }
     // fn show_ui(&mut self, game: &mut Game, ctx: Context) -> Vec<GameCommands> {
     //     let mut cmds = vec![];

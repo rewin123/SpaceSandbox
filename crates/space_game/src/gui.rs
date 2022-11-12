@@ -1,10 +1,12 @@
 use std::sync::Arc;
 use std::time::Instant;
+use bevy_app::App;
 use egui::{FontDefinitions, FullOutput, Style};
 use egui_wgpu_backend::ScreenDescriptor;
 use space_core::{RenderBase, ecs::*};
 use wgpu::{TextureView, SurfaceTexture};
 use space_core::ecs::*;
+use bevy_app::prelude::*;
 
 use crate::GlobalStageStep;
 
@@ -19,9 +21,9 @@ fn start_gui_frame(
 
 fn end_gui_frame(
     mut gui : ResMut<Gui>,
-    window : Res<winit::window::Window>,
+    window : NonSend<winit::window::Window>,
     mut egui_cmds : ResMut<EguiRenderCmds>) {
-    egui_cmds.output = gui.end_frame(Some(window.as_ref()));
+    egui_cmds.output = gui.end_frame(Some(&window));
 }
 
 #[derive(Component)]
@@ -47,13 +49,13 @@ fn egui_draw(
         &render_target.view);
 }
 
-pub fn setup_gui(world : &mut World, schedule : &mut Schedule) {
+pub fn setup_gui(app : &mut App) {
     
-    world.insert_resource(EguiRenderCmds {output : egui::FullOutput::default()});
+    app.insert_resource(EguiRenderCmds {output : egui::FullOutput::default()});
     
-    schedule.add_system_to_stage(GlobalStageStep::RenderPrepare, start_gui_frame);
-    schedule.add_system_to_stage(GlobalStageStep::PostUpdate, end_gui_frame);
-    schedule.add_system_to_stage(GlobalStageStep::PostRender, egui_draw);
+    app.add_system_to_stage(CoreStage::PreUpdate, start_gui_frame);
+    app.add_system_to_stage(CoreStage::PostUpdate, end_gui_frame);
+    app.add_system_to_stage(GlobalStageStep::PostRender, egui_draw);
 }
 
 pub struct Gui {

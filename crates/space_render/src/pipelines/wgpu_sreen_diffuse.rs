@@ -3,10 +3,10 @@ use std::num::NonZeroU32;
 use std::sync::Arc;
 use bytemuck::Zeroable;
 use rand::Rng;
-use space_game::{SchedulePlugin, PluginName, GlobalStageStep};
+use space_game::{SchedulePlugin, PluginName, GlobalStageStep, ScreenSize, RenderApi};
 use wgpu::{Extent3d, util::DeviceExt};
 use space_assets::*;
-use space_core::{Camera, RenderBase};
+use space_core::{Camera, RenderBase, app::App};
 use crate::{pipelines::{CommonFramebuffer, GFramebuffer}};
 use encase::*;
 use wgpu_profiler::GpuProfiler;
@@ -61,12 +61,16 @@ impl SchedulePlugin for SSDiffuseSystem {
         PluginName::Text("SSAO".into())
     }
 
-    fn add_system(&self, game : &mut space_game::Game, builder : &mut Schedule) {
+    fn add_system(&self, app : &mut App) {
+        
+        let render = app.world.get_resource::<RenderApi>().unwrap().base.clone();
+        let size = app.world.get_resource::<ScreenSize>().unwrap().size.clone();
+
         let pipeline = SSDiffuse::new(
-            &game.render_base, 
+            &render, 
             wgpu::Extent3d {
-                width : game.api.size.width / 2,
-                height : game.api.size.height / 2,
+                width : size.width / 2,
+                height : size.height / 2,
                 depth_or_array_layers : 1,
             }, 
             1, 
@@ -75,11 +79,11 @@ impl SchedulePlugin for SSDiffuseSystem {
 
         let frame = pipeline.spawn_framebuffer();
         
-        game.scene.app.insert_resource(frame);
-        game.scene.app.insert_resource(pipeline);
+        app.insert_resource(frame);
+        app.insert_resource(pipeline);
 
-        builder.add_system_to_stage(GlobalStageStep::Render, ssao_impl);
-        builder.add_system_to_stage(GlobalStageStep::RenderPrepare, ssao_update);
+        app.add_system_to_stage(GlobalStageStep::Render, ssao_impl);
+        app.add_system_to_stage(GlobalStageStep::PreRender, ssao_update);
     }
 }
 

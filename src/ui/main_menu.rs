@@ -1,7 +1,7 @@
 use egui::*;
 use space_game::{Game, GameCommands, GuiPlugin, SchedulePlugin, GlobalStageStep, EguiContext};
 use crate::scenes::setup_station_build_scene;
-use space_core::ecs::*;
+use space_core::{ecs::*, app::App};
 
 fn main_menu(
     ctx : Res<EguiContext>
@@ -38,7 +38,7 @@ impl SchedulePlugin for MainMenu {
         space_game::PluginName::Text("Main menu".into())
     }
 
-    fn add_system(&self, game : &mut Game, builder : &mut space_core::ecs::Schedule) {
-        builder.add_system_to_stage(GlobalStageStep::Update, main_menu);
+    fn add_system(&self, app : &mut App) {
+        app.add_system_to_stage(space_core::app::CoreStage::Update, main_menu);
     }
 }

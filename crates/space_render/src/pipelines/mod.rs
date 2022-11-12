@@ -17,6 +17,7 @@ pub mod wgpu_dir_light;
 
 use space_assets::*;
 
+use space_core::app::App;
 use space_core::{Camera, RenderBase};
 use space_game::*;
 pub use wgpu_gbuffer_fill::*;
@@ -93,13 +94,16 @@ impl SchedulePlugin for FastDepthPlugin {
         space_game::PluginName::Text("FastDepth".into())
     }
 
-    fn add_system(&self, game : &mut space_game::Game, builder : &mut Schedule) {
+    fn add_system(&self, app : &mut App) {
+
+        let size = app.world.get_resource::<ScreenSize>().unwrap().size.clone();
+
         let depth_desc = TextureTransformDescriptor {
-            render : game.render_base.clone(),
+            render : app.world.get_resource::<RenderApi>().unwrap().base.clone(),
             format : wgpu::TextureFormat::R16Float,
             size : wgpu::Extent3d {
-                width : game.api.size.width,
-                height : game.api.size.height,
+                width : size.width,
+                height : size.height,
                 depth_or_array_layers : 1
             },
             input_count : 1,
@@ -121,11 +125,11 @@ impl SchedulePlugin for FastDepthPlugin {
             tex
         };
 
-        builder.add_system_to_stage(GlobalStageStep::Render, fast_depth);
-        builder.add_system_to_stage(GlobalStageStep::RenderPrepare, fast_depth_update);
+        app.add_system_to_stage(GlobalStageStep::Render, fast_depth);
+        app.add_system_to_stage(GlobalStageStep::PreRender, fast_depth_update);
 
-        game.scene.app.insert_resource(DepthPipeline {pipeline : depth_calc});
-        game.scene.app.insert_resource(frame);
+        app.insert_resource(DepthPipeline {pipeline : depth_calc});
+        app.insert_resource(frame);
     }
 }
 
@@ -170,18 +174,21 @@ impl SchedulePlugin for SSAOFilterSystem {
         PluginName::Text("SSAO Filter".into())
     }
 
-    fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
+    fn add_system(&self, app: &mut App) {
+
+        let size = app.world.get_resource::<ScreenSize>().unwrap().size.clone();
+        let render = app.world.get_resource::<RenderApi>().unwrap().base.clone();
 
         let uniform = SmoothUniform {
-            size : nalgebra::Vector2::new(game.api.size.width as f32, game.api.size.height as f32)
+            size : nalgebra::Vector2::new(size.width as f32, size.height as f32)
         };
 
         let pipeline = TextureTransformPipeline::new(&TextureTransformDescriptor {
-            render: game.render_base.clone(),
+            render: render.clone(),
             format: wgpu::TextureFormat::Rgba32Float,
             size: wgpu::Extent3d {
-                width : game.api.size.width,
-                height : game.api.size.height,
+                width : size.width,
+                height : size.height,
                 depth_or_array_layers : 1
             },
             input_count: 2,
@@ -194,10 +201,10 @@ impl SchedulePlugin for SSAOFilterSystem {
 
         let buffer = pipeline.spawn_framebuffer().dst.remove(0);
 
-        game.scene.app.insert_resource(SSAOFiltered {tex : buffer});
-        game.scene.app.insert_resource(SSAOFilter {pipeline});
+        app.insert_resource(SSAOFiltered {tex : buffer});
+        app.insert_resource(SSAOFilter {pipeline});
 
-        builder.add_system_to_stage(GlobalStageStep::Render, ssao_filter_impl);
+        app.add_system_to_stage(GlobalStageStep::Render, ssao_filter_impl);
     }
 }
 
@@ -217,7 +224,6 @@ pub struct State {
     gamma_correction : TextureTransformPipeline,
     present : TexturePresent,
     gamma_buffer : CommonFramebuffer,
-    device_name : String,
 
     draw_state : DrawState,
     ambient_light : crate::light::AmbientLight,
@@ -227,12 +233,14 @@ pub struct State {
 
 impl State {
     // Creating some of the wgpu types requires async code
-    pub async fn new(game : &mut Game) -> Self {
-        let render = game.get_render_base();
+    pub async fn new(app : &mut App) -> Self {
+        let render = app.world.get_resource::<RenderApi>().unwrap().base.clone();
+        let size = app.world.get_resource::<ScreenSize>().unwrap().size.clone();
+        let screen_format = app.world.get_resource::<ScreenSize>().unwrap().format.clone();
 
         let extent = wgpu::Extent3d {
-            width : game.api.config.width,
-            height : game.api.config.height,
+            width : size.width,
+            height : size.height,
             depth_or_array_layers : 1
         };
 
@@ -243,15 +251,18 @@ impl State {
 
         let present = TexturePresent::new(
             &render,
-            game.api.config.format,
+            screen_format,
             wgpu::Extent3d {
-                width : game.api.config.width,
-                height : game.api.config.height,
+                width : size.width,
+                height : size.height,
                 depth_or_array_layers : 1
             });
         let point_light_shadow = PointLightShadowPipeline::new(&render);
 
-        let light_pipeline = PointLightPipeline::new(&render, &game.scene.camera_buffer, extent);
+        let light_pipeline = PointLightPipeline::new(
+            &render, 
+            &app.world.get_resource::<CameraBuffer>().unwrap().buffer, 
+            extent);
         let light_buffer = light_pipeline.spawn_framebuffer(&render.device, extent);
 
         let gamma_desc = TextureTransformDescriptor {
@@ -316,14 +327,13 @@ impl State {
 
         let ss_buffer = ss_pipeline.spawn_framebuffer();
 
-        let device_name = game.api.adapter.get_info().name;
+        // let device_name = game.api.adapter.get_info().name;
 
         Self {
             present,
             render,
             gamma_correction,
             gamma_buffer,
-            device_name,
             draw_state : DrawState::DirectLight,
             ambient_light : crate::light::AmbientLight {
                 color : na::Vector3::new(1.0f32, 1.0, 1.0) * 0.05f32
@@ -403,12 +413,12 @@ impl space_game::SchedulePlugin for StateSystem {
         PluginName::Text("State".into())
     }
 
-    fn add_system(&self, game : &mut Game, builder : &mut space_core::ecs::Schedule) {
-        let state = pollster::block_on(State::new(game));
+    fn add_system(&self, app: &mut space_core::app::App) {
+        let state = pollster::block_on(State::new(app));
         
-        builder.add_system_to_stage(GlobalStageStep::RenderPrepare, state_update);
-        builder.add_system_to_stage(GlobalStageStep::Render, state_render);
-        game.scene.app.insert_resource(state);
+        app.add_system_to_stage(GlobalStageStep::PreRender, state_update);
+        app.add_system_to_stage(GlobalStageStep::Render, state_render);
+        app.insert_resource(state);
     }
 }
 
@@ -517,7 +527,5 @@ impl space_game::RenderPlugin for State {
                 ui.selectable_value(&mut self.draw_state, DrawState::AmbientOcclusionSmooth, "AmbientOcclusionSmooth");
                 ui.selectable_value(&mut self.draw_state, DrawState::Depth, "Depth");
             });
-
-        ui.label(&self.device_name);
     }
 }

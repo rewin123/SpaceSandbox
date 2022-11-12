@@ -1,5 +1,6 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
+use space_core::app::App;
 use wgpu::{Buffer, Extent3d, TextureDimension};
 use crate::light::PointLight;
 use downcast_rs::*;
@@ -101,16 +102,21 @@ impl SchedulePlugin for DirLightSystem {
         PluginName::Text("Directional light".into())
     }
 
-    fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
-        let pipeline = DirLightPipeline::new(&game.render_base, &game.scene.camera_buffer,
+    fn add_system(&self, app: &mut App) {
+
+        let render = app.world.get_resource::<RenderApi>().unwrap().base.clone();
+        let size = app.world.get_resource::<ScreenSize>().unwrap().size.clone();
+
+        let pipeline = DirLightPipeline::new(&render, 
+            &app.world.get_resource::<CameraBuffer>().unwrap().buffer,
             wgpu::Extent3d {
-                width : game.api.size.width,
-                height : game.api.size.height,
+                width : size.width,
+                height : size.height,
                 depth_or_array_layers : 1
             });
 
-        builder.add_system_to_stage(GlobalStageStep::Render, dir_light_impl);
-        game.scene.app.insert_resource(pipeline);
+        app.add_system_to_stage(GlobalStageStep::Render, dir_light_impl);
+        app.insert_resource(pipeline);
     }
 }
 

@@ -1,4 +1,5 @@
 use std::time::Instant;
+use bevy_app::App;
 use space_core::ecs::*;
 use egui::Ui;
 use crate::{EguiContext, Game, GlobalStageStep, PluginName, SchedulePlugin};
@@ -22,11 +23,11 @@ impl SchedulePlugin for FpsCounterSystem {
         PluginName::Text("FpsCounter".into())
     }
 
-    fn add_system(&self, game: &mut Game, builder: &mut Schedule) {
+    fn add_system(&self, app: &mut App) {
         let fps = FpsCounter::default();
-        game.scene.app.insert_resource(fps);
+        app.insert_resource(fps);
 
-        builder.add_system_to_stage(GlobalStageStep::Gui, fps_counter_system);
+        app.add_system_to_stage(GlobalStageStep::Gui, fps_counter_system);
     }
 }
 

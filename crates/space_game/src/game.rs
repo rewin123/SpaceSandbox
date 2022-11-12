@@ -5,7 +5,7 @@ use std::mem::swap;
 use std::ops::{DerefMut, Deref};
 use std::sync::{Arc, RwLock};
 use atomic_refcell::AtomicRefMut;
-use bevy_app::App;
+use bevy_app::{App, CoreStage};
 use egui::color::gamma_from_linear;
 use wgpu::{Extent3d, ShaderStages, SurfaceTexture, TextureView};
 use winit::dpi::PhysicalSize;
@@ -54,7 +54,6 @@ impl DerefMut for EguiContext {
 pub struct GameScene {
     pub app : App,
     pub camera : Camera,
-    pub camera_buffer : wgpu::Buffer,
 }
 
 
@@ -184,7 +183,7 @@ impl Game {
         encoder.copy_buffer_to_buffer(
             &tmp_buffer,
             0,
-            &self.scene.camera_buffer,
+            &self.scene.app.world.get_resource::<CameraBuffer>().unwrap().buffer,
             0,
             inner.len() as wgpu::BufferAddress);
         self.render_base.queue.submit(iter::once(encoder.finish()));
@@ -287,7 +286,9 @@ impl Game {
         let mut event_loop = self.event_loop.take().unwrap();
 
         event_loop.run(move |event, _, control_flow| {
-            self.scene.app.world.get_resource_mut::<Gui>().unwrap().platform.handle_event(&event);
+            if let Some(mut gui) = self.scene.app.world.get_resource_mut::<Gui>() {
+                gui.platform.handle_event(&event);
+            }
             let id = self.scene.app.world.get_resource::<winit::window::Window>().unwrap().id();
             match event {
                 Event::WindowEvent {
@@ -366,24 +367,19 @@ impl Game {
     pub fn update_scene_scheldue(&mut self) {
         let mut plugins = self.plugins.take().unwrap();
 
-        let mut builder = Schedule::default();
-        builder.add_stage(GlobalStageStep::RenderPrepare, SystemStage::parallel());
-        builder.add_stage_after(GlobalStageStep::RenderPrepare,GlobalStageStep::Update, SystemStage::parallel());
-        builder.add_stage_after(GlobalStageStep::RenderPrepare, GlobalStageStep::RenderStart, SystemStage::parallel());
-        builder.add_stage_after(GlobalStageStep::RenderStart, GlobalStageStep::Render, SystemStage::single_threaded());
-        builder.add_stage_after(GlobalStageStep::Render, GlobalStageStep::PostRender, SystemStage::single_threaded());
-        builder.add_stage_after(GlobalStageStep::Update, GlobalStageStep::Gui, SystemStage::single_threaded());
-        builder.add_stage_after(GlobalStageStep::Gui,GlobalStageStep::PostUpdate, SystemStage::parallel());
+        self.scene.app.schedule = Schedule::default();
+        self.scene.app.add_default_stages();
+
+        self.scene.app.add_stage_after(CoreStage::PreUpdate, GlobalStageStep::PreRender, SystemStage::parallel());
+        self.scene.app.add_stage_after(GlobalStageStep::PreRender, GlobalStageStep::Render, SystemStage::single_threaded());
+        self.scene.app.add_stage_after(GlobalStageStep::Render, GlobalStageStep::PostRender, SystemStage::single_threaded());
+        self.scene.app.add_stage_after(GlobalStageStep::PostRender, GlobalStageStep::Gui, SystemStage::single_threaded());
+        self.scene.app.add_system_to_stage(GlobalStageStep::Render, poll_device);
         //push render prepare
         for plugin in &plugins.scheldue_plugin {
-            plugin.add_system(self, &mut builder);
+            plugin.add_system(&mut self.scene.app);
         }
-        setup_gui(&mut self.scene.app.world, &mut builder);
-
-        builder.add_system_to_stage(GlobalStageStep::RenderStart, poll_device);
-        
-
-        self.scene.app.schedule = builder;
+        setup_gui(&mut self.scene.app);
         self.plugins = Some(plugins);
     }
 }
@@ -425,8 +421,7 @@ impl Default for Game {
 
         let mut scene = GameScene {
             app : App::default(),
-            camera : Camera::default(),
-            camera_buffer
+            camera : Camera::default()
         };
 
         scene.app.insert_resource(AssetServer::new(&render_base, &task_server));
@@ -440,6 +435,11 @@ impl Default for Game {
         scene.app.insert_resource(EguiContext {ctx : gui.platform.context()});
         scene.app.insert_resource(gui);
         scene.app.insert_non_send_resource(window);
+
+        scene.app.insert_resource(RenderApi {base : render_base.clone()});
+        scene.app.insert_resource(ScreenSize {size : api.size.clone(), format : api.config.format});
+
+        scene.app.insert_resource(CameraBuffer {buffer : camera_buffer});
 
         Self {
             event_loop : Some(event_loop),

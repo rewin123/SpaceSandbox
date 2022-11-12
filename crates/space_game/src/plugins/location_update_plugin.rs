@@ -1,6 +1,7 @@
 use space_assets::Location;
 use crate::*;
 use space_core::ecs::*;
+use bevy_app::prelude::*;
 
 fn update_loc_buffer(mut query: Query<&mut Location>) {
     for mut loc in &mut query {
@@ -18,8 +19,8 @@ impl SchedulePlugin for LocUpdateSystem {
         PluginName::Text("LocUpdateSystem".into())
     }
 
-    fn add_system(&self, game: &mut Game, builder:  &mut space_core::ecs::Schedule) {
-        builder.add_system_to_stage(GlobalStageStep::Update,update_loc_buffer);
+    fn add_system(&self, app:  &mut space_core::app::App) {
+        app.add_system_to_stage(CoreStage::Update,update_loc_buffer);
     }
 }
 
