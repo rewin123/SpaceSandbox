@@ -1,10 +1,10 @@
 use egui::*;
-use space_game::{Game, GameCommands, GuiPlugin, SchedulePlugin, GlobalStageStep, EguiContext};
-use crate::scenes::setup_station_build_scene;
+use space_game::{Game, GameCommands, GuiPlugin, SchedulePlugin, GlobalStageStep, EguiContext, GameScene, SceneType};
 use space_core::{ecs::*, app::App};
 
 fn main_menu(
-    ctx : Res<EguiContext>
+    ctx : Res<EguiContext>,
+    mut scene : ResMut<State<SceneType>>
 ) {
     egui::Window::new("Space sandbox")
         .resizable(false)
@@ -13,12 +13,7 @@ fn main_menu(
         .show(&ctx, |ui| {
             ui.vertical_centered(|ui| {
                 if ui.button("New station").clicked() {
-                    // let cmd = GameCommands::AbstractChange(Box::new(
-                    //     |game| {
-                    //         setup_station_build_scene(game);
-                    //     }
-                    // ));
-                    // cmds.push(cmd);
+                    scene.set(SceneType::StationBuilding).unwrap();
                 }
                 ui.button("Load station");
                 ui.button("Connect to server");
@@ -39,6 +34,8 @@ impl SchedulePlugin for MainMenu {
     }
 
     fn add_system(&self, app : &mut App) {
-        app.add_system_to_stage(space_core::app::CoreStage::Update, main_menu);
+        app.add_system_set(
+            SystemSet::on_update(SceneType::MainMenu)
+                .with_system(main_menu));
     }
 }

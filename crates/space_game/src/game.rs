@@ -375,6 +375,7 @@ impl Game {
         self.scene.app.add_stage_after(GlobalStageStep::Render, GlobalStageStep::PostRender, SystemStage::single_threaded());
         self.scene.app.add_stage_after(GlobalStageStep::PostRender, GlobalStageStep::Gui, SystemStage::single_threaded());
         self.scene.app.add_system_to_stage(GlobalStageStep::Render, poll_device);
+        self.scene.app.add_state(SceneType::MainMenu);
         //push render prepare
         for plugin in &plugins.scheldue_plugin {
             plugin.add_system(&mut self.scene.app);

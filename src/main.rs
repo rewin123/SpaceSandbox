@@ -1,6 +1,7 @@
 use space_game::Game;
 use space_render::add_game_render_plugins;
 use SpaceSandbox::init_logger;
+use SpaceSandbox::scenes::StationBuildMenu;
 
 use SpaceSandbox::ui::*;
 
@@ -12,6 +13,7 @@ async fn run() {
     let mut game = Game::default();
     add_game_render_plugins(&mut game);
     game.add_schedule_plugin(MainMenu{});
+    game.add_schedule_plugin(StationBuildMenu{});
     game.update_scene_scheldue();
     game.run();
 }
