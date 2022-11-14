@@ -22,7 +22,6 @@ use space_core::{Camera, RenderBase};
 use space_game::*;
 pub use wgpu_gbuffer_fill::*;
 pub use wgpu_light_fill::*;
-use wgpu_profiler::GpuProfiler;
 pub use wgpu_texture_present::*;
 pub use wgpu_light_shadow::*;
 pub use wgpu_textures_transform::*;

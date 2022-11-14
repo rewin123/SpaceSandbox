@@ -1,5 +1,5 @@
 use std::sync::{Arc, Mutex};
-use crate::asset_server::{Asset, SpaceAssetServer};
+use crate::asset_server::{SpaceAsset, SpaceAssetServer};
 use crate::handle::Handle;
 use nalgebra::*;
 use wgpu::util::DeviceExt;
@@ -246,6 +246,6 @@ impl Material {
 }
 
 
-impl Asset for TextureBundle {
+impl SpaceAsset for TextureBundle {
 
 }

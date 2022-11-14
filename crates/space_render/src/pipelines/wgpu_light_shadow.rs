@@ -1,7 +1,6 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
 use wgpu::{Extent3d, TextureDimension};
-use wgpu_profiler::GpuProfiler;
 use crate::light::{PointLight, PointLightShadow};
 use space_shaders::*;
 use space_core::RenderBase;

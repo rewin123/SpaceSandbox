@@ -145,7 +145,7 @@ impl Game {
             plugin.window_resize(self, new_size);
         }
         self.plugins = Some(plugins);
-        self.update_scene_scheldue();
+        // self.update_scene_scheldue();
     }
 
     fn camera_update(&mut self) {
@@ -371,9 +371,12 @@ impl Game {
     pub fn update_scene_scheldue(&mut self) {
         let mut plugins = self.plugins.take().unwrap();
 
+        println!("Update scene schedule");
+
         self.scene.app.schedule = Schedule::default();
         self.scene.app.add_default_stages();
-        // self.scene.app.add_plugin(AssetPlugin::default());
+        self.scene.app.add_plugins(bevy::MinimalPlugins);
+        self.scene.app.add_plugin(AssetPlugin::default());
 
         self.scene.app.add_stage_after(CoreStage::PreUpdate, GlobalStageStep::PreRender, SystemStage::parallel());
         self.scene.app.add_stage_after(GlobalStageStep::PreRender, GlobalStageStep::Render, SystemStage::single_threaded());

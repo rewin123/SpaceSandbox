@@ -1,9 +1,9 @@
 use std::sync::Arc;
-use crate::asset_server::{Asset, AssetServerGlobal};
+use crate::asset_server::{SpaceAsset, AssetServerGlobal};
 use crate::handle::HandleUntyped;
 
 pub struct AssetHolder {
-    ptr : Arc<dyn Asset>,
+    ptr : Arc<dyn SpaceAsset>,
     count : i32,
     version : u32,
     watchers : Vec<HandleUntyped>,
@@ -11,7 +11,7 @@ pub struct AssetHolder {
 }
 
 impl AssetHolder {
-    pub fn new(ptr : Arc<dyn Asset>) -> Self {
+    pub fn new(ptr : Arc<dyn SpaceAsset>) -> Self {
         AssetHolder {
             ptr,
             count : 0,
@@ -21,7 +21,7 @@ impl AssetHolder {
         }
     }
 
-    pub fn get(&self) -> &Arc<dyn Asset> {
+    pub fn get(&self) -> &Arc<dyn SpaceAsset> {
         &self.ptr
     }
 
@@ -34,7 +34,7 @@ impl AssetHolder {
         self.count <= 0
     }
 
-    pub fn update_data(&mut self, ptr : Arc<dyn Asset>, core : &Arc<AssetServerGlobal>) {
+    pub fn update_data(&mut self, ptr : Arc<dyn SpaceAsset>, core : &Arc<AssetServerGlobal>) {
         self.ptr = ptr;
         self.version += 1;
 

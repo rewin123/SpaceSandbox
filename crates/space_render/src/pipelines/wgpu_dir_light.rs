@@ -10,7 +10,6 @@ use space_core::{RenderBase, ScreenMesh};
 use space_game::*;
 use crate::pipelines::{DirLightTexture, Pipeline, PipelineDesc, TextureTransformPipeline};
 use crate::pipelines::wgpu_gbuffer_fill::GFramebuffer;
-use wgpu_profiler::GpuProfiler;
 use nalgebra as na;
 use encase::*;
 use wgpu::util::DeviceExt;

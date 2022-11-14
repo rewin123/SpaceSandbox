@@ -5,7 +5,6 @@ use space_assets::*;
 use space_core::{RenderBase, app::App};
 
 use space_game::*;
-use wgpu_profiler::GpuProfiler;
 use space_game::PluginName::Text;
 
 use space_core::ecs::*;

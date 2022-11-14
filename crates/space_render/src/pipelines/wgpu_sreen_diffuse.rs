@@ -9,7 +9,6 @@ use space_assets::*;
 use space_core::{Camera, RenderBase, app::App};
 use crate::{pipelines::{CommonFramebuffer, GFramebuffer}};
 use encase::*;
-use wgpu_profiler::GpuProfiler;
 
 use space_core::ecs::*;
 use super::{wgpu_ssao::SSAOFrame, DirLightTexture};

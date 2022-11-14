@@ -46,6 +46,7 @@ impl ApiBase {
             width: size.width,
             height: size.height,
             present_mode: wgpu::PresentMode::Immediate,
+            alpha_mode: wgpu::CompositeAlphaMode::Auto
         };
         surface.configure(&device, &config);
 

@@ -1,3 +1,5 @@
+#![feature(default_free_fn)]
+
 pub mod ui;
 pub mod scenes;
 

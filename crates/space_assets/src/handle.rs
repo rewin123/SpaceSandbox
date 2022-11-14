@@ -2,30 +2,30 @@ use std::any::TypeId;
 use std::hash::Hash;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use crate::asset_server::{Asset, AssetServerGlobal};
+use crate::asset_server::{SpaceAsset, AssetServerGlobal};
 
 pub type HandleId = usize;
 
-pub struct Handle<T : Asset> {
+pub struct Handle<T : SpaceAsset> {
     idx : HandleId,
     marker : PhantomData<T>,
     asset_server : Arc<AssetServerGlobal>,
     strong : bool
 }
 
-impl<T : Asset> PartialEq for Handle<T> {
+impl<T : SpaceAsset> PartialEq for Handle<T> {
     fn eq(&self, other: &Self) -> bool {
         self.idx == other.idx && self.strong == other.strong
     }
 }
 
-impl<T : Asset> Hash for Handle<T> {
+impl<T : SpaceAsset> Hash for Handle<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.idx.hash(state);
     }
 }
 
-impl<T> Handle<T> where T : Asset {
+impl<T> Handle<T> where T : SpaceAsset {
 
     pub fn new(idx : HandleId, asset_server : Arc<AssetServerGlobal>, strong : bool) -> Self {
         let res = Self {
@@ -67,7 +67,7 @@ impl<T> Handle<T> where T : Asset {
     }
 }
 
-impl<T> Drop for Handle<T> where T : Asset {
+impl<T> Drop for Handle<T> where T : SpaceAsset {
     fn drop(&mut self) {
         if self.strong {
             self.asset_server.destroy_queue.lock().unwrap().push(self.idx);
@@ -75,7 +75,7 @@ impl<T> Drop for Handle<T> where T : Asset {
     }
 }
 
-impl<T> Clone for Handle<T> where T : Asset {
+impl<T> Clone for Handle<T> where T : SpaceAsset {
     fn clone(&self) -> Self {
         Handle::new(self.idx, self.asset_server.clone(), self.strong)
     }
@@ -107,7 +107,7 @@ impl HandleUntyped {
         HandleUntyped::new(self.idx, self.tp, self.asset_server.clone(), true)
     }
 
-    pub fn get_typed<T : Asset>(&self) -> Handle<T> {
+    pub fn get_typed<T : SpaceAsset>(&self) -> Handle<T> {
         Handle::<T>::new(self.idx, self.asset_server.clone(), self.strong)
     }
 

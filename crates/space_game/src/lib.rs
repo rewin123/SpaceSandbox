@@ -94,9 +94,10 @@ impl<T> AssetLoader for RonLoader<T>
     }
 }
 
+#[derive(Default)]
 pub struct RonAssetPlugin<T> {
     pub ext : Vec<&'static str>,
-    phantom : PhantomData<T>
+    pub phantom : PhantomData<T>
 }
 
 impl<T> Plugin for RonAssetPlugin<T>

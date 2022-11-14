@@ -8,14 +8,14 @@ edition = "2021"
 [dependencies]
 winit = "0.27.4"
 egui  = "0.19.0"
-wgpu  = {version = "0.13", features = ["webgl"]}
-egui_wgpu_backend = "0.19"
+wgpu  = "0.14"
+egui_wgpu_backend = "0.20"
 egui_winit_platform = "0.16"
 pollster = "0.2"
 encase = {version = "0.3.0", features = ["nalgebra"] }
 atomic_refcell = "0.1.8"
 wgpu-profiler = "0.9.1"
-bevy = "*"
+bevy = "0.9.0"
 serde = "*"
 
 space_core = {path = "../space_core"}

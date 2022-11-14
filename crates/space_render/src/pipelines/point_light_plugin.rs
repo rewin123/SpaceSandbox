@@ -8,7 +8,6 @@ use space_assets::Material;
 use space_assets::Location;
 use crate::light::PointLight;
 
-use wgpu_profiler::GpuProfiler;
 use space_core::ecs::*;
 
 use super::DirLightTexture;

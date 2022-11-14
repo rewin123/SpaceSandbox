@@ -18,11 +18,11 @@ use crate::mesh::TextureBundle;
 use crate::mipmap_generator::MipmapGenerator;
 use space_core::ecs::*;
 
-pub trait Asset : DowncastSync {
+pub trait SpaceAsset: DowncastSync {
 
 }
 
-impl_downcast!(sync Asset);
+impl_downcast!(sync SpaceAsset);
 
 
 pub struct AssetServerDecriptor {
@@ -34,7 +34,7 @@ pub struct AssetServerDecriptor {
 pub struct AssetServerGlobal {
     pub destroy_queue : Mutex<Vec<HandleId>>,
     pub create_queue : Mutex<Vec<HandleId>>,
-    pub background_loading : Mutex<Vec<(HandleUntyped, Arc<dyn Asset>)>>,
+    pub background_loading : Mutex<Vec<(HandleUntyped, Arc<dyn SpaceAsset>)>>,
     pub mark_to_update : Mutex<Vec<HandleId>>
 }
 
@@ -240,7 +240,7 @@ impl SpaceAssetServer {
         }
     }
 
-    pub fn get<T : Asset>(&self, handle : &Handle<T>) -> Option<Arc<T>> {
+    pub fn get<T : SpaceAsset>(&self, handle : &Handle<T>) -> Option<Arc<T>> {
         if let Some(val) = self.assets.get(&handle.get_idx()) {
            if let Ok(res) = val.get().clone().downcast_arc::<T>() {
                Some(res)
@@ -252,7 +252,7 @@ impl SpaceAssetServer {
         }
     }
 
-    pub fn get_version<T : Asset>(&self, handle : &Handle<T>) -> Option<u32> {
+    pub fn get_version<T : SpaceAsset>(&self, handle : &Handle<T>) -> Option<u32> {
         if let Some(val) = self.assets.get(&handle.get_idx()) {
             Some(val.get_version())
         } else {
@@ -260,7 +260,7 @@ impl SpaceAssetServer {
         }
     }
 
-    pub fn get_untyped<T : Asset>(&self, handle : &HandleUntyped) -> Option<&T> {
+    pub fn get_untyped<T : SpaceAsset>(&self, handle : &HandleUntyped) -> Option<&T> {
         if let Some(val) = self.assets.get(&handle.get_idx()) {
            val.get().downcast_ref::<T>()
         } else {
@@ -268,7 +268,7 @@ impl SpaceAssetServer {
         }
     }
 
-    pub fn new_asset<T : Asset>(&mut self, val : Arc<T>) -> Handle<T> {
+    pub fn new_asset<T : SpaceAsset>(&mut self, val : Arc<T>) -> Handle<T> {
         let holder = AssetHolder::new(val);
         self.counter += 1;
         self.assets.insert(self.counter, holder);
