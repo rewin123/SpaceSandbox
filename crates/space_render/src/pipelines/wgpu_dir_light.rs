@@ -24,6 +24,7 @@ pub struct DirLightUniform {
 }
 
 
+#[derive(Component)]
 pub struct DirLight {
     pub dir : nalgebra::Vector3<f32>,
     pub color : nalgebra::Vector3<f32>,
@@ -84,8 +85,7 @@ fn dir_light_impl(
     mut fill : ResMut<DirLightPipeline>,
     mut mesh_query : Query<(&GMeshPtr, &Material, &Location)>,
     mut light_query: Query<(&mut PointLight)>,
-    mut encoder : ResMut<wgpu::CommandEncoder>,
-    mut  profiler : ResMut<GpuProfiler>,
+    mut encoder : ResMut<RenderCommands>,
     dst : Res<DirLightTexture>,
     gbuffer : Res<GFramebuffer>
 ) {
@@ -120,6 +120,7 @@ impl SchedulePlugin for DirLightSystem {
     }
 }
 
+#[derive(Resource)]
 pub struct DirLightPipeline {
     pub pipeline : wgpu::RenderPipeline,
     camera_bind_group_layout : wgpu::BindGroupLayout,

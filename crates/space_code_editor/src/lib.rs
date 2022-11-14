@@ -348,7 +348,7 @@ impl WgslEditor {
         }
     }
 
-    fn popup_select_file(&mut self, ctx : &Context, assets : &AssetServer) {
+    fn popup_select_file(&mut self, ctx : &Context, assets : &SpaceAssetServer) {
         let mut window = egui::Window::new("Select shader")
             .collapsible(false);
 
@@ -394,7 +394,7 @@ impl WgslEditor {
         ui.fonts().layout_job(job)
     }
 
-    fn draw_main_window(&mut self, ctx : &Context, assets : &AssetServer) {
+    fn draw_main_window(&mut self, ctx : &Context, assets : &SpaceAssetServer) {
 
         let Self {
             parser, ..
@@ -427,7 +427,7 @@ impl WgslEditor {
         });
     }
 
-    pub fn draw_winow(&mut self, ctx : &Context, assets : &AssetServer) {
+    pub fn draw_winow(&mut self, ctx : &Context, assets : &SpaceAssetServer) {
         if self.show {
             if self.select_file {
                 self.popup_select_file(ctx, assets);

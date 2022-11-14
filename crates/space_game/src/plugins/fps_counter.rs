@@ -1,5 +1,5 @@
 use std::time::Instant;
-use bevy_app::App;
+use bevy::app::prelude::App;
 use space_core::ecs::*;
 use egui::Ui;
 use crate::{EguiContext, Game, GlobalStageStep, PluginName, SchedulePlugin};
@@ -31,7 +31,7 @@ impl SchedulePlugin for FpsCounterSystem {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct FpsCounter {
     prev : Option<std::time::Instant>,
     counter : i32,

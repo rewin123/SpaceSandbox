@@ -1,5 +1,6 @@
 use encase::*;
 use nalgebra as na;
+use crate::ecs::*;
 
 #[derive(ShaderType)]
 pub struct CameraUniform {
@@ -8,7 +9,7 @@ pub struct CameraUniform {
     pub pos : nalgebra::Vector3<f32>
 }
 
-#[derive(Clone)]
+#[derive(Clone, Resource)]
 pub struct Camera {
     pub pos : nalgebra::Point3<f32>,
     pub frw : nalgebra::Vector3<f32>,

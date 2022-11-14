@@ -10,6 +10,7 @@ use space_game::PluginName::Text;
 
 use space_core::ecs::*;
 
+#[derive(Resource)]
 pub struct GFramebuffer {
     pub diffuse : TextureBundle,
     pub normal : TextureBundle,
@@ -146,6 +147,7 @@ impl GFramebuffer {
     }
 }
 
+#[derive(Resource)]
 pub struct GBufferFill {
     pub pipeline : wgpu::RenderPipeline,
     camera_bind_group_layout : wgpu::BindGroupLayout,
@@ -160,9 +162,8 @@ fn gbuffer_filling(
     mut fill : ResMut<GBufferFill>,
     mut query : Query<(&GMeshPtr, &mut Material, &Location)>,
     mut gbuffer : ResMut<GFramebuffer>,
-    mut assets : ResMut<AssetServer>,
-    mut encoder : ResMut<wgpu::CommandEncoder>,
-    mut profiler : ResMut<GpuProfiler>) {
+    mut assets : ResMut<SpaceAssetServer>,
+    mut encoder : ResMut<RenderCommands>) {
 
     // profiler.begin_scope("GBuffer fill", encoder, &fill.render.device);
     fill.draw(query, gbuffer, assets, encoder);
@@ -372,8 +373,8 @@ impl GBufferFill {
     pub fn draw(&mut self,
                 mut query : Query<(&GMeshPtr, &mut Material, &Location)>,
                 mut gbuffer : ResMut<GFramebuffer>,
-                mut assets : ResMut<AssetServer>,
-                mut encoder : ResMut<wgpu::CommandEncoder>,) {
+                mut assets : ResMut<SpaceAssetServer>,
+                mut encoder : ResMut<RenderCommands>,) {
 
         let mut render_pass = gbuffer.spawn_renderpass(encoder.as_mut());
 

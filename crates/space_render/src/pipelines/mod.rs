@@ -57,6 +57,7 @@ impl TextureTransformUniform for DepthCalcUniform {
     }
 }
 
+#[derive(Resource)]
 pub struct DepthPipeline {
     pipeline : TextureTransformPipeline
 }
@@ -64,9 +65,8 @@ pub struct DepthPipeline {
 fn fast_depth(
     mut fill : ResMut<DepthPipeline>,
     gbuffer : Res<GFramebuffer>,
-    mut encoder : ResMut<wgpu::CommandEncoder>,
-    dst : Res<DepthTexture>,
-    mut profiler : ResMut<GpuProfiler>
+    mut encoder : ResMut<RenderCommands>,
+    dst : Res<DepthTexture>
 ) {
 
     // profiler.begin_scope("Fast depth", encoder, &fill.pipeline.render.device);
@@ -133,10 +133,12 @@ impl SchedulePlugin for FastDepthPlugin {
     }
 }
 
+#[derive(Resource)]
 pub struct SSAOFiltered {
     pub tex : TextureBundle
 }
 
+#[derive(Resource)]
 pub struct SSAOFilter {
     pub pipeline : TextureTransformPipeline
 }
@@ -146,8 +148,7 @@ fn ssao_filter_impl(
     dst : Res<SSAOFiltered>,
     ssao : Res<SSAOFrame>,
     depth : Res<DepthTexture>,
-    mut encoder : ResMut<wgpu::CommandEncoder>,
-    mut profiler : ResMut<GpuProfiler>
+    mut encoder : ResMut<RenderCommands>
 ) {
     fill.pipeline.draw(encoder.as_mut(), &[&ssao.tex, &depth.tex], &[&dst.tex]);
 }
@@ -218,6 +219,7 @@ enum DrawState {
     Depth
 }
 
+#[derive(Resource)]
 pub struct State {
     render : Arc<RenderBase>,
 
@@ -367,7 +369,7 @@ fn state_update(
 
 fn state_render(
     mut state : ResMut<State>,
-    mut encoder : ResMut<wgpu::CommandEncoder>,
+    mut encoder : ResMut<RenderCommands>,
     render_target : Res<RenderTarget>,
     gbuffer : Res<GFramebuffer>,
     dir_light : Res<DirLightTexture>,
@@ -434,7 +436,7 @@ impl space_game::RenderPlugin for State {
     }
 
     fn render(&mut self, game : &mut Game) {
-        let mut encoder = game.scene.app.world.remove_resource::<wgpu::CommandEncoder>().unwrap();
+        let mut encoder = game.scene.app.world.remove_resource::<RenderCommands>().unwrap();
         let view = game.render_view.as_ref().unwrap();
 
         let mut light_queue = game.scene.app.world.query::<(&mut PointLight)>();

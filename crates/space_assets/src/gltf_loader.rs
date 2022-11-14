@@ -6,7 +6,7 @@ use gltf::animation::Property::Rotation;
 use gltf::json::accessor::ComponentType;
 use gltf::Semantic;
 use wgpu::util::DeviceExt;
-use crate::asset_server::AssetServer;
+use crate::asset_server::SpaceAssetServer;
 use crate::handle::Handle;
 use crate::{GMeshPtr, Location};
 use crate::mesh::{GMesh, GVertex, Material, TextureBundle};
@@ -15,10 +15,10 @@ use crate::mesh::{GMesh, GVertex, Material, TextureBundle};
 pub trait GltfAssetLoader {
     fn load_gltf_color_texture(&mut self, base : &String, src : Option<gltf::texture::Info>, gamma : bool) -> Handle<TextureBundle>;
     fn load_gltf_normal_texture(&mut self, base : &String, src : Option<gltf::material::NormalTexture>) -> Handle<TextureBundle>;
-    fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut space_core::ecs::World);
+    fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut space_core::bevy::prelude::World);
 }
 
-impl GltfAssetLoader for AssetServer {
+impl GltfAssetLoader for SpaceAssetServer {
 
     fn load_gltf_color_texture(&mut self, base : &String, src : Option<gltf::texture::Info>, gamma : bool) -> Handle<TextureBundle> {
         if let Some(tex) = src {
@@ -48,7 +48,7 @@ impl GltfAssetLoader for AssetServer {
 
 
 
-    fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut space_core::ecs::World) {
+    fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut space_core::bevy::prelude::World) {
 
         let sponza = gltf::Gltf::open(&path).unwrap();
         let base = PathBuf::from(&path).parent().unwrap().to_str().unwrap().to_string();
@@ -218,12 +218,22 @@ impl GltfAssetLoader for AssetServer {
 
                 for (p, m) in &meshes[mesh_idx.index()] {
 
-                    world.spawn()
-                        .insert(p.clone())
-                        .insert(location.clone(&device))
-                        .insert(m.clone());
+                    world.spawn(MeshBundle {
+                        mesh : p.clone(),
+                        location : location.clone(&device),
+                        material : m.clone()
+                    });
                 }
             }
         }
     }
+}
+
+use space_core::bevy::prelude::Bundle;
+
+#[derive(Bundle)]
+pub struct MeshBundle {
+    pub mesh : GMeshPtr,
+    pub location : Location,
+    pub material : Material
 }

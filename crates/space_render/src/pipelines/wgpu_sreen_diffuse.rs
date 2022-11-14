@@ -3,7 +3,7 @@ use std::num::NonZeroU32;
 use std::sync::Arc;
 use bytemuck::Zeroable;
 use rand::Rng;
-use space_game::{SchedulePlugin, PluginName, GlobalStageStep, ScreenSize, RenderApi};
+use space_game::{SchedulePlugin, PluginName, GlobalStageStep, ScreenSize, RenderApi, RenderCommands};
 use wgpu::{Extent3d, util::DeviceExt};
 use space_assets::*;
 use space_core::{Camera, RenderBase, app::App};
@@ -27,14 +27,14 @@ struct ScreenDiffuseUniform {
     dummy1 : f32
 }
 
+#[derive(Resource)]
 pub struct DepthTexture {
     pub tex : TextureBundle
 }
 
 fn ssao_impl( 
     mut ssao_pipeline : ResMut<SSDiffuse>,
-    mut encoder : ResMut<wgpu::CommandEncoder>,
-    mut profiler : ResMut<GpuProfiler>,
+    mut encoder : ResMut<RenderCommands>,
     gbuffer : Res<GFramebuffer>,
     ssao_frame : Res<SSAOFrame>,
     dir_light : Res<DirLightTexture>,
@@ -122,6 +122,7 @@ impl Default for ScreenDiffuseUniform {
     }
 }
 
+#[derive(Resource)]
 pub struct SSDiffuse {
     pub pipeline : wgpu::RenderPipeline,
     screen_mesh : ScreenMesh,

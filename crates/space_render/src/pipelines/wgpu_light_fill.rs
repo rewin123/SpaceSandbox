@@ -9,7 +9,9 @@ use space_core::ecs::{Query, World};
 use space_core::RenderBase;
 use crate::pipelines::{Pipeline, PipelineDesc};
 use crate::pipelines::wgpu_gbuffer_fill::GFramebuffer;
+use space_core::bevy::ecs::prelude::*;
 
+#[derive(Resource)]
 pub struct DirLightTexture {
     pub tex : TextureBundle
 }
@@ -35,6 +37,7 @@ impl PipelineDesc for PointLightPipelineDesc {
     }
 }
 
+#[derive(Resource)]
 pub struct PointLightPipeline {
     pub pipeline : wgpu::RenderPipeline,
     camera_bind_group_layout : wgpu::BindGroupLayout,

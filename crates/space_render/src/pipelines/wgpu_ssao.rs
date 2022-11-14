@@ -7,6 +7,7 @@ use space_game::{SchedulePlugin, PluginName};
 use wgpu::{Extent3d, util::DeviceExt};
 use space_assets::*;
 use space_core::{Camera, RenderBase};
+use space_core::ecs::*;
 use wgpu_profiler::GpuProfiler;
 use crate::{pipelines::{CommonFramebuffer, GFramebuffer}};
 use encase::*;
@@ -39,6 +40,7 @@ impl Default for SsaoUniform {
     }
 }
 
+#[derive(Resource)]
 pub struct SSAOFrame {
     pub tex : TextureBundle
 }

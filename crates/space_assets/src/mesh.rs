@@ -1,11 +1,11 @@
 use std::sync::{Arc, Mutex};
-use crate::asset_server::{Asset, AssetServer};
+use crate::asset_server::{Asset, SpaceAssetServer};
 use crate::handle::Handle;
 use nalgebra::*;
 use wgpu::util::DeviceExt;
 use wgpu::{BufferUsages, VertexFormat};
 use space_core::RenderBase;
-use space_core::ecs::*;
+use space_core::bevy::prelude::{Component, Bundle};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -228,7 +228,7 @@ impl Clone for Material {
 }
 
 impl Material {
-    pub fn need_rebind(&self, assets : &AssetServer) -> bool {
+    pub fn need_rebind(&self, assets : &SpaceAssetServer) -> bool {
         if self.gbuffer_bind.is_none() {
             return true;
         } else {

@@ -1,15 +1,16 @@
 use std::sync::Arc;
 use std::time::Instant;
-use bevy_app::App;
+use bevy::app::prelude::App;
 use egui::{FontDefinitions, FullOutput, Style};
 use egui_wgpu_backend::ScreenDescriptor;
-use space_core::{RenderBase, ecs::*};
+use space_core::{RenderBase, bevy::ecs::prelude::*};
 use wgpu::{TextureView, SurfaceTexture};
+use space_core::bevy::app::prelude::*;
 use space_core::ecs::*;
-use bevy_app::prelude::*;
 
-use crate::GlobalStageStep;
+use crate::{GlobalStageStep, RenderCommands};
 
+#[derive(Resource)]
 struct EguiRenderCmds {
     output : egui::FullOutput
 }
@@ -26,7 +27,7 @@ fn end_gui_frame(
     egui_cmds.output = gui.end_frame(Some(&window));
 }
 
-#[derive(Component)]
+#[derive(Resource)]
 pub struct RenderTarget {
     pub view : TextureView,
     pub output : SurfaceTexture
@@ -34,14 +35,14 @@ pub struct RenderTarget {
 
 fn egui_draw(
     mut gui : ResMut<Gui>,
-    window : Res<winit::window::Window>,
-    mut encoder : ResMut<wgpu::CommandEncoder>,
+    window : NonSend<winit::window::Window>,
+    mut encoder : ResMut<RenderCommands>,
     render_target : Res<RenderTarget>,
     output : Res<EguiRenderCmds>
 ) {
     gui.draw(output.output.clone(),
         egui_wgpu_backend::ScreenDescriptor {
-            physical_width: window.as_ref().inner_size().width,
+            physical_width: window.inner_size().width,
             physical_height: window.inner_size().height,
             scale_factor: window.scale_factor() as f32,
         },
@@ -58,6 +59,7 @@ pub fn setup_gui(app : &mut App) {
     app.add_system_to_stage(GlobalStageStep::PostRender, egui_draw);
 }
 
+#[derive(Resource)]
 pub struct Gui {
     pub render_pass : egui_wgpu_backend::RenderPass,
     pub platform : egui_winit_platform::Platform,

@@ -5,8 +5,13 @@ mod camera;
 pub use task_server::*;
 pub use camera::*;
 
-pub use bevy_ecs::prelude as ecs;
-pub use bevy_app::prelude as app;
+pub use bevy;
+pub use ron;
+pub use serde;
+
+pub use bevy::ecs::prelude as ecs;
+pub use bevy::app::prelude as app;
+pub use bevy::asset::prelude as asset;
 
 
 

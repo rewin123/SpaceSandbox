@@ -16,6 +16,7 @@ use crate::{AssetPath, Material};
 use crate::handle::*;
 use crate::mesh::TextureBundle;
 use crate::mipmap_generator::MipmapGenerator;
+use space_core::ecs::*;
 
 pub trait Asset : DowncastSync {
 
@@ -37,7 +38,8 @@ pub struct AssetServerGlobal {
     pub mark_to_update : Mutex<Vec<HandleId>>
 }
 
-pub struct AssetServer {
+#[derive(Resource)]
+pub struct SpaceAssetServer {
     root_path : String,
     assets : HashMap<HandleId, AssetHolder>,
     loaded_assets : HashMap<String, HandleUntyped>,
@@ -49,7 +51,7 @@ pub struct AssetServer {
     task_server : Arc<TaskServer>,
 }
 
-impl AssetServer {
+impl SpaceAssetServer {
 
     pub fn get_default_material(&mut self) -> Material {
         Material {
@@ -63,7 +65,7 @@ impl AssetServer {
 
     pub fn new(
             render : &Arc<RenderBase>,
-            task_server : &Arc<TaskServer>) -> AssetServer {
+            task_server : &Arc<TaskServer>) -> SpaceAssetServer {
 
         let def_color = {
             let tex_color = render.device.create_texture_with_data(

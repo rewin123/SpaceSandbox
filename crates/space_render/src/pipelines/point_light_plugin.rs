@@ -20,19 +20,17 @@ fn point_light_shadow(
     mut shadow_fill : ResMut<PointLightShadowPipeline>,
     mesh_query : Query<(&GMeshPtr, &Material, &Location)>,
     light_query : Query<(&mut PointLight)>,
-    mut encoder : ResMut<wgpu::CommandEncoder>,
-    mut profiler : ResMut<GpuProfiler>
+    mut encoder : ResMut<RenderCommands>
 ) {
     // profiler.begin_scope("Point light shadow", encoder, &shadow_fill.render.device);
-    shadow_fill.draw(encoder.as_mut(), mesh_query, light_query, profiler.as_mut());
+    shadow_fill.draw(encoder.as_mut(), mesh_query, light_query);
     // profiler.end_scope(encoder);
 }
 
 fn point_light_impl(
     mut fill : ResMut<PointLightPipeline>,
     query : Query<&PointLight>,
-    mut encoder : ResMut<wgpu::CommandEncoder>,
-    profiler : ResMut<GpuProfiler>,
+    mut encoder : ResMut<RenderCommands>,
     dst : Res<DirLightTexture>,
     gbuffer : Res<GFramebuffer>
 ) {

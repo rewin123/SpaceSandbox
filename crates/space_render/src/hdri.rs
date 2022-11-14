@@ -1,5 +1,5 @@
 use std::ops::DerefMut;
-use space_assets::{Location, AssetServer};
+use space_assets::{Location, SpaceAssetServer};
 use space_core::{Camera, app::App};
 use space_game::*;
 use space_core::ecs::*;
@@ -52,10 +52,10 @@ impl SchedulePlugin for HDRISystem {
         let mut location = Location::new(&render.device);
         location.pos.x = 10.0;
         location.scale *= -9000.0;
-        let mut material = app.world.get_resource_mut::<AssetServer>().unwrap().get_default_material();
+        let mut material = app.world.get_resource_mut::<SpaceAssetServer>().unwrap().get_default_material();
         material.color =
-            app.world.get_resource_mut::<AssetServer>().unwrap().load_color_texture(self.path.clone(), true);
-        app.world.spawn().insert_bundle((location, sphere, material, HDRISphere {}));
+            app.world.get_resource_mut::<SpaceAssetServer>().unwrap().load_color_texture(self.path.clone(), true);
+        app.world.spawn(()).insert((location, sphere, material, HDRISphere {}));
 
         app.add_system_to_stage(GlobalStageStep::PreRender, hdri_update);
     }

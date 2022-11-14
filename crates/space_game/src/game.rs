@@ -5,21 +5,26 @@ use std::mem::swap;
 use std::ops::{DerefMut, Deref};
 use std::sync::{Arc, RwLock};
 use atomic_refcell::AtomicRefMut;
-use bevy_app::{App, CoreStage};
+use bevy::prelude::{App, CoreStage};
 use egui::color::gamma_from_linear;
 use wgpu::{Extent3d, ShaderStages, SurfaceTexture, TextureView};
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
-use space_assets::{AssetServer, Material};
+use space_assets::{SpaceAssetServer, Material};
 use space_core::{Camera, RenderBase, TaskServer};
 use crate::*;
 use encase::*;
 use wgpu::util::DeviceExt;
 use wgpu_profiler::*;
-use space_core::ecs::*;
+use space_core::bevy::asset::AssetPlugin;
+use space_core::bevy::ecs::prelude::*;
 
+#[derive(Resource)]
+pub struct WindowRes {
+    pub window : winit::window::Window
+}
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum SceneType {
@@ -33,6 +38,7 @@ pub struct PluginBase {
     scheldue_plugin : Vec<Box<dyn SchedulePlugin>>
 }
 
+#[derive(Resource)]
 pub struct EguiContext {
     ctx : egui::Context
 }
@@ -70,7 +76,7 @@ pub struct Game {
     pub is_exit_state : bool
 }
 
-fn poll_device( render_base : Res<Arc<RenderBase>>) {
+fn poll_device( render_base : Res<RenderApi>) {
     render_base.device.poll(wgpu::Maintain::Wait);
 }
 
@@ -108,8 +114,8 @@ impl Game {
         }
     }
 
-    pub fn get_assets(&mut self) -> Mut<AssetServer> {
-        self.scene.app.world.get_resource_mut::<AssetServer>().unwrap()
+    pub fn get_assets(&mut self) -> Mut<SpaceAssetServer> {
+        self.scene.app.world.get_resource_mut::<SpaceAssetServer>().unwrap()
     }
 
     pub fn add_render_plugin<T>(&mut self, plugin : T)
@@ -133,7 +139,7 @@ impl Game {
     }
 
     fn resize_event(&mut self, new_size : PhysicalSize<u32>) {
-        self.scene.app.insert_resource(new_size);
+        self.scene.app.insert_resource(ScreenSize {size : new_size.clone(), format : self.api.config.format.clone()});
         let mut plugins = self.plugins.take().unwrap();
         for plugin in &mut plugins.render_plugin {
             plugin.window_resize(self, new_size);
@@ -210,11 +216,11 @@ impl Game {
         self.camera_update();
 
         self.scene.app.insert_resource(self.scene.camera.clone());
-        self.scene.app.insert_resource(self.render_base.clone());
-        self.scene.app.insert_resource(self.render_base.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        self.scene.app.insert_resource(RenderApi {base : self.render_base.clone()});
+        self.scene.app.insert_resource( RenderCommands{ encoder : self.render_base.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: None
-        }));
-        self.scene.app.world.get_resource_mut::<AssetServer>().unwrap().sync_tick();
+        })});
+        self.scene.app.world.get_resource_mut::<SpaceAssetServer>().unwrap().sync_tick();
 
         self.scene.app.update();
 
@@ -263,20 +269,18 @@ impl Game {
         }
         self.render_base.device.poll(wgpu::Maintain::Wait);
         self.render_base.queue.submit(Some(
-            self.scene.app.world.remove_resource::<wgpu::CommandEncoder>().unwrap().finish()
+            self.scene.app.world.remove_resource::<RenderCommands>().unwrap().encoder.finish()
         ));
         
         output.present();
 
-        self.scene.app.world.get_resource_mut::<GpuProfiler>().unwrap().end_frame().unwrap();
-
-        if let Some(profiling_data) =  self.scene.app.world.get_resource_mut::<GpuProfiler>().unwrap().process_finished_frame() {
-            if self.input.get_key_state(winit::event::VirtualKeyCode::G) {
-                wgpu_profiler::chrometrace::write_chrometrace(
-                    std::path::Path::new("mytrace.json"), &profiling_data).unwrap();
-            }
-            // println!("Profile {}", profiling_data.len());
-        }
+        // if let Some(profiling_data) =  self.scene.app.world.get_resource_mut::<GpuProfiler>().unwrap().process_finished_frame() {
+        //     if self.input.get_key_state(winit::event::VirtualKeyCode::G) {
+        //         wgpu_profiler::chrometrace::write_chrometrace(
+        //             std::path::Path::new("mytrace.json"), &profiling_data).unwrap();
+        //     }
+        //     // println!("Profile {}", profiling_data.len());
+        // }
 
         Ok(())
     }
@@ -289,7 +293,7 @@ impl Game {
             if let Some(mut gui) = self.scene.app.world.get_resource_mut::<Gui>() {
                 gui.platform.handle_event(&event);
             }
-            let id = self.scene.app.world.get_resource::<winit::window::Window>().unwrap().id();
+            let id = self.scene.app.world.get_non_send_resource::<winit::window::Window>().unwrap().id();
             match event {
                 Event::WindowEvent {
                     ref event,
@@ -341,7 +345,7 @@ impl Game {
                 Event::RedrawEventsCleared => {
                     // RedrawRequested will only trigger once, unless we manually
                     // request it.
-                    self.scene.app.world.get_resource_mut::<winit::window::Window>()
+                    self.scene.app.world.get_non_send_resource_mut::<winit::window::Window>()
                         .unwrap().request_redraw();
                 }
                 _ => {}
@@ -369,6 +373,7 @@ impl Game {
 
         self.scene.app.schedule = Schedule::default();
         self.scene.app.add_default_stages();
+        // self.scene.app.add_plugin(AssetPlugin::default());
 
         self.scene.app.add_stage_after(CoreStage::PreUpdate, GlobalStageStep::PreRender, SystemStage::parallel());
         self.scene.app.add_stage_after(GlobalStageStep::PreRender, GlobalStageStep::Render, SystemStage::single_threaded());
@@ -405,7 +410,7 @@ impl Default for Game {
             },
             window.scale_factor());
         let task_server = Arc::new(TaskServer::new());
-        let assets = AssetServer::new(&render_base, &task_server);
+        let assets = SpaceAssetServer::new(&render_base, &task_server);
 
         let camera = Camera::default();
         let camera_uniform = camera.build_uniform();
@@ -425,13 +430,13 @@ impl Default for Game {
             camera : Camera::default()
         };
 
-        scene.app.insert_resource(AssetServer::new(&render_base, &task_server));
+        scene.app.insert_resource(SpaceAssetServer::new(&render_base, &task_server));
 
-        scene.app.insert_resource(
-            GpuProfiler::new(
-                4,
-                render_base.queue.get_timestamp_period(),
-                render_base.device.features()));
+        // scene.app.insert_resource(
+        //     GpuProfiler::new(
+        //         4,
+        //         render_base.queue.get_timestamp_period(),
+        //         render_base.device.features()));
 
         scene.app.insert_resource(EguiContext {ctx : gui.platform.context()});
         scene.app.insert_resource(gui);

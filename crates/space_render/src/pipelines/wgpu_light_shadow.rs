@@ -8,7 +8,7 @@ use space_core::RenderBase;
 use space_assets::*;
 use space_core::ecs::*;
 
-
+#[derive(Resource)]
 pub struct PointLightShadowPipeline {
     pub pipeline : wgpu::RenderPipeline,
     light_part_layout : wgpu::BindGroupLayout,
@@ -98,8 +98,7 @@ impl PointLightShadowPipeline {
         &mut self,
         encoder : &'a mut wgpu::CommandEncoder,
         mut mesh_query : Query<(&GMeshPtr, &Material, &Location)>,
-        mut light_query : Query<(&mut PointLight)>,
-        profiler : &mut GpuProfiler) {
+        mut light_query : Query<(&mut PointLight)>) {
 
         for mut light in light_query.iter_mut() {
             if let Some(shadow) = light.shadow.as_mut() {
@@ -129,9 +128,9 @@ impl PointLightShadowPipeline {
         for light in light_query.iter() {
             if let Some(shadow) = light.shadow.as_ref() {
                 for camera_idx in 0..6 {
-                    profiler.begin_scope("Shadow pass", encoder, &self.render.device);
+                    // profiler.begin_scope("Shadow pass", encoder, &self.render.device);
                     self.shadow_draw(shadow, camera_idx, &mut mesh_query, encoder);
-                    profiler.end_scope(encoder);
+                    // profiler.end_scope(encoder);
                 }
             }
         }
