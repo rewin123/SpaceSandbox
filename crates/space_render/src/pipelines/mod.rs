@@ -429,7 +429,7 @@ impl space_game::RenderPlugin for State {
 
         let ambient_uniform = AmbientLightUniform {
             color: self.ambient_light.color.into(),
-            cam_pos: game.scene.camera.pos.coords.clone()
+            cam_pos: game.scene.app.world.get_resource::<Camera>().unwrap().pos.coords.clone()
         };
         self.ambient_light_pipeline.update(Some(&ambient_uniform));
     }

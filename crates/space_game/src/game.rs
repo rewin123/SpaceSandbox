@@ -58,7 +58,6 @@ impl DerefMut for EguiContext {
 
 pub struct GameScene {
     pub app : App,
-    pub camera : Camera,
 }
 
 
@@ -66,7 +65,6 @@ pub struct Game {
     pub api : ApiBase,
     event_loop : Option<winit::event_loop::EventLoop<()>>,
     pub render_base : Arc<RenderBase>,
-    pub input : InputSystem,
     plugins : Option<PluginBase>,
     pub render_view : Option<TextureView>,
     pub task_server : Arc<TaskServer>,
@@ -148,25 +146,25 @@ impl Game {
     }
 
     fn camera_update(&mut self) {
-        let speed = 0.3 / 5.0;
-        if self.input.get_key_state(VirtualKeyCode::W) {
-            self.scene.camera.pos += self.scene.camera.frw * speed;
-        }
-        if self.input.get_key_state(VirtualKeyCode::S) {
-            self.scene.camera.pos -= self.scene.camera.frw * speed;
-        }
-        if self.input.get_key_state(VirtualKeyCode::D) {
-            self.scene.camera.pos += self.scene.camera.get_right() * speed;
-        }
-        if self.input.get_key_state(VirtualKeyCode::A) {
-            self.scene.camera.pos -= self.scene.camera.get_right() * speed;
-        }
-        if self.input.get_key_state(VirtualKeyCode::Space) {
-            self.scene.camera.pos += self.scene.camera.up  * speed;
-        }
-        if self.input.get_key_state(VirtualKeyCode::LShift) {
-            self.scene.camera.pos -= self.scene.camera.up * speed;
-        }
+        // let speed = 0.3 / 5.0;
+        // if self.input.get_key_state(VirtualKeyCode::W) {
+        //     self.scene.camera.pos += self.scene.camera.frw * speed;
+        // }
+        // if self.input.get_key_state(VirtualKeyCode::S) {
+        //     self.scene.camera.pos -= self.scene.camera.frw * speed;
+        // }
+        // if self.input.get_key_state(VirtualKeyCode::D) {
+        //     self.scene.camera.pos += self.scene.camera.get_right() * speed;
+        // }
+        // if self.input.get_key_state(VirtualKeyCode::A) {
+        //     self.scene.camera.pos -= self.scene.camera.get_right() * speed;
+        // }
+        // if self.input.get_key_state(VirtualKeyCode::Space) {
+        //     self.scene.camera.pos += self.scene.camera.up  * speed;
+        // }
+        // if self.input.get_key_state(VirtualKeyCode::LShift) {
+        //     self.scene.camera.pos -= self.scene.camera.up * speed;
+        // }
 
         let mut encoder = self
             .render_base.device
@@ -174,7 +172,8 @@ impl Game {
                 label: Some("Update encoder"),
             });
 
-        let camera_unifrom = self.scene.camera.build_uniform();
+
+        let camera_unifrom = self.scene.app.world.get_resource::<Camera>().unwrap().build_uniform();
         let mut uniform = encase::UniformBuffer::new(vec![]);
         uniform.write(&camera_unifrom).unwrap();
         let inner = uniform.into_inner();
@@ -214,7 +213,6 @@ impl Game {
 
         self.camera_update();
 
-        self.scene.app.insert_resource(self.scene.camera.clone());
         self.scene.app.insert_resource(RenderApi {base : self.render_base.clone()});
         self.scene.app.insert_resource( RenderCommands{ encoder : self.render_base.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: None
@@ -317,7 +315,8 @@ impl Game {
                             self.resize_event(**new_inner_size);
                         }
                         WindowEvent::KeyboardInput { device_id, input, is_synthetic } => {
-                            self.input.process_event(input);
+                            self.scene.app.world.get_resource_mut::<InputSystem>()
+                                .unwrap().process_event(input);
                         }
                         _ => {}
                     }
@@ -429,10 +428,10 @@ impl Default for Game {
 
         let mut scene = GameScene {
             app : App::default(),
-            camera : Camera::default()
         };
 
         scene.app.insert_resource(SpaceAssetServer::new(&render_base, &task_server));
+        scene.app.insert_resource(Camera::default());
 
         // scene.app.insert_resource(
         //     GpuProfiler::new(
@@ -449,11 +448,12 @@ impl Default for Game {
 
         scene.app.insert_resource(CameraBuffer {buffer : camera_buffer});
 
+        scene.app.insert_resource(InputSystem::default());
+
         Self {
             event_loop : Some(event_loop),
             api,
             render_base,
-            input : InputSystem::default(),
             plugins : Some(PluginBase::default()),
             render_view : None,
             task_server,
