@@ -8,27 +8,38 @@ use space_core::serde::*;
 use bevy::reflect::*;
 use bevy::asset::*;
 
-#[derive(Default, Deserialize, TypeUuid)]
+#[derive(Default, Deserialize, TypeUuid, Debug, Clone)]
 #[uuid = "fce6d1f5-4317-4077-b23e-6099747b08dd"]
 struct BlockDesc {
     pub name : String,
-    pub path : String
+    pub model_path : String
 }
 
 
 #[derive(Resource, Default)]
 struct StationBlocks {
-    pub panels : Vec<BlockDesc>
+    pub panels : Vec<Handle<BlockDesc>>,
+
+    pub active_block : Option<BlockDesc>
 }
 
 
 fn station_menu(
     ctx : Res<EguiContext>,
-    panels : Res<StationBlocks>
+    mut panels : ResMut<StationBlocks>,
+    blocks : Res<Assets<BlockDesc>>
 ) {
     egui::SidePanel::left("Build panel").show(&ctx, |ui| {
         egui::Grid::new("Floor block grid").show(ui, |ui| {
-
+            ui.label("Blocks:");
+            ui.end_row();
+            for h in &panels.panels {
+                if let Some(block) = blocks.get(h) {
+                    if ui.button(&block.name).clicked() {
+                        panels.active_block = Some(block.clone());
+                    }
+                }
+            }
         });
     });
 }
@@ -37,10 +48,9 @@ fn init_station_build(
     mut commands : Commands,
     mut assets : Res<AssetServer>
 ) {
-    println!("Start station build system");
-    commands.insert_resource(StationBlocks::default());
-
-    let handle : Handle<BlockDesc> = assets.load("ss13/walls_configs/metal_grid.wall");
+    let mut blocks = StationBlocks::default();
+    blocks.panels.push(assets.load("ss13/walls_configs/metal_grid.wall"));
+    commands.insert_resource(blocks);
 }
 
 
