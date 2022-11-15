@@ -204,9 +204,11 @@ impl TextureTransformPipeline {
             buffer = Some(Arc::new(desc.render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
                 contents: &s.get_bytes(),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::MAP_WRITE,
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::MAP_WRITE | wgpu::BufferUsages::COPY_SRC,
             })));
         }
+
+
 
         Self {
             pipeline,

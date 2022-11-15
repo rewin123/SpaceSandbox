@@ -14,7 +14,6 @@ egui_winit_platform = "0.16"
 pollster = "0.2"
 encase = {version = "0.3.0", features = ["nalgebra"] }
 atomic_refcell = "0.1.8"
-wgpu-profiler = "0.9.1"
 bevy = "0.9.0"
 serde = "*"
 

@@ -17,7 +17,6 @@ use space_core::{Camera, RenderBase, TaskServer};
 use crate::*;
 use encase::*;
 use wgpu::util::DeviceExt;
-use wgpu_profiler::*;
 use space_core::bevy::asset::AssetPlugin;
 use space_core::bevy::ecs::prelude::*;
 
