@@ -1,4 +1,4 @@
 (
     name : "Metal grids",
-    model_path : "."
+    model_path : "assets/ss13/wall_models/metal_grid/metal_grid.gltf"
 )
