@@ -1,5 +1,6 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
+use bevy::prelude::{Handle, Assets};
 use wgpu::{Extent3d, TextureDimension};
 use crate::light::{PointLight, PointLightShadow};
 use space_shaders::*;
@@ -96,8 +97,9 @@ impl PointLightShadowPipeline {
     pub fn draw<'a>(
         &mut self,
         encoder : &'a mut wgpu::CommandEncoder,
-        mut mesh_query : Query<(&GMeshPtr, &Material, &Location)>,
-        mut light_query : Query<(&mut PointLight)>) {
+        mut mesh_query : Query<(&Handle<GMesh>, &Material, &Location)>,
+        mut light_query : Query<(&mut PointLight)>,
+        mut meshes : ResMut<Assets<GMesh>>) {
 
         for mut light in light_query.iter_mut() {
             if let Some(shadow) = light.shadow.as_mut() {
@@ -128,7 +130,7 @@ impl PointLightShadowPipeline {
             if let Some(shadow) = light.shadow.as_ref() {
                 for camera_idx in 0..6 {
                     // profiler.begin_scope("Shadow pass", encoder, &self.render.device);
-                    self.shadow_draw(shadow, camera_idx, &mut mesh_query, encoder);
+                    self.shadow_draw(shadow, camera_idx, &mut mesh_query, encoder, &mut meshes);
                     // profiler.end_scope(encoder);
                 }
             }
@@ -139,8 +141,9 @@ impl PointLightShadowPipeline {
     fn shadow_draw(&mut self,
                    shadow : &PointLightShadow,
                    idx : usize,
-                   query : &mut Query<(&GMeshPtr, &Material, &Location)>,
-                   encoder : &mut wgpu::CommandEncoder) {
+                   query : &mut Query<(&Handle<GMesh>, &Material, &Location)>,
+                   encoder : &mut wgpu::CommandEncoder,
+                   meshes : &mut ResMut<Assets<GMesh>>) {
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Point light renderpass"),
@@ -158,12 +161,12 @@ impl PointLightShadowPipeline {
         render_pass.set_bind_group(0, &shadow.camera_binds[idx], &[]);
 
         for (mesh_ptr, material, loc) in query.iter() {
-            let mesh = mesh_ptr.mesh.clone();
+            let mesh = meshes.get(mesh_ptr).unwrap();
 
-            render_pass.set_vertex_buffer(0, mesh_ptr.mesh.vertex.slice(..));
+            render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
             render_pass.set_vertex_buffer(1, loc.buffer.slice(..));
-            render_pass.set_index_buffer(mesh_ptr.mesh.index.slice(..), wgpu::IndexFormat::Uint32);
-            render_pass.draw_indexed(0..mesh_ptr.mesh.index_count, 0, 0..1);
+            render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
+            render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
         }
     }
 }

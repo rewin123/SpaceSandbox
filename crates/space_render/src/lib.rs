@@ -3,12 +3,14 @@ pub mod light;
 pub mod hdri;
 pub mod ui;
 
+use bevy::prelude::Component;
 use nalgebra as na;
 use encase::*;
 use space_game::*;
 use space_game::plugins::FpsCounterSystem;
 use crate::pipelines::StateSystem;
 
+#[derive(Component)]
 pub struct AutoInstancing {}
 
 pub fn add_game_render_plugins(game : &mut Game) {

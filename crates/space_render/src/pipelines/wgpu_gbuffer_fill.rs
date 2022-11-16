@@ -10,6 +10,24 @@ use space_game::PluginName::Text;
 
 use space_core::ecs::*;
 
+use crate::AutoInstancing;
+
+fn auto_instancing(
+        mut query : Query<(&Location, &Handle<Material>, &Handle<GMesh>), With<AutoInstancing>>,
+        mut fill : ResMut<GBufferFill>) {
+    fill.instancing_cache.clear();
+
+    for (loc, mat_ptr, mesh_ptr) in query.iter() {
+        let key = InstancingKey {
+            material: mat_ptr.clone(),
+            mesh: mesh_ptr.clone(),
+        };
+        if let Some(collected) = fill.instancing_cache.get_mut(&key) {
+            
+        }
+    }
+}
+
 fn material_update(
         mut materials : ResMut<Assets<Material>>,
         mut assets : ResMut<SpaceAssetServer>,
@@ -190,6 +208,18 @@ impl GFramebuffer {
     }
 }
 
+#[derive(Hash, PartialEq, Eq)]
+pub struct InstancingKey {
+    pub material : Handle<Material>,
+    pub mesh : Handle<GMesh>
+}
+
+pub struct InstancingCache {
+    pub mesh : Handle<GMesh>,
+    pub material : Handle<Material>,
+    pub buffer : wgpu::Buffer
+}
+
 #[derive(Resource)]
 pub struct GBufferFill {
     pub pipeline : wgpu::RenderPipeline,
@@ -197,20 +227,23 @@ pub struct GBufferFill {
     camera_bind_group : wgpu::BindGroup,
     texture_bind_group_layout : wgpu::BindGroupLayout,
     textures : HashMap<Material, Arc<wgpu::BindGroup>>,
-    render : Arc<RenderBase>
+    render : Arc<RenderBase>,
+
+    instancing_cache : HashMap<InstancingKey, InstancingCache>
 }
 
 
 fn gbuffer_filling(
     mut fill : ResMut<GBufferFill>,
-    mut query : Query<(&GMeshPtr, &mut Handle<Material>, &Location)>,
+    mut query : Query<(&Handle<GMesh>, &mut Handle<Material>, &Location)>,
     mut gbuffer : ResMut<GFramebuffer>,
     mut assets : ResMut<SpaceAssetServer>,
     mut encoder : ResMut<RenderCommands>,
-    mut materials : ResMut<Assets<Material>>) {
+    mut materials : ResMut<Assets<Material>>,
+    mut meshes : ResMut<Assets<GMesh>>) {
 
     // profiler.begin_scope("GBuffer fill", encoder, &fill.render.device);
-    fill.draw(query, gbuffer, assets, encoder, materials);
+    fill.draw(query, gbuffer, assets, encoder, materials, meshes);
     // profiler.end_scope(encoder);
 }
 
@@ -247,7 +280,6 @@ impl SchedulePlugin for GBufferPlugin {
 }
 
 impl GBufferFill {
-
 
     pub fn spawn_framebuffer(device : &wgpu::Device, size : Extent3d) -> GFramebuffer {
         GFramebuffer::new(device, size)
@@ -409,18 +441,20 @@ impl GBufferFill {
             camera_bind_group_layout,
             textures : HashMap::new(),
             texture_bind_group_layout,
-            render : render.clone()
+            render : render.clone(),
+            instancing_cache : HashMap::new()
         }
     }
 
 
 
     pub fn draw(&mut self,
-                mut query : Query<(&GMeshPtr, &mut Handle<Material>, &Location)>,
+                mut query : Query<(&Handle<GMesh>, &mut Handle<Material>, &Location)>,
                 mut gbuffer : ResMut<GFramebuffer>,
                 mut assets : ResMut<SpaceAssetServer>,
                 mut encoder : ResMut<RenderCommands>,
-                mut materials : ResMut<Assets<Material>>) {
+                mut materials : ResMut<Assets<Material>>,
+                mut meshes : ResMut<Assets<GMesh>>) {
 
         let mut render_pass = gbuffer.spawn_renderpass(encoder.as_mut());
 
@@ -430,12 +464,13 @@ impl GBufferFill {
 
         for (mesh_ptr, mut material_ptr, loc) in &mut query {
             let mut material = materials.get(&material_ptr).unwrap();
+            let mut mesh = meshes.get(mesh_ptr).unwrap();
 
             render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
-            render_pass.set_vertex_buffer(0, mesh_ptr.mesh.vertex.slice(..));
+            render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
             render_pass.set_vertex_buffer(1, loc.buffer.slice(..));
-            render_pass.set_index_buffer(mesh_ptr.mesh.index.slice(..), wgpu::IndexFormat::Uint32);
-            render_pass.draw_indexed(0..mesh_ptr.mesh.index_count, 0, 0..1);
+            render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
+            render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
 
         }
     }

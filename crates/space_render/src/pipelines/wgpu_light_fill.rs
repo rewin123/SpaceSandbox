@@ -1,5 +1,7 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
+use bevy::prelude::{Handle, Assets, App};
+use space_game::CameraBuffer;
 use wgpu::{Buffer, Extent3d, TextureDimension};
 use crate::light::PointLight;
 use downcast_rs::*;
@@ -43,7 +45,7 @@ pub struct PointLightPipeline {
     camera_bind_group_layout : wgpu::BindGroupLayout,
     light_bind_group_layout : wgpu::BindGroupLayout,
     camera_bind_group : wgpu::BindGroup,
-    sphere : GMeshPtr,
+    sphere : Handle<GMesh>,
     light_groups : Vec<wgpu::BindGroup>,
     texture_bing_group_layout : wgpu::BindGroupLayout,
     diffuse : Option<wgpu::BindGroup>,
@@ -56,22 +58,6 @@ pub struct PointLightPipeline {
     empty_shadow_sample : wgpu::Sampler
 }
 
-impl Pipeline for PointLightPipeline {
-
-    fn new_described(desc: Box<dyn PipelineDesc>, camera_buffer: &Buffer) -> Self {
-        let desc : Box<PointLightPipelineDesc> = desc.downcast().unwrap();
-        PointLightPipeline::new(&desc.render, camera_buffer, desc.size)
-    }
-
-    fn get_desc(&self) -> Box<dyn PipelineDesc> {
-        let mut desc = PointLightPipelineDesc {
-            shader_path: AssetPath::GlobalPath("../../shaders/wgsl/point_light.wgsl".into()),
-            render: self.render.clone(),
-            size: self.size
-        };
-        Box::new(desc)
-    }
-}
 
 impl PointLightPipeline {
 
@@ -202,7 +188,10 @@ impl PointLightPipeline {
         })
     }
 
-    pub fn new(render : &Arc<RenderBase>, camera_buffer : &wgpu::Buffer, size : wgpu::Extent3d) -> Self {
+    pub fn new(
+            render : &Arc<RenderBase>, 
+            size : wgpu::Extent3d,
+            app : &mut App) -> Self {
         let camera_bind_group_layout =
             render.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("Canera uniform group layout"),
@@ -259,7 +248,7 @@ impl PointLightPipeline {
             layout : &camera_bind_group_layout,
             entries : &[wgpu::BindGroupEntry {
                 binding : 0,
-                resource : camera_buffer.as_entire_binding()
+                resource : app.world.get_resource::<CameraBuffer>().unwrap().buffer.as_entire_binding()
             }],
             label : Some("camera bind group")
         });
@@ -333,7 +322,8 @@ impl PointLightPipeline {
 
         let sphere = wgpu_load_gray_obj(
             &render.device, 
-            "res/base_models/sphere.obj".into()).unwrap();
+            "res/base_models/sphere.obj".into(),
+            &mut app.world.get_resource_mut::<Assets<GMesh>>().unwrap()).unwrap();
 
         let tex = render.device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Depth texture"),
@@ -430,7 +420,8 @@ impl PointLightPipeline {
         encoder : &'a mut wgpu::CommandEncoder, 
         mut scene : Query<(&PointLight)>,
         dst : &TextureBundle, 
-        gbuffer : &GFramebuffer) {
+        gbuffer : &GFramebuffer,
+        meshes : &mut Assets<GMesh>) {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Point light renderpass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment { 
@@ -509,13 +500,14 @@ impl PointLightPipeline {
                 self.light_groups.push(light_uniform);
             }
         }
+        let mesh = meshes.get(&self.sphere).unwrap();
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-        render_pass.set_vertex_buffer(0, self.sphere.mesh.vertex.slice(..));
-        render_pass.set_index_buffer(self.sphere.mesh.index.slice(..), wgpu::IndexFormat::Uint32);
+        render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
+        render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
         for (idx, light) in scene.iter().enumerate() {
             render_pass.set_bind_group(1, &self.light_groups[idx], &[]);
-            render_pass.draw_indexed(0..self.sphere.mesh.index_count, 0, 0..1);
+            render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
         }
     }
 }

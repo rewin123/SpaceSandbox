@@ -98,15 +98,12 @@ impl GVertex {
     }
 }
 
+#[derive(TypeUuid)]
+#[uuid="e0620f20-c2a1-4154-bb27-cc73a47a808c"]
 pub struct GMesh {
     pub vertex : wgpu::Buffer,
     pub index : wgpu::Buffer,
     pub index_count : u32
-}
-
-#[derive(Clone, Component)]
-pub struct GMeshPtr {
-    pub mesh : Arc<GMesh>
 }
 
 

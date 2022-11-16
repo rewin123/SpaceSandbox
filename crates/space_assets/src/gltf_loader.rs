@@ -10,7 +10,7 @@ use gltf::Semantic;
 use wgpu::util::DeviceExt;
 use crate::asset_server::SpaceAssetServer;
 use crate::handle::SpaceHandle;
-use crate::{GMeshPtr, Location, MaterialPtr};
+use crate::{Location, MaterialPtr};
 use crate::mesh::{GMesh, GVertex, Material, TextureBundle};
 
 
@@ -22,7 +22,8 @@ pub trait GltfAssetLoader {
         &mut self, 
         device : &wgpu::Device, 
         path : String, 
-        material_assets : &mut ResMut<Assets<Material>>) -> Vec<MeshBundle>;
+        material_assets : &mut ResMut<Assets<Material>>,
+        meshs : &mut Assets<GMesh>) -> Vec<MeshBundle>;
 }
 
 impl GltfAssetLoader for SpaceAssetServer {
@@ -58,7 +59,8 @@ impl GltfAssetLoader for SpaceAssetServer {
             &mut self, 
             device : &wgpu::Device, 
             path : String, 
-            mut material_assets : &mut ResMut<Assets<Material>>) -> Vec<MeshBundle> {
+            mut material_assets : &mut ResMut<Assets<Material>>,
+            mut meshs : &mut Assets<GMesh>) -> Vec<MeshBundle> {
         let mut res = vec![];
 
         let sponza = gltf::Gltf::open(&path).unwrap();
@@ -212,7 +214,7 @@ impl GltfAssetLoader for SpaceAssetServer {
 
                 let mat_ptr = material_assets.add(material);
 
-                combined.push((GMeshPtr {mesh : Arc::new(model)}, mat_ptr));
+                combined.push(( meshs.add(model), mat_ptr));
             }
             meshes.push(combined);
         }
@@ -437,7 +439,7 @@ use space_core::bevy::prelude::Bundle;
 
 #[derive(Bundle)]
 pub struct MeshBundle {
-    pub mesh : GMeshPtr,
+    pub mesh : Handle<GMesh>,
     pub location : Location,
     pub material : Handle<Material>
 }

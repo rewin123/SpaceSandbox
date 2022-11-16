@@ -1,5 +1,6 @@
 use std::{fmt::Debug, sync::Arc};
 use std::ops::DerefMut;
+use bevy::prelude::Assets;
 use downcast_rs::{Downcast, impl_downcast};
 use egui::{Context, Ui};
 use encase::*;
@@ -262,8 +263,8 @@ impl State {
 
         let light_pipeline = PointLightPipeline::new(
             &render, 
-            &app.world.get_resource::<CameraBuffer>().unwrap().buffer, 
-            extent);
+            extent,
+            app);
         let light_buffer = light_pipeline.spawn_framebuffer(&render.device, extent);
 
         let gamma_desc = TextureTransformDescriptor {

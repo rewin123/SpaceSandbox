@@ -12,7 +12,7 @@ use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
-use space_assets::{SpaceAssetServer, Material};
+use space_assets::{SpaceAssetServer, Material, GMesh};
 use space_core::{Camera, RenderBase, TaskServer};
 use crate::*;
 use encase::*;
@@ -360,6 +360,7 @@ impl Game {
         self.scene.app.add_plugin(AssetPlugin::default());
 
         self.scene.app.add_asset::<Material>();
+        self.scene.app.add_asset::<GMesh>();
 
         self.scene.app.add_stage_after(CoreStage::PreUpdate, GlobalStageStep::PreRender, SystemStage::parallel());
         self.scene.app.add_stage_after(GlobalStageStep::PreRender, GlobalStageStep::Render, SystemStage::single_threaded());

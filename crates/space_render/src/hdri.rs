@@ -1,6 +1,6 @@
 use std::ops::DerefMut;
 use bevy::prelude::Assets;
-use space_assets::{Location, SpaceAssetServer, Material};
+use space_assets::{Location, SpaceAssetServer, Material, GMesh};
 use space_core::{Camera, app::App};
 use space_game::*;
 use space_core::ecs::*;
@@ -49,7 +49,8 @@ impl SchedulePlugin for HDRISystem {
 
         let sphere = space_assets::wavefront::wgpu_load_gray_obj(
             &render.device,
-            "res/base_models/sphere.obj".into()).unwrap()[0].clone();
+            "res/base_models/sphere.obj".into(),
+            app.world.get_resource_mut::<Assets<GMesh>>().as_mut().unwrap()).unwrap()[0].clone();
         let mut location = Location::new(&render.device);
         location.pos.x = 10.0;
         location.scale *= -9000.0;

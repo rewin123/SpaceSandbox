@@ -9,7 +9,7 @@ use space_core::{serde::*, Camera};
 use bevy::reflect::*;
 use bevy::asset::*;
 use winit::event::MouseButton;
-use space_assets::{GltfAssetLoader, GMeshPtr, Location, Material, MeshBundle, SpaceAssetServer};
+use space_assets::{GltfAssetLoader, Location, Material, MeshBundle, SpaceAssetServer, GMesh};
 
 #[derive(Component)]
 struct StationBuildActiveBlock {}
@@ -49,7 +49,7 @@ fn add_block_to_station(
         if let Some(e) = panels.active_entity.as_ref() {
             let e_ref = world.entity(*e);
             let bundle = MeshBundle {
-                mesh: e_ref.get::<GMeshPtr>().unwrap().clone(),
+                mesh: e_ref.get::<Handle<GMesh>>().unwrap().clone(),
                 location: e_ref.get::<Location>().unwrap().clone(&render.device),
                 material: e_ref.get::<Handle<Material>>().unwrap().clone()
             };
@@ -125,6 +125,7 @@ fn station_menu(
     mut asset_server : ResMut<SpaceAssetServer>,
     render : Res<RenderApi>,
     mut materials : ResMut<Assets<Material>>,
+    mut meshes : ResMut<Assets<GMesh>>
 ) {
     egui::SidePanel::left("Build panel").show(&ctx, |ui| {
         if let Some(block) = panels.active_block.as_ref() {
@@ -146,7 +147,8 @@ fn station_menu(
                     let bundles = asset_server.wgpu_gltf_load_cmds(
                         &render.device,
                         block.model_path.clone(),
-                        &mut materials
+                        &mut materials,
+                        &mut meshes
                     );
                     for b in bundles {
                         let e = commands.spawn(b)
@@ -165,7 +167,8 @@ fn station_menu(
                 let mut bundles = asset_server.wgpu_gltf_load_cmds(
                     &render.device,
                     block.model_path.clone(),
-                    &mut materials
+                    &mut materials,
+                    &mut meshes
                 );
                 for y in -100..100 {
                     for x in -100..100 {

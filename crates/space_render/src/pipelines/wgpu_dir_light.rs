@@ -1,5 +1,6 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
+use bevy::prelude::Handle;
 use space_core::app::App;
 use wgpu::{Buffer, Extent3d, TextureDimension};
 use crate::light::PointLight;
@@ -82,7 +83,7 @@ impl PipelineDesc for DirLightPipelineDesc {
 
 fn dir_light_impl(
     mut fill : ResMut<DirLightPipeline>,
-    mut mesh_query : Query<(&GMeshPtr, &Material, &Location)>,
+    mut mesh_query : Query<(&Handle<GMesh>, &Handle<Material>, &Location)>,
     mut light_query: Query<(&mut PointLight)>,
     mut encoder : ResMut<RenderCommands>,
     dst : Res<DirLightTexture>,
@@ -409,7 +410,7 @@ impl DirLightPipeline {
         &mut self,
         device : &wgpu::Device,
         encoder : &'a mut wgpu::CommandEncoder,
-        mut mesh_query : Query<(&GMeshPtr, &Material, &Location)>,
+        mut mesh_query : Query<(&Handle<GMesh>, &Handle<Material>, &Location)>,
         mut light_query: Query<(&mut PointLight)>,
         dst : &TextureBundle,
         gbuffer : &GFramebuffer) {

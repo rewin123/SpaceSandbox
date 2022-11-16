@@ -1,9 +1,11 @@
+use bevy::prelude::Assets;
+use bevy::prelude::Handle;
+use space_assets::GMesh;
 use space_core::app::App;
 use space_game::*;
 use crate::light::PointLightShadow;
 use crate::pipelines::PointLightShadowPipeline;
 
-use space_assets::GMeshPtr;
 use space_assets::Material;
 use space_assets::Location;
 use crate::light::PointLight;
@@ -17,12 +19,13 @@ use super::PointLightPipeline;
 
 fn point_light_shadow(
     mut shadow_fill : ResMut<PointLightShadowPipeline>,
-    mesh_query : Query<(&GMeshPtr, &Material, &Location)>,
+    mesh_query : Query<(&Handle<GMesh>, &Material, &Location)>,
     light_query : Query<(&mut PointLight)>,
-    mut encoder : ResMut<RenderCommands>
+    mut encoder : ResMut<RenderCommands>,
+    mut meshes : ResMut<Assets<GMesh>>
 ) {
     // profiler.begin_scope("Point light shadow", encoder, &shadow_fill.render.device);
-    shadow_fill.draw(encoder.as_mut(), mesh_query, light_query);
+    shadow_fill.draw(encoder.as_mut(), mesh_query, light_query, meshes);
     // profiler.end_scope(encoder);
 }
 
@@ -31,11 +34,12 @@ fn point_light_impl(
     query : Query<&PointLight>,
     mut encoder : ResMut<RenderCommands>,
     dst : Res<DirLightTexture>,
-    gbuffer : Res<GFramebuffer>
+    gbuffer : Res<GFramebuffer>,
+    mut meshes : ResMut<Assets<GMesh>>
 ) {
     // profiler.begin_scope("Point light fill", encoder, &fill.render.device);
     let render = fill.render.clone();
-    fill.draw(&render.device, encoder.as_mut(), query, &dst.tex, gbuffer.as_ref());
+    fill.draw(&render.device, encoder.as_mut(), query, &dst.tex, gbuffer.as_ref(), meshes.as_mut());
     // profiler.end_scope(encoder);
 }
 
@@ -62,12 +66,12 @@ impl SchedulePlugin for PointLightPlugin {
 
         let pipeline = PointLightPipeline::new(
             &render, 
-            &app.world.get_resource::<CameraBuffer>().unwrap().buffer, 
             wgpu::Extent3d {
                 width : size.width,
                 height : size.height,
                 depth_or_array_layers : 1
-            });
+            },
+            app);
 
         let tex = pipeline.spawn_framebuffer(&render.device, wgpu::Extent3d {
             width : size.width,

@@ -1,12 +1,15 @@
 use std::sync::Arc;
+use bevy::prelude::{Handle, Assets, ResMut};
 use space_core::SpaceResult;
 use tobj::LoadError;
 use wgpu::util::DeviceExt;
-use crate::GMeshPtr;
 use crate::mesh::{GMesh, GVertex};
 
 
-pub fn wgpu_load_gray_obj(device : &wgpu::Device, path : String) -> SpaceResult<Vec<GMeshPtr>> {
+pub fn wgpu_load_gray_obj(
+        device : &wgpu::Device, 
+        path : String, 
+        mut meshs : &mut Assets<GMesh>) -> SpaceResult<Vec<Handle<GMesh>>> {
     let (models, _) = tobj::load_obj(path,
                                              &tobj::GPU_LOAD_OPTIONS)?;
 
@@ -44,9 +47,9 @@ pub fn wgpu_load_gray_obj(device : &wgpu::Device, path : String) -> SpaceResult<
 
 
         scene.push(
-            Arc::new(GMesh { vertex, index, index_count: mesh.indices.len() as u32 })
+            meshs.add(GMesh { vertex, index, index_count: mesh.indices.len() as u32 })
         );
     }
 
-    Ok(scene.iter().map(|mesh| GMeshPtr {mesh : mesh.clone()}).collect())
+    Ok(scene)
 }
