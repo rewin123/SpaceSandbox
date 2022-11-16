@@ -16,9 +16,56 @@ pub struct Camera {
     pub up : nalgebra::Vector3<f32>
 }
 
+#[derive(Default)]
+pub struct Ray {
+    pub pos : nalgebra::Point3<f32>,
+    pub dir : nalgebra::Vector3<f32>
+}
+
+impl Ray {
+    pub fn interact_y(&self, y : f32) -> na::Point3<f32> {
+        let dy = y - self.pos.y;
+        let t = dy / self.dir.y;
+        let pos = self.pos + t * self.dir;
+        pos
+    }
+}
+
 impl Camera {
     pub fn get_right(&self) -> na::Vector3<f32> {
         self.frw.cross(&self.up)
+    }
+
+    pub fn screen_pos_to_ray(
+        &self,
+        screen_pos : nalgebra::Point2<f32>,
+        screen_size : nalgebra::Point2<f32>
+    ) -> Ray {
+        let mut res = Ray::default();
+
+        let uniform = self.build_uniform();
+
+        let up = self.pos + self.up;
+        let right = self.pos + self.get_right();
+
+        let screen_up = uniform.proj * uniform.view * nalgebra::Vector4::<f32>::new(up.x, up.y, up.z, 1.0);
+        let screen_right = uniform.proj * uniform.view * nalgebra::Vector4::<f32>::new(right.x, right.y, right.z, 1.0);;
+
+        let uniform_screen_pos = nalgebra::Vector2::<f32>::new(
+            screen_pos.x / screen_size.x * 2.0 - 1.0,
+            screen_pos.y / screen_size.y * 2.0 - 1.0);
+
+
+        let k_x = uniform_screen_pos.x / screen_right.x;
+        let k_y = -uniform_screen_pos.y / screen_up.y;
+
+        let mut dir = k_x * self.get_right() + k_y * self.up + self.frw;
+        dir = dir.normalize();
+
+        res.dir = dir;
+        res.pos = self.pos;
+
+        res
     }
 }
 

@@ -1,14 +1,17 @@
 use std::default::default;
 use bevy::asset::AssetServer;
 use egui::{Context, Ui};
-use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, EguiContext, SceneType, RonAssetPlugin, RenderApi, InputSystem, KeyCode};
+use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, EguiContext, SceneType, RonAssetPlugin, RenderApi, InputSystem, KeyCode, ScreenSize};
 use space_render::add_game_render_plugins;
-use space_core::{ecs::*, app::App};
+use space_core::{ecs::*, app::App, nalgebra};
 use space_core::{serde::*, Camera};
 use bevy::reflect::*;
 use bevy::asset::*;
-use space_assets::{GltfAssetLoader, SpaceAssetServer};
+use winit::event::MouseButton;
+use space_assets::{GltfAssetLoader, GMeshPtr, Location, Material, MeshBundle, SpaceAssetServer};
 
+#[derive(Component)]
+struct StationBuildActiveBlock {}
 
 pub struct StationBuildMenu {}
 
@@ -27,8 +30,52 @@ impl SchedulePlugin for StationBuildMenu {
         app.add_system_set(
             SystemSet::on_update(SceneType::StationBuilding)
                 .with_system(station_menu)
-                .with_system(camera_movement));
+                .with_system(camera_movement)
+                .with_system(place_block)
+                .with_system(add_block_to_station));
 
+    }
+}
+
+fn add_block_to_station(
+    mut commands : Commands,
+    world : &World,
+    input : Res<InputSystem>,
+    mut panels : Res<StationBlocks>,
+    render : Res<RenderApi>) {
+
+    if input.get_mouse_button_state(&MouseButton::Left) {
+        if let Some(e) = panels.active_entity.as_ref() {
+            let e_ref = world.entity(*e);
+            let bundle = MeshBundle {
+                mesh: e_ref.get::<GMeshPtr>().unwrap().clone(),
+                location: e_ref.get::<Location>().unwrap().clone(&render.device),
+                material: e_ref.get::<Material>().unwrap().clone()
+            };
+            commands.spawn(bundle);
+        }
+    }
+}
+
+fn place_block(
+    mut commands : Commands,
+    mut query : Query<(&mut Location), (With<StationBuildActiveBlock>)>,
+    camera : Res<Camera>,
+    input : Res<InputSystem>,
+    mut panels : ResMut<StationBlocks>,
+    screen_size : Res<ScreenSize>,
+    render : Res<RenderApi>) {
+
+    let ray = camera.screen_pos_to_ray(
+        input.get_mouse_pos(),
+        nalgebra::Point2::<f32>::new(screen_size.size.width as f32, screen_size.size.height as f32));
+
+    for mut loc in query.iter_mut() {
+        let point = ray.interact_y(panels.build_level as f32);
+
+        loc.pos.x = point.x;
+        loc.pos.y = point.y;
+        loc.pos.z = point.z;
     }
 }
 
@@ -58,15 +105,13 @@ struct RonBlockDesc {
     pub model_path : String
 }
 
-
-
 #[derive(Resource, Default)]
 struct StationBlocks {
     pub panels : Vec<Handle<RonBlockDesc>>,
 
     pub active_block : Option<RonBlockDesc>,
-    pub active_entity : Option<Entity>
-
+    pub active_entity : Option<Entity>,
+    pub build_level : i32,
 }
 
 
@@ -94,11 +139,18 @@ fn station_menu(
                 if ui.button(&block.name).clicked() {
                     panels.active_block = Some(block.clone());
 
-                    asset_server.wgpu_gltf_load_cmds(
+
+                    let entities = asset_server.wgpu_gltf_load_cmds(
                         &render.device,
                         block.model_path.clone(),
                         &mut commands
                     );
+                    for e in &entities {
+                        commands.entity(*e)
+                            .insert(StationBuildActiveBlock{});
+                    }
+
+                    panels.active_entity = Some(entities[0]);
                 }
             }
         }
@@ -124,6 +176,7 @@ fn init_station_build(
 
     camera.frw.x = 0.0;
     camera.frw.y = -1.0;
-    camera.frw.z = 0.0;
+    camera.frw.z = 1.0;
+    camera.frw = camera.frw.normalize();
 }
 

@@ -12,6 +12,7 @@ egui = "*"
 bevy = "0.9.0"
 rayon = "*"
 pollster = "*"
+winit = "*"
 
 space_macros = {path = "crates/space_macros"}
 space_shaders = {path = "crates/space_shaders"}

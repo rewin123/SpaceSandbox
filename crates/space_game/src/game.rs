@@ -245,39 +245,12 @@ impl Game {
         }
         self.plugins = Some(plugins);
 
-        { //gui draw
-            // let mut gui = self.scene.world.remove_resource::<Gui>().unwrap();
-            // let gui_output = gui.end_frame(self.scene.world.get_resource());
-            // let mut encoder = self.scene.world.remove_resource::<wgpu::CommandEncoder>().unwrap();
-
-            // let scale_factor = self.scene.world.get_non_send_resource::<winit::window::Window>().unwrap().scale_factor();
-
-            // gui.draw(gui_output,
-            //               egui_wgpu_backend::ScreenDescriptor {
-            //                   physical_width: self.api.config.width,
-            //                   physical_height: self.api.config.height,
-            //                   scale_factor: scale_factor as f32,
-            //               },
-            //               &mut encoder,
-            //               &self.render_view.as_ref().unwrap());
-            // self.scene.world.insert_resource(encoder);
-            // self.scene.world.insert_resource(gui);
-
-        }
         self.render_base.device.poll(wgpu::Maintain::Wait);
         self.render_base.queue.submit(Some(
             self.scene.app.world.remove_resource::<RenderCommands>().unwrap().encoder.finish()
         ));
         
         output.present();
-
-        // if let Some(profiling_data) =  self.scene.app.world.get_resource_mut::<GpuProfiler>().unwrap().process_finished_frame() {
-        //     if self.input.get_key_state(winit::event::VirtualKeyCode::G) {
-        //         wgpu_profiler::chrometrace::write_chrometrace(
-        //             std::path::Path::new("mytrace.json"), &profiling_data).unwrap();
-        //     }
-        //     // println!("Profile {}", profiling_data.len());
-        // }
 
         Ok(())
     }
@@ -317,6 +290,14 @@ impl Game {
                         WindowEvent::KeyboardInput { device_id, input, is_synthetic } => {
                             self.scene.app.world.get_resource_mut::<InputSystem>()
                                 .unwrap().process_event(input);
+                        }
+                        WindowEvent::MouseInput { device_id, state, button, modifiers } => {
+                            self.scene.app.world.get_resource_mut::<InputSystem>()
+                                .unwrap().process_mouse_event(button, state);
+                        }
+                        WindowEvent::CursorMoved { device_id, position, modifiers } => {
+                            self.scene.app.world.get_resource_mut::<InputSystem>()
+                                .unwrap().process_cursor_move(position.clone());
                         }
                         _ => {}
                     }

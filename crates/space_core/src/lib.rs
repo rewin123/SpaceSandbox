@@ -12,6 +12,7 @@ pub use serde;
 pub use bevy::ecs::prelude as ecs;
 pub use bevy::app::prelude as app;
 pub use bevy::asset::prelude as asset;
+pub use nalgebra;
 
 
 
