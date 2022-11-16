@@ -72,6 +72,7 @@ fn place_block(
 
     for mut loc in query.iter_mut() {
         let point = ray.interact_y(panels.build_level as f32);
+        // let point = ray.pos + 10.0 * ray.dir;
 
         loc.pos.x = point.x;
         loc.pos.y = point.y;
@@ -178,5 +179,7 @@ fn init_station_build(
     camera.frw.y = -1.0;
     camera.frw.z = 1.0;
     camera.frw = camera.frw.normalize();
+
+    camera.up =  camera.get_right().cross(&camera.frw).normalize();
 }
 
