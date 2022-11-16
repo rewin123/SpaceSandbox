@@ -3,7 +3,7 @@ use crate::*;
 use space_core::ecs::*;
 use bevy::prelude::*;
 
-fn update_loc_buffer(mut query: Query<&mut Location>) {
+fn update_loc_buffer(mut query: Query<&mut Location, Changed<Location>>) {
     for mut loc in &mut query {
         loc.update_buffer();
     }

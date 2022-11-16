@@ -354,7 +354,9 @@ impl Game {
 
         self.scene.app.schedule = Schedule::default();
         self.scene.app.add_default_stages();
+        self.scene.app.add_plugin(bevy::log::LogPlugin::default());
         self.scene.app.add_plugins(bevy::MinimalPlugins);
+        self.scene.app.add_plugin(bevy::diagnostic::DiagnosticsPlugin::default());
         self.scene.app.add_plugin(AssetPlugin::default());
 
         self.scene.app.add_stage_after(CoreStage::PreUpdate, GlobalStageStep::PreRender, SystemStage::parallel());

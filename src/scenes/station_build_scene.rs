@@ -1,5 +1,6 @@
 use std::default::default;
 use bevy::asset::AssetServer;
+use bevy::prelude::{info_span, info};
 use egui::{Context, Ui};
 use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, EguiContext, SceneType, RonAssetPlugin, RenderApi, InputSystem, KeyCode, ScreenSize};
 use space_render::add_game_render_plugins;
@@ -141,17 +142,39 @@ fn station_menu(
                     panels.active_block = Some(block.clone());
 
 
-                    let entities = asset_server.wgpu_gltf_load_cmds(
+                    let bundles = asset_server.wgpu_gltf_load_cmds(
                         &render.device,
-                        block.model_path.clone(),
-                        &mut commands
+                        block.model_path.clone()
                     );
-                    for e in &entities {
-                        commands.entity(*e)
-                            .insert(StationBuildActiveBlock{});
+                    for b in bundles {
+                        let e = commands.spawn(b)
+                            .insert(StationBuildActiveBlock{}).id();
+                        panels.active_entity = Some(e);
                     }
 
-                    panels.active_entity = Some(entities[0]);
+                }
+            }
+        }
+
+        ui.separator();
+
+        if ui.button("Stress test").clicked() {
+            if let Some(block) = panels.active_block.as_ref() {
+                let mut bundles = asset_server.wgpu_gltf_load_cmds(
+                    &render.device,
+                    block.model_path.clone()
+                );
+                for y in -100..100 {
+                    for x in -100..100 {
+                        bundles[0].location.pos.x = x as f32;
+                        bundles[0].location.pos.z = y as f32;
+                        let b = MeshBundle {
+                            mesh: bundles[0].mesh.clone(),
+                            location: bundles[0].location.clone(&render.device),
+                            material: bundles[0].material.clone(),
+                        };
+                        let e = commands.spawn(b);
+                    }
                 }
             }
         }

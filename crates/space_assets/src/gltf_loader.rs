@@ -18,7 +18,7 @@ pub trait GltfAssetLoader {
     fn load_gltf_color_texture(&mut self, base : &String, src : Option<gltf::texture::Info>, gamma : bool) -> Handle<TextureBundle>;
     fn load_gltf_normal_texture(&mut self, base : &String, src : Option<gltf::material::NormalTexture>) -> Handle<TextureBundle>;
     fn wgpu_gltf_load(&mut self, device : &wgpu::Device, path : String, world : &mut space_core::bevy::prelude::World) -> Vec<Entity>;
-    fn wgpu_gltf_load_cmds(&mut self, device : &wgpu::Device, path : String, commands : &mut space_core::ecs::Commands) -> Vec<Entity>;
+    fn wgpu_gltf_load_cmds(&mut self, device : &wgpu::Device, path : String) -> Vec<MeshBundle>;
 }
 
 impl GltfAssetLoader for SpaceAssetServer {
@@ -50,7 +50,7 @@ impl GltfAssetLoader for SpaceAssetServer {
     }
 
 
-    fn wgpu_gltf_load_cmds(&mut self, device : &wgpu::Device, path : String, commands : &mut space_core::ecs::Commands) -> Vec<Entity> {
+    fn wgpu_gltf_load_cmds(&mut self, device : &wgpu::Device, path : String) -> Vec<MeshBundle> {
         let mut res = vec![];
 
         let sponza = gltf::Gltf::open(&path).unwrap();
@@ -221,11 +221,11 @@ impl GltfAssetLoader for SpaceAssetServer {
 
                 for (p, m) in &meshes[mesh_idx.index()] {
                     res.push(
-                        commands.spawn(MeshBundle {
+                        MeshBundle {
                         mesh : p.clone(),
                         location : location.clone(&device),
                         material : m.clone()
-                    }).id());
+                    });
                 }
             }
         }
