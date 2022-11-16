@@ -6,26 +6,26 @@ use crate::asset_server::{SpaceAsset, AssetServerGlobal};
 
 pub type HandleId = usize;
 
-pub struct Handle<T : SpaceAsset> {
+pub struct SpaceHandle<T : SpaceAsset> {
     idx : HandleId,
     marker : PhantomData<T>,
     asset_server : Arc<AssetServerGlobal>,
     strong : bool
 }
 
-impl<T : SpaceAsset> PartialEq for Handle<T> {
+impl<T : SpaceAsset> PartialEq for SpaceHandle<T> {
     fn eq(&self, other: &Self) -> bool {
         self.idx == other.idx && self.strong == other.strong
     }
 }
 
-impl<T : SpaceAsset> Hash for Handle<T> {
+impl<T : SpaceAsset> Hash for SpaceHandle<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.idx.hash(state);
     }
 }
 
-impl<T> Handle<T> where T : SpaceAsset {
+impl<T> SpaceHandle<T> where T : SpaceAsset {
 
     pub fn new(idx : HandleId, asset_server : Arc<AssetServerGlobal>, strong : bool) -> Self {
         let res = Self {
@@ -62,12 +62,12 @@ impl<T> Handle<T> where T : SpaceAsset {
         self.idx
     }
 
-    pub fn get_weak(&self) -> Handle<T> {
-        Handle::new( self.idx, self.asset_server.clone(), false)
+    pub fn get_weak(&self) -> SpaceHandle<T> {
+        SpaceHandle::new( self.idx, self.asset_server.clone(), false)
     }
 }
 
-impl<T> Drop for Handle<T> where T : SpaceAsset {
+impl<T> Drop for SpaceHandle<T> where T : SpaceAsset {
     fn drop(&mut self) {
         if self.strong {
             self.asset_server.destroy_queue.lock().unwrap().push(self.idx);
@@ -75,9 +75,9 @@ impl<T> Drop for Handle<T> where T : SpaceAsset {
     }
 }
 
-impl<T> Clone for Handle<T> where T : SpaceAsset {
+impl<T> Clone for SpaceHandle<T> where T : SpaceAsset {
     fn clone(&self) -> Self {
-        Handle::new(self.idx, self.asset_server.clone(), self.strong)
+        SpaceHandle::new(self.idx, self.asset_server.clone(), self.strong)
     }
 }
 
@@ -107,8 +107,8 @@ impl HandleUntyped {
         HandleUntyped::new(self.idx, self.tp, self.asset_server.clone(), true)
     }
 
-    pub fn get_typed<T : SpaceAsset>(&self) -> Handle<T> {
-        Handle::<T>::new(self.idx, self.asset_server.clone(), self.strong)
+    pub fn get_typed<T : SpaceAsset>(&self) -> SpaceHandle<T> {
+        SpaceHandle::<T>::new(self.idx, self.asset_server.clone(), self.strong)
     }
 
     fn incerase_counter(&self) {

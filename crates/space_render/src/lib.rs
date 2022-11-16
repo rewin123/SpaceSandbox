@@ -9,6 +9,7 @@ use space_game::*;
 use space_game::plugins::FpsCounterSystem;
 use crate::pipelines::StateSystem;
 
+pub struct AutoInstancing {}
 
 pub fn add_game_render_plugins(game : &mut Game) {
     // let mut state = pollster::block_on(crate::pipelines::State::new(game));

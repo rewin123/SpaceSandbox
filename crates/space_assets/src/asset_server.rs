@@ -240,7 +240,7 @@ impl SpaceAssetServer {
         }
     }
 
-    pub fn get<T : SpaceAsset>(&self, handle : &Handle<T>) -> Option<Arc<T>> {
+    pub fn get<T : SpaceAsset>(&self, handle : &SpaceHandle<T>) -> Option<Arc<T>> {
         if let Some(val) = self.assets.get(&handle.get_idx()) {
            if let Ok(res) = val.get().clone().downcast_arc::<T>() {
                Some(res)
@@ -252,7 +252,7 @@ impl SpaceAssetServer {
         }
     }
 
-    pub fn get_version<T : SpaceAsset>(&self, handle : &Handle<T>) -> Option<u32> {
+    pub fn get_version<T : SpaceAsset>(&self, handle : &SpaceHandle<T>) -> Option<u32> {
         if let Some(val) = self.assets.get(&handle.get_idx()) {
             Some(val.get_version())
         } else {
@@ -268,14 +268,14 @@ impl SpaceAssetServer {
         }
     }
 
-    pub fn new_asset<T : SpaceAsset>(&mut self, val : Arc<T>) -> Handle<T> {
+    pub fn new_asset<T : SpaceAsset>(&mut self, val : Arc<T>) -> SpaceHandle<T> {
         let holder = AssetHolder::new(val);
         self.counter += 1;
         self.assets.insert(self.counter, holder);
-        Handle::new(self.counter, self.memory_holder.clone(), true)
+        SpaceHandle::new(self.counter, self.memory_holder.clone(), true)
     }
 
-    pub fn load_color_texture(&mut self, path : String, gamma : bool) -> Handle<TextureBundle> {
+    pub fn load_color_texture(&mut self, path : String, gamma : bool) -> SpaceHandle<TextureBundle> {
 
         if let Some(handle) = self.loaded_assets.get(&path) {
             if let Some(val) = self.get_untyped::<TextureBundle>(&handle) {

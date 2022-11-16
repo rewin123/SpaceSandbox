@@ -1,5 +1,6 @@
 use std::{num::NonZeroU32, sync::{Arc, Mutex}};
 use std::collections::HashMap;
+use bevy::prelude::{Handle, Assets, info};
 use wgpu::{Extent3d, Texture, TextureFormat};
 use space_assets::*;
 use space_core::{RenderBase, app::App};
@@ -8,6 +9,49 @@ use space_game::*;
 use space_game::PluginName::Text;
 
 use space_core::ecs::*;
+
+fn material_update(
+        mut materials : ResMut<Assets<Material>>,
+        mut assets : ResMut<SpaceAssetServer>,
+        render : Res<RenderApi>,
+        fill : Res<GBufferFill>) {
+    for (handle, material) in materials.iter_mut() {
+        if material.need_rebind(assets.as_ref()) {
+            let group = render.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: None,
+                layout: &fill.texture_bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&assets.get(&material.color).unwrap().view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&assets.get(&material.color).unwrap().sampler),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::TextureView(&assets.get(&material.normal).unwrap().view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: wgpu::BindingResource::Sampler(&assets.get(&material.normal).unwrap().sampler),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 4,
+                        resource: wgpu::BindingResource::TextureView(&assets.get(&material.metallic_roughness).unwrap().view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 5,
+                        resource: wgpu::BindingResource::Sampler(&assets.get(&material.metallic_roughness).unwrap().sampler),
+                    }
+                ],
+            });
+
+            material.gbuffer_bind = Some(group);
+        }
+    }
+}
 
 #[derive(Resource)]
 pub struct GFramebuffer {
@@ -159,13 +203,14 @@ pub struct GBufferFill {
 
 fn gbuffer_filling(
     mut fill : ResMut<GBufferFill>,
-    mut query : Query<(&GMeshPtr, &mut Material, &Location)>,
+    mut query : Query<(&GMeshPtr, &mut Handle<Material>, &Location)>,
     mut gbuffer : ResMut<GFramebuffer>,
     mut assets : ResMut<SpaceAssetServer>,
-    mut encoder : ResMut<RenderCommands>) {
+    mut encoder : ResMut<RenderCommands>,
+    mut materials : ResMut<Assets<Material>>) {
 
     // profiler.begin_scope("GBuffer fill", encoder, &fill.render.device);
-    fill.draw(query, gbuffer, assets, encoder);
+    fill.draw(query, gbuffer, assets, encoder, materials);
     // profiler.end_scope(encoder);
 }
 
@@ -196,6 +241,7 @@ impl SchedulePlugin for GBufferPlugin {
             depth_or_array_layers : 1
         }));
         app.insert_resource(pipeline);
+        app.add_system_to_stage(GlobalStageStep::PreRender, material_update);
         app.add_system_to_stage( GlobalStageStep::Render, gbuffer_filling);
     }
 }
@@ -370,53 +416,22 @@ impl GBufferFill {
 
 
     pub fn draw(&mut self,
-                mut query : Query<(&GMeshPtr, &mut Material, &Location)>,
+                mut query : Query<(&GMeshPtr, &mut Handle<Material>, &Location)>,
                 mut gbuffer : ResMut<GFramebuffer>,
                 mut assets : ResMut<SpaceAssetServer>,
-                mut encoder : ResMut<RenderCommands>,) {
+                mut encoder : ResMut<RenderCommands>,
+                mut materials : ResMut<Assets<Material>>) {
 
         let mut render_pass = gbuffer.spawn_renderpass(encoder.as_mut());
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
 
-        for (mesh_ptr, mut material, loc) in &mut query {
-            if material.need_rebind(assets.as_ref()) {
-                let group = self.render.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: None,
-                    layout: &self.texture_bind_group_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(&assets.get(&material.color).unwrap().view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(&assets.get(&material.color).unwrap().sampler),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 2,
-                            resource: wgpu::BindingResource::TextureView(&assets.get(&material.normal).unwrap().view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 3,
-                            resource: wgpu::BindingResource::Sampler(&assets.get(&material.normal).unwrap().sampler),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 4,
-                            resource: wgpu::BindingResource::TextureView(&assets.get(&material.metallic_roughness).unwrap().view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 5,
-                            resource: wgpu::BindingResource::Sampler(&assets.get(&material.metallic_roughness).unwrap().sampler),
-                        }
-                    ],
-                });
 
-                material.gbuffer_bind = Some(group);
-            }
+        for (mesh_ptr, mut material_ptr, loc) in &mut query {
+            let mut material = materials.get(&material_ptr).unwrap();
 
-            render_pass.set_bind_group(1, material.into_inner().gbuffer_bind.as_ref().unwrap(), &[]);
+            render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
             render_pass.set_vertex_buffer(0, mesh_ptr.mesh.vertex.slice(..));
             render_pass.set_vertex_buffer(1, loc.buffer.slice(..));
             render_pass.set_index_buffer(mesh_ptr.mesh.index.slice(..), wgpu::IndexFormat::Uint32);

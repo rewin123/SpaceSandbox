@@ -51,7 +51,7 @@ fn add_block_to_station(
             let bundle = MeshBundle {
                 mesh: e_ref.get::<GMeshPtr>().unwrap().clone(),
                 location: e_ref.get::<Location>().unwrap().clone(&render.device),
-                material: e_ref.get::<Material>().unwrap().clone()
+                material: e_ref.get::<Handle<Material>>().unwrap().clone()
             };
             commands.spawn(bundle);
         }
@@ -123,7 +123,8 @@ fn station_menu(
     mut panels : ResMut<StationBlocks>,
     blocks : Res<Assets<RonBlockDesc>>,
     mut asset_server : ResMut<SpaceAssetServer>,
-    render : Res<RenderApi>
+    render : Res<RenderApi>,
+    mut materials : ResMut<Assets<Material>>,
 ) {
     egui::SidePanel::left("Build panel").show(&ctx, |ui| {
         if let Some(block) = panels.active_block.as_ref() {
@@ -144,7 +145,8 @@ fn station_menu(
 
                     let bundles = asset_server.wgpu_gltf_load_cmds(
                         &render.device,
-                        block.model_path.clone()
+                        block.model_path.clone(),
+                        &mut materials
                     );
                     for b in bundles {
                         let e = commands.spawn(b)
@@ -162,7 +164,8 @@ fn station_menu(
             if let Some(block) = panels.active_block.as_ref() {
                 let mut bundles = asset_server.wgpu_gltf_load_cmds(
                     &render.device,
-                    block.model_path.clone()
+                    block.model_path.clone(),
+                    &mut materials
                 );
                 for y in -100..100 {
                     for x in -100..100 {

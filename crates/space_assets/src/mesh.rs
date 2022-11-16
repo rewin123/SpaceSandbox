@@ -1,6 +1,9 @@
 use std::sync::{Arc, Mutex};
 use crate::asset_server::{SpaceAsset, SpaceAssetServer};
-use crate::handle::Handle;
+use crate::handle::SpaceHandle;
+use bevy::asset::Asset;
+use bevy::prelude::Handle;
+use bevy::reflect::TypeUuid;
 use nalgebra::*;
 use wgpu::util::DeviceExt;
 use wgpu::{BufferUsages, VertexFormat};
@@ -207,10 +210,16 @@ impl TextureBundle {
 }
 
 #[derive(Component)]
+pub struct MaterialPtr {
+    pub handle : Handle<Material>
+}
+
+#[derive(Component, TypeUuid)]
+#[uuid="a2b0c1bf-f725-48ef-9e40-66090d26e844"]
 pub struct Material {
-    pub color : Handle<TextureBundle>,
-    pub normal : Handle<TextureBundle>,
-    pub metallic_roughness: Handle<TextureBundle>,
+    pub color : SpaceHandle<TextureBundle>,
+    pub normal : SpaceHandle<TextureBundle>,
+    pub metallic_roughness: SpaceHandle<TextureBundle>,
     pub version_sum : u32,
     pub gbuffer_bind : Option<wgpu::BindGroup>
 }
