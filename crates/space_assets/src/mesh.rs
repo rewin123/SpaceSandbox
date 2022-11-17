@@ -149,7 +149,7 @@ impl Location {
         }
     }
 
-    pub fn update_buffer(&mut self) {
+    pub fn get_bytes(&self) -> Vec<u8> {
         let tr : Matrix4<f32> = Matrix::new_translation(&self.pos);
         let scale : Matrix4<f32> = Matrix::new_nonuniform_scaling(&self.scale);
 
@@ -164,9 +164,15 @@ impl Location {
             normal : normal.into()
         };
 
+        bytemuck::cast_slice(&[inst]).iter().map(|b| *b).collect()
+    }
+
+    pub fn update_buffer(&mut self) {
+        let bytes = self.get_bytes();
+
         let buffer = self.buffer.clone();
         self.buffer.slice(..).map_async(wgpu::MapMode::Write, move |a| {
-            buffer.slice(..).get_mapped_range_mut().copy_from_slice(bytemuck::cast_slice(&[inst]));
+            buffer.slice(..).get_mapped_range_mut().copy_from_slice(&bytes);
             buffer.unmap();
         });
     }

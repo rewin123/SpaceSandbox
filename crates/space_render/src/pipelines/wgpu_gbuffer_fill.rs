@@ -1,7 +1,7 @@
 use std::{num::NonZeroU32, sync::{Arc, Mutex}};
 use std::collections::HashMap;
 use bevy::prelude::{Handle, Assets, info};
-use wgpu::{Extent3d, Texture, TextureFormat};
+use wgpu::{Extent3d, Texture, TextureFormat, util::DeviceExt};
 use space_assets::*;
 use space_core::{RenderBase, app::App};
 
@@ -12,19 +12,45 @@ use space_core::ecs::*;
 
 use crate::AutoInstancing;
 
+#[derive(Default)]
+struct LocCache {
+    pub data : Vec<u8>,
+    pub count : u32
+}
+
 fn auto_instancing(
         mut query : Query<(&Location, &Handle<Material>, &Handle<GMesh>), With<AutoInstancing>>,
-        mut fill : ResMut<GBufferFill>) {
-    fill.instancing_cache.clear();
+        mut fill : ResMut<GBufferFill>,
+        render : Res<RenderApi>) {
+
+    let mut loc_cache = HashMap::<InstancingKey, LocCache>::new();
 
     for (loc, mat_ptr, mesh_ptr) in query.iter() {
         let key = InstancingKey {
             material: mat_ptr.clone(),
             mesh: mesh_ptr.clone(),
         };
-        if let Some(collected) = fill.instancing_cache.get_mut(&key) {
-            
+        if !loc_cache.contains_key(&key) {
+            loc_cache.insert(key.clone(), LocCache::default());
         }
+        if let Some(collected) = loc_cache.get_mut(&key) {
+            collected.data.extend(loc.get_bytes());
+            collected.count += 1;
+        }
+    }
+
+    fill.instancing_cache.clear();
+
+    for (k, v) in loc_cache {
+        let buffer = render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: &v.data,
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        fill.instancing_cache.push((k, InstancingCache {
+            buffer,
+            instant_count : v.count
+        }));
     }
 }
 
@@ -208,16 +234,15 @@ impl GFramebuffer {
     }
 }
 
-#[derive(Hash, PartialEq, Eq)]
+#[derive(Hash, PartialEq, Eq, Clone)]
 pub struct InstancingKey {
     pub material : Handle<Material>,
     pub mesh : Handle<GMesh>
 }
 
 pub struct InstancingCache {
-    pub mesh : Handle<GMesh>,
-    pub material : Handle<Material>,
-    pub buffer : wgpu::Buffer
+    pub buffer : wgpu::Buffer,
+    pub instant_count : u32
 }
 
 #[derive(Resource)]
@@ -229,13 +254,13 @@ pub struct GBufferFill {
     textures : HashMap<Material, Arc<wgpu::BindGroup>>,
     render : Arc<RenderBase>,
 
-    instancing_cache : HashMap<InstancingKey, InstancingCache>
+    instancing_cache : Vec<(InstancingKey, InstancingCache)>
 }
 
 
 fn gbuffer_filling(
     mut fill : ResMut<GBufferFill>,
-    mut query : Query<(&Handle<GMesh>, &mut Handle<Material>, &Location)>,
+    mut query : Query<(&Handle<GMesh>, &mut Handle<Material>, &Location), Without<AutoInstancing>>,
     mut gbuffer : ResMut<GFramebuffer>,
     mut assets : ResMut<SpaceAssetServer>,
     mut encoder : ResMut<RenderCommands>,
@@ -275,6 +300,7 @@ impl SchedulePlugin for GBufferPlugin {
         }));
         app.insert_resource(pipeline);
         app.add_system_to_stage(GlobalStageStep::PreRender, material_update);
+        app.add_system_to_stage(GlobalStageStep::PreRender, auto_instancing);
         app.add_system_to_stage( GlobalStageStep::Render, gbuffer_filling);
     }
 }
@@ -379,6 +405,8 @@ impl GBufferFill {
                 push_constant_ranges: &[]
             });
 
+        println!("Created gbuffer pipeline");
+
         let pipeline = render.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Pipeline"),
             layout: Some(&pipeline_layout),
@@ -442,36 +470,54 @@ impl GBufferFill {
             textures : HashMap::new(),
             texture_bind_group_layout,
             render : render.clone(),
-            instancing_cache : HashMap::new()
+            instancing_cache : vec![]
         }
     }
 
 
 
     pub fn draw(&mut self,
-                mut query : Query<(&Handle<GMesh>, &mut Handle<Material>, &Location)>,
+                mut query : Query<(&Handle<GMesh>, &mut Handle<Material>, &Location), Without<AutoInstancing>>,
                 mut gbuffer : ResMut<GFramebuffer>,
                 mut assets : ResMut<SpaceAssetServer>,
-                mut encoder : ResMut<RenderCommands>,
+                mut encoder_phantom : ResMut<RenderCommands>,
                 mut materials : ResMut<Assets<Material>>,
                 mut meshes : ResMut<Assets<GMesh>>) {
 
-        let mut render_pass = gbuffer.spawn_renderpass(encoder.as_mut());
+        let mut encoder = self.render.device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+        {
+            let mut render_pass = gbuffer.spawn_renderpass(&mut encoder);
 
-        render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+            render_pass.set_pipeline(&self.pipeline);
+            render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
 
 
-        for (mesh_ptr, mut material_ptr, loc) in &mut query {
-            let mut material = materials.get(&material_ptr).unwrap();
-            let mut mesh = meshes.get(mesh_ptr).unwrap();
+            // for (mesh_ptr, mut material_ptr, loc) in &mut query {
+            //     let mut material = materials.get(&material_ptr).unwrap();
+            //     let mut mesh = meshes.get(mesh_ptr).unwrap();
 
-            render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
-            render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
-            render_pass.set_vertex_buffer(1, loc.buffer.slice(..));
-            render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
-            render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
+            //     render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
+            //     render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
+            //     render_pass.set_vertex_buffer(1, loc.buffer.slice(..));
+            //     render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
+            //     render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
+            // }
 
+            for (k, v) in &self.instancing_cache {
+                let mut material = materials.get(&k.material).unwrap();
+                let mut mesh = meshes.get(&k.mesh).unwrap();
+
+                info!("{:?}", self.instancing_cache.len());
+
+                render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
+                render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
+                render_pass.set_vertex_buffer(1, v.buffer.slice(..));
+                render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
+                render_pass.draw_indexed(0..mesh.index_count, 0, 0..v.instant_count);
+            }
         }
+
+        let index = self.render.queue.submit(Some(encoder.finish()));
+        self.render.device.poll(wgpu::Maintain::WaitForSubmissionIndex(index));
     }
 }

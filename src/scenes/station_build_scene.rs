@@ -3,7 +3,7 @@ use bevy::asset::AssetServer;
 use bevy::prelude::{info_span, info};
 use egui::{Context, Ui};
 use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, EguiContext, SceneType, RonAssetPlugin, RenderApi, InputSystem, KeyCode, ScreenSize};
-use space_render::add_game_render_plugins;
+use space_render::{add_game_render_plugins, AutoInstancing};
 use space_core::{ecs::*, app::App, nalgebra};
 use space_core::{serde::*, Camera};
 use bevy::reflect::*;
@@ -179,7 +179,8 @@ fn station_menu(
                             location: bundles[0].location.clone(&render.device),
                             material: bundles[0].material.clone(),
                         };
-                        let e = commands.spawn(b);
+                        let e = commands.spawn(b)
+                            .insert(AutoInstancing{});
                     }
                 }
             }

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use bevy::prelude::info;
 use space_core::RenderBase;
 
 pub struct ApiBase {
@@ -12,7 +13,7 @@ pub struct ApiBase {
 
 impl ApiBase {
     pub fn new(window : &winit::window::Window) -> Self {
-        let instance = wgpu::Instance::new(wgpu::Backends::VULKAN);
+        let instance = wgpu::Instance::new(wgpu::Backends::all());
 
         let size = window.inner_size();
         let surface = unsafe {
@@ -26,18 +27,14 @@ impl ApiBase {
             }
         )).unwrap();
 
+        println!("Device: {:?}", &adapter.get_info().name);
+        
 
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES
-                    | wgpu::Features::TIMESTAMP_QUERY
-                    | wgpu::Features::WRITE_TIMESTAMP_INSIDE_PASSES
                     | wgpu::Features::MAPPABLE_PRIMARY_BUFFERS,
-                limits: if cfg!(target_arch = "wasm32") {
-                    wgpu::Limits::downlevel_webgl2_defaults()
-                } else {
-                    wgpu::Limits::default()
-                },
+                limits : wgpu::Limits::default(),
                 label: None
             },
             None
@@ -52,6 +49,7 @@ impl ApiBase {
             alpha_mode: wgpu::CompositeAlphaMode::Auto
         };
         surface.configure(&device, &config);
+
 
         Self {
             instance,

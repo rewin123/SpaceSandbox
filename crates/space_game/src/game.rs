@@ -335,7 +335,8 @@ impl Game {
     fn create_window() -> (winit::window::Window, winit::event_loop::EventLoop<()>) {
         let event_loop = EventLoop::new();
         let window =
-            WindowBuilder::new().build(&event_loop).unwrap();
+            WindowBuilder::new()
+            .build(&event_loop).unwrap();
         window.set_title("Space sandbox");
 
         (window, event_loop)
