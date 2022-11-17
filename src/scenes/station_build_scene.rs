@@ -8,6 +8,7 @@ use space_core::{ecs::*, app::App, nalgebra};
 use space_core::{serde::*, Camera};
 use bevy::reflect::*;
 use bevy::asset::*;
+use bevy::utils::HashMap;
 use winit::event::MouseButton;
 use space_assets::{GltfAssetLoader, Location, Material, MeshBundle, SpaceAssetServer, GMesh, LocationInstancing, SubLocation};
 
@@ -15,6 +16,22 @@ use space_assets::{GltfAssetLoader, Location, Material, MeshBundle, SpaceAssetSe
 struct StationBuildActiveBlock {}
 
 pub struct StationBuildMenu {}
+
+pub struct BlockID(usize);
+
+#[derive(Component)]
+pub struct StationChunk {
+    pub origin : nalgebra::Vector3<i32>,
+    pub chunk_size : f32,
+    pub floors : Vec<BlockID>,
+
+    pub instance_renders : HashMap<BlockID, Entity>
+}
+
+#[derive(Component)]
+pub struct Station {
+
+}
 
 impl SchedulePlugin for StationBuildMenu {
     fn get_name(&self) -> space_game::PluginName {
