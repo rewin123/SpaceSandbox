@@ -9,7 +9,7 @@ use space_core::{serde::*, Camera};
 use bevy::reflect::*;
 use bevy::asset::*;
 use winit::event::MouseButton;
-use space_assets::{GltfAssetLoader, Location, Material, MeshBundle, SpaceAssetServer, GMesh};
+use space_assets::{GltfAssetLoader, Location, Material, MeshBundle, SpaceAssetServer, GMesh, LocationInstancing, SubLocation};
 
 #[derive(Component)]
 struct StationBuildActiveBlock {}
@@ -170,19 +170,21 @@ fn station_menu(
                     &mut materials,
                     &mut meshes
                 );
+                let mut instant_location = LocationInstancing::default();
                 for y in -100..100 {
                     for x in -100..100 {
-                        bundles[0].location.pos.x = x as f32;
-                        bundles[0].location.pos.z = y as f32;
-                        let b = MeshBundle {
-                            mesh: bundles[0].mesh.clone(),
-                            location: bundles[0].location.clone(&render.device),
-                            material: bundles[0].material.clone(),
+                        let sub = SubLocation {
+                            pos: nalgebra::Vector3::new(x as f32, 0.0, y as f32),
+                            rotation: nalgebra::Vector3::new(0.0, 0.0, 0.0),
+                            scale: nalgebra::Vector3::new(1.0, 1.0, 1.0)
                         };
-                        let e = commands.spawn(b)
-                            .insert(AutoInstancing{});
+                        instant_location.locs.push(sub);
                     }
                 }
+                commands.spawn((
+                    bundles[0].mesh.clone(),
+                    bundles[0].material.clone(),
+                    instant_location));
             }
         }
     });

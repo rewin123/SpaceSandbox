@@ -107,9 +107,41 @@ pub struct GMesh {
 }
 
 
+
+pub struct SubLocation {
+    pub pos : Vector3<f32>,
+    pub rotation : Vector3<f32>,
+    pub scale : Vector3<f32>,
+}
+
+impl SubLocation {
+    pub fn get_raw(&self) -> LocationInstant {
+        let tr : Matrix4<f32> = Matrix::new_translation(&self.pos);
+        let scale : Matrix4<f32> = Matrix::new_nonuniform_scaling(&self.scale);
+
+        let rot = Rotation::from_euler_angles(self.rotation.x, self.rotation.y, self.rotation.z);
+        let rot_mat : Matrix4<f32> = rot.into();
+
+        let res = tr * rot_mat * scale;
+        let normal = rot_mat * Matrix4::identity();
+
+        let inst = LocationInstant {
+            model : res.into(),
+            normal : normal.into()
+        };
+        inst
+    }
+}
+
+#[derive(Component, Default)]
+pub struct LocationInstancing {
+    pub locs : Vec<SubLocation>,
+    pub buffer : Option<wgpu::Buffer>
+}
+
 #[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-struct LocationInstant {
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable, Default)]
+pub struct LocationInstant {
     model : [[f32; 4]; 4],
     normal : [[f32; 4]; 4]
 }
@@ -121,6 +153,8 @@ pub struct Location {
     pub scale : Vector3<f32>,
     pub buffer : Arc<wgpu::Buffer>
 }
+
+
 impl Location {
 
     pub fn clone(&self, device : &wgpu::Device) -> Self {

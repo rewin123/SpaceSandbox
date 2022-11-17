@@ -17,6 +17,7 @@ atomic_refcell = "0.1.8"
 bevy = "0.9.0"
 serde = "*"
 nalgebra = "*"
+bytemuck = "*"
 
 space_core = {path = "../space_core"}
 space_assets = {path = "../space_assets"}

@@ -12,13 +12,31 @@ use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
-use space_assets::{SpaceAssetServer, Material, GMesh};
+use space_assets::{SpaceAssetServer, Material, GMesh, LocationInstancing, LocationInstant};
 use space_core::{Camera, RenderBase, TaskServer};
 use crate::*;
 use encase::*;
 use wgpu::util::DeviceExt;
 use space_core::bevy::asset::AssetPlugin;
 use space_core::bevy::ecs::prelude::*;
+
+fn update_instanced_loc(
+        mut query : Query<&mut LocationInstancing>,
+        render : Res<RenderApi>) {
+    for mut loc in query.iter_mut() {
+        let mut cpu_buf = vec![LocationInstant::default(); loc.locs.len()];
+
+        for idx in 0..loc.locs.len() {
+            cpu_buf[idx] = loc.locs[idx].get_raw();
+        }
+
+        loc.buffer = Some(render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&cpu_buf),
+            usage: wgpu::BufferUsages::VERTEX
+        }));
+    }
+}
 
 #[derive(Resource)]
 pub struct WindowRes {
@@ -146,26 +164,6 @@ impl Game {
     }
 
     fn camera_update(&mut self) {
-        // let speed = 0.3 / 5.0;
-        // if self.input.get_key_state(VirtualKeyCode::W) {
-        //     self.scene.camera.pos += self.scene.camera.frw * speed;
-        // }
-        // if self.input.get_key_state(VirtualKeyCode::S) {
-        //     self.scene.camera.pos -= self.scene.camera.frw * speed;
-        // }
-        // if self.input.get_key_state(VirtualKeyCode::D) {
-        //     self.scene.camera.pos += self.scene.camera.get_right() * speed;
-        // }
-        // if self.input.get_key_state(VirtualKeyCode::A) {
-        //     self.scene.camera.pos -= self.scene.camera.get_right() * speed;
-        // }
-        // if self.input.get_key_state(VirtualKeyCode::Space) {
-        //     self.scene.camera.pos += self.scene.camera.up  * speed;
-        // }
-        // if self.input.get_key_state(VirtualKeyCode::LShift) {
-        //     self.scene.camera.pos -= self.scene.camera.up * speed;
-        // }
-
         let mut encoder = self
             .render_base.device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -373,6 +371,9 @@ impl Game {
         for plugin in &plugins.scheldue_plugin {
             plugin.add_system(&mut self.scene.app);
         }
+
+        self.scene.app.add_system_to_stage(CoreStage::PreUpdate, update_instanced_loc);
+
         setup_gui(&mut self.scene.app);
         self.plugins = Some(plugins);
     }

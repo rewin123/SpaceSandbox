@@ -1,5 +1,6 @@
 use std::{num::NonZeroU32, sync::{Arc, Mutex}};
 use std::collections::HashMap;
+use std::process::id;
 use bevy::prelude::{Handle, Assets, info};
 use wgpu::{Extent3d, Texture, TextureFormat, util::DeviceExt};
 use space_assets::*;
@@ -12,47 +13,8 @@ use space_core::ecs::*;
 
 use crate::AutoInstancing;
 
-#[derive(Default)]
-struct LocCache {
-    pub data : Vec<u8>,
-    pub count : u32
-}
+use space_assets::mesh::*;
 
-fn auto_instancing(
-        mut query : Query<(&Location, &Handle<Material>, &Handle<GMesh>), With<AutoInstancing>>,
-        mut fill : ResMut<GBufferFill>,
-        render : Res<RenderApi>) {
-
-    let mut loc_cache = HashMap::<InstancingKey, LocCache>::new();
-
-    for (loc, mat_ptr, mesh_ptr) in query.iter() {
-        let key = InstancingKey {
-            material: mat_ptr.clone(),
-            mesh: mesh_ptr.clone(),
-        };
-        if !loc_cache.contains_key(&key) {
-            loc_cache.insert(key.clone(), LocCache::default());
-        }
-        if let Some(collected) = loc_cache.get_mut(&key) {
-            collected.data.extend(loc.get_bytes());
-            collected.count += 1;
-        }
-    }
-
-    fill.instancing_cache.clear();
-
-    for (k, v) in loc_cache {
-        let buffer = render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: &v.data,
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-        fill.instancing_cache.push((k, InstancingCache {
-            buffer,
-            instant_count : v.count
-        }));
-    }
-}
 
 fn material_update(
         mut materials : ResMut<Assets<Material>>,
@@ -236,8 +198,8 @@ impl GFramebuffer {
 
 #[derive(Hash, PartialEq, Eq, Clone)]
 pub struct InstancingKey {
-    pub material : Handle<Material>,
-    pub mesh : Handle<GMesh>
+    pub material : bevy::asset::HandleId,
+    pub mesh : bevy::asset::HandleId
 }
 
 pub struct InstancingCache {
@@ -252,15 +214,14 @@ pub struct GBufferFill {
     camera_bind_group : wgpu::BindGroup,
     texture_bind_group_layout : wgpu::BindGroupLayout,
     textures : HashMap<Material, Arc<wgpu::BindGroup>>,
-    render : Arc<RenderBase>,
-
-    instancing_cache : Vec<(InstancingKey, InstancingCache)>
+    render : Arc<RenderBase>
 }
 
 
 fn gbuffer_filling(
     mut fill : ResMut<GBufferFill>,
-    mut query : Query<(&Handle<GMesh>, &mut Handle<Material>, &Location), Without<AutoInstancing>>,
+    mut query : Query<(&Handle<GMesh>, &Handle<Material>, &Location), Without<AutoInstancing>>,
+    mut query_instanced : Query<(&Handle<GMesh>, &Handle<Material>, &LocationInstancing), Without<AutoInstancing>>,
     mut gbuffer : ResMut<GFramebuffer>,
     mut assets : ResMut<SpaceAssetServer>,
     mut encoder : ResMut<RenderCommands>,
@@ -268,7 +229,7 @@ fn gbuffer_filling(
     mut meshes : ResMut<Assets<GMesh>>) {
 
     // profiler.begin_scope("GBuffer fill", encoder, &fill.render.device);
-    fill.draw(query, gbuffer, assets, encoder, materials, meshes);
+    fill.draw(query, query_instanced, gbuffer, assets, encoder, materials, meshes);
     // profiler.end_scope(encoder);
 }
 
@@ -300,7 +261,6 @@ impl SchedulePlugin for GBufferPlugin {
         }));
         app.insert_resource(pipeline);
         app.add_system_to_stage(GlobalStageStep::PreRender, material_update);
-        app.add_system_to_stage(GlobalStageStep::PreRender, auto_instancing);
         app.add_system_to_stage( GlobalStageStep::Render, gbuffer_filling);
     }
 }
@@ -469,15 +429,15 @@ impl GBufferFill {
             camera_bind_group_layout,
             textures : HashMap::new(),
             texture_bind_group_layout,
-            render : render.clone(),
-            instancing_cache : vec![]
+            render : render.clone()
         }
     }
 
 
 
     pub fn draw(&mut self,
-                mut query : Query<(&Handle<GMesh>, &mut Handle<Material>, &Location), Without<AutoInstancing>>,
+                mut query : Query<(&Handle<GMesh>, &Handle<Material>, &Location), Without<AutoInstancing>>,
+                mut query_instanced : Query<(&Handle<GMesh>, &Handle<Material>, &LocationInstancing), Without<AutoInstancing>>,
                 mut gbuffer : ResMut<GFramebuffer>,
                 mut assets : ResMut<SpaceAssetServer>,
                 mut encoder_phantom : ResMut<RenderCommands>,
@@ -503,15 +463,15 @@ impl GBufferFill {
                 render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
             }
 
-            for (k, v) in &self.instancing_cache {
-                let mut material = materials.get(&k.material).unwrap();
-                let mut mesh = meshes.get(&k.mesh).unwrap();
+            for (mesh_ptr, mut material_ptr, loc) in &mut query_instanced {
+                let mut material = materials.get(&material_ptr).unwrap();
+                let mut mesh = meshes.get(mesh_ptr).unwrap();
 
                 render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
                 render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
-                render_pass.set_vertex_buffer(1, v.buffer.slice(..));
+                render_pass.set_vertex_buffer(1, loc.buffer.as_ref().unwrap().slice(..));
                 render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
-                render_pass.draw_indexed(0..mesh.index_count, 0, 0..v.instant_count);
+                render_pass.draw_indexed(0..mesh.index_count, 0, 0..(loc.locs.len() as u32));
             }
         }
 
