@@ -55,7 +55,7 @@
         {
             "bufferView" : 0,
             "componentType" : 5126,
-            "count" : 2988,
+            "count" : 1475,
             "max" : [
                 1,
                 0.07784426957368851,
@@ -71,58 +71,58 @@
         {
             "bufferView" : 1,
             "componentType" : 5126,
-            "count" : 2988,
+            "count" : 1475,
             "type" : "VEC3"
         },
         {
             "bufferView" : 2,
             "componentType" : 5126,
-            "count" : 2988,
+            "count" : 1475,
             "type" : "VEC4"
         },
         {
             "bufferView" : 3,
             "componentType" : 5126,
-            "count" : 2988,
+            "count" : 1475,
             "type" : "VEC2"
         },
         {
             "bufferView" : 4,
             "componentType" : 5123,
-            "count" : 4560,
+            "count" : 1644,
             "type" : "SCALAR"
         }
     ],
     "bufferViews" : [
         {
             "buffer" : 0,
-            "byteLength" : 35856,
+            "byteLength" : 17700,
             "byteOffset" : 0
         },
         {
             "buffer" : 0,
-            "byteLength" : 35856,
-            "byteOffset" : 35856
+            "byteLength" : 17700,
+            "byteOffset" : 17700
         },
         {
             "buffer" : 0,
-            "byteLength" : 47808,
-            "byteOffset" : 71712
+            "byteLength" : 23600,
+            "byteOffset" : 35400
         },
         {
             "buffer" : 0,
-            "byteLength" : 23904,
-            "byteOffset" : 119520
+            "byteLength" : 11800,
+            "byteOffset" : 59000
         },
         {
             "buffer" : 0,
-            "byteLength" : 9120,
-            "byteOffset" : 143424
+            "byteLength" : 3288,
+            "byteOffset" : 70800
         }
     ],
     "buffers" : [
         {
-            "byteLength" : 152544,
+            "byteLength" : 74088,
             "uri" : "metal_grid.bin"
         }
     ]

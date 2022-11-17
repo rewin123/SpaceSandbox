@@ -492,22 +492,20 @@ impl GBufferFill {
             render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
 
 
-            // for (mesh_ptr, mut material_ptr, loc) in &mut query {
-            //     let mut material = materials.get(&material_ptr).unwrap();
-            //     let mut mesh = meshes.get(mesh_ptr).unwrap();
+            for (mesh_ptr, mut material_ptr, loc) in &mut query {
+                let mut material = materials.get(&material_ptr).unwrap();
+                let mut mesh = meshes.get(mesh_ptr).unwrap();
 
-            //     render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
-            //     render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
-            //     render_pass.set_vertex_buffer(1, loc.buffer.slice(..));
-            //     render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
-            //     render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
-            // }
+                render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
+                render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
+                render_pass.set_vertex_buffer(1, loc.buffer.slice(..));
+                render_pass.set_index_buffer(mesh.index.slice(..), wgpu::IndexFormat::Uint32);
+                render_pass.draw_indexed(0..mesh.index_count, 0, 0..1);
+            }
 
             for (k, v) in &self.instancing_cache {
                 let mut material = materials.get(&k.material).unwrap();
                 let mut mesh = meshes.get(&k.mesh).unwrap();
-
-                info!("{:?}", self.instancing_cache.len());
 
                 render_pass.set_bind_group(1, material.gbuffer_bind.as_ref().unwrap(), &[]);
                 render_pass.set_vertex_buffer(0, mesh.vertex.slice(..));
