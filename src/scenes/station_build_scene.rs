@@ -1,4 +1,5 @@
 use std::default::default;
+use std::process::id;
 use bevy::asset::AssetServer;
 use bevy::prelude::{info_span, info};
 use egui::{Context, Ui};
@@ -18,7 +19,12 @@ struct StationBuildActiveBlock {}
 
 pub struct StationBuildMenu {}
 
-#[derive(Default)]
+#[derive(Resource, Default)]
+pub struct BlockHolder {
+    pub map : HashMap<BlockID, (Handle<GMesh>, Handle<Material>)>
+}
+
+#[derive(Default, Hash, Eq, PartialEq)]
 pub struct BlockID(usize);
 
 #[derive(Resource)]
@@ -197,7 +203,7 @@ fn station_menu(
     render : Res<RenderApi>,
     mut materials : ResMut<Assets<Material>>,
     mut meshes : ResMut<Assets<GMesh>>,
-    mut chunk : ResMut<StationChunk>
+    mut blocs_holder : ResMut<BlockHolder>
 ) {
     egui::SidePanel::left("Build panel").show(&ctx, |ui| {
         if let Some(block) = panels.active_block.as_ref() {
@@ -213,24 +219,35 @@ fn station_menu(
         for (idx, h) in panel_list.iter().enumerate() {
             if let Some(block) = blocks.get(h) {
                 if ui.button(&block.name).clicked() {
-
                     if let Some(e) = panels.active_entity {
                         commands.entity(e).despawn();
                     }
 
-
                     panels.active_block = Some(block.clone());
-                    let bundles = asset_server.wgpu_gltf_load_cmds(
-                        &render.device,
-                        block.model_path.clone(),
-                        &mut materials,
-                        &mut meshes
-                    );
-                    for b in bundles {
-                        let e = commands.spawn(b)
+
+                    if let Some((mesh, mat)) = blocs_holder.map.get(&BlockID(idx)) {
+                        let e = commands.spawn((mesh.clone(), mat.clone()))
+                            .insert(Location::new(&render.device))
                             .insert(StationBuildActiveBlock{}).id();
                         panels.active_entity = Some(e);
+                    } else {
+                        let bundles = asset_server.wgpu_gltf_load_cmds(
+                            &render.device,
+                            block.model_path.clone(),
+                            &mut materials,
+                            &mut meshes
+                        );
+                        let mesh = bundles[0].mesh.clone();
+                        let mat = bundles[0].material.clone();
+                        let e = commands.spawn((mesh.clone(), mat.clone()))
+                            .insert(Location::new(&render.device))
+                            .insert(StationBuildActiveBlock{}).id();
+                        panels.active_entity = Some(e);
+
+                        blocs_holder.map.insert(BlockID(idx), (mesh, mat));
                     }
+
+
                     panels.active_id = BlockID(idx);
                 }
             }
@@ -274,7 +291,11 @@ fn init_station_build(
     let mut blocks = StationBlocks::default();
     blocks.panels.push(assets.load("ss13/walls_configs/metal_grid.wall"));
     blocks.panels.push(assets.load("ss13/walls_configs/metal_floor.wall"));
+
     commands.insert_resource(blocks);
+    commands.insert_resource(BlockHolder::default());
+
+
 
     camera.pos.x = 0.0;
     camera.pos.y = 10.0;
