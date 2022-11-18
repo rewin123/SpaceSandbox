@@ -213,6 +213,12 @@ fn station_menu(
         for (idx, h) in panel_list.iter().enumerate() {
             if let Some(block) = blocks.get(h) {
                 if ui.button(&block.name).clicked() {
+
+                    if let Some(e) = panels.active_entity {
+                        commands.entity(e).despawn();
+                    }
+
+
                     panels.active_block = Some(block.clone());
                     let bundles = asset_server.wgpu_gltf_load_cmds(
                         &render.device,
@@ -267,6 +273,7 @@ fn init_station_build(
 ) {
     let mut blocks = StationBlocks::default();
     blocks.panels.push(assets.load("ss13/walls_configs/metal_grid.wall"));
+    blocks.panels.push(assets.load("ss13/walls_configs/metal_floor.wall"));
     commands.insert_resource(blocks);
 
     camera.pos.x = 0.0;
