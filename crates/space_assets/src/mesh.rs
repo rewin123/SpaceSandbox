@@ -139,6 +139,12 @@ pub struct LocationInstancing {
     pub buffer : Option<wgpu::Buffer>
 }
 
+impl LocationInstancing {
+    pub fn recreate_buffer(&mut self) {
+
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable, Default)]
 pub struct LocationInstant {

@@ -24,8 +24,90 @@ pub struct BlockHolder {
     pub map : HashMap<BlockID, (Handle<GMesh>, Handle<Material>)>
 }
 
-#[derive(Default, Hash, Eq, PartialEq)]
-pub struct BlockID(usize);
+#[derive(Hash, Eq, PartialEq, Copy, Clone, Component)]
+pub enum BlockID {
+    None,
+    Id(usize)
+}
+
+impl Default for BlockID {
+    fn default() -> Self {
+        BlockID::None
+    }
+}
+
+#[derive(Default)]
+pub struct AutoInstanceHolder {
+    pub instance_renders : HashMap<BlockID, Entity>
+}
+
+enum InstancingUpdateEvent {
+    Update(Entity, BlockID)
+}
+
+fn setup_blocks(
+    mut cmds : Commands,
+    block_holder : Res<BlockHolder>,
+    mut chunk : ResMut<StationChunk>,
+    mut events : EventReader<AddBlockEvent>,
+    mut update_instance_evemts : EventWriter<InstancingUpdateEvent>) {
+
+    for e in events.iter() {
+        let idx = chunk.get_idx_3d(&nalgebra::Point3::new(
+            e.world_pos.x, 
+            e.world_pos.y, 
+            e.world_pos.z));
+        if idx.x >= 0 && idx.y >= 0 && idx.z >= 0
+            && idx.x < chunk.chunk_size.x && idx.y < chunk.chunk_size.y && idx.z < chunk.chunk_size.z {
+            let chunk_size = chunk.chunk_size.clone();
+            let old_id = chunk.floors[((idx.z * chunk_size.y + idx.y) * chunk_size.x + idx.x) as usize];
+            chunk.floors[((idx.z * chunk_size.y + idx.y) * chunk_size.x + idx.x) as usize] = e.id;
+            if e.id == BlockID::None {
+
+            } else {
+                if let Some(inst) = chunk.auto_instance.instance_renders.get(&e.id) {
+                    update_instance_evemts.send(InstancingUpdateEvent::Update(*inst, e.id));
+                } else {
+                    let entity = cmds.spawn(block_holder.map[&e.id].clone())
+                        .insert(LocationInstancing {
+                            locs: vec![],
+                            buffer: None,
+                        }).id();
+                    chunk.auto_instance.instance_renders.insert(e.id, entity);
+                }
+            }
+
+            if old_id == BlockID::None {
+                
+            } else {
+                if let Some(inst) = chunk.auto_instance.instance_renders.get(&old_id) {
+                    update_instance_evemts.send(InstancingUpdateEvent::Update(*inst, old_id));
+                } else {
+                    
+                }
+            }
+        }
+    }
+}
+
+fn update_instancing_holders(
+    mut query : Query<&mut LocationInstancing>,
+    chunk : Res<StationChunk>,
+    mut events : EventReader<InstancingUpdateEvent>
+) {
+    for event in events.iter() {
+        match event {
+            InstancingUpdateEvent::Update(e, id) => {
+                match query.get_component_mut::<LocationInstancing>(*e) {
+                    Ok(mut loc) => {
+                        loc.locs = chunk.collect_sub_locs(*id);
+                    },
+                    Err(_) => {},
+                }
+            },
+        }
+    }
+}
 
 #[derive(Resource)]
 pub struct StationChunk {
@@ -33,7 +115,7 @@ pub struct StationChunk {
     pub voxel_size : f32,
     pub floors : Vec<BlockID>,
     pub chunk_size : nalgebra::Vector3<i32>,
-    pub instance_renders : HashMap<BlockID, Entity>
+    pub auto_instance : AutoInstanceHolder
 }
 
 impl Default for StationChunk {
@@ -41,23 +123,41 @@ impl Default for StationChunk {
         Self {
             origin : nalgebra::Point3::default(),
             voxel_size : 2.0,
-            floors : vec![],
+            floors : vec![BlockID::None; 16 * 16 * 16],
             chunk_size : nalgebra::Vector3::new(16, 16, 16),
-            instance_renders : HashMap::new()
+            auto_instance : AutoInstanceHolder::default()
         }
     }
 }
 
 impl StationChunk {
-    pub fn add_block(
-        &mut self,
-        pos : nalgebra::Vector3<f32>,
-        id : BlockID,
-        mesh : &Handle<GMesh>,
-        mat : &Handle<Material>) -> SpaceResult<()> {
 
+    pub fn get_block_id(&self, x : i32, y : i32, z : i32) -> &BlockID {
+        &self.floors[((z * self.chunk_size.z + y) * self.chunk_size.y + x) as usize]
+    }
 
-        Ok(())
+    pub fn collect_sub_locs(&self, id : BlockID) -> Vec<SubLocation> {
+        let mut res = vec![];
+        for z in 0..self.chunk_size.z {
+            for y in 0..self.chunk_size.y {
+                for x in 0..self.chunk_size.x {
+                    if id == *self.get_block_id(x, y, z) {
+                        let mut sub = SubLocation {
+                            pos: [0.0, 0.0, 0.0].into(),
+                            rotation: [0.0, 0.0, 0.0].into(),
+                            scale: [1.0, 1.0, 1.0].into(),
+                        };
+                        sub.pos = nalgebra::Vector3::new(
+                            x as f32 * self.voxel_size,
+                            y as f32 * self.voxel_size,
+                            z as f32 * self.voxel_size,
+                        );
+                        res.push(sub);
+                    }
+                }
+            }
+        }
+        res
     }
 
     pub fn get_idx_3d(&self, pos : &nalgebra::Point3<f32>) -> nalgebra::Point3<i32> {
@@ -89,6 +189,12 @@ impl StationChunk {
     }
 }
 
+
+pub struct AddBlockEvent {
+    pub id : BlockID,
+    pub world_pos : nalgebra::Vector3<f32>
+}
+
 impl SchedulePlugin for StationBuildMenu {
     fn get_name(&self) -> space_game::PluginName {
         space_game::PluginName::Text("Station build menu".into())
@@ -98,6 +204,9 @@ impl SchedulePlugin for StationBuildMenu {
 
         app.add_plugin(RonAssetPlugin::<RonBlockDesc>{ ext: vec!["wall"], ..default() });
 
+        app.add_event::<AddBlockEvent>();
+        app.add_event::<InstancingUpdateEvent>();
+
         app.add_system_set(SystemSet::on_enter(SceneType::StationBuilding)
             .with_system(init_station_build));
 
@@ -106,30 +215,37 @@ impl SchedulePlugin for StationBuildMenu {
                 .with_system(station_menu)
                 .with_system(camera_movement)
                 .with_system(place_block)
-                .with_system(add_block_to_station));
-
+                .with_system(add_block_to_station)
+                .with_system(setup_blocks)
+                .with_system(update_instancing_holders));
     }
 }
 
 fn add_block_to_station(
     mut commands : Commands,
-    world : &World,
+    world : Query<(&Location)>,
     input : Res<InputSystem>,
     mut panels : Res<StationBlocks>,
-    render : Res<RenderApi>,
-    chunk : Res<StationChunk>) {
+    mut events : EventWriter<AddBlockEvent>) {
 
     if input.get_mouse_button_state(&MouseButton::Left) {
         if let Some(e) = panels.active_entity.as_ref() {
-            let e_ref = world.entity(*e);
-            let bundle = MeshBundle {
-                mesh: e_ref.get::<Handle<GMesh>>().unwrap().clone(),
-                location: e_ref.get::<Location>().unwrap().clone(&render.device),
-                material: e_ref.get::<Handle<Material>>().unwrap().clone()
-            };
-            commands.spawn(bundle);
+            events.send(AddBlockEvent{
+                id: panels.active_id.clone(),
+                world_pos: world.get_component::<Location>(*e).unwrap().pos,
+            });
         }
     }
+    
+    if input.get_mouse_button_state(&MouseButton::Right) {
+        if let Some(e) = panels.active_entity.as_ref() {
+            events.send(AddBlockEvent{
+                id: BlockID::None,
+                world_pos: world.get_component::<Location>(*e).unwrap().pos,
+            });
+        }
+    }
+    
 }
 
 fn place_block(
@@ -161,18 +277,19 @@ fn camera_movement(
     mut camera : ResMut<Camera>,
     input : Res<InputSystem>) {
     
+    let speed = 0.1;
     let right = camera.get_right();
     if input.get_key_state(KeyCode::W) {
-        camera.pos = camera.pos + 0.01 * camera.up;
+        camera.pos = camera.pos + speed * camera.up;
     }
     if input.get_key_state(KeyCode::S) {
-        camera.pos = camera.pos - 0.01 * camera.up;
+        camera.pos = camera.pos - speed * camera.up;
     }
     if input.get_key_state(KeyCode::A) {
-        camera.pos = camera.pos - 0.01 * right;
+        camera.pos = camera.pos - speed * right;
     }
     if input.get_key_state(KeyCode::D) {
-        camera.pos = camera.pos + 0.01 * right;
+        camera.pos = camera.pos + speed * right;
     }
 }
 
@@ -225,7 +342,7 @@ fn station_menu(
 
                     panels.active_block = Some(block.clone());
 
-                    if let Some((mesh, mat)) = blocs_holder.map.get(&BlockID(idx)) {
+                    if let Some((mesh, mat)) = blocs_holder.map.get(&BlockID::Id(idx)) {
                         let e = commands.spawn((mesh.clone(), mat.clone()))
                             .insert(Location::new(&render.device))
                             .insert(StationBuildActiveBlock{}).id();
@@ -244,11 +361,11 @@ fn station_menu(
                             .insert(StationBuildActiveBlock{}).id();
                         panels.active_entity = Some(e);
 
-                        blocs_holder.map.insert(BlockID(idx), (mesh, mat));
+                        blocs_holder.map.insert(BlockID::Id(idx), (mesh, mat));
                     }
 
 
-                    panels.active_id = BlockID(idx);
+                    panels.active_id = BlockID::Id(idx);
                 }
             }
         }

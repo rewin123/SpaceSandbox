@@ -21,7 +21,7 @@ use space_core::bevy::asset::AssetPlugin;
 use space_core::bevy::ecs::prelude::*;
 
 fn update_instanced_loc(
-        mut query : Query<&mut LocationInstancing>,
+        mut query : Query<&mut LocationInstancing, Changed<LocationInstancing>>,
         render : Res<RenderApi>) {
     for mut loc in query.iter_mut() {
         let mut cpu_buf = vec![LocationInstant::default(); loc.locs.len()];
