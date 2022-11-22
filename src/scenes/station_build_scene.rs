@@ -106,14 +106,17 @@ fn place_block(
 fn camera_movement(
     mut camera : ResMut<Camera>,
     input : Res<InputSystem>) {
-    
+
+    let mut frw = camera.up.clone_owned();
+    frw.y = 0.0;
+    frw = frw.normalize();
     let speed = 0.1;
     let right = camera.get_right();
     if input.get_key_state(KeyCode::W) {
-        camera.pos = camera.pos + speed * camera.up;
+        camera.pos = camera.pos + speed * frw;
     }
     if input.get_key_state(KeyCode::S) {
-        camera.pos = camera.pos - speed * camera.up;
+        camera.pos = camera.pos - speed * frw;
     }
     if input.get_key_state(KeyCode::A) {
         camera.pos = camera.pos - speed * right;
