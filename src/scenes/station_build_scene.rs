@@ -56,9 +56,14 @@ fn add_block_to_station(
     world : Query<(&Location)>,
     input : Res<InputSystem>,
     mut panels : Res<StationBlocks>,
-    mut events : EventWriter<AddBlockEvent>) {
+    mut events : EventWriter<AddBlockEvent>,
+    ctx : Res<EguiContext>) {
 
     if input.get_mouse_button_state(&MouseButton::Left) {
+        if ctx.is_pointer_over_area() {
+            info!("Mouse over egui");
+            return;
+        }
         if let Some(e) = panels.active_entity.as_ref() {
             events.send(AddBlockEvent{
                 id: panels.active_id.clone(),
@@ -68,6 +73,10 @@ fn add_block_to_station(
     }
     
     if input.get_mouse_button_state(&MouseButton::Right) {
+        if ctx.is_pointer_over_area() {
+            info!("Mouse over egui");
+            return;
+        }
         if let Some(e) = panels.active_entity.as_ref() {
             events.send(AddBlockEvent{
                 id: BlockID::None,
@@ -214,6 +223,7 @@ fn station_menu(
     mut meshes : ResMut<Assets<GMesh>>,
     mut blocs_holder : ResMut<BlockHolder>
 ) {
+
     egui::SidePanel::left("Build panel").show(&ctx, |ui| {
         if panels.active_id != BlockID::None {
             ui.label(format!("Selected block: {}", blocs_holder.map[&panels.active_id].name));
