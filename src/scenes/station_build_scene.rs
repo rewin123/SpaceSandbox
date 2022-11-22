@@ -27,6 +27,7 @@ impl SchedulePlugin for StationBuildMenu {
     }
 
     fn add_system(&self, app : &mut App) {
+        app.add_state(CommonBlockState::None);
 
         app.add_plugin(RonAssetPlugin::<RonBlockDesc>{ ext: vec!["wall"], ..default() });
 
@@ -44,6 +45,9 @@ impl SchedulePlugin for StationBuildMenu {
                 .with_system(add_block_to_station)
                 .with_system(setup_blocks)
                 .with_system(update_instancing_holders));
+        app.add_system_set(
+            SystemSet::on_update(CommonBlockState::Waiting)
+                .with_system(wait_loading_common_asset));
     }
 }
 
@@ -121,7 +125,7 @@ fn camera_movement(
 
 #[derive(Default, Deserialize, TypeUuid, Debug, Clone)]
 #[uuid = "fce6d1f5-4317-4077-b23e-6099747b08dd"]
-struct RonBlockDesc {
+pub struct RonBlockDesc {
     pub name : String,
     pub model_path : String
 }
@@ -130,12 +134,71 @@ struct RonBlockDesc {
 struct StationBlocks {
     pub panels : Vec<Handle<RonBlockDesc>>,
 
-    pub active_block : Option<RonBlockDesc>,
     pub active_id : BlockID,
     pub active_entity : Option<Entity>,
     pub build_level : i32,
 }
 
+#[derive(Clone, PartialEq, Eq, Debug, Hash)]
+enum CommonBlockState {
+    None,
+    Waiting
+}
+
+
+fn wait_loading_common_asset(
+    mut block : ResMut<CommonBlock>,
+    asset_server : ResMut<AssetServer>,
+    descs : ResMut<Assets<RonBlockDesc>>,
+    mut state : ResMut<State<CommonBlockState>>,
+    mut space_server : ResMut<SpaceAssetServer>,
+    render : Res<RenderApi>,
+    mut materials : ResMut<Assets<Material>>,
+    mut meshes : ResMut<Assets<GMesh>>,
+    mut block_holder : ResMut<BlockHolder>) {
+
+    if asset_server.get_load_state(&block.desc) == LoadState::Loaded {
+        if let Some(desc) = descs.get(&block.desc) {
+            let bundles = space_server.wgpu_gltf_load_cmds(
+                &render.device,
+                desc.model_path.clone(),
+                &mut materials,
+                &mut meshes
+            );
+
+            let files = space_server.get_files_by_ext_from_folder(
+                "assets/ss13/tiles".into(), "png".into());
+
+            let mesh = bundles[0].mesh.clone();
+            let base_mat = materials.get(&bundles[0].material).unwrap().clone();
+
+            for file in &files {
+                let tex = space_server.load_color_texture(file.clone(), true);
+                let mat = Material {
+                    color: tex,
+                    normal: base_mat.normal.clone(),
+                    metallic_roughness: base_mat.metallic_roughness.clone(),
+                    version_sum: 0,
+                    gbuffer_bind: None
+                };
+                let mat_handle = materials.add(mat);
+
+                let desc = BlockDesc {
+                    mesh : mesh.clone(),
+                    material: mat_handle,
+                    name: file.clone()
+                };
+
+                let id = BlockID::Id(block_holder.map.len());
+
+                block_holder.map.insert(id, desc);
+            }
+
+            info!("Finished loading {} tiles", files.len());
+            state.set(CommonBlockState::None);
+        }
+    }
+}
 
 fn station_menu(
     mut commands : Commands,
@@ -149,8 +212,8 @@ fn station_menu(
     mut blocs_holder : ResMut<BlockHolder>
 ) {
     egui::SidePanel::left("Build panel").show(&ctx, |ui| {
-        if let Some(block) = panels.active_block.as_ref() {
-            ui.label(format!("Selected block: {}", block.name));
+        if panels.active_id != BlockID::None {
+            ui.label(format!("Selected block: {}", blocs_holder.map[&panels.active_id].name));
         } else {
             ui.label(format!("Selected block: None"));
         }
@@ -159,53 +222,26 @@ fn station_menu(
 
         ui.label("Blocks:");
         let mut panel_list = panels.panels.clone();
-        for (idx, h) in panel_list.iter().enumerate() {
-            if let Some(block) = blocks.get(h) {
-                if ui.button(&block.name).clicked() {
-                    if let Some(e) = panels.active_entity {
-                        commands.entity(e).despawn();
-                    }
-
-                    panels.active_block = Some(block.clone());
-
-                    if let Some((mesh, mat)) = blocs_holder.map.get(&BlockID::Id(idx)) {
-                        let e = commands.spawn((mesh.clone(), mat.clone()))
-                            .insert(Location::new(&render.device))
-                            .insert(StationBuildActiveBlock{}).id();
-                        panels.active_entity = Some(e);
-                    } else {
-                        let bundles = asset_server.wgpu_gltf_load_cmds(
-                            &render.device,
-                            block.model_path.clone(),
-                            &mut materials,
-                            &mut meshes
-                        );
-                        let mesh = bundles[0].mesh.clone();
-                        let mat = bundles[0].material.clone();
-                        let e = commands.spawn((mesh.clone(), mat.clone()))
-                            .insert(Location::new(&render.device))
-                            .insert(StationBuildActiveBlock{}).id();
-                        panels.active_entity = Some(e);
-
-                        blocs_holder.map.insert(BlockID::Id(idx), (mesh, mat));
-                    }
-
-
-                    panels.active_id = BlockID::Id(idx);
+        for (idx, block) in blocs_holder.map.iter() {
+            if ui.button(&block.name).clicked() {
+                if let Some(e) = panels.active_entity {
+                    commands.entity(e).despawn();
                 }
+
+                let e = commands.spawn((block.mesh.clone(), block.material.clone()))
+                    .insert(Location::new(&render.device))
+                    .insert(StationBuildActiveBlock{}).id();
+                panels.active_entity = Some(e);
+                panels.active_id = idx.clone();
             }
         }
 
         ui.separator();
 
         if ui.button("Stress test").clicked() {
-            if let Some(block) = panels.active_block.as_ref() {
-                let mut bundles = asset_server.wgpu_gltf_load_cmds(
-                    &render.device,
-                    block.model_path.clone(),
-                    &mut materials,
-                    &mut meshes
-                );
+            if panels.active_id != BlockID::None {
+                let block = &blocs_holder.map[&panels.active_id];
+
                 let mut instant_location = LocationInstancing::default();
                 for y in -100..100 {
                     for x in -100..100 {
@@ -218,27 +254,39 @@ fn station_menu(
                     }
                 }
                 commands.spawn((
-                    bundles[0].mesh.clone(),
-                    bundles[0].material.clone(),
+                    block.mesh.clone(),
+                    block.material.clone(),
                     instant_location));
             }
         }
     });
 }
 
+#[derive(Resource)]
+struct CommonBlock {
+    desc : Handle<RonBlockDesc>
+}
+
+
+
 fn init_station_build(
     mut commands : Commands,
     mut assets : Res<AssetServer>,
-    mut camera : ResMut<Camera>
+    mut camera : ResMut<Camera>,
+    mut block_state : ResMut<State<CommonBlockState>>
 ) {
     let mut blocks = StationBlocks::default();
     blocks.panels.push(assets.load("ss13/walls_configs/metal_grid.wall"));
-    blocks.panels.push(assets.load("ss13/walls_configs/metal_floor.wall"));
+
+    let common_asset : Handle<RonBlockDesc> = assets.load("ss13/walls_configs/metal_floor.wall");
+
+    commands.insert_resource(CommonBlock {desc : common_asset});
+    block_state.set(CommonBlockState::Waiting).unwrap();
+    
+    // blocks.panels.push(assets.load("ss13/walls_configs/metal_floor.wall"));
 
     commands.insert_resource(blocks);
     commands.insert_resource(BlockHolder::default());
-
-
 
     camera.pos.x = 0.0;
     camera.pos.y = 10.0;

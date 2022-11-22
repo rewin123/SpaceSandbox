@@ -7,10 +7,17 @@ use space_core::asset::*;
 use space_core::app::*;
 use space_core::nalgebra;
 use space_core::nalgebra::{inf, Point3};
+use crate::scenes::RonBlockDesc;
+
+pub struct BlockDesc {
+    pub mesh : Handle<GMesh>,
+    pub material : Handle<Material>,
+    pub name : String
+}
 
 #[derive(Resource, Default)]
 pub struct BlockHolder {
-    pub map : HashMap<BlockID, (Handle<GMesh>, Handle<Material>)>
+    pub map : HashMap<BlockID, BlockDesc>
 }
 
 #[derive(Hash, Eq, PartialEq, Copy, Clone, Component)]
@@ -161,7 +168,8 @@ impl StationChunk {
                     update_instance_evemts.send(
                         InstancingUpdateEvent::Update(*inst, e.id, self.origin.clone()));
                 } else {
-                    let entity = cmds.spawn(block_holder.map[&e.id].clone())
+                    let desc = &block_holder.map[&e.id];
+                    let entity = cmds.spawn((desc.mesh.clone(), desc.material.clone()))
                         .insert(LocationInstancing {
                             locs: vec![],
                             buffer: None,

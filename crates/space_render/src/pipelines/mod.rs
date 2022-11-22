@@ -338,7 +338,7 @@ impl State {
             gamma_buffer,
             draw_state : DrawState::DirectLight,
             ambient_light : crate::light::AmbientLight {
-                color : na::Vector3::new(1.0f32, 1.0, 1.0) * 0.05f32
+                color : na::Vector3::new(1.0f32, 1.0, 1.0) * 0.2f32
             },
             ambient_light_pipeline
         }
