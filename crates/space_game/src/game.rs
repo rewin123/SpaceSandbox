@@ -5,7 +5,7 @@ use std::mem::swap;
 use std::ops::{DerefMut, Deref};
 use std::sync::{Arc, RwLock};
 use atomic_refcell::AtomicRefMut;
-use bevy::prelude::{App, CoreStage};
+use bevy::prelude::{App, CoreStage, info};
 use egui::color::gamma_from_linear;
 use wgpu::{Extent3d, ShaderStages, SurfaceTexture, TextureView};
 use winit::dpi::PhysicalSize;
@@ -21,9 +21,10 @@ use space_core::bevy::asset::AssetPlugin;
 use space_core::bevy::ecs::prelude::*;
 
 fn update_instanced_loc(
-        mut query : Query<&mut LocationInstancing, Changed<LocationInstancing>>,
+        mut query : Query<(Entity, &mut LocationInstancing), Changed<LocationInstancing>>,
         render : Res<RenderApi>) {
-    for mut loc in query.iter_mut() {
+    for  (entity, mut loc) in query.iter_mut() {
+        info!("Update instancing {:?}", &entity);
         let mut cpu_buf = vec![LocationInstant::default(); loc.locs.len()];
 
         for idx in 0..loc.locs.len() {

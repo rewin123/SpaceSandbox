@@ -27,18 +27,19 @@ pub fn update_instancing_holders(
     station : Res<Station>,
     mut events : EventReader<InstancingUpdateEvent>
 ) {
-    for (key, chunk) in &station.chunks {
-        for event in events.iter() {
-            match event {
-                InstancingUpdateEvent::Update(e, id) => {
-                    match query.get_component_mut::<LocationInstancing>(*e) {
-                        Ok(mut loc) => {
+    for event in events.iter() {
+        match event {
+            InstancingUpdateEvent::Update(e, id, key) => {
+                match query.get_component_mut::<LocationInstancing>(*e) {
+                    Ok(mut loc) => {
+                        if let Some(chunk) = station.chunks.get(&key) {
                             loc.locs = chunk.collect_sub_locs(*id);
-                        },
-                        Err(_) => {},
-                    }
-                },
-            }
+                        }
+                    },
+                    Err(_) => {},
+                }
+            },
         }
     }
+
 }

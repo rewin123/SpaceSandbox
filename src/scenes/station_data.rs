@@ -1,10 +1,12 @@
 use std::ops::Add;
+use bevy::log::info;
 use bevy::utils::HashMap;
 use space_assets::{GMesh, LocationInstancing, Material, SubLocation};
 use space_core::ecs::*;
 use space_core::asset::*;
 use space_core::app::*;
 use space_core::nalgebra;
+use space_core::nalgebra::{inf, Point3};
 
 #[derive(Resource, Default)]
 pub struct BlockHolder {
@@ -29,7 +31,7 @@ pub struct AutoInstanceHolder {
 }
 
 pub enum InstancingUpdateEvent {
-    Update(Entity, BlockID)
+    Update(Entity, BlockID, Point3<i32>)
 }
 
 #[derive(Resource)]
@@ -100,6 +102,8 @@ impl Station {
         let origin = self.get_chunk_origin(
             &nalgebra::Point3::from_slice(event.world_pos.as_slice()));
 
+        info!("Origin: {:?}", &origin);
+
         if let Some(chunk) = self.chunks.get_mut(&origin) {
             chunk.add_block(cmds, event, update_instance_evemts, block_holder);
         } else {
@@ -154,13 +158,15 @@ impl StationChunk {
 
             } else {
                 if let Some(inst) = self.auto_instance.instance_renders.get(&e.id) {
-                    update_instance_evemts.send(InstancingUpdateEvent::Update(*inst, e.id));
+                    update_instance_evemts.send(
+                        InstancingUpdateEvent::Update(*inst, e.id, self.origin.clone()));
                 } else {
                     let entity = cmds.spawn(block_holder.map[&e.id].clone())
                         .insert(LocationInstancing {
                             locs: vec![],
                             buffer: None,
                         }).id();
+                    info!("Spawn new instancing {:?}", &entity);
                     self.auto_instance.instance_renders.insert(e.id, entity);
                 }
             }
@@ -169,7 +175,8 @@ impl StationChunk {
 
             } else {
                 if let Some(inst) = self.auto_instance.instance_renders.get(&old_id) {
-                    update_instance_evemts.send(InstancingUpdateEvent::Update(*inst, old_id));
+                    update_instance_evemts.send(
+                        InstancingUpdateEvent::Update(*inst, old_id, self.origin));
                 } else {
 
                 }
@@ -193,9 +200,9 @@ impl StationChunk {
                             scale: [1.0, 1.0, 1.0].into(),
                         };
                         sub.pos = nalgebra::Vector3::new(
-                            (x + self.origin) as f32 * self.voxel_size,
-                            y as f32 * self.voxel_size,
-                            z as f32 * self.voxel_size,
+                            (x + self.origin.x) as f32 * self.voxel_size,
+                            (y + self.origin.y) as f32 * self.voxel_size,
+                            (z + self.origin.z) as f32 * self.voxel_size,
                         );
                         res.push(sub);
                     }
@@ -219,6 +226,8 @@ impl StationChunk {
         let x = (dp.x / self.voxel_size).round() as i32;
         let y = (dp.y / self.voxel_size).round() as i32;
         let z = (dp.z / self.voxel_size).round() as i32;
+
+        info!("Idx: {x} {y} {z}");
 
         nalgebra::Point3::new(x, y, z)
     }
