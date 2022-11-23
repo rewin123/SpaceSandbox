@@ -31,7 +31,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install alse
-        run: apt-get -y install alsa-tools
+        run: sudo apt-get -y install alsa-tools
         
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af #@v1
