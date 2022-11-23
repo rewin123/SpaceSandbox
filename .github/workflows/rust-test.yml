@@ -7,7 +7,7 @@
 # More details at https://github.com/rust-lang/rust-clippy 
 # and https://rust-lang.github.io/rust-clippy/
 
-name: rust-clippy analyze
+name: rust-tests
 
 on:
   push:
@@ -30,6 +30,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Install alse
+        run: apt-get -y install alsa-tools
+        
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af #@v1
         with:
