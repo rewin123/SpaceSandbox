@@ -44,4 +44,4 @@ jobs:
       - name: Run tests
         run:
           cargo test --release --workspace
-        continue-on-error: true
+        continue-on-error: false
