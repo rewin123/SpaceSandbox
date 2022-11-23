@@ -14,7 +14,13 @@ pub use bevy::app::prelude as app;
 pub use bevy::asset::prelude as asset;
 pub use nalgebra;
 
+pub type Vec3 = nalgebra::Vector3<f32>;
+pub type Vec3i = nalgebra::Vector3<i32>;
+pub type Pos3 = nalgebra::Point3<f32>;
+pub type Pos3i = nalgebra::Point3<i32>;
 
+pub type Mat3 = nalgebra::Matrix3<f32>;
+pub type Mat4 = nalgebra::Matrix4<f32>;
 
 #[derive(Debug)]
 pub struct RenderBase {
