@@ -1,4 +1,4 @@
-use std::default::default;
+use std::marker::PhantomData;
 use std::process::id;
 use bevy::asset::AssetServer;
 use bevy::prelude::{info_span, info};
@@ -29,7 +29,7 @@ impl SchedulePlugin for StationBuildMenu {
     fn add_system(&self, app : &mut App) {
         app.add_state(CommonBlockState::None);
 
-        app.add_plugin(RonAssetPlugin::<RonBlockDesc>{ ext: vec!["wall"], ..default() });
+        app.add_plugin(RonAssetPlugin::<RonBlockDesc>{ ext: vec!["wall"], phantom: PhantomData::default() });
 
         app.add_event::<AddBlockEvent>();
         app.add_event::<InstancingUpdateEvent>();
