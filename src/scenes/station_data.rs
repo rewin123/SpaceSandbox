@@ -1,12 +1,13 @@
 use std::ops::Add;
 use bevy::log::info;
-use bevy::utils::HashMap;
+use bevy::utils::{HashMap, HashSet};
 use space_assets::{GMesh, LocationInstancing, Material, SubLocation};
 use space_core::ecs::*;
 use space_core::asset::*;
 use space_core::app::*;
-use space_core::nalgebra;
+use space_core::{nalgebra, Pos3i};
 use space_core::nalgebra::{inf, Point3};
+use space_voxel::VoxelMap;
 use crate::scenes::RonBlockDesc;
 
 pub struct BlockDesc {
@@ -43,19 +44,25 @@ pub enum InstancingUpdateEvent {
 
 #[derive(Resource)]
 pub struct Station {
-    pub chunks : HashMap<nalgebra::Point3<i32>, StationChunk>,
-    pub chunks_size : nalgebra::Vector3<i32>,
-    pub voxel_size : f32
+    pub map : VoxelMap<BlockID>
+}
+
+#[derive(Resource, Default)]
+pub struct StationRender {
+    pub instances : HashMap<Pos3i, AutoInstanceHolder>
 }
 
 impl Default for Station {
     fn default() -> Self {
         Self {
-            chunks : HashMap::new(),
-            chunks_size : nalgebra::Vector3::new(16, 16, 16),
-            voxel_size : 2.0
+            map : VoxelMap::new(2.0, [16, 16, 16].into())
         }
     }
+}
+
+pub struct ChunkUpdateEvent {
+    pub origin : Pos3i,
+    pub id : BlockID
 }
 
 impl Station {
@@ -64,61 +71,43 @@ impl Station {
         &self,
         pos : &nalgebra::Point3<f32>
     ) -> nalgebra::Point3<f32> {
-        let mut dpos = pos / self.voxel_size;
-        nalgebra::Point3::new(
-            dpos.x.round(),
-            dpos.y.round(),
-            dpos.z.round()
-        ) * self.voxel_size
-    }
-
-    pub fn get_chunk_origin(
-        &self,
-        pos : &nalgebra::Point3<f32>
-    ) -> nalgebra::Point3<i32> {
-        let mut dpos = pos / self.voxel_size;
-        let mut f_size : nalgebra::Vector3<f32> = nalgebra::Vector3::new(
-            self.chunks_size.x as f32,
-            self.chunks_size.y as f32,
-            self.chunks_size.z as f32,
-        );
-
-        let mut chunked_pos = nalgebra::Point3::<f32>::new(
-            dpos.x / f_size.x,
-            dpos.y / f_size.y,
-            dpos.z / f_size.z);
-
-        chunked_pos.x = chunked_pos.x.floor();
-        chunked_pos.y = chunked_pos.y.floor();
-        chunked_pos.z = chunked_pos.z.floor();
-
-        nalgebra::Point3::new(
-            chunked_pos.x as i32 * self.chunks_size.x,
-            chunked_pos.y as i32 * self.chunks_size.y,
-            chunked_pos.z as i32 * self.chunks_size.z,
-        )
+        self.map.get_grid_pos(pos)
     }
 
     pub fn add_block_event(
         &mut self,
         cmds : &mut Commands,
         event : &AddBlockEvent,
-        update_instance_evemts : &mut EventWriter<InstancingUpdateEvent>,
+        update_events : &mut EventWriter<ChunkUpdateEvent>,
         block_holder : &BlockHolder) {
 
-        let origin = self.get_chunk_origin(
-            &nalgebra::Point3::from_slice(event.world_pos.as_slice()));
+
+        let pos = nalgebra::Point3::from_slice(
+            event.world_pos.as_slice());
+
+        let origin = self.map.get_origin(&self.map.get_voxel_pos(
+            &pos));
 
         info!("Origin: {:?}", &origin);
 
-        if let Some(chunk) = self.chunks.get_mut(&origin) {
-            chunk.add_block(cmds, event, update_instance_evemts, block_holder);
-        } else {
-            let mut chunk = StationChunk::default();
-            chunk.origin = origin.clone();
-            chunk.add_block(cmds, event, update_instance_evemts, block_holder);
-            self.chunks.insert(origin, chunk);
+
+        let old_id = self.map.get_cloned(&pos);
+        self.map.set(&pos, event.id);
+
+        if event.id != BlockID::None {
+            update_events.send(ChunkUpdateEvent {
+                origin,
+                id: event.id.clone()
+            });
         }
+
+        if old_id != event.id && old_id != BlockID::None {
+            update_events.send(ChunkUpdateEvent {
+                origin,
+                id: old_id
+            });
+        }
+
     }
 }
 

@@ -29,12 +29,32 @@ impl<T> VoxelMap<T>
         )
     }
 
+    pub fn get_grid_pos(&self, pos : &Pos3) -> Pos3 {
+        let vp = self.get_voxel_pos(pos);
+        Pos3::new(
+            vp.x as f32 * self.voxel_size,
+            vp.y as f32 * self.voxel_size,
+            vp.z as f32 * self.voxel_size,
+        )
+    }
+
     pub fn get_origin(&self, pos : &Pos3i) -> Pos3i {
         Pos3i::new(
             (pos.x as f32 / self.chunk_size.x as f32).floor() as i32 * self.chunk_size.x,
             (pos.y as f32 / self.chunk_size.y as f32).floor() as i32 * self.chunk_size.y,
             (pos.z as f32 / self.chunk_size.z as f32).floor() as i32 * self.chunk_size.z,
         )
+    }
+
+    pub fn get_chunk_by_voxel(&self, pos : &Pos3i) -> Option<&VoxelChunk<T>> {
+        let origin = self.get_origin(&pos);
+
+        if let Some(chunk) = self.map.get(&origin) {
+            Some(chunk)
+        } else {
+            None
+        }
+
     }
 
     pub fn get_chunk(&self, pos : &Pos3) -> Option<&VoxelChunk<T>> {

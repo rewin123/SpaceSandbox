@@ -33,6 +33,7 @@ impl SchedulePlugin for StationBuildMenu {
 
         app.add_event::<AddBlockEvent>();
         app.add_event::<InstancingUpdateEvent>();
+        app.add_event::<ChunkUpdateEvent>();
 
         app.add_system_set(SystemSet::on_enter(SceneType::StationBuilding)
             .with_system(init_station_build));
@@ -44,10 +45,13 @@ impl SchedulePlugin for StationBuildMenu {
                 .with_system(place_block)
                 .with_system(add_block_to_station)
                 .with_system(setup_blocks)
-                .with_system(update_instancing_holders));
+                .with_system(update_instancing_holders)
+                .with_system(catch_update_events));
         app.add_system_set(
             SystemSet::on_update(CommonBlockState::Waiting)
                 .with_system(wait_loading_common_asset));
+
+        app.insert_resource(StationRender::default());
     }
 }
 
