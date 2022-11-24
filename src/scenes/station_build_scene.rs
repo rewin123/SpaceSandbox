@@ -72,6 +72,7 @@ fn add_block_to_station(
             events.send(AddBlockEvent{
                 id: panels.active_id.clone(),
                 world_pos: world.get_component::<Location>(*e).unwrap().pos,
+                axis : panels.mode.clone()
             });
         }
     }
@@ -85,6 +86,7 @@ fn add_block_to_station(
             events.send(AddBlockEvent{
                 id: BlockID::None,
                 world_pos: world.get_component::<Location>(*e).unwrap().pos,
+                axis : panels.mode.clone()
             });
         }
     }
@@ -153,6 +155,8 @@ struct StationBlocks {
     pub active_id : BlockID,
     pub active_entity : Option<Entity>,
     pub build_level : i32,
+
+    pub mode : BlockAxis
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Hash)]
@@ -236,6 +240,13 @@ fn station_menu(
         }
         ui.separator();
 
+        egui::ComboBox::new("Axis", "Axis:")
+            .selected_text(format!("{:?}", &panels.mode))
+            .show_ui(ui, |ui| {
+            ui.selectable_value(&mut panels.mode, BlockAxis::X, "X");
+            ui.selectable_value(&mut panels.mode, BlockAxis::Y, "Y");
+            ui.selectable_value(&mut panels.mode, BlockAxis::Z, "Z");
+        });
 
         ui.label("Blocks:");
         let mut panel_list = panels.panels.clone();

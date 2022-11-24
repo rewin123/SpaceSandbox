@@ -27,6 +27,13 @@ pub enum BlockID {
     Id(usize)
 }
 
+#[derive(Default, Hash, Eq, PartialEq, Copy, Clone, Component)]
+pub struct WallVoxel {
+    pub x : BlockID,
+    pub y : BlockID,
+    pub z : BlockID
+}
+
 impl Default for BlockID {
     fn default() -> Self {
         BlockID::None
@@ -44,7 +51,7 @@ pub enum InstancingUpdateEvent {
 
 #[derive(Resource)]
 pub struct Station {
-    pub map : VoxelMap<BlockID>
+    pub map : VoxelMap<WallVoxel>
 }
 
 #[derive(Resource, Default)]
@@ -90,9 +97,20 @@ impl Station {
 
         info!("Origin: {:?}", &origin);
 
-
         let old_id = self.map.get_cloned(&pos);
-        self.map.set(&pos, event.id);
+
+        match event.axis {
+            BlockAxis::X => {
+                self.map.get_mut(&pos).x = event.id;
+            }
+            BlockAxis::Y => {
+                self.map.get_mut(&pos).y = event.id;
+            }
+            BlockAxis::Z => {
+                self.map.get_mut(&pos).z = event.id;
+            }
+        }
+        // self.map.get_mut(&pos).y = event.id;
 
         if event.id != BlockID::None {
             update_events.send(ChunkUpdateEvent {
@@ -101,10 +119,10 @@ impl Station {
             });
         }
 
-        if old_id != event.id && old_id != BlockID::None {
+        if old_id.y != event.id && old_id.y != BlockID::None {
             update_events.send(ChunkUpdateEvent {
                 origin,
-                id: old_id
+                id: old_id.y
             });
         }
 
@@ -112,126 +130,21 @@ impl Station {
 }
 
 
-#[derive(Resource)]
-pub struct StationChunk {
-    pub origin : nalgebra::Point3<i32>,
-    pub voxel_size : f32,
-    pub floors : Vec<BlockID>,
-    pub chunk_size : nalgebra::Vector3<i32>,
-    pub auto_instance : AutoInstanceHolder
+#[derive(Clone, Debug, PartialEq)]
+pub enum BlockAxis {
+    X,
+    Y,
+    Z
 }
 
-impl Default for StationChunk {
+impl Default for BlockAxis {
     fn default() -> Self {
-        Self {
-            origin : nalgebra::Point3::default(),
-            voxel_size : 2.0,
-            floors : vec![BlockID::None; 16 * 16 * 16],
-            chunk_size : nalgebra::Vector3::new(16, 16, 16),
-            auto_instance : AutoInstanceHolder::default()
-        }
+        BlockAxis::Y
     }
 }
-
-impl StationChunk {
-
-    pub fn add_block(
-        &mut self,
-        cmds : &mut Commands,
-        e : &AddBlockEvent,
-        update_instance_evemts : &mut EventWriter<InstancingUpdateEvent>,
-        block_holder : &BlockHolder) {
-        let idx = self.get_idx_3d(&nalgebra::Point3::new(
-            e.world_pos.x,
-            e.world_pos.y,
-            e.world_pos.z));
-        if idx.x >= 0 && idx.y >= 0 && idx.z >= 0
-            && idx.x < self.chunk_size.x && idx.y < self.chunk_size.y && idx.z < self.chunk_size.z {
-            let chunk_size = self.chunk_size.clone();
-            let old_id = self.floors[((idx.z * chunk_size.y + idx.y) * chunk_size.x + idx.x) as usize];
-            self.floors[((idx.z * chunk_size.y + idx.y) * chunk_size.x + idx.x) as usize] = e.id;
-            if e.id == BlockID::None {
-
-            } else {
-                if let Some(inst) = self.auto_instance.instance_renders.get(&e.id) {
-                    update_instance_evemts.send(
-                        InstancingUpdateEvent::Update(*inst, e.id, self.origin.clone()));
-                } else {
-                    let desc = &block_holder.map[&e.id];
-                    let entity = cmds.spawn((desc.mesh.clone(), desc.material.clone()))
-                        .insert(LocationInstancing {
-                            locs: vec![],
-                            buffer: None,
-                        }).id();
-                    info!("Spawn new instancing {:?}", &entity);
-                    self.auto_instance.instance_renders.insert(e.id, entity);
-                }
-            }
-
-            if old_id == BlockID::None {
-
-            } else {
-                if let Some(inst) = self.auto_instance.instance_renders.get(&old_id) {
-                    update_instance_evemts.send(
-                        InstancingUpdateEvent::Update(*inst, old_id, self.origin));
-                } else {
-
-                }
-            }
-        }
-    }
-
-    pub fn get_block_id(&self, x : i32, y : i32, z : i32) -> &BlockID {
-        &self.floors[((z * self.chunk_size.z + y) * self.chunk_size.y + x) as usize]
-    }
-
-    pub fn collect_sub_locs(&self, id : BlockID) -> Vec<SubLocation> {
-        let mut res = vec![];
-        for z in 0..self.chunk_size.z {
-            for y in 0..self.chunk_size.y {
-                for x in 0..self.chunk_size.x {
-                    if id == *self.get_block_id(x, y, z) {
-                        let mut sub = SubLocation {
-                            pos: [0.0, 0.0, 0.0].into(),
-                            rotation: [0.0, 0.0, 0.0].into(),
-                            scale: [1.0, 1.0, 1.0].into(),
-                        };
-                        sub.pos = nalgebra::Vector3::new(
-                            (x + self.origin.x) as f32 * self.voxel_size,
-                            (y + self.origin.y) as f32 * self.voxel_size,
-                            (z + self.origin.z) as f32 * self.voxel_size,
-                        );
-                        res.push(sub);
-                    }
-                }
-            }
-        }
-        res
-    }
-
-    pub fn get_idx_3d(&self, pos : &nalgebra::Point3<f32>) -> nalgebra::Point3<i32> {
-        let origin_world = nalgebra::Vector3::<f32>::new(
-            self.origin.x as f32,
-            self.origin.y as f32,
-            self.origin.z as f32
-        ) * self.voxel_size;
-
-        let dp = pos - origin_world;
-        if dp.x < 0.0 || dp.y < 0.0 || dp.z < 0.0 {
-
-        }
-        let x = (dp.x / self.voxel_size).round() as i32;
-        let y = (dp.y / self.voxel_size).round() as i32;
-        let z = (dp.z / self.voxel_size).round() as i32;
-
-        info!("Idx: {x} {y} {z}");
-
-        nalgebra::Point3::new(x, y, z)
-    }
-}
-
 
 pub struct AddBlockEvent {
     pub id : BlockID,
-    pub world_pos : nalgebra::Vector3<f32>
+    pub world_pos : nalgebra::Vector3<f32>,
+    pub axis : BlockAxis
 }

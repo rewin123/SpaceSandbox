@@ -79,6 +79,25 @@ impl<T> VoxelMap<T>
         }
     }
 
+    pub fn get_mut(&mut self, pos : &Pos3) -> &mut T {
+        let vp = self.get_voxel_pos(pos);
+        let origin = self.get_origin(&vp);
+        let chunk_size = self.chunk_size.clone();
+        self.dirty_set.insert(origin);
+
+        if !self.map.contains_key(&origin) {
+            let mut chunk =
+                VoxelChunk::<T>::new(origin.clone(), chunk_size.clone());
+
+            let lp = vp - origin;
+            self.map.insert(origin.clone(), chunk);
+        }
+
+        let chunk = self.map.get_mut(&origin).unwrap();
+        let lp = vp - chunk.origin;
+        chunk.get_mut(lp.x, lp.y, lp.z)
+    }
+
     pub fn get_cloned(&self, pos : &Pos3) -> T {
         if let Some(chunk) = self.get_chunk(pos) {
             let vp = self.get_voxel_pos(pos) - chunk.origin;

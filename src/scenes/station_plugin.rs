@@ -1,3 +1,4 @@
+use std::f32::consts::PI;
 use space_assets::{GMesh, LocationInstancing, Material, SubLocation};
 use space_core::ecs::*;
 use space_core::nalgebra;
@@ -23,7 +24,7 @@ pub fn setup_blocks(
 }
 
 fn collect_sub_locs(
-    chunk : &VoxelChunk<BlockID>,
+    chunk : &VoxelChunk<WallVoxel>,
     id : BlockID,
     voxel_size : f32
 ) -> Vec<SubLocation> {
@@ -31,7 +32,9 @@ fn collect_sub_locs(
     for z in 0..chunk.size.z {
         for y in 0..chunk.size.y {
             for x in 0..chunk.size.x {
-                if id == *chunk.get(x, y, z) {
+                let voxel = chunk.get(x, y, z);
+
+                if id == voxel.y {
                     let mut sub = SubLocation {
                         pos: [0.0, 0.0, 0.0].into(),
                         rotation: [0.0, 0.0, 0.0].into(),
@@ -41,6 +44,32 @@ fn collect_sub_locs(
                         (x + chunk.origin.x) as f32 * voxel_size,
                         (y + chunk.origin.y) as f32 * voxel_size,
                         (z + chunk.origin.z) as f32 * voxel_size,
+                    );
+                    res.push(sub);
+                }
+                if id == voxel.x {
+                    let mut sub = SubLocation {
+                        pos: [0.0, 0.0, 0.0].into(),
+                        rotation: [0.0, 0.0, PI / 2.0].into(),
+                        scale: [1.0, 1.0, 1.0].into(),
+                    };
+                    sub.pos = nalgebra::Vector3::new(
+                        (x + chunk.origin.x) as f32 * voxel_size - voxel_size / 2.0,
+                        (y + chunk.origin.y) as f32 * voxel_size + voxel_size / 2.0,
+                        (z + chunk.origin.z) as f32 * voxel_size,
+                    );
+                    res.push(sub);
+                }
+                if id == voxel.z {
+                    let mut sub = SubLocation {
+                        pos: [0.0, 0.0, 0.0].into(),
+                        rotation: [PI / 2.0, 0.0, 0.0].into(),
+                        scale: [1.0, 1.0, 1.0].into(),
+                    };
+                    sub.pos = nalgebra::Vector3::new(
+                        (x + chunk.origin.x) as f32 * voxel_size,
+                        (y + chunk.origin.y) as f32 * voxel_size + voxel_size / 2.0,
+                        (z + chunk.origin.z) as f32 * voxel_size - voxel_size / 2.0,
                     );
                     res.push(sub);
                 }
