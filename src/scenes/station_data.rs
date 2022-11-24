@@ -7,7 +7,7 @@ use space_core::asset::*;
 use space_core::app::*;
 use space_core::{nalgebra, Pos3i};
 use space_core::nalgebra::{inf, Point3};
-use space_voxel::VoxelMap;
+use space_voxel::solid_voxel_map::VoxelMap;
 use crate::scenes::RonBlockDesc;
 
 pub struct BlockDesc {

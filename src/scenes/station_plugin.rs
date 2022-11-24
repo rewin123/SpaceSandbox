@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 use space_assets::{GMesh, LocationInstancing, Material, SubLocation};
 use space_core::ecs::*;
 use space_core::nalgebra;
-use space_voxel::VoxelChunk;
+use space_voxel::solid_voxel_map::VoxelChunk;
 use crate::scenes::station_data::*;
 
 
