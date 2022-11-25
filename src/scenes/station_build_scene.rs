@@ -5,7 +5,7 @@ use bevy::prelude::{info_span, info};
 use egui::{Context, Ui};
 use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, EguiContext, SceneType, RonAssetPlugin, RenderApi, InputSystem, KeyCode, ScreenSize};
 use space_render::{add_game_render_plugins, AutoInstancing};
-use space_core::{ecs::*, app::App, nalgebra, SpaceResult};
+use space_core::{ecs::*, app::App, nalgebra, SpaceResult, Pos3i, Vec3i};
 use space_core::{serde::*, Camera};
 use bevy::asset::*;
 use bevy::utils::HashMap;
@@ -69,10 +69,9 @@ fn add_block_to_station(
             return;
         }
         if let Some(e) = panels.active_entity.as_ref() {
-            events.send(AddBlockEvent{
-                id: panels.active_id.clone(),
-                world_pos: world.get_component::<Location>(*e).unwrap().pos,
-                axis : panels.mode.clone()
+            events.send(AddBlockEvent {
+                id : panels.active_id.clone(),
+                world_pos: world.get_component::<Location>(*e).unwrap().pos.into(),
             });
         }
     }
@@ -84,9 +83,8 @@ fn add_block_to_station(
         }
         if let Some(e) = panels.active_entity.as_ref() {
             events.send(AddBlockEvent{
-                id: BlockID::None,
-                world_pos: world.get_component::<Location>(*e).unwrap().pos,
-                axis : panels.mode.clone()
+                id: BuildCommand::None,
+                world_pos: world.get_component::<Location>(*e).unwrap().pos.into(),
             });
         }
     }
@@ -145,14 +143,15 @@ fn camera_movement(
 #[uuid = "fce6d1f5-4317-4077-b23e-6099747b08dd"]
 pub struct RonBlockDesc {
     pub name : String,
-    pub model_path : String
+    pub model_path : String,
+    pub bbox : Vec<i32>
 }
 
 #[derive(Resource, Default)]
 struct StationBlocks {
     pub panels : Vec<Handle<RonBlockDesc>>,
 
-    pub active_id : BlockID,
+    pub active_id : BuildCommand,
     pub active_entity : Option<Entity>,
     pub build_level : i32,
 
@@ -206,10 +205,11 @@ fn wait_loading_common_asset(
                 let desc = BlockDesc {
                     mesh : mesh.clone(),
                     material: mat_handle,
-                    name: file.clone()
+                    name: file.clone(),
+                    bbox : Vec3i::new(desc.bbox[0], desc.bbox[1], desc.bbox[2])
                 };
 
-                let id = BlockID::Id(block_holder.map.len());
+                let id = BlockId(block_holder.map.len());
 
                 block_holder.map.insert(id, desc);
             }
@@ -233,11 +233,19 @@ fn station_menu(
 ) {
 
     egui::SidePanel::left("Build panel").show(&ctx, |ui| {
-        if panels.active_id != BlockID::None {
-            ui.label(format!("Selected block: {}", blocs_holder.map[&panels.active_id].name));
-        } else {
-            ui.label(format!("Selected block: None"));
+
+        match &panels.active_id {
+            BuildCommand::None => {
+                ui.label(format!("Selected block: None"));
+            }
+            BuildCommand::Voxel(id) => {
+
+            }
+            BuildCommand::Block(id) => {
+                ui.label(format!("Selected block: {}", id.0));
+            }
         }
+
         ui.separator();
 
         egui::ComboBox::new("Axis", "Axis:")
@@ -259,34 +267,34 @@ fn station_menu(
                 let e = commands.spawn((block.mesh.clone(), block.material.clone()))
                     .insert(Location::new(&render.device))
                     .insert(StationBuildActiveBlock{}).id();
-                panels.active_entity = Some(e);
-                panels.active_id = idx.clone();
+                panels.active_entity = Some(e.clone());
+                panels.active_id = BuildCommand::Block(idx.clone());
             }
         }
 
         ui.separator();
 
-        if ui.button("Stress test").clicked() {
-            if panels.active_id != BlockID::None {
-                let block = &blocs_holder.map[&panels.active_id];
-
-                let mut instant_location = LocationInstancing::default();
-                for y in -100..100 {
-                    for x in -100..100 {
-                        let sub = SubLocation {
-                            pos: nalgebra::Vector3::new(x as f32, 0.0, y as f32),
-                            rotation: nalgebra::Vector3::new(0.0, 0.0, 0.0),
-                            scale: nalgebra::Vector3::new(1.0, 1.0, 1.0)
-                        };
-                        instant_location.locs.push(sub);
-                    }
-                }
-                commands.spawn((
-                    block.mesh.clone(),
-                    block.material.clone(),
-                    instant_location));
-            }
-        }
+        // if ui.button("Stress test").clicked() {
+        //     if panels.active_id != BlockID::None {
+        //         let block = &blocs_holder.map[&panels.active_id];
+        //
+        //         let mut instant_location = LocationInstancing::default();
+        //         for y in -100..100 {
+        //             for x in -100..100 {
+        //                 let sub = SubLocation {
+        //                     pos: nalgebra::Vector3::new(x as f32, 0.0, y as f32),
+        //                     rotation: nalgebra::Vector3::new(0.0, 0.0, 0.0),
+        //                     scale: nalgebra::Vector3::new(1.0, 1.0, 1.0)
+        //                 };
+        //                 instant_location.locs.push(sub);
+        //             }
+        //         }
+        //         commands.spawn((
+        //             block.mesh.clone(),
+        //             block.material.clone(),
+        //             instant_location));
+        //     }
+        // }
     });
 }
 

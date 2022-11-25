@@ -1,4 +1,5 @@
 (
     name : "Metal grids",
-    model_path : "assets/ss13/wall_models/metal_grid/metal_grid.gltf"
+    model_path : "assets/ss13/wall_models/metal_grid/metal_grid.gltf",
+    bbox : [4, 1, 4]
 )
