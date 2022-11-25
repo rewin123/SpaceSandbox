@@ -5,7 +5,7 @@ use bevy::prelude::{info_span, info};
 use egui::{Context, Ui};
 use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, EguiContext, SceneType, RonAssetPlugin, RenderApi, InputSystem, KeyCode, ScreenSize};
 use space_render::{add_game_render_plugins, AutoInstancing};
-use space_core::{ecs::*, app::App, nalgebra, SpaceResult, Pos3i, Vec3i};
+use space_core::{ecs::*, app::App, nalgebra, SpaceResult, Pos3i, Vec3i, Vec3};
 use space_core::{serde::*, Camera};
 use bevy::asset::*;
 use bevy::utils::HashMap;
@@ -101,20 +101,49 @@ fn place_block(
     mut panels : ResMut<StationBlocks>,
     screen_size : Res<ScreenSize>,
     chunk : Res<Station>,
-    render : Res<RenderApi>) {
+    render : Res<RenderApi>,
+    block_holder : Res<BlockHolder>) {
 
     let ray = camera.screen_pos_to_ray(
         input.get_mouse_pos(),
         nalgebra::Point2::<f32>::new(screen_size.size.width as f32, screen_size.size.height as f32));
 
     for mut loc in query.iter_mut() {
-        let ray_point = ray.interact_y(panels.build_level as f32);
+        let ray_point = ray.interact_y(panels.build_level as f32 * chunk.map.voxel_size);
         let point = chunk.get_grid_pos(&ray_point);
         // let point = ray.pos + 10.0 * ray.dir;
 
-        loc.pos.x = point.x;
-        loc.pos.y = point.y;
-        loc.pos.z = point.z;
+        if let BuildCommand::Block(id) = &panels.active_id {
+            if let Some(desc) = block_holder.map.get(id) {
+                let mut bbox = desc.bbox.clone();
+                let rot;
+                match panels.mode {
+                    BlockAxis::Y => {
+                        rot = Vec3::new(0.0,0.0,0.0);
+                    }
+                    BlockAxis::X => {
+                        rot = Vec3::new(0.0, 0.0, 3.14 / 2.0);
+                        bbox = Vec3i::new(bbox.y, bbox.x, bbox.z);
+                    }
+                    BlockAxis::Z => {
+                        rot = Vec3::new(3.14 / 2.0, 0.0, 0.0);
+                        bbox = Vec3i::new(bbox.x, bbox.z, bbox.y);
+                    }
+                }
+
+                let shift = Vec3::new(
+                    bbox.x as f32 * chunk.map.voxel_size / 2.0,
+                    bbox.y as f32 * chunk.map.voxel_size / 2.0,
+                    bbox.z as f32 * chunk.map.voxel_size / 2.0,
+                );
+
+                loc.pos.x = point.x;
+                loc.pos.y = point.y;
+                loc.pos.z = point.z;
+                loc.pos = loc.pos + shift;
+            }
+        }
+
     }
 }
 
@@ -166,7 +195,6 @@ enum CommonBlockState {
     Waiting
 }
 
-
 fn wait_loading_common_asset(
     mut block : ResMut<CommonBlock>,
     asset_server : ResMut<AssetServer>,
@@ -179,6 +207,13 @@ fn wait_loading_common_asset(
     mut block_holder : ResMut<BlockHolder>) {
 
     if asset_server.get_load_state(&block.desc) == LoadState::Loaded {
+        //wait all to load
+        for h in &block.all_blocks {
+            if asset_server.get_load_state(h) != LoadState::Loaded {
+                return;
+            }
+        }
+
         if let Some(desc) = descs.get(&block.desc) {
             let bundles = space_server.wgpu_gltf_load_cmds(
                 &render.device,
@@ -219,6 +254,31 @@ fn wait_loading_common_asset(
             info!("Finished loading {} tiles", files.len());
             state.set(CommonBlockState::None);
         }
+
+        for h in &block.all_blocks {
+            if let Some(desc) = descs.get(h) {
+                let bundles = space_server.wgpu_gltf_load_cmds(
+                    &render.device,
+                    desc.model_path.clone(),
+                    &mut materials,
+                    &mut meshes
+                );
+
+                let mesh = bundles[0].mesh.clone();
+                let mat = bundles[0].material.clone();
+
+                let desc = BlockDesc {
+                    mesh,
+                    material: mat,
+                    name: desc.name.clone(),
+                    bbox : Vec3i::new(desc.bbox[0], desc.bbox[1], desc.bbox[2])
+                };
+
+                let id = BlockId(block_holder.map.len());
+
+                block_holder.map.insert(id, desc);
+            }
+        }
     }
 }
 
@@ -235,6 +295,8 @@ fn station_menu(
 ) {
 
     egui::SidePanel::left("Build panel").show(&ctx, |ui| {
+
+        ui.add(egui::DragValue::new(&mut panels.build_level));
 
         match &panels.active_id {
             BuildCommand::None => {
@@ -302,7 +364,8 @@ fn station_menu(
 
 #[derive(Resource)]
 struct CommonBlock {
-    desc : Handle<RonBlockDesc>
+    desc : Handle<RonBlockDesc>,
+    all_blocks : Vec<Handle<RonBlockDesc>>
 }
 
 
@@ -315,10 +378,11 @@ fn init_station_build(
 ) {
     let mut blocks = StationBlocks::default();
     blocks.panels.push(assets.load("ss13/walls_configs/metal_grid.wall"));
+    blocks.panels.push(assets.load("ss13/walls_configs/metal_wall.wall"));
 
     let common_asset : Handle<RonBlockDesc> = assets.load("ss13/walls_configs/metal_floor.wall");
 
-    commands.insert_resource(CommonBlock {desc : common_asset});
+    commands.insert_resource(CommonBlock {desc : common_asset, all_blocks : blocks.panels.clone() });
     block_state.set(CommonBlockState::Waiting).unwrap();
     
     // blocks.panels.push(assets.load("ss13/walls_configs/metal_floor.wall"));

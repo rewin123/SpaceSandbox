@@ -56,7 +56,6 @@ pub fn setup_blocks(
             BuildCommand::Block(id) => {
                 let bundle = block_holder.map.get(&id).unwrap();
 
-                let vp = station.map.get_voxel_pos(&e.world_pos);
                 let mut bbox = bundle.bbox.clone();
 
                 let rot;
@@ -73,6 +72,14 @@ pub fn setup_blocks(
                         bbox = Vec3i::new(bbox.x, bbox.z, bbox.y);
                     }
                 }
+
+                let shift = Vec3::new(
+                  bbox.x as f32 * station.map.voxel_size / 2.0,
+                  bbox.y as f32 * station.map.voxel_size / 2.0,
+                  bbox.z as f32 * station.map.voxel_size / 2.0,
+                );
+
+                let vp = station.map.get_voxel_pos(&(e.world_pos - shift));
 
                 //test bbox
                 let mut is_free = true;
@@ -95,7 +102,7 @@ pub fn setup_blocks(
                 if is_free {
                     let mut loc = Location::new(&render.device);
                     loc.rotation = rot;
-                    loc.pos = e.world_pos.coords.clone();
+                    loc.pos = e.world_pos.coords;
                     let entity = cmds.spawn((bundle.material.clone(), bundle.mesh.clone()))
                         .insert(StationPart { bbox: Default::default() })
                         .insert(loc).id();
