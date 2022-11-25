@@ -3,7 +3,7 @@
 It is roleplay space game prototype based on bevy engine and custom render.
 
 Custom render will be need for shadow map caching and instance rendering.
-Bevy doesn't contain these two features, so I made it by own by fully custom render pipeline.
+Bevy doesn't contain these two features, so I will make it by own by fully custom render pipeline.
 
 Current development target is creating station building mode, which can render SS13 map on GTX 1060 with 60 fps on my laptop.
 
