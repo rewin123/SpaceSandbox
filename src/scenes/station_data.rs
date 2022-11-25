@@ -139,6 +139,7 @@ impl Default for BlockAxis {
 pub struct AddBlockEvent {
     pub id : BuildCommand,
     pub world_pos : Pos3,
+    pub rot : BlockAxis
 }
 
 #[derive(Component)]

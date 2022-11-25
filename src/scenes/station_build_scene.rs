@@ -72,6 +72,7 @@ fn add_block_to_station(
             events.send(AddBlockEvent {
                 id : panels.active_id.clone(),
                 world_pos: world.get_component::<Location>(*e).unwrap().pos.into(),
+                rot : panels.mode.clone()
             });
         }
     }
@@ -85,6 +86,7 @@ fn add_block_to_station(
             events.send(AddBlockEvent{
                 id: BuildCommand::None,
                 world_pos: world.get_component::<Location>(*e).unwrap().pos.into(),
+                rot : panels.mode.clone()
             });
         }
     }
