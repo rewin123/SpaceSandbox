@@ -335,6 +335,7 @@ impl Game {
         let event_loop = EventLoop::new();
         let window =
             WindowBuilder::new()
+            .with_inner_size(PhysicalSize::<u32>::new(800, 800))
             .build(&event_loop).unwrap();
         window.set_title("Space sandbox");
 

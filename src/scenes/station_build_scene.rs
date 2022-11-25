@@ -45,7 +45,7 @@ impl SchedulePlugin for StationBuildMenu {
                 .with_system(station_menu)
                 .with_system(camera_movement)
                 .with_system(place_block)
-                .with_system(add_block_to_station)
+                .with_system(add_block_to_station.after(station_menu))
                 .with_system(setup_blocks)
                 .with_system(update_instancing_holders)
                 .with_system(catch_update_events));
@@ -113,6 +113,12 @@ fn place_block(
     for  (mut loc, mut active_pos) in query.iter_mut() {
         let ray_point = ray.interact_y(panels.build_level as f32 * chunk.map.voxel_size);
         let point = chunk.get_grid_pos(&ray_point);
+        let point = Pos3::new(
+            ((point.x / chunk.map.voxel_size / 2.0) as i32 * 2) as f32 * chunk.map.voxel_size,
+             point.y,
+            ((point.z / chunk.map.voxel_size / 2.0) as i32 * 2) as f32 * chunk.map.voxel_size,
+        );
+
         // let point = ray.pos + 10.0 * ray.dir;
 
         if let BuildCommand::Block(id) = &panels.active_id {
@@ -333,19 +339,22 @@ fn station_menu(
 
         ui.label("Blocks:");
         let mut panel_list = panels.panels.clone();
-        for (idx, block) in blocs_holder.map.iter() {
-            if ui.button(&block.name).clicked() {
-                if let Some(e) = panels.active_entity {
-                    commands.entity(e).despawn();
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            for (idx, block) in blocs_holder.map.iter() {
+                if ui.button(&block.name).clicked() {
+                    if let Some(e) = panels.active_entity {
+                        commands.entity(e).despawn();
+                    }
+    
+                    let e = commands.spawn((block.mesh.clone(), block.material.clone()))
+                        .insert(Location::new(&render.device))
+                        .insert(StationBuildActiveBlock{ voxel_pos : Pos3::default()}).id();
+                    panels.active_entity = Some(e.clone());
+                    panels.active_id = BuildCommand::Block(idx.clone());
                 }
-
-                let e = commands.spawn((block.mesh.clone(), block.material.clone()))
-                    .insert(Location::new(&render.device))
-                    .insert(StationBuildActiveBlock{ voxel_pos : Pos3::default()}).id();
-                panels.active_entity = Some(e.clone());
-                panels.active_id = BuildCommand::Block(idx.clone());
             }
-        }
+        });
+        
 
         ui.separator();
 

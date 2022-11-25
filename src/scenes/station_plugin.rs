@@ -1,5 +1,4 @@
 use std::f32::consts::PI;
-use std::os::linux::raw::stat;
 use space_assets::{GMesh, Location, LocationInstancing, Material, SubLocation};
 use space_core::ecs::*;
 use space_core::{nalgebra, Pos3, Vec3, Vec3i};
