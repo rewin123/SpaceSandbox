@@ -79,7 +79,7 @@ pub fn setup_blocks(
                   bbox.z as f32 * station.map.voxel_size / 2.0,
                 );
 
-                let vp = station.map.get_voxel_pos(&(e.world_pos - shift));
+                let vp = station.map.get_voxel_pos(&(e.world_pos));
 
                 //test bbox
                 let mut is_free = true;
@@ -102,7 +102,7 @@ pub fn setup_blocks(
                 if is_free {
                     let mut loc = Location::new(&render.device);
                     loc.rotation = rot;
-                    loc.pos = e.world_pos.coords;
+                    loc.pos = e.world_pos.coords + shift;
                     let entity = cmds.spawn((bundle.material.clone(), bundle.mesh.clone()))
                         .insert(StationPart { bbox: Default::default() })
                         .insert(loc).id();

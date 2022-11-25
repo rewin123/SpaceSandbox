@@ -2,10 +2,10 @@ use std::marker::PhantomData;
 use std::process::id;
 use bevy::asset::AssetServer;
 use bevy::prelude::{info_span, info};
-use egui::{Context, Ui};
+use egui::{Context, Key, Ui};
 use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, EguiContext, SceneType, RonAssetPlugin, RenderApi, InputSystem, KeyCode, ScreenSize};
 use space_render::{add_game_render_plugins, AutoInstancing};
-use space_core::{ecs::*, app::App, nalgebra, SpaceResult, Pos3i, Vec3i, Vec3};
+use space_core::{ecs::*, app::App, nalgebra, SpaceResult, Pos3i, Vec3i, Vec3, Pos3};
 use space_core::{serde::*, Camera};
 use bevy::asset::*;
 use bevy::utils::HashMap;
@@ -17,7 +17,9 @@ use crate::scenes::station_data::*;
 use crate::scenes::station_plugin::*;
 
 #[derive(Component)]
-struct StationBuildActiveBlock {}
+struct StationBuildActiveBlock {
+    pub voxel_pos : Pos3
+}
 
 pub struct StationBuildMenu {}
 
@@ -57,7 +59,7 @@ impl SchedulePlugin for StationBuildMenu {
 
 fn add_block_to_station(
     mut commands : Commands,
-    world : Query<(&Location)>,
+    world : Query<(&Location, &StationBuildActiveBlock)>,
     input : Res<InputSystem>,
     mut panels : Res<StationBlocks>,
     mut events : EventWriter<AddBlockEvent>,
@@ -71,7 +73,7 @@ fn add_block_to_station(
         if let Some(e) = panels.active_entity.as_ref() {
             events.send(AddBlockEvent {
                 id : panels.active_id.clone(),
-                world_pos: world.get_component::<Location>(*e).unwrap().pos.into(),
+                world_pos: world.get_component::<StationBuildActiveBlock>(*e).unwrap().voxel_pos.into(),
                 rot : panels.mode.clone()
             });
         }
@@ -85,7 +87,7 @@ fn add_block_to_station(
         if let Some(e) = panels.active_entity.as_ref() {
             events.send(AddBlockEvent{
                 id: BuildCommand::None,
-                world_pos: world.get_component::<Location>(*e).unwrap().pos.into(),
+                world_pos: world.get_component::<StationBuildActiveBlock>(*e).unwrap().voxel_pos.into(),
                 rot : panels.mode.clone()
             });
         }
@@ -95,7 +97,7 @@ fn add_block_to_station(
 
 fn place_block(
     mut commands : Commands,
-    mut query : Query<(&mut Location), (With<StationBuildActiveBlock>)>,
+    mut query : Query<(&mut Location, &mut StationBuildActiveBlock)>,
     camera : Res<Camera>,
     input : Res<InputSystem>,
     mut panels : ResMut<StationBlocks>,
@@ -108,7 +110,7 @@ fn place_block(
         input.get_mouse_pos(),
         nalgebra::Point2::<f32>::new(screen_size.size.width as f32, screen_size.size.height as f32));
 
-    for mut loc in query.iter_mut() {
+    for  (mut loc, mut active_pos) in query.iter_mut() {
         let ray_point = ray.interact_y(panels.build_level as f32 * chunk.map.voxel_size);
         let point = chunk.get_grid_pos(&ray_point);
         // let point = ray.pos + 10.0 * ray.dir;
@@ -141,6 +143,8 @@ fn place_block(
                 loc.pos.y = point.y;
                 loc.pos.z = point.z;
                 loc.pos = loc.pos + shift;
+
+                active_pos.voxel_pos = point;
             }
         }
 
@@ -296,7 +300,14 @@ fn station_menu(
 
     egui::SidePanel::left("Build panel").show(&ctx, |ui| {
 
-        ui.add(egui::DragValue::new(&mut panels.build_level));
+        if ui.input().key_pressed(Key::Q) {
+            panels.build_level -= 1;
+        }
+        if ui.input().key_pressed(Key::E) {
+            panels.build_level += 1;
+        }
+
+        ui.add(egui::DragValue::new(&mut panels.build_level).prefix("Build level "));
 
         match &panels.active_id {
             BuildCommand::None => {
@@ -330,7 +341,7 @@ fn station_menu(
 
                 let e = commands.spawn((block.mesh.clone(), block.material.clone()))
                     .insert(Location::new(&render.device))
-                    .insert(StationBuildActiveBlock{}).id();
+                    .insert(StationBuildActiveBlock{ voxel_pos : Pos3::default()}).id();
                 panels.active_entity = Some(e.clone());
                 panels.active_id = BuildCommand::Block(idx.clone());
             }
