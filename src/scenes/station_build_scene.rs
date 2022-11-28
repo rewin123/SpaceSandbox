@@ -50,12 +50,14 @@ impl SchedulePlugin for StationBuildMenu {
                 .with_system(add_block_to_station.after(station_menu))
                 .with_system(setup_blocks)
                 .with_system(update_instancing_holders)
-                .with_system(catch_update_events));
+                .with_system(catch_update_events)
+                .with_system(update_station_instancing));
         app.add_system_set(
             SystemSet::on_update(CommonBlockState::Waiting)
                 .with_system(wait_loading_common_asset));
 
         app.insert_resource(StationRender::default());
+        app.insert_resource(AutoInstanceHolder::default());
     }
 }
 
@@ -356,12 +358,16 @@ fn station_menu(
                         let x = parts[0].parse::<usize>().unwrap();
                         let y = parts[1].parse::<usize>().unwrap();
                         let idx = parts[2].parse::<usize>().unwrap();
+                        let mut z = 0.0;
 
                         if idx != tile_names.len() {
+                            if tile_names[idx].contains("wall") {
+                                z = 0.5;
+                            }
                             let pos = Pos3::new(
-                                x as f32 - 120.0,
-                                0.0,
-                                y as f32 - 120.0
+                                (x as f32) - 255.0 / 2.0 ,
+                                z,
+                                (y as f32) - 255.0 / 2.0
                             );
 
                             block_events.send(AddBlockEvent {
@@ -471,6 +477,7 @@ fn init_station_build(
     let mut blocks = StationBlocks::default();
     blocks.panels.push(assets.load("ss13/walls_configs/metal_grid.wall"));
     blocks.panels.push(assets.load("ss13/walls_configs/metal_wall.wall"));
+    blocks.panels.push(assets.load("ss13/walls_configs/glass_wall.wall"));
     blocks.panels.push(assets.load("ss13/walls_configs/door.wall"));
 
     let common_asset : Handle<RonBlockDesc> = assets.load("ss13/walls_configs/metal_floor.wall");

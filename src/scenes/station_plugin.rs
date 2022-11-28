@@ -1,5 +1,6 @@
 use std::f32::consts::PI;
 use bevy::log::info;
+use bevy::utils::{HashMap, HashSet};
 use space_assets::{GMesh, Location, LocationInstancing, Material, SubLocation};
 use space_core::ecs::*;
 use space_core::{nalgebra, Pos3, Vec3, Vec3i};
@@ -13,6 +14,7 @@ pub fn setup_blocks(
     mut cmds : Commands,
     block_holder : Res<BlockHolder>,
     mut station : ResMut<Station>,
+    mut instancing : ResMut<AutoInstanceHolder>,
     mut events : EventReader<AddBlockEvent>,
     render : Res<RenderApi>) {
 
@@ -94,13 +96,16 @@ pub fn setup_blocks(
                 }
 
                 if is_free {
+                    let center_pos = e.world_pos.coords + shift;
                     // info!("Line: {:?} {:?}", id, &vp);
-                    let mut loc = Location::new(&render.device);
-                    loc.rotation = rot;
-                    loc.pos = e.world_pos.coords + shift;
-                    let entity = cmds.spawn((bundle.material.clone(), bundle.mesh.clone()))
-                        .insert(StationPart { bbox: Default::default() })
-                        .insert(loc).id();
+                    let mut loc = StationLocation {
+                        pos: center_pos.into(),
+                        rot,
+                        id: id.clone()
+                    };
+
+                    let entity = cmds.spawn(loc)
+                        .insert(StationPart { bbox: Default::default() }).id();
 
                     for z in 0..bbox.z {
                         for y in 0..bbox.y {
@@ -192,23 +197,71 @@ pub fn catch_update_events(
     }
 }
 
-pub fn update_instancing_holders(
-    mut query : Query<&mut LocationInstancing>,
-    station : Res<Station>,
-    mut events : EventReader<InstancingUpdateEvent>
+pub fn update_station_instancing(
+    mut cmds : Commands,
+    mut query : Query<(Entity, &mut StationLocation,), (Changed<StationLocation>,)>,
+    mut inst_query : Query<(&mut LocationInstancing, &mut AutoInstanceLinks)>,
+    mut holder : ResMut<AutoInstanceHolder>,
+    mut block_holder : Res<BlockHolder>,
+    render : Res<RenderApi>
 ) {
-    for event in events.iter() {
-        match event {
-            InstancingUpdateEvent::Update(e, id, key) => {
-                match query.get_component_mut::<LocationInstancing>(*e) {
-                    Ok(mut loc) => {
-                        if let Some(chunk) = station.map.get_chunk_by_voxel(&key) {
-                            // loc.locs = collect_sub_locs(chunk, *id, station.map.voxel_size);
-                        }
-                    },
-                    Err(_) => {},
-                }
-            },
-        }
+
+    let mut batched: HashMap<BlockId, HashSet<Entity>> = HashMap::new();
+
+    for (e, loc) in query.iter() {
+        {
+            if let Some(inst) = batched.get_mut(&loc.id) {
+                inst.insert(e);
+            } else {
+                let mut set = HashSet::new();
+                set.insert(e);
+                batched.insert(loc.id.clone(), set);
+            }
+        };
+
+    }
+
+    for (id, batch) in batched {
+        {
+          if let Some(inst) = holder.instance_renders.get(&id) {
+              let mut inst = inst_query.get_component_mut::<AutoInstanceLinks>(*inst).unwrap();
+              for b in batch {
+                  inst.set.insert(b);
+              }
+          } else {
+              let mut links = AutoInstanceLinks {
+                  set: Default::default()
+              };
+              let inst = LocationInstancing::default();
+              for b in batch {
+                  links.set.insert(b);
+              }
+
+              let bundle = block_holder.map.get(&id).unwrap().clone();
+              let e = cmds.spawn((links,inst, bundle.mesh.clone(), bundle.material.clone())).id();
+              holder.instance_renders.insert(id.clone(), e);
+          }
+        };
+
     }
 }
+
+pub fn update_instancing_holders(
+    mut query : Query<(Entity, &mut LocationInstancing, &mut AutoInstanceLinks), (Changed<AutoInstanceLinks>)>,
+    mut getter : Query<(&StationLocation)>,
+    station : Res<Station>,
+) {
+
+    for (e, mut loc, links) in &mut query {
+        loc.locs = links.set.iter().map(|e| {
+            let st_loc = getter.get_component::<StationLocation>(*e).unwrap();
+            let sub_loc = SubLocation {
+                pos: st_loc.pos.coords.clone(),
+                rotation: st_loc.rot.clone(),
+                scale: [1.0, 1.0, 1.0].into()
+            };
+            sub_loc
+        }).collect();
+    }
+}
+

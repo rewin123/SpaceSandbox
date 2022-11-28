@@ -1,0 +1,5 @@
+(
+    name : "glass_wall",
+    model_path : "assets/ss13/wall_models/glass_wall/wall.gltf",
+    bbox : [2, 4, 2]
+)

@@ -5,7 +5,7 @@ use space_assets::{GMesh, LocationInstancing, Material, SubLocation};
 use space_core::ecs::*;
 use space_core::asset::*;
 use space_core::app::*;
-use space_core::{nalgebra, Pos3, Pos3i, Vec3i};
+use space_core::{nalgebra, Pos3, Pos3i, Vec3, Vec3i};
 use space_core::nalgebra::{inf, Point3};
 use space_voxel::objected_voxel_map::VoxelVal;
 use space_voxel::solid_voxel_map::VoxelMap;
@@ -44,10 +44,23 @@ impl Default for BuildCommand {
 
 pub type StationBlock = VoxelVal<VoxelId>;
 
-#[derive(Default)]
+#[derive(Component)]
+pub struct StationLocation {
+    pub pos : Pos3,
+    pub rot : Vec3,
+    pub id : BlockId
+}
+
+#[derive(Component)]
+pub struct AutoInstanceLinks {
+    pub set : HashSet<Entity>
+}
+
+#[derive(Default, Resource)]
 pub struct AutoInstanceHolder {
     pub instance_renders : HashMap<BlockId, Entity>
 }
+
 
 pub enum InstancingUpdateEvent {
     Update(Entity, BlockId, Point3<i32>)
@@ -69,6 +82,10 @@ impl Default for Station {
             map : VoxelMap::new(0.5, [16, 16, 16].into())
         }
     }
+}
+
+pub struct AutoInstnacningLinks {
+    pub map : HashSet<Entity>
 }
 
 pub struct ChunkUpdateEvent {
