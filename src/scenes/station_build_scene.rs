@@ -178,6 +178,12 @@ fn camera_movement(
     if input.get_key_state(KeyCode::D) {
         camera.pos = camera.pos + speed * right;
     }
+    if input.get_key_state(KeyCode::LShift) {
+        camera.pos.y = camera.pos.y + speed;
+    }
+    if input.get_key_state(KeyCode::LControl) {
+        camera.pos.y = camera.pos.y - speed;
+    }
 }
 
 #[derive(Default, Deserialize, TypeUuid, Debug, Clone)]
@@ -399,6 +405,7 @@ fn init_station_build(
     let mut blocks = StationBlocks::default();
     blocks.panels.push(assets.load("ss13/walls_configs/metal_grid.wall"));
     blocks.panels.push(assets.load("ss13/walls_configs/metal_wall.wall"));
+    blocks.panels.push(assets.load("ss13/walls_configs/door.wall"));
 
     let common_asset : Handle<RonBlockDesc> = assets.load("ss13/walls_configs/metal_floor.wall");
 
