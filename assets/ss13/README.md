@@ -1,0 +1,2 @@
+All Space station 13 files are under the GPL3 license. In accordance with the license, all licensed files are available in their original and modified form in this repository in the assets/ss13 folder.
+The files from SS13 will be used for the 3d copy of SS13. The cloned game will be one of two games in development under this repository. Of course, if I still decide to clone SS13.
