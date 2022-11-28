@@ -23,7 +23,7 @@ pub struct BlockHolder {
     pub map : HashMap<BlockId, BlockDesc>
 }
 
-#[derive(Clone, Eq, Hash, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq, Debug)]
 pub struct BlockId(pub usize);
 
 #[derive(Clone, Eq, Hash, PartialEq)]

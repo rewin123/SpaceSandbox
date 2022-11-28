@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+use std::os::linux::raw::stat;
 use std::process::id;
 use bevy::asset::AssetServer;
 use bevy::prelude::{info_span, info};
@@ -13,6 +14,7 @@ use winit::event::MouseButton;
 use space_assets::{GltfAssetLoader, Location, Material, MeshBundle, SpaceAssetServer, GMesh, LocationInstancing, SubLocation};
 use bevy::reflect::TypeUuid;
 use std::string::String;
+use bevy::log::error;
 use crate::scenes::station_data::*;
 use crate::scenes::station_plugin::*;
 
@@ -307,10 +309,74 @@ fn station_menu(
     render : Res<RenderApi>,
     mut materials : ResMut<Assets<Material>>,
     mut meshes : ResMut<Assets<GMesh>>,
-    mut blocs_holder : ResMut<BlockHolder>
+    mut blocs_holder : ResMut<BlockHolder>,
+    mut block_events : EventWriter<AddBlockEvent>,
 ) {
 
     egui::SidePanel::left("Build panel").show(&ctx, |ui| {
+
+        if ui.button("Test load ss13 map").clicked() {
+            let map_res = std::fs::read_to_string("assets/ss13/ss_map.txt");
+            if let Ok(map) = map_res {
+                let mut state = true;
+                let mut first = true;
+
+                let mut tile_count = 0;
+                let mut load_idx = 0;
+                let mut tile_names = vec![];
+
+                let mut reidx = vec![];
+
+                for line in map.split('\n') {
+                    if first {
+                        first = false;
+                        tile_count = line.parse::<usize>().unwrap();
+                    } else if state {
+                        tile_names.push(line.to_string());
+                        load_idx += 1;
+
+                        if load_idx >= tile_count {
+                            state = false;
+
+                            for file_tile in &tile_names {
+                                for (id, name) in blocs_holder.map.iter() {
+                                    if name.name.contains(file_tile) {
+                                        reidx.push(id.clone());
+                                        info!("Tile {} with id {:?}", file_tile, id);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        if line.len() == 0 {
+                            continue;
+                        }
+                        let parts : Vec<&str> = line.split(' ').collect();
+                        let x = parts[0].parse::<usize>().unwrap();
+                        let y = parts[1].parse::<usize>().unwrap();
+                        let idx = parts[2].parse::<usize>().unwrap();
+
+                        if idx != tile_names.len() {
+                            let pos = Pos3::new(
+                                x as f32 - 120.0,
+                                0.0,
+                                y as f32 - 120.0
+                            );
+
+                            block_events.send(AddBlockEvent {
+                                id: BuildCommand::Block(reidx[idx].clone()),
+                                world_pos: pos,
+                                rot: BlockAxis::Y
+                            });
+                        }
+                    }
+                }
+            } else {
+                error!("Cannot find ss13 map");
+            }
+
+        }
 
         if ui.input().key_pressed(Key::Q) {
             panels.build_level -= 1;

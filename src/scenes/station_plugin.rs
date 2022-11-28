@@ -1,4 +1,5 @@
 use std::f32::consts::PI;
+use bevy::log::info;
 use space_assets::{GMesh, Location, LocationInstancing, Material, SubLocation};
 use space_core::ecs::*;
 use space_core::{nalgebra, Pos3, Vec3, Vec3i};
@@ -16,12 +17,6 @@ pub fn setup_blocks(
     render : Res<RenderApi>) {
 
     for e in events.iter() {
-        // station.add_block_event(
-        //     &mut cmds,
-        //     e,
-        // &mut update_instance_evemts,
-        // &block_holder);
-
         match &e.id {
             BuildCommand::None => {
                 let val = station.map.get_cloned(&e.world_pos);
@@ -99,6 +94,7 @@ pub fn setup_blocks(
                 }
 
                 if is_free {
+                    // info!("Line: {:?} {:?}", id, &vp);
                     let mut loc = Location::new(&render.device);
                     loc.rotation = rot;
                     loc.pos = e.world_pos.coords + shift;
