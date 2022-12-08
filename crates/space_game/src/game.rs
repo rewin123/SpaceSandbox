@@ -257,79 +257,81 @@ impl Game {
 
     pub fn run(mut self){
 
-        let mut event_loop = self.event_loop.take().unwrap();
+        self.scene.app.run();
 
-        event_loop.run(move |event, _, control_flow| {
-            if let Some(mut gui) = self.scene.app.world.get_resource_mut::<Gui>() {
-                gui.platform.handle_event(&event);
-            }
-            let id = self.scene.app.world.get_non_send_resource::<winit::window::Window>().unwrap().id();
-            match event {
-                Event::WindowEvent {
-                    ref event,
-                    window_id,
-                } if window_id == id => {
-                    match event {
-                        WindowEvent::CloseRequested
-                        | WindowEvent::KeyboardInput {
-                            input:
-                            KeyboardInput {
-                                state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
-                                ..
-                            },
-                            ..
-                        } => *control_flow = ControlFlow::Exit,
-                        WindowEvent::Resized(physical_size) => {
-                            self.resize_event(*physical_size);
-                        }
-                        WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                            // new_inner_size is &&mut so w have to dereference it twice
-                            self.resize_event(**new_inner_size);
-                        }
-                        WindowEvent::KeyboardInput { device_id, input, is_synthetic } => {
-                            self.scene.app.world.get_resource_mut::<InputSystem>()
-                                .unwrap().process_event(input);
-                        }
-                        WindowEvent::MouseInput { device_id, state, button, modifiers } => {
-                            self.scene.app.world.get_resource_mut::<InputSystem>()
-                                .unwrap().process_mouse_event(button, state);
-                        }
-                        WindowEvent::CursorMoved { device_id, position, modifiers } => {
-                            self.scene.app.world.get_resource_mut::<InputSystem>()
-                                .unwrap().process_cursor_move(position.clone());
-                        }
-                        _ => {}
-                    }
-                }
-                Event::RedrawRequested(window_id) if window_id == id => {
-                    self.update();
-                    match self.render() {
-                        Ok(_) => {}
-                        // Reconfigure the surface if it's lost or outdated
-                        Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
-                            let new_size = self.api.size.clone();
-                            self.resize_event(new_size);
-                        },
-                        // The system is out of memory, we should probably quit
-                        Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
-
-                        Err(wgpu::SurfaceError::Timeout) => {},
-                    }
-
-                    if self.is_exit_state {
-                        *control_flow = ControlFlow::Exit;
-                    }
-                }
-                Event::RedrawEventsCleared => {
-                    // RedrawRequested will only trigger once, unless we manually
-                    // request it.
-                    self.scene.app.world.get_non_send_resource_mut::<winit::window::Window>()
-                        .unwrap().request_redraw();
-                }
-                _ => {}
-            }
-        });
+        // let mut event_loop = self.event_loop.take().unwrap();
+        //
+        // event_loop.run(move |event, _, control_flow| {
+        //     if let Some(mut gui) = self.scene.app.world.get_resource_mut::<Gui>() {
+        //         gui.platform.handle_event(&event);
+        //     }
+        //     let id = self.scene.app.world.get_non_send_resource::<winit::window::Window>().unwrap().id();
+        //     match event {
+        //         Event::WindowEvent {
+        //             ref event,
+        //             window_id,
+        //         } if window_id == id => {
+        //             match event {
+        //                 WindowEvent::CloseRequested
+        //                 | WindowEvent::KeyboardInput {
+        //                     input:
+        //                     KeyboardInput {
+        //                         state: ElementState::Pressed,
+        //                         virtual_keycode: Some(VirtualKeyCode::Escape),
+        //                         ..
+        //                     },
+        //                     ..
+        //                 } => *control_flow = ControlFlow::Exit,
+        //                 WindowEvent::Resized(physical_size) => {
+        //                     self.resize_event(*physical_size);
+        //                 }
+        //                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+        //                     // new_inner_size is &&mut so w have to dereference it twice
+        //                     self.resize_event(**new_inner_size);
+        //                 }
+        //                 WindowEvent::KeyboardInput { device_id, input, is_synthetic } => {
+        //                     self.scene.app.world.get_resource_mut::<InputSystem>()
+        //                         .unwrap().process_event(input);
+        //                 }
+        //                 WindowEvent::MouseInput { device_id, state, button, modifiers } => {
+        //                     self.scene.app.world.get_resource_mut::<InputSystem>()
+        //                         .unwrap().process_mouse_event(button, state);
+        //                 }
+        //                 WindowEvent::CursorMoved { device_id, position, modifiers } => {
+        //                     self.scene.app.world.get_resource_mut::<InputSystem>()
+        //                         .unwrap().process_cursor_move(position.clone());
+        //                 }
+        //                 _ => {}
+        //             }
+        //         }
+        //         Event::RedrawRequested(window_id) if window_id == id => {
+        //             self.update();
+        //             match self.render() {
+        //                 Ok(_) => {}
+        //                 // Reconfigure the surface if it's lost or outdated
+        //                 Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
+        //                     let new_size = self.api.size.clone();
+        //                     self.resize_event(new_size);
+        //                 },
+        //                 // The system is out of memory, we should probably quit
+        //                 Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+        //
+        //                 Err(wgpu::SurfaceError::Timeout) => {},
+        //             }
+        //
+        //             if self.is_exit_state {
+        //                 *control_flow = ControlFlow::Exit;
+        //             }
+        //         }
+        //         Event::RedrawEventsCleared => {
+        //             // RedrawRequested will only trigger once, unless we manually
+        //             // request it.
+        //             self.scene.app.world.get_non_send_resource_mut::<winit::window::Window>()
+        //                 .unwrap().request_redraw();
+        //         }
+        //         _ => {}
+        //     }
+        // });
     }
 
     fn create_window() -> (winit::window::Window, winit::event_loop::EventLoop<()>) {
@@ -362,6 +364,7 @@ impl Game {
         self.scene.app.add_plugin(AssetPlugin::default());
         self.scene.app.add_plugin(TransformPlugin::default());
         self.scene.app.add_plugin(bevy::window::WindowPlugin::default());
+        self.scene.app.add_plugin(bevy::winit::WinitPlugin::default());
 
         self.scene.app.add_asset::<Material>();
         self.scene.app.add_asset::<GMesh>();
