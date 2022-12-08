@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::os::linux::raw::stat;
 use std::process::id;
 use bevy::asset::AssetServer;
-use bevy::prelude::{info_span, info};
+use bevy::prelude::{info_span, info, Transform};
 use egui::{Context, Key, Ui};
 use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, EguiContext, SceneType, RonAssetPlugin, RenderApi, InputSystem, KeyCode, ScreenSize};
 use space_render::{add_game_render_plugins, AutoInstancing};
@@ -11,7 +11,7 @@ use space_core::{serde::*, Camera};
 use bevy::asset::*;
 use bevy::utils::HashMap;
 use winit::event::MouseButton;
-use space_assets::{GltfAssetLoader, Location, Material, MeshBundle, SpaceAssetServer, GMesh, LocationInstancing, SubLocation};
+use space_assets::{GltfAssetLoader, Material, MeshBundle, SpaceAssetServer, GMesh, LocationInstancing, SubLocation};
 use bevy::reflect::TypeUuid;
 use std::string::String;
 use bevy::log::error;
@@ -63,7 +63,7 @@ impl SchedulePlugin for StationBuildMenu {
 
 fn add_block_to_station(
     mut commands : Commands,
-    world : Query<(&Location, &StationBuildActiveBlock)>,
+    world : Query<(&Transform, &StationBuildActiveBlock)>,
     input : Res<InputSystem>,
     mut panels : Res<StationBlocks>,
     mut events : EventWriter<AddBlockEvent>,
@@ -101,7 +101,7 @@ fn add_block_to_station(
 
 fn place_block(
     mut commands : Commands,
-    mut query : Query<(&mut Location, &mut StationBuildActiveBlock)>,
+    mut query : Query<(&mut Transform, &mut StationBuildActiveBlock)>,
     camera : Res<Camera>,
     input : Res<InputSystem>,
     mut panels : ResMut<StationBlocks>,
@@ -149,10 +149,12 @@ fn place_block(
                     bbox.z as f32 * chunk.map.voxel_size / 2.0,
                 );
 
-                loc.pos.x = point.x;
-                loc.pos.y = point.y;
-                loc.pos.z = point.z;
-                loc.pos = loc.pos + shift;
+                loc.translation.x = point.x;
+                loc.translation.y = point.y;
+                loc.translation.z = point.z;
+                loc.translation.x += shift.x;
+                loc.translation.y += shift.y;
+                loc.translation.z += shift.z;
 
                 active_pos.voxel_pos = point;
             }
@@ -425,7 +427,7 @@ fn station_menu(
                     }
     
                     let e = commands.spawn((block.mesh.clone(), block.material.clone()))
-                        .insert(Location::new(&render.device))
+                        .insert(bevy::prelude::Transform::default())
                         .insert(StationBuildActiveBlock{ voxel_pos : Pos3::default()}).id();
                     panels.active_entity = Some(e.clone());
                     panels.active_id = BuildCommand::Block(idx.clone());

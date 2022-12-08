@@ -1,16 +1,16 @@
 use std::ops::DerefMut;
-use bevy::prelude::Assets;
-use space_assets::{Location, SpaceAssetServer, Material, GMesh};
+use bevy::prelude::{Assets, Transform};
+use space_assets::{SpaceAssetServer, Material, GMesh};
 use space_core::{Camera, app::App};
 use space_game::*;
 use space_core::ecs::*;
 
 fn hdri_update(
-    mut query : Query<(&mut Location, &HDRISphere)>,
+    mut query : Query<(&mut Transform, &HDRISphere)>,
     camera : Res<Camera>) {
 
     for (mut loc, hdri) in &mut query {
-        loc.pos = [
+        loc.translation = [
             camera.pos.x,
             camera.pos.y,
             camera.pos.z
@@ -51,8 +51,8 @@ impl SchedulePlugin for HDRISystem {
             &render.device,
             "res/base_models/sphere.obj".into(),
             app.world.get_resource_mut::<Assets<GMesh>>().as_mut().unwrap()).unwrap()[0].clone();
-        let mut location = Location::new(&render.device);
-        location.pos.x = 10.0;
+        let mut location = bevy::prelude::Transform::default();
+        location.translation.x = 10.0;
         location.scale *= -9000.0;
         let mut material = app.world.get_resource_mut::<SpaceAssetServer>().unwrap().get_default_material();
         material.color =

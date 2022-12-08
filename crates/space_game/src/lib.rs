@@ -16,7 +16,6 @@ pub use api_base::*;
 pub use game::*;
 pub use input_system::*;
 pub use gui::*;
-use space_assets::Location;
 use space_core::{ecs::StageLabel, RenderBase};
 use space_core::asset::*;
 use space_core::serde::*;

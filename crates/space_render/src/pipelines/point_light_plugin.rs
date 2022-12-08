@@ -1,13 +1,12 @@
 use bevy::prelude::Assets;
 use bevy::prelude::Handle;
-use space_assets::GMesh;
+use space_assets::{GMesh, TransformBuffer};
 use space_core::app::App;
 use space_game::*;
 use crate::light::PointLightShadow;
 use crate::pipelines::PointLightShadowPipeline;
 
 use space_assets::Material;
-use space_assets::Location;
 use crate::light::PointLight;
 
 use space_core::ecs::*;
@@ -19,7 +18,7 @@ use super::PointLightPipeline;
 
 fn point_light_shadow(
     mut shadow_fill : ResMut<PointLightShadowPipeline>,
-    mesh_query : Query<(&Handle<GMesh>, &Material, &Location)>,
+    mesh_query : Query<(&Handle<GMesh>, &Material, &TransformBuffer)>,
     light_query : Query<(&mut PointLight)>,
     mut encoder : ResMut<RenderCommands>,
     mut meshes : ResMut<Assets<GMesh>>

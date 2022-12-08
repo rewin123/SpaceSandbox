@@ -5,7 +5,7 @@ use std::mem::swap;
 use std::ops::{DerefMut, Deref};
 use std::sync::{Arc, RwLock};
 use atomic_refcell::AtomicRefMut;
-use bevy::prelude::{App, CoreStage, info};
+use bevy::prelude::{App, CoreStage, info, TransformPlugin};
 use egui::color::gamma_from_linear;
 use wgpu::{Extent3d, ShaderStages, SurfaceTexture, TextureView};
 use winit::dpi::PhysicalSize;
@@ -19,6 +19,7 @@ use encase::*;
 use wgpu::util::DeviceExt;
 use space_core::bevy::asset::AssetPlugin;
 use space_core::bevy::ecs::prelude::*;
+
 
 fn update_instanced_loc(
         mut query : Query<(Entity, &mut LocationInstancing), Changed<LocationInstancing>>,
@@ -359,6 +360,7 @@ impl Game {
         self.scene.app.add_plugins(bevy::MinimalPlugins);
         self.scene.app.add_plugin(bevy::diagnostic::DiagnosticsPlugin::default());
         self.scene.app.add_plugin(AssetPlugin::default());
+        self.scene.app.add_plugin(TransformPlugin::default());
 
         self.scene.app.add_asset::<Material>();
         self.scene.app.add_asset::<GMesh>();

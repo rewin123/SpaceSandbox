@@ -97,7 +97,7 @@ impl PointLightShadowPipeline {
     pub fn draw<'a>(
         &mut self,
         encoder : &'a mut wgpu::CommandEncoder,
-        mut mesh_query : Query<(&Handle<GMesh>, &Material, &Location)>,
+        mut mesh_query : Query<(&Handle<GMesh>, &Material, &TransformBuffer)>,
         mut light_query : Query<(&mut PointLight)>,
         mut meshes : ResMut<Assets<GMesh>>) {
 
@@ -141,7 +141,7 @@ impl PointLightShadowPipeline {
     fn shadow_draw(&mut self,
                    shadow : &PointLightShadow,
                    idx : usize,
-                   query : &mut Query<(&Handle<GMesh>, &Material, &Location)>,
+                   query : &mut Query<(&Handle<GMesh>, &Material, &TransformBuffer)>,
                    encoder : &mut wgpu::CommandEncoder,
                    meshes : &mut ResMut<Assets<GMesh>>) {
 

@@ -2,7 +2,7 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use bevy::ecs::world::EntityMut;
-use bevy::prelude::{Entity, Assets, Handle, ResMut};
+use bevy::prelude::{Entity, Assets, Handle, ResMut, Transform, Quat};
 use byteorder::ByteOrder;
 use gltf::animation::Property::Rotation;
 use gltf::json::accessor::ComponentType;
@@ -10,7 +10,7 @@ use gltf::Semantic;
 use wgpu::util::DeviceExt;
 use crate::asset_server::SpaceAssetServer;
 use crate::handle::SpaceHandle;
-use crate::{Location, MaterialPtr};
+use crate::{MaterialPtr};
 use crate::mesh::{GMesh, GVertex, Material, TextureBundle};
 
 
@@ -221,21 +221,24 @@ impl GltfAssetLoader for SpaceAssetServer {
 
         for n in sponza.nodes() {
             if let Some(mesh_idx) = n.mesh() {
-                let mut location = Location::new(&device);
+                let mut location = space_core::bevy::prelude::Transform::default();
 
                 let (tr, quat, scale) = n.transform().decomposed();
                 let q = nalgebra::Quaternion::new(quat[3], quat[0], quat[1], quat[2]);
                 let rot = nalgebra::Rotation::from(nalgebra::UnitQuaternion::from_quaternion(q));
                 let (e_x, e_y, e_z) = rot.euler_angles();
-                location.pos = tr.into();
-                location.rotation = [e_x, e_y, e_z].into();
+                location.translation = tr.into();
+                location.rotation.x = q.i;
+                location.rotation.y = q.j;
+                location.rotation.z = q.k;
+                location.rotation.w = q.w;
                 location.scale = scale.into();
 
                 for (p, m) in &meshes[mesh_idx.index()] {
                     res.push(
                         MeshBundle {
                         mesh : p.clone(),
-                        location : location.clone(&device),
+                        location : location.clone(),
                         material : m.clone()
                     });
                 }
@@ -440,6 +443,6 @@ use space_core::bevy::prelude::Bundle;
 #[derive(Bundle)]
 pub struct MeshBundle {
     pub mesh : Handle<GMesh>,
-    pub location : Location,
+    pub location : Transform,
     pub material : Handle<Material>
 }

@@ -152,71 +152,84 @@ pub struct LocationInstant {
     normal : [[f32; 4]; 4]
 }
 
-#[derive(Component)]
-pub struct Location {
-    pub pos : Vector3<f32>,
-    pub rotation : Vector3<f32>,
-    pub scale : Vector3<f32>,
+#[derive(Clone, Debug, Component)]
+pub struct TransformBuffer {
     pub buffer : Arc<wgpu::Buffer>
 }
 
-
-impl Location {
-
-    pub fn clone(&self, device : &wgpu::Device) -> Self {
-        Self {
-            pos : self.pos.clone(),
-            rotation : self.rotation.clone(),
-            scale : self.scale.clone(),
-            buffer : Arc::new(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: None,
-                contents: &[0u8; 16 * 4 * 2],
-                usage: BufferUsages::MAP_WRITE | BufferUsages::VERTEX
-            }))
-        }
-    }
-
-    pub fn new(device : &wgpu::Device) -> Self {
-        Location {
-            pos : [0.0, 0.0, 0.0].into(),
-            rotation : [0.0, 0.0, 0.0].into(),
-            scale : [1.0, 1.0, 1.0].into(),
-            buffer : Arc::new(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: None,
-                contents: &[0u8; 16 * 4 * 2],
-                usage: BufferUsages::MAP_WRITE | BufferUsages::VERTEX
-            }))
-        }
-    }
-
-    pub fn get_bytes(&self) -> Vec<u8> {
-        let tr : Matrix4<f32> = Matrix::new_translation(&self.pos);
-        let scale : Matrix4<f32> = Matrix::new_nonuniform_scaling(&self.scale);
-
-        let rot = Rotation::from_euler_angles(self.rotation.x, self.rotation.y, self.rotation.z);
-        let rot_mat : Matrix4<f32> = rot.into();
-
-        let res = tr * rot_mat * scale;
-        let normal = rot_mat * Matrix4::identity();
-
-        let inst = LocationInstant {
-            model : res.into(),
-            normal : normal.into()
-        };
-
-        bytemuck::cast_slice(&[inst]).iter().map(|b| *b).collect()
-    }
-
-    pub fn update_buffer(&mut self) {
-        let bytes = self.get_bytes();
+impl TransformBuffer {
+    pub fn update_buffer(&self, transform : &bevy::prelude::GlobalTransform) {
+        let mat = transform.compute_matrix();
+        let mut rot_transform = transform.compute_transform();
+        rot_transform.translation = [0.0, 0.0, 0.0].into();
+        rot_transform.scale = [1.0, 1.0, 1.0].into();
+        let mat2 = rot_transform.compute_matrix();
 
         let buffer = self.buffer.clone();
         self.buffer.slice(..).map_async(wgpu::MapMode::Write, move |a| {
-            buffer.slice(..).get_mapped_range_mut().copy_from_slice(&bytes);
+            buffer.slice(..).get_mapped_range_mut().copy_from_slice(&bytemuck::cast_slice(&[mat, mat2]));
             buffer.unmap();
         });
     }
 }
+
+//
+// impl Location {
+//
+//     pub fn clone(&self, device : &wgpu::Device) -> Self {
+//         Self {
+//             pos : self.pos.clone(),
+//             rotation : self.rotation.clone(),
+//             scale : self.scale.clone(),
+//             buffer : Arc::new(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+//                 label: None,
+//                 contents: &[0u8; 16 * 4 * 2],
+//                 usage: BufferUsages::MAP_WRITE | BufferUsages::VERTEX
+//             }))
+//         }
+//     }
+//
+//     pub fn new(device : &wgpu::Device) -> Self {
+//         Location {
+//             pos : [0.0, 0.0, 0.0].into(),
+//             rotation : [0.0, 0.0, 0.0].into(),
+//             scale : [1.0, 1.0, 1.0].into(),
+//             buffer : Arc::new(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+//                 label: None,
+//                 contents: &[0u8; 16 * 4 * 2],
+//                 usage: BufferUsages::MAP_WRITE | BufferUsages::VERTEX
+//             }))
+//         }
+//     }
+//
+//     pub fn get_bytes(&self) -> Vec<u8> {
+//         let tr : Matrix4<f32> = Matrix::new_translation(&self.pos);
+//         let scale : Matrix4<f32> = Matrix::new_nonuniform_scaling(&self.scale);
+//
+//         let rot = Rotation::from_euler_angles(self.rotation.x, self.rotation.y, self.rotation.z);
+//         let rot_mat : Matrix4<f32> = rot.into();
+//
+//         let res = tr * rot_mat * scale;
+//         let normal = rot_mat * Matrix4::identity();
+//
+//         let inst = LocationInstant {
+//             model : res.into(),
+//             normal : normal.into()
+//         };
+//
+//         bytemuck::cast_slice(&[inst]).iter().map(|b| *b).collect()
+//     }
+//
+//     pub fn update_buffer(&mut self) {
+//         let bytes = self.get_bytes();
+//
+//         let buffer = self.buffer.clone();
+//         self.buffer.slice(..).map_async(wgpu::MapMode::Write, move |a| {
+//             buffer.slice(..).get_mapped_range_mut().copy_from_slice(&bytes);
+//             buffer.unmap();
+//         });
+//     }
+// }
 
 
 

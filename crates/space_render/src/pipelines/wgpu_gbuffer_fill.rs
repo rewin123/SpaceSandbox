@@ -220,7 +220,7 @@ pub struct GBufferFill {
 
 fn gbuffer_filling(
     mut fill : ResMut<GBufferFill>,
-    mut query : Query<(&Handle<GMesh>, &Handle<Material>, &Location), Without<AutoInstancing>>,
+    mut query : Query<(&Handle<GMesh>, &Handle<Material>, &TransformBuffer), Without<AutoInstancing>>,
     mut query_instanced : Query<(&Handle<GMesh>, &Handle<Material>, &LocationInstancing), Without<AutoInstancing>>,
     mut gbuffer : ResMut<GFramebuffer>,
     mut assets : ResMut<SpaceAssetServer>,
@@ -436,7 +436,7 @@ impl GBufferFill {
 
 
     pub fn draw(&mut self,
-                mut query : Query<(&Handle<GMesh>, &Handle<Material>, &Location), Without<AutoInstancing>>,
+                mut query : Query<(&Handle<GMesh>, &Handle<Material>, &TransformBuffer), Without<AutoInstancing>>,
                 mut query_instanced : Query<(&Handle<GMesh>, &Handle<Material>, &LocationInstancing), Without<AutoInstancing>>,
                 mut gbuffer : ResMut<GFramebuffer>,
                 mut assets : ResMut<SpaceAssetServer>,

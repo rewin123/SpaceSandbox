@@ -83,7 +83,7 @@ impl PipelineDesc for DirLightPipelineDesc {
 
 fn dir_light_impl(
     mut fill : ResMut<DirLightPipeline>,
-    mut mesh_query : Query<(&Handle<GMesh>, &Handle<Material>, &Location)>,
+    mut mesh_query : Query<(&Handle<GMesh>, &Handle<Material>, &TransformBuffer)>,
     mut light_query: Query<(&mut PointLight)>,
     mut encoder : ResMut<RenderCommands>,
     dst : Res<DirLightTexture>,
@@ -410,7 +410,7 @@ impl DirLightPipeline {
         &mut self,
         device : &wgpu::Device,
         encoder : &'a mut wgpu::CommandEncoder,
-        mut mesh_query : Query<(&Handle<GMesh>, &Handle<Material>, &Location)>,
+        mut mesh_query : Query<(&Handle<GMesh>, &Handle<Material>, &TransformBuffer)>,
         mut light_query: Query<(&mut PointLight)>,
         dst : &TextureBundle,
         gbuffer : &GFramebuffer) {
