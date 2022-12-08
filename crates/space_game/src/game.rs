@@ -361,6 +361,7 @@ impl Game {
         self.scene.app.add_plugin(bevy::diagnostic::DiagnosticsPlugin::default());
         self.scene.app.add_plugin(AssetPlugin::default());
         self.scene.app.add_plugin(TransformPlugin::default());
+        self.scene.app.add_plugin(bevy::window::WindowPlugin::default());
 
         self.scene.app.add_asset::<Material>();
         self.scene.app.add_asset::<GMesh>();
