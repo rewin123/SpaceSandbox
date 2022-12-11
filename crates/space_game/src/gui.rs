@@ -1,10 +1,12 @@
 use std::sync::Arc;
 use std::time::Instant;
 use bevy::app::prelude::App;
+use bevy::winit::WinitWindows;
 use egui::{FontDefinitions, FullOutput, Style};
 use egui_wgpu_backend::ScreenDescriptor;
 use space_core::{RenderBase, bevy::ecs::prelude::*};
 use wgpu::{TextureView, SurfaceTexture};
+use winit::event_loop::EventLoopProxy;
 use space_core::bevy::app::prelude::*;
 use space_core::ecs::*;
 
@@ -22,9 +24,9 @@ fn start_gui_frame(
 
 fn end_gui_frame(
     mut gui : ResMut<Gui>,
-    window : NonSend<winit::window::Window>,
+    window : NonSend<WinitWindows>,
     mut egui_cmds : ResMut<EguiRenderCmds>) {
-    egui_cmds.output = gui.end_frame(Some(&window));
+    egui_cmds.output = gui.end_frame(Some(&window.windows.iter().next().unwrap().1));
 }
 
 #[derive(Resource)]
@@ -33,13 +35,23 @@ pub struct RenderTarget {
     pub output : SurfaceTexture
 }
 
+fn egui_process_events(
+    mut gui : ResMut<Gui>,
+    mut mouse_events : EventReader<bevy::input::mouse::MouseMotion>
+) {
+    for e in mouse_events.iter() {
+
+    }
+}
+
 fn egui_draw(
     mut gui : ResMut<Gui>,
-    window : NonSend<winit::window::Window>,
+    windows : NonSend<WinitWindows>,
     mut encoder : ResMut<RenderCommands>,
     render_target : Res<RenderTarget>,
     output : Res<EguiRenderCmds>
 ) {
+    let window = windows.windows.iter().next().unwrap().1;
     gui.draw(output.output.clone(),
         egui_wgpu_backend::ScreenDescriptor {
             physical_width: window.inner_size().width,

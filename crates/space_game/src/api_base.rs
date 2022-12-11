@@ -1,7 +1,8 @@
 use std::sync::Arc;
-use bevy::prelude::info;
+use bevy::prelude::{info, Resource};
 use space_core::RenderBase;
 
+#[derive(Resource)]
 pub struct ApiBase {
     pub instance : wgpu::Instance,
     pub adapter : wgpu::Adapter,

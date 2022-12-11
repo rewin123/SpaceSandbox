@@ -484,40 +484,40 @@ impl space_game::RenderPlugin for State {
     }
 
     fn window_resize(&mut self, game : &mut Game, new_size: winit::dpi::PhysicalSize<u32>) {
-        if new_size.width > 0 && new_size.height > 0 {
-            game.api.size = new_size;
-            game.api.config.width = new_size.width;
-            game.api.config.height = new_size.height;
-            game.api.surface.configure(&self.render.device, &game.api.config);
-
-            let size = wgpu::Extent3d {
-                width : game.api.config.width,
-                height : game.api.config.height,
-                depth_or_array_layers : 1
-            };
-
-            self.present = TexturePresent::new(
-                &self.render,
-                game.api.config.format,
-                size);
-
-
-
-            let mut gamma_desc = self.gamma_correction.get_desc();
-            gamma_desc.size = size;
-            self.gamma_correction = TextureTransformPipeline::new(
-                &gamma_desc
-            );
-
-
-            self.gamma_buffer = self.gamma_correction.spawn_framebuffer();
-
-            let mut ambient_desc = self.ambient_light_pipeline.get_desc();
-            ambient_desc.size = size;
-            self.ambient_light_pipeline = TextureTransformPipeline::new(
-                &ambient_desc
-            );
-        }
+        // if new_size.width > 0 && new_size.height > 0 {
+        //     game.api.size = new_size;
+        //     game.api.config.width = new_size.width;
+        //     game.api.config.height = new_size.height;
+        //     game.api.surface.configure(&self.render.device, &game.api.config);
+        //
+        //     let size = wgpu::Extent3d {
+        //         width : game.api.config.width,
+        //         height : game.api.config.height,
+        //         depth_or_array_layers : 1
+        //     };
+        //
+        //     self.present = TexturePresent::new(
+        //         &self.render,
+        //         game.api.config.format,
+        //         size);
+        //
+        //
+        //
+        //     let mut gamma_desc = self.gamma_correction.get_desc();
+        //     gamma_desc.size = size;
+        //     self.gamma_correction = TextureTransformPipeline::new(
+        //         &gamma_desc
+        //     );
+        //
+        //
+        //     self.gamma_buffer = self.gamma_correction.spawn_framebuffer();
+        //
+        //     let mut ambient_desc = self.ambient_light_pipeline.get_desc();
+        //     ambient_desc.size = size;
+        //     self.ambient_light_pipeline = TextureTransformPipeline::new(
+        //         &ambient_desc
+        //     );
+        // }
     }
 
     fn show_top_panel(&mut self, game: &mut Game, ui: &mut Ui) {

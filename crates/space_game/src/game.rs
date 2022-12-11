@@ -6,6 +6,7 @@ use std::ops::{DerefMut, Deref};
 use std::sync::{Arc, RwLock};
 use atomic_refcell::AtomicRefMut;
 use bevy::prelude::{App, CoreStage, info, TransformPlugin};
+use bevy::winit::WinitWindows;
 use egui::color::gamma_from_linear;
 use wgpu::{Extent3d, ShaderStages, SurfaceTexture, TextureView};
 use winit::dpi::PhysicalSize;
@@ -82,8 +83,6 @@ pub struct GameScene {
 
 
 pub struct Game {
-    pub api : ApiBase,
-    event_loop : Option<winit::event_loop::EventLoop<()>>,
     pub render_base : Arc<RenderBase>,
     plugins : Option<PluginBase>,
     pub render_view : Option<TextureView>,
@@ -97,26 +96,86 @@ fn poll_device( render_base : Res<RenderApi>) {
     render_base.device.poll(wgpu::Maintain::Wait);
 }
 
+fn start_frame_cmds(
+    mut cmds : Commands,
+    render : Res<RenderApi>,
+    api : Res<ApiBase>,
+    mut assets : ResMut<SpaceAssetServer>,
+    mut camera : ResMut<Camera>,
+    mut camera_buffer : ResMut<CameraBuffer>
+) {
+    let output;
+    if let Ok(val) = api.surface.get_current_texture() {
+        output = val;
+    } else {
+        return;
+    }
+    let view = output
+        .texture
+        .create_view(&wgpu::TextureViewDescriptor::default());
+
+
+    cmds.insert_resource(RenderTarget {view, output});
+    // self.camera_update();
+
+    cmds.insert_resource( RenderCommands{ encoder : render.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: None
+    })});
+    assets.sync_tick();
+
+    let mut encoder = render.device
+        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Update encoder"),
+        });
+
+
+    let camera_unifrom = camera.build_uniform();
+    let mut uniform = encase::UniformBuffer::new(vec![]);
+    uniform.write(&camera_unifrom).unwrap();
+    let inner = uniform.into_inner();
+
+    let tmp_buffer = render.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: None,
+        contents: &inner,
+        usage: wgpu::BufferUsages::COPY_SRC,
+    });
+
+    encoder.copy_buffer_to_buffer(
+        &tmp_buffer,
+        0,
+        &camera_buffer.buffer,
+        0,
+        inner.len() as wgpu::BufferAddress);
+    render.queue.submit(iter::once(encoder.finish()));
+    render.device.poll(wgpu::Maintain::Wait);
+}
+
+fn end_render_cmds(
+    mut world : &mut World
+) {
+    let target;
+    if let Some(val) = world.remove_resource::<RenderTarget>() {
+        target = val;
+    } else {
+        return;
+    }
+    let view = target.view;
+    let output = target.output;
+
+    let render_commands = world.remove_resource::<RenderCommands>().unwrap().encoder.finish();
+
+    world.get_resource::<RenderApi>().unwrap().device.poll(wgpu::Maintain::Wait);
+    world.get_resource::<RenderApi>().unwrap().queue.submit(Some(
+        render_commands
+    ));
+
+    output.present();
+}
+
 impl Game {
 
     pub fn clear_plugins(&mut self) {
         self.plugins = Some(PluginBase::default());
-    }
-
-    pub fn exec_commands(&mut self) {
-        let mut cmds = vec![];
-        swap(&mut cmds, &mut self.commands);
-
-        for cmd in cmds {
-            match cmd {
-                GameCommands::Exit => {
-                    self.is_exit_state = true;
-                }
-                GameCommands::AbstractChange(func) => {
-                    func(self);
-                }
-            }
-        }
     }
 
     pub fn get_default_material(&mut self) -> Material {
@@ -148,20 +207,21 @@ impl Game {
 
     pub fn simple_run<F>(mut self, mut func : F)
         where F : 'static + FnMut(&mut Game, winit::event::Event<'_, ()>, &mut winit::event_loop::ControlFlow) {
-        let mut event_loop = self.event_loop.take().unwrap();
-
-        event_loop.run(move |event, _, control_flow| {
-            func(&mut self, event, control_flow);
-        });
+        // let mut event_loop = self.event_loop.take().unwrap();
+        //
+        // event_loop.run(move |event, _, control_flow| {
+        //     func(&mut self, event, control_flow);
+        // });
+        self.scene.app.run();
     }
 
     fn resize_event(&mut self, new_size : PhysicalSize<u32>) {
-        self.scene.app.insert_resource(ScreenSize {size : new_size.clone(), format : self.api.config.format.clone()});
-        let mut plugins = self.plugins.take().unwrap();
-        for plugin in &mut plugins.render_plugin {
-            plugin.window_resize(self, new_size);
-        }
-        self.plugins = Some(plugins);
+        // self.scene.app.insert_resource(ScreenSize {size : new_size.clone(), format : self.api.config.format.clone()});
+        // let mut plugins = self.plugins.take().unwrap();
+        // for plugin in &mut plugins.render_plugin {
+        //     plugin.window_resize(self, new_size);
+        // }
+        // self.plugins = Some(plugins);
         // self.update_scene_scheldue();
     }
 
@@ -196,36 +256,36 @@ impl Game {
     }
 
     fn update(&mut self) {
-        let output;
-        if let Ok(val) = self.api.surface.get_current_texture() {
-            output = val;
-        } else {
-            return;
-        }
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        // let output;
+        // if let Ok(val) = self.api.surface.get_current_texture() {
+        //     output = val;
+        // } else {
+        //     return;
+        // }
+        // let view = output
+        //     .texture
+        //     .create_view(&wgpu::TextureViewDescriptor::default());
 
 
-        self.scene.app.insert_resource(RenderTarget {view, output});
-
-        self.exec_commands();
-
-        self.camera_update();
-
-        self.scene.app.insert_resource(RenderApi {base : self.render_base.clone()});
-        self.scene.app.insert_resource( RenderCommands{ encoder : self.render_base.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: None
-        })});
-        self.scene.app.world.get_resource_mut::<SpaceAssetServer>().unwrap().sync_tick();
-
-        self.scene.app.update();
-
-        let mut plugins = self.plugins.take().unwrap();
-        for plugin in &mut plugins.render_plugin {
-            plugin.update(self);
-        }
-        self.plugins = Some(plugins);
+        // self.scene.app.insert_resource(RenderTarget {view, output});
+        //
+        // self.exec_commands();
+        //
+        // self.camera_update();
+        //
+        // self.scene.app.insert_resource(RenderApi {base : self.render_base.clone()});
+        // self.scene.app.insert_resource( RenderCommands{ encoder : self.render_base.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        //     label: None
+        // })});
+        // self.scene.app.world.get_resource_mut::<SpaceAssetServer>().unwrap().sync_tick();
+        //
+        // self.scene.app.update();
+        //
+        // let mut plugins = self.plugins.take().unwrap();
+        // for plugin in &mut plugins.render_plugin {
+        //     plugin.update(self);
+        // }
+        // self.plugins = Some(plugins);
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -356,16 +416,6 @@ impl Game {
 
         println!("Update scene schedule");
 
-        self.scene.app.schedule = Schedule::default();
-        self.scene.app.add_default_stages();
-        self.scene.app.add_plugin(bevy::log::LogPlugin::default());
-        self.scene.app.add_plugins(bevy::MinimalPlugins);
-        self.scene.app.add_plugin(bevy::diagnostic::DiagnosticsPlugin::default());
-        self.scene.app.add_plugin(AssetPlugin::default());
-        self.scene.app.add_plugin(TransformPlugin::default());
-        self.scene.app.add_plugin(bevy::window::WindowPlugin::default());
-        self.scene.app.add_plugin(bevy::winit::WinitPlugin::default());
-
         self.scene.app.add_asset::<Material>();
         self.scene.app.add_asset::<GMesh>();
 
@@ -392,9 +442,29 @@ impl Default for Game {
 
     fn default() -> Self {
 
-        let (window, event_loop) = Game::create_window();
+        // let (window, event_loop) = Game::create_window();
 
-        let api = ApiBase::new(&window);
+        let mut scene = GameScene {
+            app : App::default(),
+        };
+
+        scene.app.add_plugin(bevy::log::LogPlugin::default());
+        scene.app.add_plugins(bevy::MinimalPlugins);
+        scene.app.add_plugin(bevy::diagnostic::DiagnosticsPlugin::default());
+        scene.app.add_plugin(AssetPlugin::default());
+        scene.app.add_plugin(TransformPlugin::default());
+        scene.app.add_plugin(bevy::input::InputPlugin::default());
+        scene.app.add_plugin(bevy::window::WindowPlugin::default());
+        scene.app.add_plugin(bevy::winit::WinitPlugin::default());
+
+        scene.app.add_system_to_stage(CoreStage::First, start_frame_cmds);
+        scene.app.add_system_to_stage(CoreStage::Last, end_render_cmds);
+
+        let api = {
+            let mut windows = scene.app.world.get_non_send_resource_mut::<WinitWindows>().unwrap();
+            println!("Windows: {}", windows.windows.len());
+            ApiBase::new(windows.windows.iter().next().unwrap().1)
+        };
         let render_base = api.render_base.clone();
 
         let gui = Gui::new(
@@ -405,7 +475,7 @@ impl Default for Game {
                 height : api.size.height,
                 depth_or_array_layers : 1
             },
-            window.scale_factor());
+            scene.app.world.get_non_send_resource_mut::<WinitWindows>().unwrap().windows.iter().next().unwrap().1.scale_factor());
         let task_server = Arc::new(TaskServer::new());
         let assets = SpaceAssetServer::new(&render_base, &task_server);
 
@@ -422,10 +492,6 @@ impl Default for Game {
         });
 
 
-        let mut scene = GameScene {
-            app : App::default(),
-        };
-
         scene.app.insert_resource(SpaceAssetServer::new(&render_base, &task_server));
         scene.app.insert_resource(Camera::default());
 
@@ -437,7 +503,7 @@ impl Default for Game {
 
         scene.app.insert_resource(EguiContext {ctx : gui.platform.context()});
         scene.app.insert_resource(gui);
-        scene.app.insert_non_send_resource(window);
+        // scene.app.insert_non_send_resource(window);
 
         scene.app.insert_resource(RenderApi {base : render_base.clone()});
         scene.app.insert_resource(ScreenSize {size : api.size.clone(), format : api.config.format});
@@ -446,9 +512,9 @@ impl Default for Game {
 
         scene.app.insert_resource(InputSystem::default());
 
+        scene.app.insert_resource(api);
+
         Self {
-            event_loop : Some(event_loop),
-            api,
             render_base,
             plugins : Some(PluginBase::default()),
             render_view : None,
