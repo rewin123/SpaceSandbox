@@ -19,5 +19,7 @@ serde = "*"
 nalgebra = "*"
 bytemuck = "*"
 
+bevy_egui = "0.18.0"
+
 space_core = {path = "../space_core"}
 space_assets = {path = "../space_assets"}

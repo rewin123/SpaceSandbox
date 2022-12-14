@@ -8,11 +8,12 @@ default-run = "SpaceSandbox"
 
 [dependencies]
 serde = "*"
-egui = "*"
 bevy = "0.9.0"
 rayon = "*"
 pollster = "*"
 winit = "*"
+
+bevy_egui = "*"
 
 space_macros = {path = "crates/space_macros"}
 space_shaders = {path = "crates/space_shaders"}

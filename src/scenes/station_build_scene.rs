@@ -2,8 +2,7 @@ use std::marker::PhantomData;
 use std::process::id;
 use bevy::asset::AssetServer;
 use bevy::prelude::{info_span, info, Transform};
-use egui::{Context, Key, Ui};
-use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, EguiContext, SceneType, RonAssetPlugin, RenderApi, InputSystem, KeyCode, ScreenSize};
+use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, SceneType, RonAssetPlugin, RenderApi, InputSystem, KeyCode, ScreenSize};
 use space_render::{add_game_render_plugins, AutoInstancing};
 use space_core::{ecs::*, app::App, nalgebra, SpaceResult, Pos3i, Vec3i, Vec3, Pos3};
 use space_core::{serde::*, Camera};
@@ -14,6 +13,8 @@ use space_assets::{GltfAssetLoader, Material, MeshBundle, SpaceAssetServer, GMes
 use bevy::reflect::TypeUuid;
 use std::string::String;
 use bevy::log::error;
+use bevy_egui::{egui, EguiContext};
+use bevy_egui::egui::Key;
 use crate::scenes::station_data::*;
 use crate::scenes::station_plugin::*;
 
@@ -66,10 +67,10 @@ fn add_block_to_station(
     input : Res<InputSystem>,
     mut panels : Res<StationBlocks>,
     mut events : EventWriter<AddBlockEvent>,
-    ctx : Res<EguiContext>) {
+    mut ctx : ResMut<EguiContext>) {
 
     if input.get_mouse_button_state(&MouseButton::Left) {
-        if ctx.is_pointer_over_area() {
+        if ctx.ctx_mut().is_pointer_over_area() {
             info!("Mouse over egui");
             return;
         }
@@ -83,7 +84,7 @@ fn add_block_to_station(
     }
     
     if input.get_mouse_button_state(&MouseButton::Right) {
-        if ctx.is_pointer_over_area() {
+        if ctx.ctx_mut().is_pointer_over_area() {
             info!("Mouse over egui");
             return;
         }
@@ -305,7 +306,7 @@ fn wait_loading_common_asset(
 
 fn station_menu(
     mut commands : Commands,
-    ctx : Res<EguiContext>,
+    mut ctx : ResMut<EguiContext>,
     mut panels : ResMut<StationBlocks>,
     blocks : Res<Assets<RonBlockDesc>>,
     mut asset_server : ResMut<SpaceAssetServer>,
@@ -316,7 +317,7 @@ fn station_menu(
     mut block_events : EventWriter<AddBlockEvent>,
 ) {
 
-    egui::SidePanel::left("Build panel").show(&ctx, |ui| {
+    egui::SidePanel::left("Build panel").show(ctx.ctx_mut(), |ui| {
 
         if ui.button("Test load ss13 map").clicked() {
             let map_res = std::fs::read_to_string("assets/ss13/ss_map.txt");

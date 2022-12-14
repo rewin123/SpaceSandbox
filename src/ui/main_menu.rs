@@ -1,19 +1,21 @@
-use egui::*;
-use space_game::{Game, GameCommands, GuiPlugin, SchedulePlugin, GlobalStageStep, EguiContext, GameScene, SceneType};
+use bevy::app::Plugin;
+use bevy_egui::{egui, EguiContext};
+use bevy_egui::egui::Align2;
+use space_game::{Game, GameCommands, GuiPlugin, SchedulePlugin, GlobalStageStep, GameScene, SceneType};
 use space_core::{ecs::*, app::App};
 
 fn main_menu(
-    ctx : Res<EguiContext>,
+    mut egui_context: ResMut<EguiContext>,
     mut scene : ResMut<State<SceneType>>
 ) {
     egui::Window::new("Space sandbox")
         .resizable(false)
         .collapsible(false)
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
-        .show(&ctx, |ui| {
+        .show(egui_context.ctx_mut(), |ui| {
             ui.vertical_centered(|ui| {
                 if ui.button("New station").clicked() {
-                    scene.set(SceneType::StationBuilding).unwrap();
+                    scene.set(SceneType::StationBuilding);
                 }
                 ui.button("Load station");
                 ui.button("Connect to server");
@@ -24,18 +26,21 @@ fn main_menu(
     });
 }
 
-pub struct MainMenu {
+// fn ui_example(mut egui_context: ResMut<EguiContext>) {
+//     egui::Window::new("Hello").show(egui_context.ctx_mut(), |ui| {
+//         ui.label("world");
+//     });
+// }
+
+pub struct MainMenuPlugin {
 
 }
 
-impl SchedulePlugin for MainMenu {
-    fn get_name(&self) -> space_game::PluginName {
-        space_game::PluginName::Text("Main menu".into())
-    }
-
-    fn add_system(&self, app : &mut App) {
+impl Plugin for MainMenuPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_state(SceneType::MainMenu);
         app.add_system_set(
             SystemSet::on_update(SceneType::MainMenu)
-                .with_system(main_menu));
+            .with_system(main_menu));
     }
 }

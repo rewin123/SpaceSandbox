@@ -7,6 +7,7 @@ pub mod plugins;
 use std::{sync::Arc, ops::Deref};
 use std::marker::PhantomData;
 use std::ops::DerefMut;
+use bevy::app::{PluginGroup, PluginGroupBuilder};
 use bevy::app::prelude::{App, Plugin};
 use bevy::asset::*;
 
@@ -179,4 +180,17 @@ pub trait RenderPlugin {
 pub enum GameCommands {
     AbstractChange(Box<dyn FnOnce(&mut Game)>),
     Exit
+}
+
+pub struct GamePlugins {
+
+}
+
+impl PluginGroup for GamePlugins {
+    fn build(self) -> PluginGroupBuilder {
+        let mut builder = PluginGroupBuilder::start::<Self>();
+        builder = builder.add(bevy_egui::EguiPlugin);
+
+        builder
+    }
 }

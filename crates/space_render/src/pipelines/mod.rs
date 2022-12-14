@@ -2,7 +2,6 @@ use std::{fmt::Debug, sync::Arc};
 use std::ops::DerefMut;
 use bevy::prelude::Assets;
 use downcast_rs::{Downcast, impl_downcast};
-use egui::{Context, Ui};
 use encase::*;
 use nalgebra as na;
 
@@ -366,49 +365,49 @@ fn state_update(
 
     state.render.device.poll(wgpu::Maintain::Wait);
 }
-
-fn state_render(
-    mut state : ResMut<State>,
-    mut encoder : ResMut<RenderCommands>,
-    render_target : Res<RenderTarget>,
-    gbuffer : Res<GFramebuffer>,
-    dir_light : Res<DirLightTexture>,
-    ssao : Res<SSAOFiltered>
-) {
-        state.ambient_light_pipeline.draw(&mut encoder,
-                                         &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &ssao.tex]
-                                         , &[&dir_light.tex]);
-        
-
-        let mut gamma_buffer = CommonFramebuffer {
-            dst: vec![]
-        };
-        std::mem::swap(&mut gamma_buffer, &mut state.gamma_buffer);
-        // game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Final", encoder, &self.render.device);
-        match &state.draw_state {
-            DrawState::Full => {
-                state.gamma_correction.draw(&mut encoder, &[&dir_light.tex], &[&gamma_buffer.dst[0]]);
-                state.present.draw(&mut encoder, &gamma_buffer.dst[0], &render_target.view);
-            }
-            DrawState::DirectLight => {
-                state.gamma_correction.draw(&mut encoder, &[&dir_light.tex], &[&gamma_buffer.dst[0]]);
-                state.present.draw( &mut encoder, &gamma_buffer.dst[0], &render_target.view);
-            },
-            DrawState::AmbientOcclusion => {
-                // state.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<SSAOFrame>().unwrap().tex], &[&state.gamma_buffer.dst[0]]);
-                // state.present.draw(&state.render.device, &mut encoder, &state.gamma_buffer.dst[0], &view);
-            },
-            DrawState::Depth => {
-                // state.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<DepthTexture>().unwrap().tex], &[&state.gamma_buffer.dst[0]]);
-                // state.present.draw(&state.render.device, &mut encoder, &state.gamma_buffer.dst[0], &view);
-            }
-            DrawState::AmbientOcclusionSmooth => {
-                state.gamma_correction.draw(&mut encoder, &[&ssao.tex], &[&gamma_buffer.dst[0]]);
-                state.present.draw( &mut encoder, &gamma_buffer.dst[0], &render_target.view);
-            }
-        }
-    std::mem::swap(&mut gamma_buffer, &mut state.gamma_buffer);
-}
+//
+// fn state_render(
+//     mut state : ResMut<State>,
+//     mut encoder : ResMut<RenderCommands>,
+//     render_target : Res<RenderTarget>,
+//     gbuffer : Res<GFramebuffer>,
+//     dir_light : Res<DirLightTexture>,
+//     ssao : Res<SSAOFiltered>
+// ) {
+//         state.ambient_light_pipeline.draw(&mut encoder,
+//                                          &[&gbuffer.diffuse, &gbuffer.normal, &gbuffer.position, &gbuffer.mr, &ssao.tex]
+//                                          , &[&dir_light.tex]);
+//
+//
+//         let mut gamma_buffer = CommonFramebuffer {
+//             dst: vec![]
+//         };
+//         std::mem::swap(&mut gamma_buffer, &mut state.gamma_buffer);
+//         // game.scene.resources.get_mut::<GpuProfiler>().unwrap().begin_scope("Final", encoder, &self.render.device);
+//         match &state.draw_state {
+//             DrawState::Full => {
+//                 state.gamma_correction.draw(&mut encoder, &[&dir_light.tex], &[&gamma_buffer.dst[0]]);
+//                 state.present.draw(&mut encoder, &gamma_buffer.dst[0], &render_target.view);
+//             }
+//             DrawState::DirectLight => {
+//                 state.gamma_correction.draw(&mut encoder, &[&dir_light.tex], &[&gamma_buffer.dst[0]]);
+//                 state.present.draw( &mut encoder, &gamma_buffer.dst[0], &render_target.view);
+//             },
+//             DrawState::AmbientOcclusion => {
+//                 // state.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<SSAOFrame>().unwrap().tex], &[&state.gamma_buffer.dst[0]]);
+//                 // state.present.draw(&state.render.device, &mut encoder, &state.gamma_buffer.dst[0], &view);
+//             },
+//             DrawState::Depth => {
+//                 // state.gamma_correction.draw(&mut encoder, &[&game.scene.world.get_resource::<DepthTexture>().unwrap().tex], &[&state.gamma_buffer.dst[0]]);
+//                 // state.present.draw(&state.render.device, &mut encoder, &state.gamma_buffer.dst[0], &view);
+//             }
+//             DrawState::AmbientOcclusionSmooth => {
+//                 state.gamma_correction.draw(&mut encoder, &[&ssao.tex], &[&gamma_buffer.dst[0]]);
+//                 state.present.draw( &mut encoder, &gamma_buffer.dst[0], &render_target.view);
+//             }
+//         }
+//     std::mem::swap(&mut gamma_buffer, &mut state.gamma_buffer);
+// }
 
 impl space_game::SchedulePlugin for StateSystem {
     fn get_name(&self) -> PluginName {
@@ -419,7 +418,7 @@ impl space_game::SchedulePlugin for StateSystem {
         let state = pollster::block_on(State::new(app));
         
         app.add_system_to_stage(GlobalStageStep::PreRender, state_update);
-        app.add_system_to_stage(GlobalStageStep::Render, state_render);
+        // app.add_system_to_stage(GlobalStageStep::Render, state_render);
         app.insert_resource(state);
     }
 }
@@ -520,14 +519,14 @@ impl space_game::RenderPlugin for State {
         // }
     }
 
-    fn show_top_panel(&mut self, game: &mut Game, ui: &mut Ui) {
-        egui::ComboBox::from_label("Draw mode")
-            .selected_text(format!("{:?}", &self.draw_state))
-            .show_ui(ui, |ui| {
-                ui.selectable_value(&mut self.draw_state, DrawState::DirectLight, "DirectLight");
-                ui.selectable_value(&mut self.draw_state, DrawState::AmbientOcclusion, "AmbientOcclusion");
-                ui.selectable_value(&mut self.draw_state, DrawState::AmbientOcclusionSmooth, "AmbientOcclusionSmooth");
-                ui.selectable_value(&mut self.draw_state, DrawState::Depth, "Depth");
-            });
-    }
+    // fn show_top_panel(&mut self, game: &mut Game, ui: &mut Ui) {
+    //     // egui::ComboBox::from_label("Draw mode")
+    //     //     .selected_text(format!("{:?}", &self.draw_state))
+    //     //     .show_ui(ui, |ui| {
+    //     //         ui.selectable_value(&mut self.draw_state, DrawState::DirectLight, "DirectLight");
+    //     //         ui.selectable_value(&mut self.draw_state, DrawState::AmbientOcclusion, "AmbientOcclusion");
+    //     //         ui.selectable_value(&mut self.draw_state, DrawState::AmbientOcclusionSmooth, "AmbientOcclusionSmooth");
+    //     //         ui.selectable_value(&mut self.draw_state, DrawState::Depth, "Depth");
+    //     //     });
+    // }
 }

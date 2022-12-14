@@ -115,7 +115,7 @@ fn start_frame_cmds(
         .create_view(&wgpu::TextureViewDescriptor::default());
 
 
-    cmds.insert_resource(RenderTarget {view, output});
+    // cmds.insert_resource(RenderTarget {view, output});
     // self.camera_update();
 
     cmds.insert_resource( RenderCommands{ encoder : render.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -149,28 +149,28 @@ fn start_frame_cmds(
     render.queue.submit(iter::once(encoder.finish()));
     render.device.poll(wgpu::Maintain::Wait);
 }
-
-fn end_render_cmds(
-    mut world : &mut World
-) {
-    let target;
-    if let Some(val) = world.remove_resource::<RenderTarget>() {
-        target = val;
-    } else {
-        return;
-    }
-    let view = target.view;
-    let output = target.output;
-
-    let render_commands = world.remove_resource::<RenderCommands>().unwrap().encoder.finish();
-
-    world.get_resource::<RenderApi>().unwrap().device.poll(wgpu::Maintain::Wait);
-    world.get_resource::<RenderApi>().unwrap().queue.submit(Some(
-        render_commands
-    ));
-
-    output.present();
-}
+//
+// fn end_render_cmds(
+//     mut world : &mut World
+// ) {
+//     let target;
+//     if let Some(val) = world.remove_resource::<RenderTarget>() {
+//         target = val;
+//     } else {
+//         return;
+//     }
+//     let view = target.view;
+//     let output = target.output;
+//
+//     let render_commands = world.remove_resource::<RenderCommands>().unwrap().encoder.finish();
+//
+//     world.get_resource::<RenderApi>().unwrap().device.poll(wgpu::Maintain::Wait);
+//     world.get_resource::<RenderApi>().unwrap().queue.submit(Some(
+//         render_commands
+//     ));
+//
+//     output.present();
+// }
 
 impl Game {
 
@@ -287,33 +287,33 @@ impl Game {
         // }
         // self.plugins = Some(plugins);
     }
-
-    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        let target;
-        if let Some(val) = self.scene.app.world.remove_resource::<RenderTarget>() {
-            target = val;
-        } else {
-            return Ok(());
-        }
-        let view = target.view;
-        let output = target.output;
-        self.render_view = Some(view);
-        
-        let mut plugins = self.plugins.take().unwrap();
-        for p in plugins.render_plugin.iter_mut() {
-            p.render(self);
-        }
-        self.plugins = Some(plugins);
-
-        // self.render_base.device.poll(wgpu::Maintain::Wait);
-        // self.render_base.queue.submit(Some(
-        //     self.scene.app.world.remove_resource::<RenderCommands>().unwrap().encoder.finish()
-        // ));
-        
-        output.present();
-
-        Ok(())
-    }
+    //
+    // fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    //     let target;
+    //     if let Some(val) = self.scene.app.world.remove_resource::<RenderTarget>() {
+    //         target = val;
+    //     } else {
+    //         return Ok(());
+    //     }
+    //     let view = target.view;
+    //     let output = target.output;
+    //     self.render_view = Some(view);
+    //
+    //     let mut plugins = self.plugins.take().unwrap();
+    //     for p in plugins.render_plugin.iter_mut() {
+    //         p.render(self);
+    //     }
+    //     self.plugins = Some(plugins);
+    //
+    //     // self.render_base.device.poll(wgpu::Maintain::Wait);
+    //     // self.render_base.queue.submit(Some(
+    //     //     self.scene.app.world.remove_resource::<RenderCommands>().unwrap().encoder.finish()
+    //     // ));
+    //
+    //     output.present();
+    //
+    //     Ok(())
+    // }
 
     pub fn run(mut self){
 
@@ -432,7 +432,7 @@ impl Game {
 
         // self.scene.app.add_system_to_stage(CoreStage::PreUpdate, update_instanced_loc);
 
-        setup_gui(&mut self.scene.app);
+        // setup_gui(&mut self.scene.app);
         self.plugins = Some(plugins);
     }
 }
