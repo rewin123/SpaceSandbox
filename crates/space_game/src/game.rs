@@ -83,7 +83,7 @@ pub struct GameScene {
 
 
 pub struct Game {
-    pub render_base : Arc<RenderBase>,
+    // pub render_base : Arc<RenderBase>,
     plugins : Option<PluginBase>,
     pub render_view : Option<TextureView>,
     pub task_server : Arc<TaskServer>,
@@ -201,9 +201,9 @@ impl Game {
         self.plugins = Some(plugins);
     }
 
-    pub fn get_render_base(&self) -> Arc<RenderBase> {
-        self.render_base.clone()
-    }
+    // pub fn get_render_base(&self) -> Arc<RenderBase> {
+    //     self.render_base.clone()
+    // }
 
     pub fn simple_run<F>(mut self, mut func : F)
         where F : 'static + FnMut(&mut Game, winit::event::Event<'_, ()>, &mut winit::event_loop::ControlFlow) {
@@ -225,35 +225,35 @@ impl Game {
         // self.update_scene_scheldue();
     }
 
-    fn camera_update(&mut self) {
-        let mut encoder = self
-            .render_base.device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Update encoder"),
-            });
-
-
-        let camera_unifrom = self.scene.app.world.get_resource::<Camera>().unwrap().build_uniform();
-        let mut uniform = encase::UniformBuffer::new(vec![]);
-        uniform.write(&camera_unifrom).unwrap();
-        let inner = uniform.into_inner();
-
-        let tmp_buffer = self.render_base.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: &inner,
-            usage: wgpu::BufferUsages::COPY_SRC,
-        });
-
-        encoder.copy_buffer_to_buffer(
-            &tmp_buffer,
-            0,
-            &self.scene.app.world.get_resource::<CameraBuffer>().unwrap().buffer,
-            0,
-            inner.len() as wgpu::BufferAddress);
-        self.render_base.queue.submit(iter::once(encoder.finish()));
-        self.render_base.device.poll(wgpu::Maintain::Wait);
-
-    }
+    // fn camera_update(&mut self) {
+    //     let mut encoder = self
+    //         .render_base.device
+    //         .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+    //             label: Some("Update encoder"),
+    //         });
+    //
+    //
+    //     let camera_unifrom = self.scene.app.world.get_resource::<Camera>().unwrap().build_uniform();
+    //     let mut uniform = encase::UniformBuffer::new(vec![]);
+    //     uniform.write(&camera_unifrom).unwrap();
+    //     let inner = uniform.into_inner();
+    //
+    //     let tmp_buffer = self.render_base.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    //         label: None,
+    //         contents: &inner,
+    //         usage: wgpu::BufferUsages::COPY_SRC,
+    //     });
+    //
+    //     encoder.copy_buffer_to_buffer(
+    //         &tmp_buffer,
+    //         0,
+    //         &self.scene.app.world.get_resource::<CameraBuffer>().unwrap().buffer,
+    //         0,
+    //         inner.len() as wgpu::BufferAddress);
+    //     self.render_base.queue.submit(iter::once(encoder.finish()));
+    //     self.render_base.device.poll(wgpu::Maintain::Wait);
+    //
+    // }
 
     fn update(&mut self) {
         // let output;
@@ -305,10 +305,10 @@ impl Game {
         }
         self.plugins = Some(plugins);
 
-        self.render_base.device.poll(wgpu::Maintain::Wait);
-        self.render_base.queue.submit(Some(
-            self.scene.app.world.remove_resource::<RenderCommands>().unwrap().encoder.finish()
-        ));
+        // self.render_base.device.poll(wgpu::Maintain::Wait);
+        // self.render_base.queue.submit(Some(
+        //     self.scene.app.world.remove_resource::<RenderCommands>().unwrap().encoder.finish()
+        // ));
         
         output.present();
 
@@ -423,14 +423,14 @@ impl Game {
         self.scene.app.add_stage_after(GlobalStageStep::PreRender, GlobalStageStep::Render, SystemStage::single_threaded());
         self.scene.app.add_stage_after(GlobalStageStep::Render, GlobalStageStep::PostRender, SystemStage::single_threaded());
         self.scene.app.add_stage_after(GlobalStageStep::PostRender, GlobalStageStep::Gui, SystemStage::single_threaded());
-        self.scene.app.add_system_to_stage(GlobalStageStep::Render, poll_device);
+        // self.scene.app.add_system_to_stage(GlobalStageStep::Render, poll_device);
         self.scene.app.add_state(SceneType::MainMenu);
         //push render prepare
         for plugin in &plugins.scheldue_plugin {
             plugin.add_system(&mut self.scene.app);
         }
 
-        self.scene.app.add_system_to_stage(CoreStage::PreUpdate, update_instanced_loc);
+        // self.scene.app.add_system_to_stage(CoreStage::PreUpdate, update_instanced_loc);
 
         setup_gui(&mut self.scene.app);
         self.plugins = Some(plugins);
@@ -455,67 +455,70 @@ impl Default for Game {
         scene.app.add_plugin(TransformPlugin::default());
         scene.app.add_plugin(bevy::input::InputPlugin::default());
         scene.app.add_plugin(bevy::window::WindowPlugin::default());
+        scene.app.add_plugin(bevy::scene::ScenePlugin::default());
         scene.app.add_plugin(bevy::winit::WinitPlugin::default());
+        scene.app.add_plugin(bevy::render::RenderPlugin::default());
+        scene.app.add_plugin(bevy::render::texture::ImagePlugin::default());
 
-        scene.app.add_system_to_stage(CoreStage::First, start_frame_cmds);
-        scene.app.add_system_to_stage(CoreStage::Last, end_render_cmds);
+        // scene.app.add_system_to_stage(CoreStage::First, start_frame_cmds);
+        // scene.app.add_system_to_stage(CoreStage::Last, end_render_cmds);
 
-        let api = {
-            let mut windows = scene.app.world.get_non_send_resource_mut::<WinitWindows>().unwrap();
-            println!("Windows: {}", windows.windows.len());
-            ApiBase::new(windows.windows.iter().next().unwrap().1)
-        };
-        let render_base = api.render_base.clone();
+        // let api = {
+        //     let mut windows = scene.app.world.get_non_send_resource_mut::<WinitWindows>().unwrap();
+        //     println!("Windows: {}", windows.windows.len());
+        //     ApiBase::new(windows.windows.iter().next().unwrap().1)
+        // };
+        // let render_base = api.render_base.clone();
 
-        let gui = Gui::new(
-            &render_base,
-            api.config.format,
-            wgpu::Extent3d {
-                width : api.size.width,
-                height : api.size.height,
-                depth_or_array_layers : 1
-            },
-            scene.app.world.get_non_send_resource_mut::<WinitWindows>().unwrap().windows.iter().next().unwrap().1.scale_factor());
+        // let gui = Gui::new(
+        //     &render_base,
+        //     api.config.format,
+        //     wgpu::Extent3d {
+        //         width : api.size.width,
+        //         height : api.size.height,
+        //         depth_or_array_layers : 1
+        //     },
+        //     scene.app.world.get_non_send_resource_mut::<WinitWindows>().unwrap().windows.iter().next().unwrap().1.scale_factor());
         let task_server = Arc::new(TaskServer::new());
-        let assets = SpaceAssetServer::new(&render_base, &task_server);
+        // let assets = SpaceAssetServer::new(&render_base, &task_server);
 
-        let camera = Camera::default();
-        let camera_uniform = camera.build_uniform();
+        // let camera = Camera::default();
+        // let camera_uniform = camera.build_uniform();
 
-        let mut camera_cpu_buffer = UniformBuffer::new(vec![0u8;100]);
-        camera_cpu_buffer.write(&camera_uniform);
+        // let mut camera_cpu_buffer = UniformBuffer::new(vec![0u8;100]);
+        // camera_cpu_buffer.write(&camera_uniform);
 
-        let camera_buffer = render_base.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label : Some("Camera uniform buffer"),
-            contents : &camera_cpu_buffer.into_inner(),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
-        });
+        // let camera_buffer = render_base.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        //     label : Some("Camera uniform buffer"),
+        //     contents : &camera_cpu_buffer.into_inner(),
+        //     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
+        // });
 
 
-        scene.app.insert_resource(SpaceAssetServer::new(&render_base, &task_server));
-        scene.app.insert_resource(Camera::default());
-
+        // scene.app.insert_resource(SpaceAssetServer::new(&render_base, &task_server));
+        // scene.app.insert_resource(Camera::default());
+        //
         // scene.app.insert_resource(
         //     GpuProfiler::new(
         //         4,
         //         render_base.queue.get_timestamp_period(),
         //         render_base.device.features()));
 
-        scene.app.insert_resource(EguiContext {ctx : gui.platform.context()});
-        scene.app.insert_resource(gui);
+        // scene.app.insert_resource(EguiContext {ctx : gui.platform.context()});
+        // scene.app.insert_resource(gui);
         // scene.app.insert_non_send_resource(window);
 
-        scene.app.insert_resource(RenderApi {base : render_base.clone()});
-        scene.app.insert_resource(ScreenSize {size : api.size.clone(), format : api.config.format});
+        // scene.app.insert_resource(RenderApi {base : render_base.clone()});
+        // scene.app.insert_resource(ScreenSize {size : api.size.clone(), format : api.config.format});
 
-        scene.app.insert_resource(CameraBuffer {buffer : camera_buffer});
+        // scene.app.insert_resource(CameraBuffer {buffer : camera_buffer});
 
         scene.app.insert_resource(InputSystem::default());
 
-        scene.app.insert_resource(api);
+        // scene.app.insert_resource(api);
 
         Self {
-            render_base,
+            // render_base,
             plugins : Some(PluginBase::default()),
             render_view : None,
             task_server,

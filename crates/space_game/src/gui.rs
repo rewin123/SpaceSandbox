@@ -66,9 +66,9 @@ pub fn setup_gui(app : &mut App) {
     
     app.insert_resource(EguiRenderCmds {output : egui::FullOutput::default()});
     
-    app.add_system_to_stage(CoreStage::PreUpdate, start_gui_frame);
-    app.add_system_to_stage(CoreStage::PostUpdate, end_gui_frame);
-    app.add_system_to_stage(GlobalStageStep::PostRender, egui_draw);
+    // app.add_system_to_stage(CoreStage::PreUpdate, start_gui_frame);
+    // app.add_system_to_stage(CoreStage::PostUpdate, end_gui_frame);
+    // app.add_system_to_stage(GlobalStageStep::PostRender, egui_draw);
 }
 
 #[derive(Resource)]
