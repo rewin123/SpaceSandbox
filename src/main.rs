@@ -11,6 +11,7 @@ async fn run() {
         .add_plugins(bevy::DefaultPlugins)
         .add_plugins(GamePlugins{})
         .add_plugin(MainMenuPlugin{})
+        .add_plugin(StationBuildMenu{})
         .run();
 }
 

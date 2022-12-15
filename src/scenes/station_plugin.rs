@@ -16,7 +16,7 @@ pub fn setup_blocks(
     mut station : ResMut<Station>,
     mut instancing : ResMut<AutoInstanceHolder>,
     mut events : EventReader<AddBlockEvent>,
-    render : Res<RenderApi>) {
+    ) {
 
     for e in events.iter() {
         match &e.id {
@@ -203,7 +203,6 @@ pub fn update_station_instancing(
     mut inst_query : Query<(&mut LocationInstancing, &mut AutoInstanceLinks)>,
     mut holder : ResMut<AutoInstanceHolder>,
     mut block_holder : Res<BlockHolder>,
-    render : Res<RenderApi>
 ) {
 
     let mut batched: HashMap<BlockId, HashSet<Entity>> = HashMap::new();

@@ -1,7 +1,8 @@
 use std::marker::PhantomData;
 use std::process::id;
 use bevy::asset::AssetServer;
-use bevy::prelude::{info_span, info, Transform};
+use bevy::prelude::{info_span, info, Transform, Camera3dBundle, GlobalTransform};
+use bevy::window::Windows;
 use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, SceneType, RonAssetPlugin, RenderApi, InputSystem, KeyCode, ScreenSize};
 use space_render::{add_game_render_plugins, AutoInstancing};
 use space_core::{ecs::*, app::App, nalgebra, SpaceResult, Pos3i, Vec3i, Vec3, Pos3};
@@ -12,9 +13,11 @@ use winit::event::MouseButton;
 use space_assets::{GltfAssetLoader, Material, MeshBundle, SpaceAssetServer, GMesh, LocationInstancing, SubLocation};
 use bevy::reflect::TypeUuid;
 use std::string::String;
+use bevy::input::Input;
 use bevy::log::error;
 use bevy_egui::{egui, EguiContext};
 use bevy_egui::egui::Key;
+use space_core::app::Plugin;
 use crate::scenes::station_data::*;
 use crate::scenes::station_plugin::*;
 
@@ -25,12 +28,8 @@ struct StationBuildActiveBlock {
 
 pub struct StationBuildMenu {}
 
-impl SchedulePlugin for StationBuildMenu {
-    fn get_name(&self) -> space_game::PluginName {
-        space_game::PluginName::Text("Station build menu".into())
-    }
-
-    fn add_system(&self, app : &mut App) {
+impl Plugin for StationBuildMenu {
+    fn build(&self, app: &mut App)  {
         app.add_state(CommonBlockState::None);
 
         app.add_plugin(RonAssetPlugin::<RonBlockDesc>{ ext: vec!["wall"], phantom: PhantomData::default() });
@@ -64,12 +63,12 @@ impl SchedulePlugin for StationBuildMenu {
 fn add_block_to_station(
     mut commands : Commands,
     world : Query<(&Transform, &StationBuildActiveBlock)>,
-    input : Res<InputSystem>,
     mut panels : Res<StationBlocks>,
     mut events : EventWriter<AddBlockEvent>,
-    mut ctx : ResMut<EguiContext>) {
+    mut ctx : ResMut<EguiContext>,
+    input : Res<Input<bevy::prelude::MouseButton>>) {
 
-    if input.get_mouse_button_state(&MouseButton::Left) {
+    if input.just_pressed(bevy::prelude::MouseButton::Left) {
         if ctx.ctx_mut().is_pointer_over_area() {
             info!("Mouse over egui");
             return;
@@ -83,7 +82,7 @@ fn add_block_to_station(
         }
     }
     
-    if input.get_mouse_button_state(&MouseButton::Right) {
+    if input.just_pressed(bevy::prelude::MouseButton::Right) {
         if ctx.ctx_mut().is_pointer_over_area() {
             info!("Mouse over egui");
             return;
@@ -102,94 +101,127 @@ fn add_block_to_station(
 fn place_block(
     mut commands : Commands,
     mut query : Query<(&mut Transform, &mut StationBuildActiveBlock)>,
-    camera : Res<Camera>,
-    input : Res<InputSystem>,
+    mut cameras : Query<(&bevy::prelude::Camera, &GlobalTransform)>,
+    input : Res<Input<bevy::prelude::KeyCode>>,
+    windows : Res<Windows>,
     mut panels : ResMut<StationBlocks>,
-    screen_size : Res<ScreenSize>,
     chunk : Res<Station>,
-    render : Res<RenderApi>,
     block_holder : Res<BlockHolder>) {
 
-    let ray = camera.screen_pos_to_ray(
-        input.get_mouse_pos(),
-        nalgebra::Point2::<f32>::new(screen_size.size.width as f32, screen_size.size.height as f32));
+    let win = windows.get_primary().unwrap();
 
-    for  (mut loc, mut active_pos) in query.iter_mut() {
-        let ray_point = ray.interact_y(panels.build_level as f32 * chunk.map.voxel_size);
-        let point = chunk.get_grid_pos(&ray_point);
-        let point = Pos3::new(
-            ((point.x / chunk.map.voxel_size / 2.0) as i32 * 2) as f32 * chunk.map.voxel_size,
-             point.y,
-            ((point.z / chunk.map.voxel_size / 2.0) as i32 * 2) as f32 * chunk.map.voxel_size,
-        );
-
-        // let point = ray.pos + 10.0 * ray.dir;
-
-        if let BuildCommand::Block(id) = &panels.active_id {
-            if let Some(desc) = block_holder.map.get(id) {
-                let mut bbox = desc.bbox.clone();
-                let rot;
-                match panels.mode {
-                    BlockAxis::Y => {
-                        rot = Vec3::new(0.0,0.0,0.0);
-                    }
-                    BlockAxis::X => {
-                        rot = Vec3::new(0.0, 0.0, 3.14 / 2.0);
-                        bbox = Vec3i::new(bbox.y, bbox.x, bbox.z);
-                    }
-                    BlockAxis::Z => {
-                        rot = Vec3::new(3.14 / 2.0, 0.0, 0.0);
-                        bbox = Vec3i::new(bbox.x, bbox.z, bbox.y);
-                    }
+    for (cam, cam_t) in &mut cameras {
+        let cursor_pos = {
+            match win.cursor_position() {
+                Some(pos) => {
+                    pos
                 }
+                None => {
+                    return;
+                }
+            }
+        };
+        let dir = {
+            match cam.viewport_to_world(cam_t, cursor_pos) {
+                Some(val) => {
+                    val
+                }
+                None => {
+                    return ;
+                }
+            }
+        };
 
-                let shift = Vec3::new(
-                    bbox.x as f32 * chunk.map.voxel_size / 2.0,
-                    bbox.y as f32 * chunk.map.voxel_size / 2.0,
-                    bbox.z as f32 * chunk.map.voxel_size / 2.0,
-                );
+        for  (mut loc, mut active_pos) in query.iter_mut() {
 
-                loc.translation.x = point.x;
-                loc.translation.y = point.y;
-                loc.translation.z = point.z;
-                loc.translation.x += shift.x;
-                loc.translation.y += shift.y;
-                loc.translation.z += shift.z;
+            let y0 = panels.build_level as f32 * chunk.map.voxel_size;
+            let t = (y0 - dir.origin.y) / dir.direction.y;
 
-                active_pos.voxel_pos = point;
+            let ray_point = dir.origin + dir.direction * t;
+
+            let point = chunk.get_grid_pos(&[ray_point.x, ray_point.y, ray_point.z].into());
+            let point = Pos3::new(
+                ((point.x / chunk.map.voxel_size / 2.0) as i32 * 2) as f32 * chunk.map.voxel_size,
+                point.y,
+                ((point.z / chunk.map.voxel_size / 2.0) as i32 * 2) as f32 * chunk.map.voxel_size,
+            );
+
+            // let point = ray.pos + 10.0 * ray.dir;
+
+            if let BuildCommand::Block(id) = &panels.active_id {
+                if let Some(desc) = block_holder.map.get(id) {
+                    let mut bbox = desc.bbox.clone();
+                    let rot;
+                    match panels.mode {
+                        BlockAxis::Y => {
+                            rot = Vec3::new(0.0,0.0,0.0);
+                        }
+                        BlockAxis::X => {
+                            rot = Vec3::new(0.0, 0.0, 3.14 / 2.0);
+                            bbox = Vec3i::new(bbox.y, bbox.x, bbox.z);
+                        }
+                        BlockAxis::Z => {
+                            rot = Vec3::new(3.14 / 2.0, 0.0, 0.0);
+                            bbox = Vec3i::new(bbox.x, bbox.z, bbox.y);
+                        }
+                    }
+
+                    let shift = Vec3::new(
+                        bbox.x as f32 * chunk.map.voxel_size / 2.0,
+                        bbox.y as f32 * chunk.map.voxel_size / 2.0,
+                        bbox.z as f32 * chunk.map.voxel_size / 2.0,
+                    );
+
+                    loc.translation.x = point.x;
+                    loc.translation.y = point.y;
+                    loc.translation.z = point.z;
+                    loc.translation.x += shift.x;
+                    loc.translation.y += shift.y;
+                    loc.translation.z += shift.z;
+
+                    active_pos.voxel_pos = point;
+                }
             }
         }
-
     }
+
+
+
 }
 
-fn camera_movement(
-    mut camera : ResMut<Camera>,
-    input : Res<InputSystem>) {
+#[derive(Component)]
+struct TopDownCamera {}
 
-    let mut frw = camera.up.clone_owned();
-    frw.y = 0.0;
-    frw = frw.normalize();
-    let speed = 0.1;
-    let right = camera.get_right();
-    if input.get_key_state(KeyCode::W) {
-        camera.pos = camera.pos + speed * frw;
+fn camera_movement(
+    mut query : Query<(&TopDownCamera, &mut Transform)>,
+    input : Res<Input<bevy::prelude::KeyCode>>) {
+
+    let speed = 0.01;
+    for (_td, mut transform) in &mut query {
+
+        let frw = transform.forward();
+        let right = transform.right();
+
+        if input.just_pressed(bevy::prelude::KeyCode::W) {
+            transform.translation = transform.translation + speed * frw;
+        }
+        if input.just_pressed(bevy::prelude::KeyCode::S) {
+            transform.translation = transform.translation - speed * frw;
+        }
+        if input.just_pressed(bevy::prelude::KeyCode::A) {
+            transform.translation = transform.translation - speed * right;
+        }
+        if input.just_pressed(bevy::prelude::KeyCode::D) {
+            transform.translation = transform.translation + speed * right;
+        }
+        if input.just_pressed(bevy::prelude::KeyCode::LShift) {
+            transform.translation.y = transform.translation.y + speed;
+        }
+        if input.just_pressed(bevy::prelude::KeyCode::LControl) {
+            transform.translation.y = transform.translation.y - speed;
+        }
     }
-    if input.get_key_state(KeyCode::S) {
-        camera.pos = camera.pos - speed * frw;
-    }
-    if input.get_key_state(KeyCode::A) {
-        camera.pos = camera.pos - speed * right;
-    }
-    if input.get_key_state(KeyCode::D) {
-        camera.pos = camera.pos + speed * right;
-    }
-    if input.get_key_state(KeyCode::LShift) {
-        camera.pos.y = camera.pos.y + speed;
-    }
-    if input.get_key_state(KeyCode::LControl) {
-        camera.pos.y = camera.pos.y - speed;
-    }
+
 }
 
 #[derive(Default, Deserialize, TypeUuid, Debug, Clone)]
@@ -222,10 +254,6 @@ fn wait_loading_common_asset(
     asset_server : ResMut<AssetServer>,
     descs : ResMut<Assets<RonBlockDesc>>,
     mut state : ResMut<State<CommonBlockState>>,
-    mut space_server : ResMut<SpaceAssetServer>,
-    render : Res<RenderApi>,
-    mut materials : ResMut<Assets<Material>>,
-    mut meshes : ResMut<Assets<GMesh>>,
     mut block_holder : ResMut<BlockHolder>) {
 
     if asset_server.get_load_state(&block.desc) == LoadState::Loaded {
@@ -237,68 +265,68 @@ fn wait_loading_common_asset(
         }
 
         if let Some(desc) = descs.get(&block.desc) {
-            let bundles = space_server.wgpu_gltf_load_cmds(
-                &render.device,
-                desc.model_path.clone(),
-                &mut materials,
-                &mut meshes
-            );
+            // let bundles = space_server.wgpu_gltf_load_cmds(
+            //     &render.device,
+            //     desc.model_path.clone(),
+            //     &mut materials,
+            //     &mut meshes
+            // );
+            //
+            // let files = space_server.get_files_by_ext_from_folder(
+            //     "assets/ss13/tiles".into(), "png".into());
+            //
+            // let mesh = bundles[0].mesh.clone();
+            // let base_mat = materials.get(&bundles[0].material).unwrap().clone();
 
-            let files = space_server.get_files_by_ext_from_folder(
-                "assets/ss13/tiles".into(), "png".into());
+            // for file in &files {
+            //     let tex = space_server.load_color_texture(file.clone(), true);
+            //     let mat = Material {
+            //         color: tex,
+            //         normal: base_mat.normal.clone(),
+            //         metallic_roughness: base_mat.metallic_roughness.clone(),
+            //         version_sum: 0,
+            //         gbuffer_bind: None
+            //     };
+            //     let mat_handle = materials.add(mat);
+            //
+            //     let desc = BlockDesc {
+            //         mesh : mesh.clone(),
+            //         material: mat_handle,
+            //         name: file.clone(),
+            //         bbox : Vec3i::new(desc.bbox[0], desc.bbox[1], desc.bbox[2])
+            //     };
+            //
+            //     let id = BlockId(block_holder.map.len());
+            //
+            //     block_holder.map.insert(id, desc);
+            // }
 
-            let mesh = bundles[0].mesh.clone();
-            let base_mat = materials.get(&bundles[0].material).unwrap().clone();
-
-            for file in &files {
-                let tex = space_server.load_color_texture(file.clone(), true);
-                let mat = Material {
-                    color: tex,
-                    normal: base_mat.normal.clone(),
-                    metallic_roughness: base_mat.metallic_roughness.clone(),
-                    version_sum: 0,
-                    gbuffer_bind: None
-                };
-                let mat_handle = materials.add(mat);
-
-                let desc = BlockDesc {
-                    mesh : mesh.clone(),
-                    material: mat_handle,
-                    name: file.clone(),
-                    bbox : Vec3i::new(desc.bbox[0], desc.bbox[1], desc.bbox[2])
-                };
-
-                let id = BlockId(block_holder.map.len());
-
-                block_holder.map.insert(id, desc);
-            }
-
-            info!("Finished loading {} tiles", files.len());
+            // info!("Finished loading {} tiles", files.len());
             state.set(CommonBlockState::None);
         }
 
         for h in &block.all_blocks {
             if let Some(desc) = descs.get(h) {
-                let bundles = space_server.wgpu_gltf_load_cmds(
-                    &render.device,
-                    desc.model_path.clone(),
-                    &mut materials,
-                    &mut meshes
-                );
+                // let bundles = space_server.wgpu_gltf_load_cmds(
+                //     &render.device,
+                //     desc.model_path.clone(),
+                //     &mut materials,
+                //     &mut meshes
+                // );
 
-                let mesh = bundles[0].mesh.clone();
-                let mat = bundles[0].material.clone();
-
-                let desc = BlockDesc {
-                    mesh,
-                    material: mat,
-                    name: desc.name.clone(),
-                    bbox : Vec3i::new(desc.bbox[0], desc.bbox[1], desc.bbox[2])
-                };
-
-                let id = BlockId(block_holder.map.len());
-
-                block_holder.map.insert(id, desc);
+                // let mesh = bundles[0].mesh.clone();
+                // let mat = bundles[0].material.clone();
+                //
+                // let desc = BlockDesc {
+                //     mesh,
+                //     material: mat,
+                //     name: desc.name.clone(),
+                //     bbox : Vec3i::new(desc.bbox[0], desc.bbox[1], desc.bbox[2])
+                // };
+                //
+                // let id = BlockId(block_holder.map.len());
+                //
+                // block_holder.map.insert(id, desc);
             }
         }
     }
@@ -308,11 +336,6 @@ fn station_menu(
     mut commands : Commands,
     mut ctx : ResMut<EguiContext>,
     mut panels : ResMut<StationBlocks>,
-    blocks : Res<Assets<RonBlockDesc>>,
-    mut asset_server : ResMut<SpaceAssetServer>,
-    render : Res<RenderApi>,
-    mut materials : ResMut<Assets<Material>>,
-    mut meshes : ResMut<Assets<GMesh>>,
     mut blocs_holder : ResMut<BlockHolder>,
     mut block_events : EventWriter<AddBlockEvent>,
 ) {
@@ -473,7 +496,6 @@ struct CommonBlock {
 fn init_station_build(
     mut commands : Commands,
     mut assets : Res<AssetServer>,
-    mut camera : ResMut<Camera>,
     mut block_state : ResMut<State<CommonBlockState>>
 ) {
     let mut blocks = StationBlocks::default();
@@ -492,20 +514,16 @@ fn init_station_build(
     commands.insert_resource(blocks);
     commands.insert_resource(BlockHolder::default());
 
-    camera.pos.x = 0.0;
-    camera.pos.y = 10.0;
-    camera.pos.z = 0.0;
+    let mut camera = Camera3dBundle::default();
 
-    camera.up.y = 0.0;
-    camera.up.z = 1.0;
-    camera.up.x = 0.0;
+    camera.transform.translation.x = 0.0;
+    camera.transform.translation.y = 10.0;
+    camera.transform.translation.z = 0.0;
 
-    camera.frw.x = 0.0;
-    camera.frw.y = -1.0;
-    camera.frw.z = 1.0;
-    camera.frw = camera.frw.normalize();
+    camera.transform.look_at([0.0, 0.0, 10.0].into(), [0.0, 1.0, 0.0].into());
 
-    camera.up =  camera.get_right().cross(&camera.frw).normalize();
+    commands.spawn(camera)
+        .insert(TopDownCamera{});
 
     commands.insert_resource(Station::default());
 }
