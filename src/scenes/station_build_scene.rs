@@ -1,20 +1,21 @@
 use std::marker::PhantomData;
 use std::process::id;
 use bevy::asset::AssetServer;
-use bevy::prelude::{info_span, info, Transform, Camera3dBundle, GlobalTransform};
+use bevy::prelude::{info_span, info, Transform, Camera3dBundle, GlobalTransform, Mesh, SceneBundle, Scene, StandardMaterial, PbrBundle, PerspectiveProjection, DirectionalLightBundle, DirectionalLight, Color};
 use bevy::window::Windows;
 use space_game::{Game, GameCommands, SchedulePlugin, GlobalStageStep, SceneType, RonAssetPlugin, RenderApi, InputSystem, KeyCode, ScreenSize};
 use space_render::{add_game_render_plugins, AutoInstancing};
 use space_core::{ecs::*, app::App, nalgebra, SpaceResult, Pos3i, Vec3i, Vec3, Pos3};
 use space_core::{serde::*, Camera};
 use bevy::asset::*;
-use bevy::utils::HashMap;
+use bevy::utils::{default, HashMap};
 use winit::event::MouseButton;
 use space_assets::{GltfAssetLoader, Material, MeshBundle, SpaceAssetServer, GMesh, LocationInstancing, SubLocation};
 use bevy::reflect::TypeUuid;
 use std::string::String;
 use bevy::input::Input;
 use bevy::log::error;
+use bevy::prelude::Projection::Perspective;
 use bevy_egui::{egui, EguiContext};
 use bevy_egui::egui::Key;
 use space_core::app::Plugin;
@@ -196,28 +197,29 @@ fn camera_movement(
     mut query : Query<(&TopDownCamera, &mut Transform)>,
     input : Res<Input<bevy::prelude::KeyCode>>) {
 
-    let speed = 0.01;
+    let speed = 0.1;
     for (_td, mut transform) in &mut query {
 
-        let frw = transform.forward();
+        let mut frw = transform.forward();
+        frw.y = 0.0;
         let right = transform.right();
 
-        if input.just_pressed(bevy::prelude::KeyCode::W) {
+        if input.pressed(bevy::prelude::KeyCode::W) {
             transform.translation = transform.translation + speed * frw;
         }
-        if input.just_pressed(bevy::prelude::KeyCode::S) {
+        if input.pressed(bevy::prelude::KeyCode::S) {
             transform.translation = transform.translation - speed * frw;
         }
-        if input.just_pressed(bevy::prelude::KeyCode::A) {
+        if input.pressed(bevy::prelude::KeyCode::A) {
             transform.translation = transform.translation - speed * right;
         }
-        if input.just_pressed(bevy::prelude::KeyCode::D) {
+        if input.pressed(bevy::prelude::KeyCode::D) {
             transform.translation = transform.translation + speed * right;
         }
-        if input.just_pressed(bevy::prelude::KeyCode::LShift) {
+        if input.pressed(bevy::prelude::KeyCode::LShift) {
             transform.translation.y = transform.translation.y + speed;
         }
-        if input.just_pressed(bevy::prelude::KeyCode::LControl) {
+        if input.pressed(bevy::prelude::KeyCode::LControl) {
             transform.translation.y = transform.translation.y - speed;
         }
     }
@@ -250,11 +252,14 @@ enum CommonBlockState {
 }
 
 fn wait_loading_common_asset(
+    mut cmds : Commands,
     mut block : ResMut<CommonBlock>,
     asset_server : ResMut<AssetServer>,
     descs : ResMut<Assets<RonBlockDesc>>,
     mut state : ResMut<State<CommonBlockState>>,
-    mut block_holder : ResMut<BlockHolder>) {
+    mut block_holder : ResMut<BlockHolder>,
+    mut meshes : ResMut<Assets<Mesh>>,
+    mut materials : ResMut<Assets<bevy::prelude::StandardMaterial>>) {
 
     if asset_server.get_load_state(&block.desc) == LoadState::Loaded {
         //wait all to load
@@ -265,6 +270,18 @@ fn wait_loading_common_asset(
         }
 
         if let Some(desc) = descs.get(&block.desc) {
+
+            let gltf : Handle<Scene> = asset_server.load(format!("{}#Scene0", desc.model_path));
+
+            cmds.spawn(SceneBundle {
+                scene : gltf,
+                transform: Default::default(),
+                global_transform: Default::default(),
+                visibility: Default::default(),
+                computed_visibility: Default::default()
+            });
+
+
             // let bundles = space_server.wgpu_gltf_load_cmds(
             //     &render.device,
             //     desc.model_path.clone(),
@@ -496,7 +513,9 @@ struct CommonBlock {
 fn init_station_build(
     mut commands : Commands,
     mut assets : Res<AssetServer>,
-    mut block_state : ResMut<State<CommonBlockState>>
+    mut block_state : ResMut<State<CommonBlockState>>,
+    mut meshes : ResMut<Assets<Mesh>>,
+    mut materials : ResMut<Assets<StandardMaterial>>
 ) {
     let mut blocks = StationBlocks::default();
     blocks.panels.push(assets.load("ss13/walls_configs/metal_grid.wall"));
@@ -516,14 +535,43 @@ fn init_station_build(
 
     let mut camera = Camera3dBundle::default();
 
-    camera.transform.translation.x = 0.0;
+    camera.transform.translation.x = -10.0;
     camera.transform.translation.y = 10.0;
     camera.transform.translation.z = 0.0;
 
-    camera.transform.look_at([0.0, 0.0, 10.0].into(), [0.0, 1.0, 0.0].into());
+    camera.projection = Perspective(PerspectiveProjection::default());
+
+    camera.transform.look_at([0.0, 0.0, 0.0].into(), [0.0, 1.0, 0.0].into());
 
     commands.spawn(camera)
         .insert(TopDownCamera{});
+    
+    // for z in -10..10 {
+    //     for x in -10..10 {
+    //         commands.spawn(PbrBundle {
+    //             mesh: meshes.add(Mesh::from(bevy::prelude::shape::Cube::new(1.0))),
+    //             material: materials.add(StandardMaterial::default()),
+    //             transform: Transform {
+    //                 translation : [x as f32 * 2.0, 0.0, z as f32 * 2.0].into(),
+    //                 ..default()
+    //             },
+    //             ..default()
+    //         });
+    //     }
+    // }
+
+    let mut tr = Transform::from_xyz(10.0, 10.0, 10.0);
+    tr.look_at([0.0, 0.0, 0.0].into(), [0.0, 1.0, 0.0].into());
+    commands.spawn(DirectionalLightBundle {
+        directional_light : DirectionalLight {
+            color: Color::rgb(1.0,1.0,1.0),
+            illuminance: 10000.0,
+            shadows_enabled: false,
+            ..default()
+        },
+        transform : tr,
+        ..default()
+    });
 
     commands.insert_resource(Station::default());
 }

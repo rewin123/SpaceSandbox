@@ -1,5 +1,5 @@
 (
     name : "Metal floor",
-    model_path : "assets/ss13/wall_models/base_block/base_block.gltf",
+    model_path : "ss13/wall_models/base_block/base_block.gltf",
     bbox : [2, 1, 2]
 )

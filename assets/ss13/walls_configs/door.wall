@@ -1,5 +1,5 @@
 (
     name : "Door",
-    model_path : "assets/ss13/wall_models/door/door.gltf",
+    model_path : "ss13/wall_models/door/door.gltf",
     bbox : [2, 4, 2]
 )

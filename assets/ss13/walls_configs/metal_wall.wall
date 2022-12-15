@@ -1,5 +1,5 @@
 (
     name : "wall_tex",
-    model_path : "assets/ss13/wall_models/wall/wall.gltf",
+    model_path : "ss13/wall_models/wall/wall.gltf",
     bbox : [2, 4, 2]
 )
