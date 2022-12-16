@@ -21,10 +21,38 @@ use bevy_egui::egui::Key;
 use space_core::app::Plugin;
 use crate::scenes::station_data::*;
 use crate::scenes::station_plugin::*;
+use iyes_loopless::prelude::*;
 
 #[derive(Component)]
 struct StationBuildActiveBlock {
     pub voxel_pos : Pos3
+}
+
+#[derive(Resource, Default)]
+struct LoadingStruct {
+    handles : Vec<HandleUntyped>
+}
+
+#[derive(Hash, Debug, Clone, PartialEq, Eq)]
+enum StationBuildState {
+    Loading,
+    Normal
+}
+
+fn loading_system(
+    mut wait_list : ResMut<LoadingStruct>,
+    assets : Res<AssetServer>,
+    mut state : ResMut<State<StationBuildState>>
+    ) {
+    
+    if (wait_list.handles.len() == 0) {
+        state.set(StationBuildState::Normal);
+    } else {
+        if assets.get_load_state(&wait_list.handles[0]) == LoadState::Loaded {
+            wait_list.handles.remove(0);
+        }
+    }
+
 }
 
 pub struct StationBuildMenu {}
@@ -32,6 +60,8 @@ pub struct StationBuildMenu {}
 impl Plugin for StationBuildMenu {
     fn build(&self, app: &mut App)  {
         app.add_state(CommonBlockState::None);
+
+        app.add_state(StationBuildState::Loading);
 
         app.add_plugin(RonAssetPlugin::<RonBlockDesc>{ ext: vec!["wall"], phantom: PhantomData::default() });
 
@@ -42,16 +72,29 @@ impl Plugin for StationBuildMenu {
         app.add_system_set(SystemSet::on_enter(SceneType::StationBuilding)
             .with_system(init_station_build));
 
+        app.insert_resource(LoadingStruct::default());
+
         app.add_system_set(
-            SystemSet::on_update(SceneType::StationBuilding)
+            ConditionSet::new()
+                .run_in_state(SceneType::StationBuilding)
+                .run_in_state(StationBuildState::Loading)
+                .with_system(loading_system)
+                .into()
+        );
+
+        app.add_system_set(
+            ConditionSet::new()
+                .run_in_state(SceneType::StationBuilding)
+                .run_in_state(StationBuildState::Normal)
                 .with_system(station_menu)
                 .with_system(camera_movement)
                 .with_system(place_block)
-                .with_system(add_block_to_station.after(station_menu))
+                .with_system(add_block_to_station)
                 .with_system(setup_blocks)
                 .with_system(update_instancing_holders)
                 .with_system(catch_update_events)
-                .with_system(update_station_instancing));
+                .with_system(update_station_instancing)
+                .into());
         app.add_system_set(
             SystemSet::on_update(CommonBlockState::Waiting)
                 .with_system(wait_loading_common_asset));
