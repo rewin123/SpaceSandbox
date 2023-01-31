@@ -2,7 +2,7 @@
 extern crate test;
 
 use bevy::prelude::*;
-use super::{chunked_voxel_map::*, VoxelMap, solid_voxel_map::SolidVoxelMap};
+use super::{VoxelMap, solid_voxel_map::SolidVoxelMap};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub enum VoxelVal<VoxelID> {

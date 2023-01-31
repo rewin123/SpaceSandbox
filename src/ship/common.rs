@@ -27,7 +27,7 @@ impl<F> BuildInstance for ClosureInstance<F>
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct VoxelInstance {
     pub bbox : IVec3
 }
@@ -53,10 +53,11 @@ pub fn init_all_voxel_instances(
     {
         let cfg = VoxelInstanceConfig {
             name : "Metal grids".to_string(),
-            instance : VoxelInstance { bbox: [2, 1, 2].into() },
+            instance : VoxelInstance { bbox: [4, 1, 4].into() },
             create : ClosureInstance::new(|cmds : &mut Commands, asset_server : &AssetServer| {
                 cmds.spawn(SceneBundle {
                     scene: asset_server.load("ss13/wall_models/metal_grid/metal_grid.gltf#Scene0"),
+                    
                     ..default()
                 }).id()
             }).to_box()

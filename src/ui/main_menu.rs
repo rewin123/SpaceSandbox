@@ -1,21 +1,21 @@
-use bevy::app::Plugin;
-use bevy_egui::{egui, EguiContext};
-use bevy_egui::egui::Align2;
-use space_game::{Game, GameCommands, GuiPlugin, SchedulePlugin, GlobalStageStep, GameScene, SceneType};
-use space_core::{ecs::*, app::App};
+use bevy::prelude::*;
+use iyes_loopless::prelude::*;
+use bevy_egui::*;
+use crate::*;
 
 fn main_menu(
+    mut cmds : Commands,
     mut egui_context: ResMut<EguiContext>,
-    mut scene : ResMut<State<SceneType>>
+    mut scene : ResMut<CurrentState<SceneType>>
 ) {
     egui::Window::new("Space sandbox")
         .resizable(false)
         .collapsible(false)
-        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
         .show(egui_context.ctx_mut(), |ui| {
             ui.vertical_centered(|ui| {
                 if ui.button("New station").clicked() {
-                    scene.set(SceneType::StationBuilding);
+                    cmds.insert_resource(NextState(SceneType::ShipBuilding));
                 }
                 ui.button("Load station");
                 ui.button("Connect to server");
@@ -38,9 +38,11 @@ pub struct MainMenuPlugin {
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state(SceneType::MainMenu);
-        app.add_system_set(
-            SystemSet::on_update(SceneType::MainMenu)
-            .with_system(main_menu));
+        app.add_loopless_state(SceneType::MainMenu);
+        
+        app.add_system_set(ConditionSet::new()
+            .run_in_state(SceneType::MainMenu)
+            .with_system(main_menu)
+            .into());
     }
 }

@@ -12,9 +12,17 @@ bevy = "0.9.0"
 rayon = "*"
 pollster = "*"
 winit = "*"
+bevy_rapier3d = "*"
 
 bevy_egui = "*"
 iyes_loopless = "0.9.0"
+bevy-inspector-egui = "*"
+block-mesh = "*"
+
+bevy_mod_picking = "0.11"
+
+[dev-dependencies]
+test-case = "*"
 
 
 #[lib]

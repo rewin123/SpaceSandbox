@@ -12,7 +12,7 @@ pub struct SolidVoxelMap<T> {
 impl<T> SolidVoxelMap<T>
     where T : Default + Clone
 {
-    fn new(origin : Vec3, size : IVec3, voxel_size : f32) -> SolidVoxelMap<T> {
+    pub fn new(origin : Vec3, size : IVec3, voxel_size : f32) -> SolidVoxelMap<T> {
         let data = vec![T::default(); (size.x * size.y * size.z) as usize];
         let first_voxel_pos = origin - size.as_vec3() / 2.0 * voxel_size;
 
