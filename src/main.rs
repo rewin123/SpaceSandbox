@@ -1,20 +1,18 @@
-use space_core::app::App;
-use space_game::{Game, GamePlugins};
-use space_game::SceneType::MainMenu;
-use space_render::add_game_render_plugins;
+
+
 use SpaceSandbox::scenes::StationBuildMenu;
 
 use SpaceSandbox::ui::*;
-
-async fn run() {
-    let app = App::default()
-        .add_plugins(bevy::DefaultPlugins)
-        .add_plugins(GamePlugins{})
-        .add_plugin(MainMenuPlugin{})
-        .add_plugin(StationBuildMenu{})
-        .run();
-}
+use bevy::prelude::*;
+use bevy_inspector_egui::quick::*;
 
 fn main() {
-    pollster::block_on(run());
+    App::default()
+        .add_plugins(bevy::DefaultPlugins)
+        .add_plugin(bevy_egui::EguiPlugin)
+        .add_plugin(WorldInspectorPlugin)
+        .add_plugin(SpaceSandbox::ship::common::VoxelInstancePlugin)
+        .add_plugin(MainMenuPlugin {})
+        .add_plugin(StationBuildMenu {})
+        .run();
 }

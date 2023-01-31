@@ -1,0 +1,82 @@
+use bevy::prelude::*;
+
+pub trait BuildInstance {
+    fn build(&self, cmds : &mut Commands, asset_server : &AssetServer) -> Entity;
+}
+
+pub struct ClosureInstance<F> {
+    pub f : F
+}
+
+impl<F> ClosureInstance<F> {
+    fn new(f : F) -> ClosureInstance<F> {
+        ClosureInstance {
+            f
+        }
+    }
+
+    fn to_box(self) -> Box<ClosureInstance<F>> {
+        Box::new(self)
+    }
+}
+
+impl<F> BuildInstance for ClosureInstance<F>
+        where F : Fn(&mut Commands, &AssetServer) -> Entity {
+    fn build(&self, cmds : &mut Commands, asset_server : &AssetServer) -> Entity {
+        (self.f)(cmds, asset_server)
+    }
+}
+
+#[derive(Component)]
+pub struct VoxelInstance {
+    pub bbox : IVec3
+}
+
+
+pub struct VoxelInstanceConfig
+ {
+    pub name : String,
+    pub instance : VoxelInstance,
+    pub create : Box<dyn BuildInstance + Send + Sync>
+}
+
+#[derive(Resource)]
+pub struct AllVoxelInstances {
+    pub configs : Vec<VoxelInstanceConfig>
+}
+
+pub fn init_all_voxel_instances(
+    mut cmds : Commands
+) {
+    let mut configs = vec![];
+
+    {
+        let cfg = VoxelInstanceConfig {
+            name : "Metal grids".to_string(),
+            instance : VoxelInstance { bbox: [2, 1, 2].into() },
+            create : ClosureInstance::new(|cmds : &mut Commands, asset_server : &AssetServer| {
+                cmds.spawn(SceneBundle {
+                    scene: asset_server.load("ss13/wall_models/metal_grid/metal_grid.gltf#Scene0"),
+                    ..default()
+                }).id()
+            }).to_box()
+        };
+
+        configs.push(cfg);
+    }
+
+    let all_instances = AllVoxelInstances {
+        configs
+    };
+
+    cmds.insert_resource(all_instances);
+}
+
+
+pub struct VoxelInstancePlugin;
+
+impl Plugin for VoxelInstancePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_startup_system(init_all_voxel_instances);
+    }
+}

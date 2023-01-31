@@ -16,25 +16,6 @@ winit = "*"
 bevy_egui = "*"
 iyes_loopless = "0.9.0"
 
-space_macros = {path = "crates/space_macros"}
-space_shaders = {path = "crates/space_shaders"}
-space_code_editor = {path = "crates/space_code_editor"}
-space_core = {path = "crates/space_core"}
-space_assets = {path = "crates/space_assets"}
-space_render = {path = "crates/space_render"}
-space_game = {path = "crates/space_game"}
-space_voxel = {path = "crates/space_voxel"}
 
-[workspace]
-members = [
-    "crates/space_macros",
-    "crates/space_shaders",
-    "crates/space_core",
-    "crates/space_assets",
-    "crates/space_code_editor",
-    "crates/space_render",
-    "crates/space_voxel"
-]
-#
 #[lib]
 #crate-type = ["cdylib", "rlib"]
