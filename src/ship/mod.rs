@@ -1,22 +1,23 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashMap};
 use crate::space_voxel::objected_voxel_map::*;
 use crate::space_voxel::solid_voxel_map::SolidVoxelMap;
 use crate::space_voxel::*;
+use serde::{Deserialize, Serialize};
+
+use self::common::AllVoxelInstances;
 
 pub mod common;
 
-#[derive(Clone)]
+#[derive(Clone, Reflect, FromReflect, Serialize, Deserialize)]
 pub enum ShipBlock {
     None
 }
-
-pub type ShipVoxel = VoxelVal<ShipBlock>;
 
 pub const VOXEL_SIZE : f32 = 0.5;
 
 #[derive(Component)]
 pub struct Ship {
-    pub map : SolidVoxelMap<ShipVoxel>
+    pub map : SolidVoxelMap<VoxelVal<ShipBlock>>
 }
 
 impl Ship {
@@ -30,5 +31,38 @@ impl Ship {
     pub fn get_grid_idx_by_center(&self, pos : &Vec3, bbox : &IVec3) -> IVec3 {
         let dp = bbox.as_vec3() / 2.0 * self.map.voxel_size;
         self.map.get_grid_idx(&(*pos - dp))
+    }
+
+}
+
+#[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Reflect, FromReflect)]
+pub struct InstanceId {
+    pub template_id : u32,
+    pub state_id : Entity
+}
+
+#[derive(Serialize, Deserialize, Clone, Reflect, FromReflect)]
+pub enum DiskShipVoxel {
+    None, 
+    Voxel(ShipBlock),
+    Instance(InstanceId)
+}
+
+impl Default for DiskShipVoxel {
+    fn default() -> Self {
+        DiskShipVoxel::None
+    }
+}
+
+#[derive(Serialize, Deserialize, Reflect)]
+pub struct DiskShip {
+    pub map : SolidVoxelMap<DiskShipVoxel>,
+    pub template_names : HashMap<u32, String>,
+}
+
+impl DiskShip {
+    pub fn from_ship(ship_id : Entity, world : &World) {
+        let all_instances = world.resource::<AllVoxelInstances>();
+        let template_indexer = 0;
     }
 }

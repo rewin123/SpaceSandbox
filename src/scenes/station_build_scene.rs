@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::{tasks::IoTaskPool};
 use bevy_egui::*;
 use iyes_loopless::prelude::*;
 use bevy_rapier3d::prelude::*;
@@ -9,12 +10,15 @@ use crate::*;
 use crate::space_voxel::VoxelMap;
 use crate::space_voxel::objected_voxel_map::*;
 
+use std::fs::File;
+use std::io::Write;
+
 pub struct StationBuildMenu {}
 
 impl Plugin for StationBuildMenu {
     fn build(&self, app: &mut App)  {
 
-        app.add_enter_system(SceneType::ShipBuilding, setup_build_scene);
+        app.add_enter_system(SceneType::ShipBuilding, setup_build_scene.label("setup_ship_build_scene"));
 
         app.add_system_set(
             ConditionSet::new()
@@ -23,6 +27,15 @@ impl Plugin for StationBuildMenu {
                 .with_system(pos_block)
                 .with_system(spawn_block)
                 .into()
+        );
+
+        app.add_system_set(
+            ConditionSet::new()
+            .run_in_state(SceneType::ShipBuilding)
+            .run_if_resource_exists::<StationBuildBlock>()
+            .with_system(clear_all_system)
+            .with_system(quick_save)
+            .into()
         );
     }
 }
@@ -37,11 +50,66 @@ pub struct StationBuildBlock {
     pub instance : Option<VoxelInstance>,
     pub mode : BuildMode,
     pub ship : Entity,
-    pub cur_name : String
+    pub cur_name : String,
+    pub cmd : StationBuildCmds
+}
+
+#[derive(PartialEq, Eq)]
+pub enum StationBuildCmds {
+    None,
+    ClearAll,
+    QuickSave,
+    QuickLoad
 }
 
 #[derive(Component)]
 pub struct ActiveBlock;
+
+fn quick_load(
+    mut cmds : Commands,
+    asset_server : Res<AssetServer>,
+    mut block : ResMut<StationBuildBlock>
+) {
+    if block.cmd == StationBuildCmds::QuickLoad {
+        block.cmd = StationBuildCmds::None;
+
+    }
+}
+
+
+fn quick_save(
+    world : &mut World
+) {
+    if world.get_resource_mut::<StationBuildBlock>().unwrap().cmd == StationBuildCmds::QuickSave {
+        world.get_resource_mut::<StationBuildBlock>().unwrap().cmd = StationBuildCmds::None;
+
+        let type_registry = world.resource::<AppTypeRegistry>();
+        let scene = DynamicScene::from_world(&world, type_registry);
+
+        let ron_scene = scene.serialize_ron(type_registry).unwrap();
+        info!("Scene: {}", ron_scene);
+
+        File::create(format!("quick.scn.ron"))
+            .and_then(|mut file| file.write(ron_scene.as_bytes())).unwrap();
+    }
+}
+
+fn clear_all_system(
+    mut cmds : Commands,
+    ship_entity : Query<Entity, With<Ship>>,
+    mut block : ResMut<StationBuildBlock>,
+
+) {
+    if block.cmd == StationBuildCmds::ClearAll {
+        block.cmd = StationBuildCmds::None;
+        for e in &ship_entity {
+            cmds.entity(e).despawn_recursive();
+        }
+
+        let ship_id = new_default_ship(&mut cmds);
+        block.ship = ship_id;
+    }
+}
 
 fn ship_build_menu(
     mut cmds : Commands,
@@ -51,6 +119,19 @@ fn ship_build_menu(
     mut block : ResMut<StationBuildBlock>
 ) {
     egui::SidePanel::left("Build panel").show(ctx.ctx_mut(), |ui| {
+
+        if ui.button("Clear level").clicked() {
+            block.cmd = StationBuildCmds::ClearAll;
+        }
+        ui.separator();
+        if ui.button("Quick load").clicked() {
+            block.cmd = StationBuildCmds::QuickLoad;
+        }
+        if ui.button("Quick save").clicked() {
+            block.cmd = StationBuildCmds::QuickSave;
+        }
+
+        ui.separator();
         for inst in &voxel_instances.configs {
             if ui.button(&inst.name).clicked() {
 
@@ -105,7 +186,9 @@ fn spawn_block(
                 if inst_cfg.name == block.cur_name {
                     let e = inst_cfg.create.build(&mut cmds, &asset_server);
                     ship.map.set_object_by_idx(e, &grid_idx, &inst.bbox);
-                    cmds.entity(e).insert(TransformBundle::from_transform(tr.clone()));
+                    let inst_e = cmds.entity(e)
+                        .insert(TransformBundle::from_transform(tr.clone())).id();
+                    cmds.entity(block.ship).add_child(inst_e);
                 }
             }
         }
@@ -126,6 +209,9 @@ fn pos_block(
     if cursot_pos_option.is_none() {
         return;
     }
+    if !ships.contains(block.ship) {
+        return;
+    }
 
     let (cam, tr) = cameras.iter().next().unwrap();
     let cursor_pos = cursot_pos_option.unwrap();
@@ -142,7 +228,6 @@ fn pos_block(
 
     match block.mode {
         BuildMode::SingleOnY(lvl) => {
-
             let ship = ships.get_mut(block.ship).unwrap();
 
             let t = (lvl - mouse_ray.origin.y) / mouse_ray.direction.y;
@@ -156,6 +241,13 @@ fn pos_block(
     }
 }
 
+
+fn new_default_ship(cmds : &mut Commands) -> Entity {
+    cmds.spawn(Ship::new_sized(IVec3::new(100, 100, 100)))
+        .insert(SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)))
+        .id()
+}
+
 fn setup_build_scene(
     mut cmds : Commands
 ) {
@@ -164,13 +256,14 @@ fn setup_build_scene(
         ..default()
     });
 
-    let ship_id = cmds.spawn(Ship::new_sized(IVec3::new(100, 100, 100))).id();
+    let ship_id = new_default_ship(&mut cmds);
 
     cmds.insert_resource(StationBuildBlock {
         e: None,
         instance: None,
         mode: BuildMode::SingleOnY(0.0),
         ship : ship_id,
-        cur_name : "".to_string()
+        cur_name : "".to_string(),
+        cmd : StationBuildCmds::None
     });
 }

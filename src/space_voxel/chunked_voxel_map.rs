@@ -42,7 +42,7 @@ impl<T> VoxelMap<T> for ChunkedVoxelMap<T>
         todo!()
     }
 
-    fn set(&mut self, pos : &Vec3, val : T) {
+    fn set_voxel(&mut self, pos : &Vec3, val : T) {
         todo!()
     }
 
@@ -58,7 +58,7 @@ impl<T> VoxelMap<T> for ChunkedVoxelMap<T>
         todo!()
     }
 
-    fn set_by_idx(&mut self, pos : &IVec3, val : T) {
+    fn set_voxel_by_idx(&mut self, pos : &IVec3, val : T) {
         todo!()
     }
 

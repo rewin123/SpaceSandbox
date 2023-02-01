@@ -1,31 +1,31 @@
 
 extern crate test;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, reflect::Typed};
 use super::{VoxelMap, solid_voxel_map::SolidVoxelMap};
 
-#[derive(PartialEq, Eq, Debug, Clone)]
-pub enum VoxelVal<VoxelID> {
+#[derive(PartialEq, Eq, Debug, Clone, Reflect, FromReflect)]
+pub enum VoxelVal<VoxelID> where VoxelID : Typed + FromReflect {
     None,
     Voxel(VoxelID),
     Object(Entity),
 }
 
 
-impl<T> Default for VoxelVal<T> {
+impl<T : Typed + FromReflect> Default for VoxelVal<T> {
     fn default() -> Self {
         VoxelVal::None
     }
 }
 
 pub trait ObjectedVoxelMap<T> : VoxelMap<VoxelVal<T>>
-    where T : Clone
+    where T : Clone + Typed + FromReflect
 {
     fn set_object_by_idx(&mut self, e : Entity, pos : &IVec3, bbox : &IVec3) {
         for z in 0..bbox.z {
             for y in 0..bbox.y {
                 for x in 0..bbox.x {
-                    self.set_by_idx(&(*pos + IVec3 {x, y, z}), VoxelVal::Object(e));
+                    self.set_voxel_by_idx(&(*pos + IVec3 {x, y, z}), VoxelVal::Object(e));
                 }
             }
         }
@@ -51,7 +51,7 @@ pub trait ObjectedVoxelMap<T> : VoxelMap<VoxelVal<T>>
             for y in (pos.y - search_area.y)..=(pos.y + search_area.y) {
                 for x in (pos.x - search_area.x)..=(pos.x + search_area.x) {
                     if let VoxelVal::Object(_) = self.get_by_idx(&IVec3{x, y, z}) {
-                        self.set_by_idx(&IVec3{x, y, z}, VoxelVal::None);
+                        self.set_voxel_by_idx(&IVec3{x, y, z}, VoxelVal::None);
                     }
                 }
             }
@@ -61,7 +61,7 @@ pub trait ObjectedVoxelMap<T> : VoxelMap<VoxelVal<T>>
 
 
 impl<T> ObjectedVoxelMap<T> for SolidVoxelMap<VoxelVal<T>> 
-    where T : Clone
+    where T : Clone + Typed + FromReflect
 {
 
 }

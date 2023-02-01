@@ -1,7 +1,10 @@
 
 use super::*;
+use bevy::reflect::Typed;
+use serde::{Serialize, Deserialize};
 
-pub struct SolidVoxelMap<T> where T : Default + Clone {
+#[derive(Serialize, Deserialize, Reflect, Component, Clone)]
+pub struct SolidVoxelMap<T> where T : Default + Clone + FromReflect {
     pub data : Vec<T>,
     pub size : IVec3,
     pub first_voxel_pos : Vec3,
@@ -10,7 +13,7 @@ pub struct SolidVoxelMap<T> where T : Default + Clone {
 }
 
 impl<T> SolidVoxelMap<T>
-    where T : Default + Clone
+    where T : Default + Clone + FromReflect
 {
     pub fn new(origin : Vec3, size : IVec3, voxel_size : f32) -> SolidVoxelMap<T> {
         let data = vec![T::default(); (size.x * size.y * size.z) as usize];
@@ -27,7 +30,7 @@ impl<T> SolidVoxelMap<T>
 }
 
 impl<T> SolidVoxelMap<T>
-    where T : Default + Clone 
+    where T : Default + Clone + Typed + FromReflect
 {
     #[inline]
     fn get_idx(&self, pos : &IVec3) -> usize {
@@ -55,7 +58,7 @@ impl<T> SolidVoxelMap<T>
 }
 
 impl<T> VoxelMap<T> for SolidVoxelMap<T>
-    where T : Default + Clone 
+    where T : Default + Clone  + Typed + FromReflect
 {
     fn get_grid_pos(&self, pos: &Vec3) -> Vec3 {
         let dp = *pos - self.first_voxel_pos;
@@ -95,7 +98,7 @@ impl<T> VoxelMap<T> for SolidVoxelMap<T>
         self.data.get_mut(idx)
     }
 
-    fn set(&mut self, pos : &Vec3, val : T) {
+    fn set_voxel(&mut self, pos : &Vec3, val : T) {
         let vec_idx = self.get_grid_idx(pos);
         let idx = self.get_idx(&vec_idx);
         if idx < self.data.len() {
@@ -122,7 +125,7 @@ impl<T> VoxelMap<T> for SolidVoxelMap<T>
         self.data.get_mut(idx)
     }
 
-    fn set_by_idx(&mut self, pos : &IVec3, val : T) {
+    fn set_voxel_by_idx(&mut self, pos : &IVec3, val : T) {
         let idx = self.get_idx(pos);
         if idx < self.data.len() {
             self.data[idx] = val;

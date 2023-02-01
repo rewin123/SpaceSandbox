@@ -1,3 +1,5 @@
+use bevy::reflect::FromReflect;
+use bevy::reflect::Typed;
 use block_mesh::{
     greedy_quads, GreedyQuadsBuffer, MergeVoxel, Voxel, VoxelVisibility, RIGHT_HANDED_Y_UP_CONFIG,
 };
@@ -5,7 +7,7 @@ use super::objected_voxel_map::*;
 use super::chunked_voxel_map::*;
 
 
-pub fn generate_mesh<T: PartialEq + Eq + Clone>(
+pub fn generate_mesh<T: PartialEq + Eq + Clone + Typed + FromReflect>(
     chunk: &VoxelChunk<VoxelVal<T>>,
 ) -> GreedyQuadsBuffer {
     let mut buffer = GreedyQuadsBuffer::new(chunk.data.len());
@@ -46,7 +48,7 @@ pub fn generate_mesh<T: PartialEq + Eq + Clone>(
 }
 
 
-impl<VoxelID> Voxel for VoxelVal<VoxelID> {
+impl<VoxelID : Typed + FromReflect> Voxel for VoxelVal<VoxelID> {
     fn get_visibility(&self) -> VoxelVisibility {
         match self {
             VoxelVal::None => VoxelVisibility::Empty,
@@ -56,7 +58,7 @@ impl<VoxelID> Voxel for VoxelVal<VoxelID> {
     }
 }
 
-impl<VoxelID: PartialEq + Eq + Clone> MergeVoxel for VoxelVal<VoxelID> {
+impl<VoxelID: PartialEq + Eq + Clone + Typed + FromReflect> MergeVoxel for VoxelVal<VoxelID> {
     type MergeValue = Self;
 
     fn merge_value(&self) -> Self::MergeValue {

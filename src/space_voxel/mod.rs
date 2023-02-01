@@ -20,12 +20,12 @@ pub trait VoxelMap<T>
     fn get_cloned(&self, pos: &Vec3) -> T;
     fn get(&self, pos: &Vec3) -> &T;
     fn get_mut(&mut self, pos: &Vec3) -> Option<&mut T>;
-    fn set(&mut self, pos : &Vec3, val : T);
+    fn set_voxel(&mut self, pos : &Vec3, val : T);
 
     fn get_cloned_by_idx(&self, pos : &IVec3) -> T;
     fn get_by_idx(&self, pos : &IVec3) -> &T;
     fn get_mut_by_idx(&mut self, pos : &IVec3) -> Option<&mut T>;
-    fn set_by_idx(&mut self, pos : &IVec3, val : T);
+    fn set_voxel_by_idx(&mut self, pos : &IVec3, val : T);
 
     fn get_bounds(&self) -> MapBounds;
     fn get_voxel_size(&self) -> f32;
