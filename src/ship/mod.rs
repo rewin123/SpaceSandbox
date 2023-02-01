@@ -72,6 +72,7 @@ pub struct DiskShipBase64 {
 pub struct DiskShip {
     pub map : SolidVoxelMap<DiskShipVoxel>,
     pub template_names : HashMap<u32, String>,
+    pub states : HashMap<u32, Entity>
 }
 
 impl DiskShip {
@@ -87,6 +88,13 @@ impl DiskShip {
 
         let mut map = SolidVoxelMap::<DiskShipVoxel>::new(Vec3::ZERO, ship.map.size, ship.map.voxel_size);
         
+        let mut entity_id : HashMap<Entity, u32> = HashMap::new();
+        let mut id_indexer = 0;
+
+        let mut scene = DynamicSceneBuilder::from_world(world);
+
+        let mut states : HashMap<u32, Entity> = HashMap::new();
+
         for z in 0..map.size.z {
             for y in 0..map.size.y {
                 for x in 0..map.size.x {
@@ -102,7 +110,17 @@ impl DiskShip {
                             let template_id = world.entity(*e)
                                 .get::<VoxelInstance>().unwrap()
                                 .common_id;
-                            DiskShipVoxel::Instance(InstanceId {template_id, state_id : 0 })
+
+                            if let Some(state_id) = entity_id.get(e) {
+                                DiskShipVoxel::Instance(InstanceId {template_id, state_id : *state_id })
+                            } else {
+                                entity_id.insert(*e, id_indexer);
+                                let val = DiskShipVoxel::Instance(InstanceId {template_id, state_id : id_indexer });
+                                states.insert(id_indexer, *e);
+                                id_indexer += 1;
+                                scene.extract_entity(*e);
+                                val
+                            }
                         },
                     };
                     map.set_voxel_by_idx(&idx, disk_v);
@@ -113,6 +131,7 @@ impl DiskShip {
         DiskShip {
             map,
             template_names,
+            states
         }
     }
 

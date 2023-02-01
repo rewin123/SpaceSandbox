@@ -1,8 +1,12 @@
+use bevy::ecs::entity::EntityMap;
 use bevy::prelude::*;
+use bevy::scene::serde::SceneDeserializer;
+use bevy::utils::HashSet;
 use bevy::{tasks::IoTaskPool};
 use bevy_egui::*;
 use iyes_loopless::prelude::*;
 use bevy_rapier3d::prelude::*;
+use serde::de::DeserializeSeed;
 
 use crate::ship::*;
 use crate::ship::common::{AllVoxelInstances, VoxelInstance};
@@ -35,6 +39,7 @@ impl Plugin for StationBuildMenu {
             .run_if_resource_exists::<StationBuildBlock>()
             .with_system(clear_all_system)
             .with_system(quick_save)
+            .with_system(quick_load)
             .into()
         );
     }
@@ -67,12 +72,69 @@ pub struct ActiveBlock;
 
 fn quick_load(
     mut cmds : Commands,
-    asset_server : Res<AssetServer>,
-    mut block : ResMut<StationBuildBlock>
+    ship_entity : Query<Entity, With<Ship>>,
+    mut block : ResMut<StationBuildBlock>,
+    type_registry : Res<AppTypeRegistry>,
 ) {
     if block.cmd == StationBuildCmds::QuickLoad {
         block.cmd = StationBuildCmds::None;
 
+        for e in &ship_entity {
+            cmds.entity(e).despawn_recursive();
+        }
+
+        let scene_ron = std::fs::read_to_string("quick.scn.ron").unwrap();
+        let mut des = ron::Deserializer::from_bytes(scene_ron.as_bytes()).unwrap();
+
+        let result = SceneDeserializer {
+            type_registry : &type_registry.read()
+        }.deserialize(&mut des).unwrap();
+
+        let mut entity_map = EntityMap::default();
+        cmds.add(move |world : &mut World| {
+            result.write_to_world_with(world, &mut entity_map, &world.resource::<AppTypeRegistry>().clone()).unwrap();
+        });
+        
+
+        // {
+        //     let data = sub_world.query::<(&DiskShipBase64)>().iter(&sub_world).next().unwrap();
+        //     let disk_ship = DiskShip::from_base64(&data.data);
+
+        //     let mut ship = Ship::new_sized(disk_ship.map.size.clone());
+
+        //     for z in 0..disk_ship.map.size.z {
+        //         for y in 0..disk_ship.map.size.y {
+        //             for x in 0..disk_ship.map.size.x {
+        //                 let idx = IVec3::new(x, y, z);
+        //                 let disk_v = disk_ship.map.get_by_idx(&idx);
+
+        //                 let mut spawned : HashSet<u32> = HashSet::new();
+
+        //                 match disk_v {
+        //                     DiskShipVoxel::None => {
+        //                         ship.map.set_voxel_by_idx(&idx, VoxelVal::None);
+        //                     },
+        //                     DiskShipVoxel::Voxel(block) => {
+        //                         ship.map.set_voxel_by_idx(&idx, VoxelVal::Voxel(block.clone()))
+        //                     },
+        //                     DiskShipVoxel::Instance(id) => {
+        //                         ship.map.set_voxel_by_idx(&idx, VoxelVal::Object(
+        //                             entity_map.get(Entity::from_raw(
+        //                                 disk_ship.states.get(&id.state_id).unwrap().clone()
+        //                             )).unwrap()));
+        //                     },
+        //                 }
+        //             }
+        //         }
+        //     }
+
+        //     let ship_id = cmds.spawn(ship).insert(
+        //         SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)))
+        //         .id();
+
+        //     block.ship = ship_id;
+
+        // }
     }
 }
 
@@ -87,17 +149,14 @@ fn quick_save(
         let ship = world.entity(block.ship).get::<Ship>();
 
         let type_registry = world.resource::<AppTypeRegistry>();
-        let mut sub_world = World::default();
-        sub_world.insert_resource(world.get_resource::<AppTypeRegistry>().unwrap().clone());
 
         let disk_ship = DiskShip::from_ship(block.ship, &world);
-        sub_world.spawn(DiskShipBase64 {
+        
+        let data_e = world.spawn(DiskShipBase64 {
             data: disk_ship.to_base64(),
         });
+        let mut dynamic_scene = DynamicSceneBuilder::from_world(&world);
 
-        let scene = DynamicScene::from_world(
-            &sub_world, 
-            world.get_resource::<AppTypeRegistry>().unwrap());
 
         let ron_scene = scene.serialize_ron(type_registry).unwrap();
 
