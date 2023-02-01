@@ -12,8 +12,14 @@ pub enum VoxelVal<VoxelID> {
 }
 
 
+impl<T> Default for VoxelVal<T> {
+    fn default() -> Self {
+        VoxelVal::None
+    }
+}
+
 pub trait ObjectedVoxelMap<T> : VoxelMap<VoxelVal<T>>
-    where T : Default + Clone
+    where T : Clone
 {
     fn set_object_by_idx(&mut self, e : Entity, pos : &IVec3, bbox : &IVec3) {
         for z in 0..bbox.z {
@@ -25,7 +31,7 @@ pub trait ObjectedVoxelMap<T> : VoxelMap<VoxelVal<T>>
         }
     }
 
-    fn can_place_object(&mut self, pos : &IVec3, bbox : &IVec3) -> bool {
+    fn can_place_object(&self, pos : &IVec3, bbox : &IVec3) -> bool {
         for z in 0..bbox.z {
             for y in 0..bbox.y {
                 for x in 0..bbox.x {
@@ -55,15 +61,9 @@ pub trait ObjectedVoxelMap<T> : VoxelMap<VoxelVal<T>>
 
 
 impl<T> ObjectedVoxelMap<T> for SolidVoxelMap<VoxelVal<T>> 
-    where T : Default + Clone
+    where T : Clone
 {
 
-}
-
-impl<T> Default for VoxelVal<T> {
-    fn default() -> Self {
-        VoxelVal::None
-    }
 }
 
 #[cfg(test)]

@@ -1,7 +1,7 @@
 
 use super::*;
 
-pub struct SolidVoxelMap<T> {
+pub struct SolidVoxelMap<T> where T : Default + Clone {
     pub data : Vec<T>,
     pub size : IVec3,
     pub first_voxel_pos : Vec3,

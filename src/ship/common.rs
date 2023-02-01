@@ -1,4 +1,7 @@
 use bevy::prelude::*;
+use bevy_rapier3d::prelude::Collider;
+
+use super::VOXEL_SIZE;
 
 pub trait BuildInstance {
     fn build(&self, cmds : &mut Commands, asset_server : &AssetServer) -> Entity;
@@ -51,15 +54,19 @@ pub fn init_all_voxel_instances(
     let mut configs = vec![];
 
     {
+        let bbox : IVec3 = [4, 1, 4].into();
         let cfg = VoxelInstanceConfig {
             name : "Metal grids".to_string(),
-            instance : VoxelInstance { bbox: [4, 1, 4].into() },
-            create : ClosureInstance::new(|cmds : &mut Commands, asset_server : &AssetServer| {
+            instance : VoxelInstance { bbox: bbox.clone() },
+            create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
                 cmds.spawn(SceneBundle {
                     scene: asset_server.load("ss13/wall_models/metal_grid/metal_grid.gltf#Scene0"),
                     
                     ..default()
-                }).id()
+                }).insert(Collider::cuboid(
+                    bbox.x as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.y as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.z as f32 * VOXEL_SIZE / 2.0)).id()
             }).to_box()
         };
 

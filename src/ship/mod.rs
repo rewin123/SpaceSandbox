@@ -22,9 +22,13 @@ pub struct Ship {
 impl Ship {
     pub fn new_sized(size : IVec3) -> Self {
         let map = SolidVoxelMap::new(Vec3::ZERO, size, VOXEL_SIZE);
-
         Self {
             map
         }
+    }
+
+    pub fn get_grid_idx_by_center(&self, pos : &Vec3, bbox : &IVec3) -> IVec3 {
+        let dp = bbox.as_vec3() / 2.0 * self.map.voxel_size;
+        self.map.get_grid_idx(&(*pos - dp))
     }
 }
