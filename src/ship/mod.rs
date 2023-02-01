@@ -15,9 +15,16 @@ pub enum ShipBlock {
 
 pub const VOXEL_SIZE : f32 = 0.5;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct Ship {
     pub map : SolidVoxelMap<VoxelVal<ShipBlock>>
+}
+
+impl Default for Ship {
+    fn default() -> Self {
+        Ship::new_sized([100,100,100].into())
+    }
 }
 
 impl Ship {

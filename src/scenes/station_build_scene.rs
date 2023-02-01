@@ -87,7 +87,6 @@ fn quick_save(
         let scene = DynamicScene::from_world(&world, type_registry);
 
         let ron_scene = scene.serialize_ron(type_registry).unwrap();
-        info!("Scene: {}", ron_scene);
 
         File::create(format!("quick.scn.ron"))
             .and_then(|mut file| file.write(ron_scene.as_bytes())).unwrap();
