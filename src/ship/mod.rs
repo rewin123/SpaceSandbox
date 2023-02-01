@@ -61,6 +61,13 @@ impl Default for DiskShipVoxel {
     }
 }
 
+
+#[derive(Reflect, Component, Default)]
+#[reflect(Component)]
+pub struct DiskShipBase64 {
+    pub data : String
+}
+
 #[derive(Serialize, Deserialize, Reflect)]
 pub struct DiskShip {
     pub map : SolidVoxelMap<DiskShipVoxel>,
@@ -68,9 +75,8 @@ pub struct DiskShip {
 }
 
 impl DiskShip {
-    pub fn from_ship(ship_id : Entity, world : &World) {
+    pub fn from_ship(ship_id : Entity, world : &World) -> DiskShip {
         let all_instances = world.resource::<AllVoxelInstances>();
-        let template_indexer = 0;
 
         let mut template_names = HashMap::new();
         for inst in &all_instances.configs {
@@ -93,15 +99,31 @@ impl DiskShip {
                         VoxelVal::None => DiskShipVoxel::None,
                         VoxelVal::Voxel(block) => DiskShipVoxel::Voxel(block.clone()),
                         VoxelVal::Object(e) => {
-                            let template_id = world.entity(e)
+                            let template_id = world.entity(*e)
                                 .get::<VoxelInstance>().unwrap()
                                 .common_id;
-                                DiskShipVoxel::Instance(InstanceId {})
+                            DiskShipVoxel::Instance(InstanceId {template_id, state_id : 0 })
                         },
-                    }
-                    map.set_voxel_by_idx(&idx, )
+                    };
+                    map.set_voxel_by_idx(&idx, disk_v);
                 }
             }
         }
+
+        DiskShip {
+            map,
+            template_names,
+        }
+    }
+
+    pub fn to_base64(&self) -> String {
+        let bytes =  bincode::serialize(&self).unwrap();
+        let base64 = base64::encode(bytes);
+        base64
+    }
+
+    pub fn from_base64(text : &String) -> DiskShip {
+        let bytes = base64::decode(text).unwrap();
+        bincode::deserialize(&bytes).unwrap()
     }
 }

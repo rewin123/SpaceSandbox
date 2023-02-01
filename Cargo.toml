@@ -20,6 +20,7 @@ bevy-inspector-egui = "*"
 postcard = "*"
 block-mesh = "*"
 bincode = "*"
+base64 = "*"
 
 bevy_mod_picking = "0.11"
 

@@ -69,7 +69,8 @@ pub fn init_all_voxel_instances(
                 }).insert(Collider::cuboid(
                     bbox.x as f32 * VOXEL_SIZE / 2.0, 
                     bbox.y as f32 * VOXEL_SIZE / 2.0, 
-                    bbox.z as f32 * VOXEL_SIZE / 2.0)).id()
+                    bbox.z as f32 * VOXEL_SIZE / 2.0))
+                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
             }).to_box()
         };
 

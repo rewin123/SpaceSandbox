@@ -83,8 +83,21 @@ fn quick_save(
     if world.get_resource_mut::<StationBuildBlock>().unwrap().cmd == StationBuildCmds::QuickSave {
         world.get_resource_mut::<StationBuildBlock>().unwrap().cmd = StationBuildCmds::None;
 
+        let block = world.get_resource::<StationBuildBlock>().unwrap();
+        let ship = world.entity(block.ship).get::<Ship>();
+
         let type_registry = world.resource::<AppTypeRegistry>();
-        let scene = DynamicScene::from_world(&world, type_registry);
+        let mut sub_world = World::default();
+        sub_world.insert_resource(world.get_resource::<AppTypeRegistry>().unwrap().clone());
+
+        let disk_ship = DiskShip::from_ship(block.ship, &world);
+        sub_world.spawn(DiskShipBase64 {
+            data: disk_ship.to_base64(),
+        });
+
+        let scene = DynamicScene::from_world(
+            &sub_world, 
+            world.get_resource::<AppTypeRegistry>().unwrap());
 
         let ron_scene = scene.serialize_ron(type_registry).unwrap();
 
