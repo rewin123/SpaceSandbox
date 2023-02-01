@@ -4,7 +4,7 @@ use crate::space_voxel::solid_voxel_map::SolidVoxelMap;
 use crate::space_voxel::*;
 use serde::{Deserialize, Serialize};
 
-use self::common::AllVoxelInstances;
+use self::common::{AllVoxelInstances, VoxelInstance};
 
 pub mod common;
 
@@ -45,7 +45,7 @@ impl Ship {
 #[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Reflect, FromReflect)]
 pub struct InstanceId {
     pub template_id : u32,
-    pub state_id : Entity
+    pub state_id : u32
 }
 
 #[derive(Serialize, Deserialize, Clone, Reflect, FromReflect)]
@@ -71,5 +71,37 @@ impl DiskShip {
     pub fn from_ship(ship_id : Entity, world : &World) {
         let all_instances = world.resource::<AllVoxelInstances>();
         let template_indexer = 0;
+
+        let mut template_names = HashMap::new();
+        for inst in &all_instances.configs {
+            template_names.insert(inst.instance.common_id, inst.name.clone());
+        }
+
+        let ship : &Ship = world.entity(ship_id).get().unwrap();
+
+        let mut map = SolidVoxelMap::<DiskShipVoxel>::new(Vec3::ZERO, ship.map.size, ship.map.voxel_size);
+        
+        for z in 0..map.size.z {
+            for y in 0..map.size.y {
+                for x in 0..map.size.x {
+
+                    let idx = IVec3::new(x, y, z);
+                    let v = ship.map.get_by_idx(&idx);
+
+                    let disk_v =
+                    match v {
+                        VoxelVal::None => DiskShipVoxel::None,
+                        VoxelVal::Voxel(block) => DiskShipVoxel::Voxel(block.clone()),
+                        VoxelVal::Object(e) => {
+                            let template_id = world.entity(e)
+                                .get::<VoxelInstance>().unwrap()
+                                .common_id;
+                                DiskShipVoxel::Instance(InstanceId {})
+                        },
+                    }
+                    map.set_voxel_by_idx(&idx, )
+                }
+            }
+        }
     }
 }
