@@ -3,7 +3,10 @@ use std::io::{Read, Write};
 
 use bevy::scene::serde::SceneDeserializer;
 use bevy::{prelude::*, utils::HashMap};
+use egui_notify::Toast;
 use serde::de::DeserializeSeed;
+
+use crate::ui::ToastHolder;
 
 use super::common::*;
 use super::*;
@@ -51,10 +54,12 @@ fn saving_ship_system(
 
             let ron_scene = dynamic_scene.serialize_ron(&type_registry).unwrap();
 
-            File::create(path)
+            File::create(&path)
                 .and_then(|mut file| file.write_all(ron_scene.as_bytes())).unwrap();
         }
         world.despawn(data_e);
+
+        world.resource_mut::<ToastHolder>().toast.add(Toast::info(format!("Saved ship to {}", &path)));
     }
 }
 
@@ -73,7 +78,8 @@ fn loading_ship_system(
     type_registry : Res<AppTypeRegistry>,
     all_instances : Res<AllVoxelInstances>,
     mut load_ships : EventReader<CmdShipLoad>,
-    mut loaded_ships : EventWriter<ShipLoaded>
+    mut loaded_ships : EventWriter<ShipLoaded>,
+    mut toast : ResMut<ToastHolder>
 ) {
     for ship_path in load_ships.iter() {
         let mut file = File::open(&ship_path.0).unwrap();
@@ -105,6 +111,7 @@ fn loading_ship_system(
             }
 
             loaded_ships.send(ShipLoaded(ship_id));
+            toast.toast.add(Toast::info(format!("Loaded ship from {}", &ship_path.0)));
         }
     }
 }

@@ -22,6 +22,7 @@ block-mesh = "*"
 bincode = "*"
 base64 = "*"
 snap = "*"
+egui-notify = "*"
 
 bevy_mod_picking = "0.11"
 

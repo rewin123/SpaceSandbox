@@ -17,6 +17,7 @@ fn main() {
         .add_plugin(SpaceSandbox::ship::save_load::ShipPlugin)
         .add_plugin(MainMenuPlugin {})
         .add_plugin(StationBuilderPlugin {})
+        .add_plugin(NotificationPlugin)
 
         .run();
 }
