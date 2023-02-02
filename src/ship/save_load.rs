@@ -52,48 +52,7 @@ fn loading_ship_system(
             let mut ship = Ship::new_sized(disk_ship.map.size.clone());
             let mut spawned : HashMap<u32, Entity> = HashMap::new();
 
-            for z in 0..disk_ship.map.size.z {
-                for y in 0..disk_ship.map.size.y {
-                    for x in 0..disk_ship.map.size.x {
-                        let idx = IVec3::new(x, y, z);
-                        let disk_v = disk_ship.map.get_by_idx(&idx);
-
-                        match disk_v {
-                            DiskShipVoxel::None => {
-                                ship.map.set_voxel_by_idx(&idx, VoxelVal::None);
-                            },
-                            DiskShipVoxel::Voxel(block) => {
-                                ship.map.set_voxel_by_idx(&idx, VoxelVal::Voxel(block.clone()))
-                            },
-                            DiskShipVoxel::Instance(id) => {
-                                if spawned.contains_key(&id.state_id) {
-                                    ship.map.set_voxel_by_idx(&idx, VoxelVal::Object(*spawned.get(&id.state_id).unwrap()))
-                                } else {
-                                    let name = disk_ship.template_names.get(&id.template_id).unwrap().clone();
-
-                                    for inst in &all_instances.configs {
-                                        if inst.name == name {
-                                            let spawn_e = inst.create.build(&mut cmds, &asset_server);
-                                            spawned.insert(id.state_id, spawn_e);
-
-                                            let state_e = Entity::from_raw(
-                                                disk_ship.states.get(&id.state_id).unwrap().index()
-                                            );
-
-                                            //transform
-                                            cmds.entity(spawn_e).insert(SpatialBundle::from_transform(
-                                                sub_world.entity(state_e).get::<Transform>().unwrap().clone()
-                                            ));
-
-                                            ship.map.set_voxel_by_idx(&idx, VoxelVal::Object(spawn_e))
-                                        }
-                                    }
-                                }
-                            },
-                        }
-                    }
-                }
-            }
+            instances_from_disk(disk_ship, &mut ship, &mut spawned, &all_instances, &mut cmds, &asset_server, sub_world);
 
             let ship_id = cmds.spawn(ship).insert(
                 SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)))
@@ -104,6 +63,57 @@ fn loading_ship_system(
             }
 
             loaded_ships.send(ShipLoaded(ship_id));
+        }
+    }
+}
+
+fn instances_from_disk(
+    disk_ship: DiskShip, 
+    ship: &mut Ship, 
+    spawned: &mut bevy::utils::hashbrown::HashMap<u32, Entity>, 
+    all_instances: &Res<AllVoxelInstances>, 
+    cmds: &mut Commands, 
+    asset_server: &Res<AssetServer>, 
+    sub_world: World) {
+
+    for z in 0..disk_ship.map.size.z {
+        for y in 0..disk_ship.map.size.y {
+            for x in 0..disk_ship.map.size.x {
+                let idx = IVec3::new(x, y, z);
+                let disk_v = disk_ship.map.get_by_idx(&idx);
+                match disk_v {
+                    DiskShipVoxel::None => {
+                        ship.map.set_voxel_by_idx(&idx, VoxelVal::None);
+                    },
+                    DiskShipVoxel::Voxel(block) => {
+                        ship.map.set_voxel_by_idx(&idx, VoxelVal::Voxel(block.clone()))
+                    },
+                    DiskShipVoxel::Instance(id) => {
+                        if spawned.contains_key(&id.state_id) {
+                            ship.map.set_voxel_by_idx(&idx, VoxelVal::Object(*spawned.get(&id.state_id).unwrap()))
+                        } else {
+                            let name = disk_ship.template_names.get(&id.template_id).unwrap().clone();
+
+                            for inst in &all_instances.configs {
+                                if inst.name == name {
+                                    let spawn_e = inst.create.build(cmds, asset_server);
+                                    spawned.insert(id.state_id, spawn_e);
+
+                                    let state_e = Entity::from_raw(
+                                        disk_ship.states.get(&id.state_id).unwrap().index()
+                                    );
+
+                                    cmds.entity(spawn_e).insert(SpatialBundle::from_transform(
+                                        sub_world.entity(state_e).get::<Transform>().unwrap().clone()
+                                    ));
+
+                                    ship.map.set_voxel_by_idx(&idx, VoxelVal::Object(spawn_e))
+                                }
+                            }
+                        }
+                    },
+                }
+            }
         }
     }
 }
