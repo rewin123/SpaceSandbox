@@ -114,31 +114,12 @@ fn quick_load(
 
 
 fn quick_save(
-    world : &mut World
+    mut block : ResMut<StationBuildBlock>,
+    mut cmd_save : EventWriter<CmdShipSave>
 ) {
-    if world.get_resource_mut::<StationBuildBlock>().unwrap().cmd == StationBuildCmds::QuickSave {
-        world.get_resource_mut::<StationBuildBlock>().unwrap().cmd = StationBuildCmds::None;
-
-        let block = world.get_resource::<StationBuildBlock>().unwrap();
-        let ship = world.entity(block.ship).get::<Ship>();
-
-
-        let disk_ship = DiskShip::from_ship(block.ship, &world);
-        
-        let data_e = world.spawn(DiskShipBase64 {
-            data: disk_ship.to_base64(),
-        }).id();
-
-        {
-            let type_registry = world.resource::<AppTypeRegistry>().clone();
-            let dynamic_scene = DynamicScene::from_world(&world, &type_registry);
-
-            let ron_scene = dynamic_scene.serialize_ron(&type_registry).unwrap();
-
-            File::create(format!("quick.scn.ron"))
-                .and_then(|mut file| file.write_all(ron_scene.as_bytes())).unwrap();
-        }
-        world.despawn(data_e);
+    if block.cmd == StationBuildCmds::QuickSave {
+        block.cmd = StationBuildCmds::None;
+        cmd_save.send(CmdShipSave(block.ship, "quick.scn.ron".to_string()));
     }
 }
 

@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 
 use bevy::scene::serde::SceneDeserializer;
 use bevy::{prelude::*, utils::HashMap};
@@ -8,7 +8,10 @@ use serde::de::DeserializeSeed;
 use super::common::*;
 use super::*;
 
-pub struct CmdShipSave(Entity);
+#[derive(Resource, Default)]
+pub struct ShipSaveQueue(Vec<(Entity, String)>);
+
+pub struct CmdShipSave(pub Entity, pub String);
 pub struct CmdShipLoad(pub String);
 
 pub struct ShipLoaded(pub Entity);
@@ -21,7 +24,46 @@ impl Plugin for ShipPlugin {
         app.add_event::<CmdShipLoad>();
         app.add_event::<ShipLoaded>();
 
+        app.insert_resource(ShipSaveQueue::default());
+
         app.add_system(loading_ship_system);
+        app.add_system(prepare_saving_ship_system);
+        app.add_system(saving_ship_system);
+    }
+}
+
+fn saving_ship_system(
+    world : &mut World
+) {
+    let queue = world.resource::<ShipSaveQueue>().0.clone();
+    world.resource_mut::<ShipSaveQueue>().0.clear();
+
+    for (ship, path) in queue {
+        let disk_ship = DiskShip::from_ship(ship, &world);
+            
+        let data_e = world.spawn(DiskShipBase64 {
+            data: disk_ship.to_base64(),
+        }).id();
+
+        {
+            let type_registry = world.resource::<AppTypeRegistry>().clone();
+            let dynamic_scene = DynamicScene::from_world(&world, &type_registry);
+
+            let ron_scene = dynamic_scene.serialize_ron(&type_registry).unwrap();
+
+            File::create(path)
+                .and_then(|mut file| file.write_all(ron_scene.as_bytes())).unwrap();
+        }
+        world.despawn(data_e);
+    }
+}
+
+fn prepare_saving_ship_system(
+    mut cmd_save : EventReader<CmdShipSave>,
+    mut queue : ResMut<ShipSaveQueue>
+) {
+    for cmd_ship in cmd_save.iter() {
+        queue.0.push((cmd_ship.0, cmd_ship.1.clone()));
     }
 }
 

@@ -16,7 +16,13 @@ pub struct CachedSavedShips {
 impl Plugin for StationBuilderUI {
     fn build(&self, app: &mut App) {
         app.insert_resource(CachedSavedShips::default());
+        app.insert_resource(BuildMenuState::default());
     }
+}
+
+#[derive(Resource, Default)]
+pub struct BuildMenuState {
+    pub save_name : String
 }
 
 pub fn ship_build_menu(
@@ -26,7 +32,9 @@ pub fn ship_build_menu(
     mut ctx : ResMut<EguiContext>,
     mut block : ResMut<StationBuildBlock>,
     mut active_windows : ResMut<ActiveWindows>,
-    mut cahed_saved_paths : ResMut<CachedSavedShips>
+    mut cahed_saved_paths : ResMut<CachedSavedShips>,
+    mut cmd_save : EventWriter<CmdShipSave>,
+    mut state : ResMut<BuildMenuState>
 ) {
     egui::SidePanel::left("Build panel").show(ctx.ctx_mut(), |ui| {
 
@@ -59,6 +67,11 @@ pub fn ship_build_menu(
             }
 
             cahed_saved_paths.paths = paths;
+        }
+
+        ui.add(egui::TextEdit::singleline(&mut state.save_name));
+        if ui.button("Save by name").clicked() {
+            cmd_save.send(CmdShipSave(block.ship, format!("saves/{}.scn.ron", state.save_name)));
         }
 
         ui.separator();
