@@ -3,8 +3,8 @@ use super::*;
 use bevy::reflect::Typed;
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Reflect, Component, Clone)]
-pub struct SolidVoxelMap<T> where T : Default + Clone + FromReflect {
+#[derive(Serialize, Deserialize, Component, Clone)]
+pub struct SolidVoxelMap<T> where T : Default + Clone {
     pub data : Vec<T>,
     pub size : IVec3,
     pub first_voxel_pos : Vec3,
@@ -13,7 +13,7 @@ pub struct SolidVoxelMap<T> where T : Default + Clone + FromReflect {
 }
 
 impl<T> SolidVoxelMap<T>
-    where T : Default + Clone + FromReflect
+    where T : Default + Clone
 {
     pub fn new(origin : Vec3, size : IVec3, voxel_size : f32) -> SolidVoxelMap<T> {
         let data = vec![T::default(); (size.x * size.y * size.z) as usize];
@@ -30,7 +30,7 @@ impl<T> SolidVoxelMap<T>
 }
 
 impl<T> SolidVoxelMap<T>
-    where T : Default + Clone + Typed + FromReflect
+    where T : Default + Clone
 {
     #[inline]
     fn get_idx(&self, pos : &IVec3) -> usize {
@@ -58,7 +58,7 @@ impl<T> SolidVoxelMap<T>
 }
 
 impl<T> VoxelMap<T> for SolidVoxelMap<T>
-    where T : Default + Clone  + Typed + FromReflect
+    where T : Default + Clone
 {
     fn get_grid_pos(&self, pos: &Vec3) -> Vec3 {
         let dp = *pos - self.first_voxel_pos;

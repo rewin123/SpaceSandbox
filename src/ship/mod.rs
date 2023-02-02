@@ -15,8 +15,7 @@ pub enum ShipBlock {
 
 pub const VOXEL_SIZE : f32 = 0.5;
 
-#[derive(Component, Reflect)]
-#[reflect(Component)]
+#[derive(Component)]
 pub struct Ship {
     pub map : SolidVoxelMap<VoxelVal<ShipBlock>>
 }
@@ -68,7 +67,7 @@ pub struct DiskShipBase64 {
     pub data : String
 }
 
-#[derive(Serialize, Deserialize, Reflect)]
+#[derive(Serialize, Deserialize)]
 pub struct DiskShip {
     pub map : SolidVoxelMap<DiskShipVoxel>,
     pub template_names : HashMap<u32, String>,

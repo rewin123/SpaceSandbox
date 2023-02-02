@@ -1,25 +1,25 @@
 
 extern crate test;
 
-use bevy::{prelude::*, reflect::Typed};
+use bevy::{prelude::*};
 use super::{VoxelMap, solid_voxel_map::SolidVoxelMap};
 
-#[derive(PartialEq, Eq, Debug, Clone, Reflect, FromReflect)]
-pub enum VoxelVal<VoxelID> where VoxelID : Typed + FromReflect {
+#[derive(PartialEq, Eq, Clone)]
+pub enum VoxelVal<VoxelID> {
     None,
     Voxel(VoxelID),
     Object(Entity),
 }
 
 
-impl<T : Typed + FromReflect> Default for VoxelVal<T> {
+impl<T> Default for VoxelVal<T> {
     fn default() -> Self {
         VoxelVal::None
     }
 }
 
 pub trait ObjectedVoxelMap<T> : VoxelMap<VoxelVal<T>>
-    where T : Clone + Typed + FromReflect
+    where T : Clone
 {
     fn set_object_by_idx(&mut self, e : Entity, pos : &IVec3, bbox : &IVec3) {
         for z in 0..bbox.z {
@@ -61,7 +61,7 @@ pub trait ObjectedVoxelMap<T> : VoxelMap<VoxelVal<T>>
 
 
 impl<T> ObjectedVoxelMap<T> for SolidVoxelMap<VoxelVal<T>> 
-    where T : Clone + Typed + FromReflect
+    where T : Clone
 {
 
 }
