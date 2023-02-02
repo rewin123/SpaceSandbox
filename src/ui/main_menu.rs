@@ -14,11 +14,12 @@ fn main_menu(
         .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
         .show(egui_context.ctx_mut(), |ui| {
             ui.vertical_centered(|ui| {
-                if ui.button("New station").clicked() {
+                if ui.button("Play mission").clicked() {
+                    
+                }
+                if ui.button("Station builder").clicked() {
                     cmds.insert_resource(NextState(SceneType::ShipBuilding));
                 }
-                ui.button("Load station");
-                ui.button("Connect to server");
                 if ui.button("Exit").clicked() {
                     // cmds.push(GameCommands::Exit);
                 }

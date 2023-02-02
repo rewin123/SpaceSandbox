@@ -1,7 +1,4 @@
-
-
-use SpaceSandbox::scenes::StationBuildMenu;
-
+use SpaceSandbox::scenes::station_builder::StationBuilderPlugin;
 use SpaceSandbox::ship::{DiskShipBase64};
 use SpaceSandbox::ui::*;
 use bevy::prelude::*;
@@ -19,7 +16,7 @@ fn main() {
         .add_plugin(SpaceSandbox::ship::common::VoxelInstancePlugin)
         .add_plugin(SpaceSandbox::ship::save_load::ShipPlugin)
         .add_plugin(MainMenuPlugin {})
-        .add_plugin(StationBuildMenu {})
+        .add_plugin(StationBuilderPlugin {})
 
         .run();
 }

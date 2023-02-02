@@ -1,6 +1,8 @@
+mod ui;
+
+use ui::*;
+
 use bevy::prelude::*;
-use bevy_egui::*;
-use bevy_rapier3d::na::Dyn;
 use iyes_loopless::prelude::*;
 
 use crate::ship::*;
@@ -11,12 +13,19 @@ use crate::space_voxel::VoxelMap;
 use crate::space_voxel::objected_voxel_map::*;
 
 use std::fs::File;
-use std::io::{Write, Read};
+use std::io::{Write};
 
-pub struct StationBuildMenu {}
+#[derive(Resource, Default)]
+pub struct ActiveWindows {
+    pub load_ship : bool
+}
 
-impl Plugin for StationBuildMenu {
+pub struct StationBuilderPlugin {}
+
+impl Plugin for StationBuilderPlugin {
     fn build(&self, app: &mut App)  {
+
+        app.insert_resource(ActiveWindows::default());
 
         app.add_enter_system(SceneType::ShipBuilding, setup_build_scene.label("setup_ship_build_scene"));
 
@@ -39,6 +48,16 @@ impl Plugin for StationBuildMenu {
             .with_system(capture_loaded_ship)
             .into()
         );
+
+        app.add_system_set(
+            ConditionSet::new()
+            .run_in_state(SceneType::ShipBuilding)
+            .run_if(|windows : Res<ActiveWindows>| windows.load_ship)
+            .with_system(load_ship_ui)
+            .into()
+        );
+
+        app.add_plugin(StationBuilderUI);
     }
 }
 
@@ -138,45 +157,6 @@ fn clear_all_system(
         let ship_id = new_default_ship(&mut cmds);
         block.ship = ship_id;
     }
-}
-
-fn ship_build_menu(
-    mut cmds : Commands,
-    mut asset_server : Res<AssetServer>,
-    mut voxel_instances : Res<AllVoxelInstances>,
-    mut ctx : ResMut<EguiContext>,
-    mut block : ResMut<StationBuildBlock>
-) {
-    egui::SidePanel::left("Build panel").show(ctx.ctx_mut(), |ui| {
-
-        if ui.button("Clear level").clicked() {
-            block.cmd = StationBuildCmds::ClearAll;
-        }
-        ui.separator();
-        if ui.button("Quick load").clicked() {
-            block.cmd = StationBuildCmds::QuickLoad;
-        }
-        if ui.button("Quick save").clicked() {
-            block.cmd = StationBuildCmds::QuickSave;
-        }
-
-        ui.separator();
-        for inst in &voxel_instances.configs {
-            if ui.button(&inst.name).clicked() {
-
-                let e = inst.create.build(&mut cmds, &asset_server);
-                cmds.entity(e).insert(ActiveBlock);
-
-                if let Some(prev_e) = block.e {
-                    cmds.entity(prev_e).despawn_recursive();
-                }
-
-                block.e = Some(e);
-                block.instance = Some(inst.instance.clone());
-                block.cur_name = inst.name.clone();
-            }
-        }
-    });
 }
 
 fn spawn_block(
