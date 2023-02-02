@@ -136,12 +136,14 @@ impl DiskShip {
 
     pub fn to_base64(&self) -> String {
         let bytes =  bincode::serialize(&self).unwrap();
-        let base64 = base64::encode(bytes);
+        let compressed_bytes = snap::raw::Encoder::new().compress_vec(&bytes).unwrap();
+        let base64 = base64::encode(compressed_bytes);
         base64
     }
 
     pub fn from_base64(text : &String) -> DiskShip {
         let bytes = base64::decode(text).unwrap();
-        bincode::deserialize(&bytes).unwrap()
+        let decompressed_bytes = snap::raw::Decoder::new().decompress_vec(&bytes).unwrap();
+        bincode::deserialize(&decompressed_bytes).unwrap()
     }
 }

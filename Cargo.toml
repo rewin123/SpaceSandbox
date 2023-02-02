@@ -21,6 +21,7 @@ postcard = "*"
 block-mesh = "*"
 bincode = "*"
 base64 = "*"
+snap = "*"
 
 bevy_mod_picking = "0.11"
 
