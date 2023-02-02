@@ -1,17 +1,12 @@
-use bevy::ecs::entity::EntityMap;
 use bevy::prelude::*;
-use bevy::scene::serde::SceneDeserializer;
-use bevy::utils::{HashSet, HashMap};
-use bevy::{tasks::IoTaskPool};
 use bevy_egui::*;
 use bevy_rapier3d::na::Dyn;
 use iyes_loopless::prelude::*;
-use bevy_rapier3d::prelude::*;
-use serde::de::DeserializeSeed;
 
 use crate::ship::*;
 use crate::ship::common::{AllVoxelInstances, VoxelInstance};
 use crate::*;
+use crate::ship::save_load::*;
 use crate::space_voxel::VoxelMap;
 use crate::space_voxel::objected_voxel_map::*;
 
@@ -41,6 +36,7 @@ impl Plugin for StationBuildMenu {
             .with_system(clear_all_system)
             .with_system(quick_save)
             .with_system(quick_load)
+            .with_system(capture_loaded_ship)
             .into()
         );
     }
@@ -71,13 +67,20 @@ pub enum StationBuildCmds {
 #[derive(Component)]
 pub struct ActiveBlock;
 
+fn capture_loaded_ship(
+    mut block : ResMut<StationBuildBlock>,
+    mut cmd_load : EventReader<ShipLoaded>
+) {
+    for ship in cmd_load.iter() {
+        block.ship = ship.0;
+    }
+}
+
 fn quick_load(
     mut cmds : Commands,
-    asset_server : Res<AssetServer>,
-    ship_entity : Query<Entity, With<Ship>>,
     mut block : ResMut<StationBuildBlock>,
-    type_registry : Res<AppTypeRegistry>,
-    all_instances : Res<AllVoxelInstances>
+    mut cmd_load : EventWriter<CmdShipLoad>,
+    ship_entity : Query<Entity, With<Ship>>,
 ) {
     if block.cmd == StationBuildCmds::QuickLoad {
         block.cmd = StationBuildCmds::None;
@@ -86,75 +89,7 @@ fn quick_load(
             cmds.entity(e).despawn_recursive();
         }
 
-        let mut file = File::open("quick.scn.ron").unwrap();
-        let mut scene_ron = vec![];
-        file.read_to_end(&mut scene_ron).unwrap();
-        let mut des = ron::Deserializer::from_bytes(&scene_ron).unwrap();
-
-        let result = SceneDeserializer {
-            type_registry : &type_registry.read()
-        }.deserialize(&mut des).unwrap();
-
-        let mut entity_map = EntityMap::default();
-        let mut sub_world = Scene::from_dynamic_scene(&result, &type_registry).unwrap().world;
-
-        {
-            let data = sub_world.query::<(&DiskShipBase64)>().iter(&sub_world).next().unwrap();
-            let disk_ship = DiskShip::from_base64(&data.data);
-
-            let mut ship = Ship::new_sized(disk_ship.map.size.clone());
-            let mut spawned : HashMap<u32, Entity> = HashMap::new();
-
-            for z in 0..disk_ship.map.size.z {
-                for y in 0..disk_ship.map.size.y {
-                    for x in 0..disk_ship.map.size.x {
-                        let idx = IVec3::new(x, y, z);
-                        let disk_v = disk_ship.map.get_by_idx(&idx);
-
-                        match disk_v {
-                            DiskShipVoxel::None => {
-                                ship.map.set_voxel_by_idx(&idx, VoxelVal::None);
-                            },
-                            DiskShipVoxel::Voxel(block) => {
-                                ship.map.set_voxel_by_idx(&idx, VoxelVal::Voxel(block.clone()))
-                            },
-                            DiskShipVoxel::Instance(id) => {
-                                if spawned.contains_key(&id.state_id) {
-                                    ship.map.set_voxel_by_idx(&idx, VoxelVal::Object(*spawned.get(&id.state_id).unwrap()))
-                                } else {
-                                    let name = disk_ship.template_names.get(&id.template_id).unwrap().clone();
-
-                                    for inst in &all_instances.configs {
-                                        if inst.name == name {
-                                            let spawn_e = inst.create.build(&mut cmds, &asset_server);
-                                            spawned.insert(id.state_id, spawn_e);
-
-                                            let state_e = Entity::from_raw(
-                                                disk_ship.states.get(&id.state_id).unwrap().index()
-                                            );
-
-                                            //transform
-                                            cmds.entity(spawn_e).insert(SpatialBundle::from_transform(
-                                                sub_world.entity(state_e).get::<Transform>().unwrap().clone()
-                                            ));
-
-                                            ship.map.set_voxel_by_idx(&idx, VoxelVal::Object(spawn_e))
-                                        }
-                                    }
-                                }
-                            },
-                        }
-                    }
-                }
-            }
-
-            let ship_id = cmds.spawn(ship).insert(
-                SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)))
-                .id();
-
-            block.ship = ship_id;
-
-        }
+        cmd_load.send(CmdShipLoad("quick.scn.ron".to_string()));
     }
 }
 

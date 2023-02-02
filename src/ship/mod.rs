@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use self::common::{AllVoxelInstances, VoxelInstance};
 
 pub mod common;
+pub mod save_load;
 
 #[derive(Clone, Reflect, FromReflect, Serialize, Deserialize)]
 pub enum ShipBlock {

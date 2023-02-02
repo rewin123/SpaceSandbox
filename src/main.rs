@@ -17,7 +17,9 @@ fn main() {
         .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(WorldInspectorPlugin)
         .add_plugin(SpaceSandbox::ship::common::VoxelInstancePlugin)
+        .add_plugin(SpaceSandbox::ship::save_load::ShipPlugin)
         .add_plugin(MainMenuPlugin {})
         .add_plugin(StationBuildMenu {})
+
         .run();
 }
