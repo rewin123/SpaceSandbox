@@ -76,7 +76,7 @@ pub struct DiskShip {
 }
 
 impl DiskShip {
-    pub fn from_ship(ship_id : Entity, world : &World) -> DiskShip {
+    pub fn from_ship(ship_id : Entity, world : &World, remap : &HashMap<Entity, Entity>) -> DiskShip {
         let all_instances = world.resource::<AllVoxelInstances>();
 
         let mut template_names = HashMap::new();
@@ -90,8 +90,6 @@ impl DiskShip {
         
         let mut entity_id : HashMap<Entity, u32> = HashMap::new();
         let mut id_indexer = 0;
-
-        let mut scene = DynamicSceneBuilder::from_world(world);
 
         let mut states : HashMap<u32, Entity> = HashMap::new();
 
@@ -116,9 +114,8 @@ impl DiskShip {
                             } else {
                                 entity_id.insert(*e, id_indexer);
                                 let val = DiskShipVoxel::Instance(InstanceId {template_id, state_id : id_indexer });
-                                states.insert(id_indexer, *e);
+                                states.insert(id_indexer, *remap.get(e).unwrap());
                                 id_indexer += 1;
-                                scene.extract_entity(*e);
                                 val
                             }
                         },

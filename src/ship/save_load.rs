@@ -14,12 +14,12 @@ use super::*;
 
 #[derive(Default)]
 pub struct CopyAlgorithm {
-    pub steps : Vec<Box<dyn FnMut(&mut EntityMut, &mut EntityRef) + Send + Sync>>
+    pub steps : Vec<Box<dyn Fn(&mut EntityMut, &mut EntityRef) + Send + Sync>>
 }
 
 impl CopyAlgorithm {
-    pub fn copy(&mut self, dst : &mut EntityMut, src : &mut EntityRef) {
-        for s in &mut self.steps {
+    pub fn copy(&self, dst : &mut EntityMut, src : &mut EntityRef) {
+        for s in &self.steps {
             (s)(dst, src);
         }
     }
@@ -28,7 +28,7 @@ impl CopyAlgorithm {
 pub struct ComponentClone;
 
 impl ComponentClone {
-    fn new<T : Component + Clone>() -> Box<dyn FnMut(&mut EntityMut, &mut EntityRef) + Send + Sync> {
+    fn new<T : Component + Clone>() -> Box<dyn Fn(&mut EntityMut, &mut EntityRef) + Send + Sync> {
         Box::new(|dst : &mut EntityMut, src : &mut EntityRef| {
             if let Some(src_cmp) = src.get::<T>() {
                 dst.insert(src_cmp.clone());
@@ -93,27 +93,47 @@ fn saving_ship_system(
     world : &mut World
 ) {
     let queue = world.resource::<ShipSaveQueue>().0.clone();
-    world.resource_mut::<ShipSaveQueue>().0.clear();
+    {
+        world.resource_mut::<ShipSaveQueue>().0.clear();
+
+        let cfg = world.resource::<SaveLoadCfg>();
+
+        for (ship, path) in &queue {
+
+            let mut sub_world = World::default();
+            sub_world.insert_resource(world.resource::<AppTypeRegistry>().clone());
+
+                
+
+            let mut map = HashMap::new();
+
+            for src_e in world.iter_entities() {
+                let mut src_ref = world.entity(src_e);
+                let mut dst_ref = sub_world.spawn_empty();
+                cfg.save.copy(&mut dst_ref, &mut src_ref);
+                map.insert(src_e, dst_ref.id());
+            }
 
 
-    for (ship, path) in queue {
-        let disk_ship = DiskShip::from_ship(ship, &world);
-            
-        let data_e = world.spawn(DiskShipBase64 {
-            data: disk_ship.to_base64(),
-        }).id();
+            let disk_ship = DiskShip::from_ship(*ship, &world, &map);
 
-        {
-            let type_registry = world.resource::<AppTypeRegistry>().clone();
-            let dynamic_scene = DynamicScene::from_world(&world, &type_registry);
+            let data_e = sub_world.spawn(DiskShipBase64 {
+                data: disk_ship.to_base64(),
+            }).id();
 
-            let ron_scene = dynamic_scene.serialize_ron(&type_registry).unwrap();
+            {
+                let type_registry = world.resource::<AppTypeRegistry>().clone();
+                let dynamic_scene = DynamicScene::from_world(&sub_world, &type_registry);
 
-            File::create(&path)
-                .and_then(|mut file| file.write_all(ron_scene.as_bytes())).unwrap();
+                let ron_scene = dynamic_scene.serialize_ron(&type_registry).unwrap();
+
+                File::create(&path)
+                    .and_then(|mut file| file.write_all(ron_scene.as_bytes())).unwrap();
+            }
         }
-        world.despawn(data_e);
+    }
 
+    for (ship, path) in &queue {
         world.resource_mut::<ToastHolder>().toast.add(Toast::info(format!("Saved ship to {}", &path)));
     }
 }
