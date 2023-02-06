@@ -6,7 +6,6 @@ use crate::*;
 fn main_menu(
     mut cmds : Commands,
     mut egui_context: ResMut<EguiContext>,
-    mut scene : ResMut<CurrentState<SceneType>>
 ) {
     egui::Window::new("Space sandbox")
         .resizable(false)
@@ -15,7 +14,7 @@ fn main_menu(
         .show(egui_context.ctx_mut(), |ui| {
             ui.vertical_centered(|ui| {
                 if ui.button("Play mission").clicked() {
-                    
+
                 }
                 if ui.button("Station builder").clicked() {
                     cmds.insert_resource(NextState(SceneType::ShipBuilding));
@@ -40,6 +39,7 @@ pub struct MainMenuPlugin {
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_loopless_state(SceneType::MainMenu);
+        app.add_loopless_state(Gamemode::Godmode);
         
         app.add_system_set(ConditionSet::new()
             .run_in_state(SceneType::MainMenu)

@@ -1,3 +1,4 @@
+use SpaceSandbox::scenes::fps_mode::FPSPlugin;
 use SpaceSandbox::scenes::station_builder::StationBuilderPlugin;
 use SpaceSandbox::ship::{DiskShipBase64};
 use SpaceSandbox::ui::*;
@@ -18,6 +19,7 @@ fn main() {
         .add_plugin(MainMenuPlugin {})
         .add_plugin(StationBuilderPlugin {})
         .add_plugin(NotificationPlugin)
+        .add_plugin(FPSPlugin)
 
         .run();
 }

@@ -3,6 +3,8 @@ use bevy_rapier3d::prelude::Collider;
 
 use super::VOXEL_SIZE;
 
+pub const TELEPORN_NAME : &'static str = "Teleport spot";
+
 pub trait BuildInstance {
     fn build(&self, cmds : &mut Commands, asset_server : &AssetServer) -> Entity;
 }
@@ -81,7 +83,7 @@ pub fn init_all_voxel_instances(
     {
         let bbox : IVec3 = [1, 1, 1].into();
         let cfg = VoxelInstanceConfig {
-            name : "Teleport spot".to_string(),
+            name : TELEPORN_NAME.to_string(),
             instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
             create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
                 cmds.spawn(SceneBundle {

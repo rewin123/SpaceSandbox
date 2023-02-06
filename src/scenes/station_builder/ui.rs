@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_egui::*;
-use bevy_rapier3d::rapier::control::DynamicRayCastVehicleController;
 
 use crate::ship::common::AllVoxelInstances;
 
@@ -37,6 +36,10 @@ pub fn ship_build_menu(
     mut state : ResMut<BuildMenuState>
 ) {
     egui::SidePanel::left("Build panel").show(ctx.ctx_mut(), |ui| {
+
+        if ui.button("Play").clicked() {
+            block.cmd = StationBuildCmds::GoToFPS;
+        }
 
         if ui.button("Clear level").clicked() {
             block.cmd = StationBuildCmds::ClearAll;

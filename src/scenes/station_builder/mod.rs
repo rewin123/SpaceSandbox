@@ -6,18 +6,23 @@ use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
 use crate::ship::*;
-use crate::ship::common::{AllVoxelInstances, VoxelInstance};
+use crate::ship::common::{AllVoxelInstances, VoxelInstance, TELEPORN_NAME};
 use crate::*;
 use crate::ship::save_load::*;
 use crate::space_voxel::VoxelMap;
 use crate::space_voxel::objected_voxel_map::*;
 
-use std::fs::File;
-use std::io::{Write};
+use super::fps_mode::*;
 
 #[derive(Resource, Default)]
 pub struct ActiveWindows {
     pub load_ship : bool
+}
+
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+pub enum StationBuildState {
+    NotLoaded,
+    Loaded
 }
 
 pub struct StationBuilderPlugin {}
@@ -27,11 +32,13 @@ impl Plugin for StationBuilderPlugin {
 
         app.insert_resource(ActiveWindows::default());
 
+        app.add_loopless_state(StationBuildState::NotLoaded);
         app.add_enter_system(SceneType::ShipBuilding, setup_build_scene.label("setup_ship_build_scene"));
 
         app.add_system_set(
             ConditionSet::new()
                 .run_in_state(SceneType::ShipBuilding)
+                .run_not_in_state(Gamemode::FPS)
                 .with_system(ship_build_menu)
                 .with_system(pos_block)
                 .with_system(spawn_block)
@@ -41,17 +48,21 @@ impl Plugin for StationBuilderPlugin {
         app.add_system_set(
             ConditionSet::new()
             .run_in_state(SceneType::ShipBuilding)
+            .run_not_in_state(Gamemode::FPS)
             .run_if_resource_exists::<StationBuildBlock>()
+            .after(PAWN_CHANGE_SYSTEM)
             .with_system(clear_all_system)
             .with_system(quick_save)
             .with_system(quick_load)
             .with_system(capture_loaded_ship)
+            .with_system(go_to_fps)
             .into()
         );
 
         app.add_system_set(
             ConditionSet::new()
             .run_in_state(SceneType::ShipBuilding)
+            .run_not_in_state(Gamemode::FPS)
             .run_if(|windows : Res<ActiveWindows>| windows.load_ship)
             .with_system(load_ship_ui)
             .into()
@@ -80,7 +91,8 @@ pub enum StationBuildCmds {
     None,
     ClearAll,
     QuickSave,
-    QuickLoad
+    QuickLoad,
+    GoToFPS
 }
 
 #[derive(Component)]
@@ -142,17 +154,17 @@ fn clear_all_system(
 
 fn spawn_block(
     mut cmds : Commands,
-    mut asset_server : Res<AssetServer>,
+    asset_server : Res<AssetServer>,
     buttons : Res<Input<MouseButton>>,
-    mut active_blocks : Query<(&mut Transform), With<ActiveBlock>>,
-    mut block : ResMut<StationBuildBlock>,
+    active_blocks : Query<&mut Transform, With<ActiveBlock>>,
+    block : ResMut<StationBuildBlock>,
     mut ships : Query<&mut Ship>,
     all_instances : Res<AllVoxelInstances>
 ) {
     if block.e.is_none() {
         return;
     }
-    if buttons.just_pressed(MouseButton::Left) {
+    if buttons.pressed(MouseButton::Left) {
         let tr;
         if let Ok(ac_tr) = active_blocks.get(block.e.unwrap()) {
             tr = ac_tr;
@@ -187,7 +199,7 @@ fn spawn_block(
 
 fn pos_block(
     cameras : Query<(&Camera, &GlobalTransform)>,
-    mut active_blocks : Query<(&mut Transform), With<ActiveBlock>>,
+    mut active_blocks : Query<&mut Transform, With<ActiveBlock>>,
     block : ResMut<StationBuildBlock>,
     windows : Res<Windows>,
     mut ships : Query<&mut Ship>,
@@ -239,12 +251,20 @@ fn new_default_ship(cmds : &mut Commands) -> Entity {
 }
 
 fn setup_build_scene(
-    mut cmds : Commands
+    mut cmds : Commands,
+    load_state : Res<CurrentState<StationBuildState>>,
+    mut pawn_event : EventWriter<ChangePawn>
 ) {
-    cmds.spawn(Camera3dBundle {
+    if load_state.0 != StationBuildState::NotLoaded {
+        return;
+    }
+    cmds.insert_resource(NextState(StationBuildState::Loaded));
+    let pawn = cmds.spawn(Camera3dBundle {
         transform: Transform::from_xyz(10.0, 10.0, 10.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
         ..default()
-    });
+    }).id();
+
+    cmds.entity(pawn).insert(PawnCamera { id: pawn });
 
     let ship_id = new_default_ship(&mut cmds);
 
@@ -256,4 +276,47 @@ fn setup_build_scene(
         cur_name : "".to_string(),
         cmd : StationBuildCmds::None
     });
+
+    pawn_event.send(ChangePawn { new_pawn: pawn, new_mode: Gamemode::Godmode, save_stack: false });
+}
+
+fn go_to_fps(
+    mut cmds : Commands,
+    mut pawn_event : EventWriter<ChangePawn>,
+    mut block : ResMut<StationBuildBlock>,
+    mut query : Query<(&GlobalTransform, &VoxelInstance)>,
+    mut ships : Query<&Ship>,
+    mut all_instances : Res<AllVoxelInstances>) {
+
+    if block.cmd == StationBuildCmds::GoToFPS {
+        block.cmd = StationBuildCmds::None;
+
+        //find teleport spot
+        let mut pos = Vec3::ZERO; 
+        for idx in &all_instances.configs {
+            if idx.name == TELEPORN_NAME {
+                let teleport_idx = idx.instance.common_id;
+                for (tr, inst) in &query {
+                    if inst.common_id == teleport_idx {
+                        pos = tr.translation();
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+
+
+        let mut cam = Camera::default();
+        cam.is_active = false;
+        let pawn = cmds.spawn(Camera3dBundle {
+            transform: Transform::from_xyz(pos.x, pos.y + 2.0, pos.z).looking_at(Vec3::new(pos.x + 1.0, pos.y + 2.0, pos.z), Vec3::Y),
+            camera : cam,
+            ..default()
+        }).id();
+    
+        cmds.entity(pawn).insert(PawnCamera { id: pawn });
+    
+        pawn_event.send(ChangePawn { new_pawn: pawn, new_mode: Gamemode::FPS, save_stack: true });
+    }
 }

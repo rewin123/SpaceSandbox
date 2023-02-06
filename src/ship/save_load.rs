@@ -103,10 +103,7 @@ fn saving_ship_system(
             let mut sub_world = World::default();
             sub_world.insert_resource(world.resource::<AppTypeRegistry>().clone());
 
-                
-
             let mut map = HashMap::new();
-
             for src_e in world.iter_entities() {
                 let mut src_ref = world.entity(src_e);
                 let mut dst_ref = sub_world.spawn_empty();
@@ -117,9 +114,9 @@ fn saving_ship_system(
 
             let disk_ship = DiskShip::from_ship(*ship, &world, &map);
 
-            let data_e = sub_world.spawn(DiskShipBase64 {
+            sub_world.spawn(DiskShipBase64 {
                 data: disk_ship.to_base64(),
-            }).id();
+            });
 
             {
                 let type_registry = world.resource::<AppTypeRegistry>().clone();
@@ -133,7 +130,7 @@ fn saving_ship_system(
         }
     }
 
-    for (ship, path) in &queue {
+    for (_, path) in &queue {
         world.resource_mut::<ToastHolder>().toast.add(Toast::info(format!("Saved ship to {}", &path)));
     }
 }
@@ -169,7 +166,7 @@ fn loading_ship_system(
         let mut sub_world = Scene::from_dynamic_scene(&result, &type_registry).unwrap().world;
 
         {
-            let data = sub_world.query::<(&DiskShipBase64)>().iter(&sub_world).next().unwrap();
+            let data = sub_world.query::<&DiskShipBase64>().iter(&sub_world).next().unwrap();
             let disk_ship = DiskShip::from_base64(&data.data);
 
             let mut ship = Ship::new_sized(disk_ship.map.size.clone());
