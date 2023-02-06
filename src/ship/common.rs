@@ -78,6 +78,28 @@ pub fn init_all_voxel_instances(
         indexer += 1;
     }
 
+    {
+        let bbox : IVec3 = [1, 1, 1].into();
+        let cfg = VoxelInstanceConfig {
+            name : "Teleport spot".to_string(),
+            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
+                cmds.spawn(SceneBundle {
+                    scene: asset_server.load("furniture/teleport_spot.glb#Scene0"),
+                    
+                    ..default()
+                }).insert(Collider::cuboid(
+                    bbox.x as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.y as f32 * VOXEL_SIZE / 2.0 / 2.0, 
+                    bbox.z as f32 * VOXEL_SIZE / 2.0 ))
+                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+            }).to_box()
+        };
+
+        configs.push(cfg);
+        indexer += 1;
+    }
+
     let all_instances = AllVoxelInstances {
         configs
     };

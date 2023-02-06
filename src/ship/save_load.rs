@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{Read, Write};
 
+use bevy::ecs::world::{EntityRef, EntityMut};
 use bevy::scene::serde::SceneDeserializer;
 use bevy::{prelude::*, utils::HashMap};
 use egui_notify::Toast;
@@ -10,6 +11,50 @@ use crate::ui::ToastHolder;
 
 use super::common::*;
 use super::*;
+
+#[derive(Default)]
+pub struct CopyAlgorithm {
+    pub steps : Vec<Box<dyn FnMut(&mut EntityMut, &mut EntityRef) + Send + Sync>>
+}
+
+impl CopyAlgorithm {
+    pub fn copy(&mut self, dst : &mut EntityMut, src : &mut EntityRef) {
+        for s in &mut self.steps {
+            (s)(dst, src);
+        }
+    }
+}
+
+pub struct ComponentClone;
+
+impl ComponentClone {
+    fn new<T : Component + Clone>() -> Box<dyn FnMut(&mut EntityMut, &mut EntityRef) + Send + Sync> {
+        Box::new(|dst : &mut EntityMut, src : &mut EntityRef| {
+            if let Some(src_cmp) = src.get::<T>() {
+                dst.insert(src_cmp.clone());
+            }
+        })
+    }
+}
+
+#[derive(Resource)]
+pub struct SaveLoadCfg {
+    pub save : CopyAlgorithm,
+    pub load : CopyAlgorithm
+}
+
+impl SaveLoadCfg {
+    fn add_simple_clone<T : Component + Clone>(&mut self) {
+        self.save.steps.push(ComponentClone::new::<T>());
+        self.load.steps.push(ComponentClone::new::<T>());
+    }
+}
+
+impl Default for SaveLoadCfg {
+    fn default() -> Self {
+        Self { save: Default::default(), load: Default::default() }
+    }
+}
 
 #[derive(Resource, Default)]
 pub struct ShipSaveQueue(Vec<(Entity, String)>);
@@ -28,11 +73,20 @@ impl Plugin for ShipPlugin {
         app.add_event::<ShipLoaded>();
 
         app.insert_resource(ShipSaveQueue::default());
+        app.insert_resource(SaveLoadCfg::default());
 
         app.add_system(loading_ship_system);
         app.add_system(prepare_saving_ship_system);
         app.add_system(saving_ship_system);
+
+        app.add_startup_system(setup_base_save_load_cfg);
     }
+}
+
+fn setup_base_save_load_cfg(
+    mut cfg : ResMut<SaveLoadCfg>
+) {
+    cfg.add_simple_clone::<Transform>();
 }
 
 fn saving_ship_system(
@@ -40,6 +94,7 @@ fn saving_ship_system(
 ) {
     let queue = world.resource::<ShipSaveQueue>().0.clone();
     world.resource_mut::<ShipSaveQueue>().0.clear();
+
 
     for (ship, path) in queue {
         let disk_ship = DiskShip::from_ship(ship, &world);
