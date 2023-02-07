@@ -1,4 +1,4 @@
-use bevy::input::mouse::MouseMotion;
+use bevy::{input::mouse::MouseMotion, window::WindowFocused};
 
 use crate::{prelude::*, pawn_system::CurrentPawn};
 
@@ -12,6 +12,7 @@ impl Plugin for FPSPlugin {
         app.add_system_set(ConditionSet::new()
             .run_in_state(Gamemode::FPS)
             .with_system(fps_controller)
+            .with_system(fps_focus_control)
             .into());
 
         app.add_enter_system(Gamemode::FPS, fps_setup);
@@ -23,6 +24,21 @@ fn fps_setup(
 ) {
     windows.get_primary_mut().unwrap().set_cursor_grab_mode(bevy::window::CursorGrabMode::Confined);
     windows.get_primary_mut().unwrap().set_cursor_visibility(false);
+}
+
+fn fps_focus_control(
+    mut window_focus : EventReader<WindowFocused>,
+    mut windows : ResMut<Windows>
+) {
+    for focus in window_focus.iter() {
+        if !focus.focused {
+            windows.get_primary_mut().unwrap().set_cursor_grab_mode(bevy::window::CursorGrabMode::None);
+            windows.get_primary_mut().unwrap().set_cursor_visibility(true);
+        } else {
+            windows.get_primary_mut().unwrap().set_cursor_grab_mode(bevy::window::CursorGrabMode::Confined);
+            windows.get_primary_mut().unwrap().set_cursor_visibility(false);
+        }
+    }
 }
 
 fn fps_controller(
