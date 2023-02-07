@@ -1,83 +1,45 @@
-use crate::prelude::*;
+use bevy::input::mouse::MouseMotion;
 
-pub const PAWN_CHANGE_SYSTEM : &'static str = "PAWN_CHANGE_SYSTEM";
+use crate::{prelude::*, pawn_system::CurrentPawn};
+
 
 pub struct FPSPlugin;
 
-#[derive(Resource, Default)]
-pub struct CurrentPawn {
-    pub id : Option<Entity>,
-    pub stack : Vec<Entity>
-}
-
-#[derive(Component)]
-pub struct PawnCamera {
-    pub id : Entity
-}
-
-pub struct ChangePawn {
-    pub new_pawn : Entity,
-    pub new_mode : Gamemode,
-    pub save_stack : bool
-}
 
 impl Plugin for FPSPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(CurrentPawn::default());
-        app.add_event::<ChangePawn>();
 
         app.add_system_set(ConditionSet::new()
             .run_in_state(Gamemode::FPS)
             .with_system(fps_controller)
             .into());
 
-        app.add_system(change_pawn_system.label(PAWN_CHANGE_SYSTEM));
+        app.add_enter_system(Gamemode::FPS, fps_setup);
     }
 }
 
-fn change_pawn_system(
-    mut cmds : Commands,
-    mut event_reader : EventReader<ChangePawn>,
-    mut pawn : ResMut<CurrentPawn>,
-        pawn_cam_holders : Query<&PawnCamera>,
-    mut pawn_cams : Query<&mut Camera>
+fn fps_setup(
+    mut windows : ResMut<Windows>
 ) {
-    for pawn_change in event_reader.iter() {
-
-        if let Some(e) = pawn.id {
-            if let Ok(holder) = pawn_cam_holders.get(e) {
-                if let Ok(mut cam) = pawn_cams.get_mut(holder.id) {
-                    cam.is_active = false;
-                }
-            }
-            if pawn_change.save_stack {
-                pawn.stack.push(e);
-            }
-        }
-
-        if !pawn_change.save_stack {
-            pawn.stack.clear();
-        }
-
-        pawn.id = Some(pawn_change.new_pawn);
-        if let Ok(holder) = pawn_cam_holders.get(pawn_change.new_pawn) {
-            if let Ok(mut cam) = pawn_cams.get_mut(holder.id) {
-                cam.is_active = true;
-            }
-        }
-
-        cmds.insert_resource(NextState(pawn_change.new_mode.clone()));
-
-        break;
-    }
-    event_reader.clear();
+    windows.get_primary_mut().unwrap().set_cursor_grab_mode(bevy::window::CursorGrabMode::Locked);
 }
-
 
 fn fps_controller(
-    pawn : Res<CurrentPawn>
+    pawn : Res<CurrentPawn>,
+    mut pawns : Query<(&mut Transform)>,
+    mut mouse_move : EventReader<MouseMotion>
 ) {
     if let Some(e) = pawn.id {
-
+        if let Ok(mut pawn_transform) = pawns.get_mut(e) {
+            for mv in mouse_move.iter() {
+                let frw = pawn_transform.forward();
+                let up = pawn_transform.up();
+                let right = pawn_transform.right();
+                let delta = mv.delta * 0.01;
+                let changed_frw = (frw + delta.x * right - delta.y * up).normalize();
+                let pos = pawn_transform.translation;
+                pawn_transform.look_at(pos + changed_frw, up);
+            }
+        }
     }
 }

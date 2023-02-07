@@ -1,3 +1,4 @@
+use SpaceSandbox::pawn_system::PawnPlugin;
 use SpaceSandbox::scenes::fps_mode::FPSPlugin;
 use SpaceSandbox::scenes::station_builder::StationBuilderPlugin;
 use SpaceSandbox::ship::{DiskShipBase64};
@@ -20,6 +21,7 @@ fn main() {
         .add_plugin(StationBuilderPlugin {})
         .add_plugin(NotificationPlugin)
         .add_plugin(FPSPlugin)
+        .add_plugin(PawnPlugin)
 
         .run();
 }

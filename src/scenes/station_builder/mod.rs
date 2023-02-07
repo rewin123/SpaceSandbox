@@ -5,14 +5,13 @@ use ui::*;
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
+use crate::pawn_system::*;
 use crate::ship::*;
 use crate::ship::common::{AllVoxelInstances, VoxelInstance, TELEPORN_NAME};
 use crate::*;
 use crate::ship::save_load::*;
 use crate::space_voxel::VoxelMap;
 use crate::space_voxel::objected_voxel_map::*;
-
-use super::fps_mode::*;
 
 #[derive(Resource, Default)]
 pub struct ActiveWindows {
@@ -264,7 +263,7 @@ fn setup_build_scene(
         ..default()
     }).id();
 
-    cmds.entity(pawn).insert(PawnCamera { id: pawn });
+    cmds.entity(pawn).insert(Pawn { camera_id: pawn });
 
     let ship_id = new_default_ship(&mut cmds);
 
@@ -315,7 +314,7 @@ fn go_to_fps(
             ..default()
         }).id();
     
-        cmds.entity(pawn).insert(PawnCamera { id: pawn });
+        cmds.entity(pawn).insert(Pawn { camera_id: pawn });
     
         pawn_event.send(ChangePawn { new_pawn: pawn, new_mode: Gamemode::FPS, save_stack: true });
     }
