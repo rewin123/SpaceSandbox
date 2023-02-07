@@ -21,7 +21,8 @@ impl Plugin for FPSPlugin {
 fn fps_setup(
     mut windows : ResMut<Windows>
 ) {
-    windows.get_primary_mut().unwrap().set_cursor_grab_mode(bevy::window::CursorGrabMode::Locked);
+    windows.get_primary_mut().unwrap().set_cursor_grab_mode(bevy::window::CursorGrabMode::Confined);
+    windows.get_primary_mut().unwrap().set_cursor_visibility(false);
 }
 
 fn fps_controller(
