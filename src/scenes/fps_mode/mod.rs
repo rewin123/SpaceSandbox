@@ -1,6 +1,6 @@
 use bevy::{input::mouse::MouseMotion, window::WindowFocused};
 
-use crate::{prelude::*, pawn_system::CurrentPawn};
+use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn}};
 
 
 pub struct FPSPlugin;
@@ -43,19 +43,23 @@ fn fps_focus_control(
 
 fn fps_controller(
     pawn : Res<CurrentPawn>,
-    mut pawns : Query<(&mut Transform)>,
+    mut transform : Query<(&mut Transform)>,
+    mut pawns : Query<(&Pawn)>,
     mut mouse_move : EventReader<MouseMotion>
 ) {
     if let Some(e) = pawn.id {
-        if let Ok(mut pawn_transform) = pawns.get_mut(e) {
-            for mv in mouse_move.iter() {
-                let frw = pawn_transform.forward();
-                let up = pawn_transform.up();
-                let right = pawn_transform.right();
-                let delta = mv.delta * 0.01;
-                let changed_frw = (frw + delta.x * right - delta.y * up).normalize();
-                let pos = pawn_transform.translation;
-                pawn_transform.look_at(pos + changed_frw, up);
+        if let Ok(pawn) = pawns.get(e) {
+            let cam_id = pawn.camera_id;
+            if let Ok(mut pawn_transform) = transform.get_mut(cam_id) {
+                for mv in mouse_move.iter() {
+                    let frw = pawn_transform.forward();
+                    let up = pawn_transform.up();
+                    let right = pawn_transform.right();
+                    let delta = mv.delta * 0.001;
+                    let changed_frw = (frw + delta.x * right - delta.y * up).normalize();
+                    let pos = pawn_transform.translation;
+                    pawn_transform.look_at(pos + changed_frw, Vec3::new(0.0, 1.0, 0.0));
+                }
             }
         }
     }
