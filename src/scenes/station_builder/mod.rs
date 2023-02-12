@@ -1,6 +1,6 @@
 mod ui;
 
-use bevy_rapier3d::prelude::Collider;
+use bevy_rapier3d::prelude::*;
 use ui::*;
 
 use bevy::prelude::*;
@@ -312,10 +312,11 @@ fn go_to_fps(
 
         let pos = Vec3::new(pos.x, pos.y + 2.0, pos.z);
         let pawn = cmds.spawn(Collider::capsule(Vec3::new(0.0, -1.0, 0.0), Vec3::new(0.0, 1.0, 0.0), 0.5))
-        .insert(SpatialBundle::from_transform(Transform::from_xyz(pos.x, pos.y + 2.0, pos.z))).id();
+        .insert(SpatialBundle::from_transform(Transform::from_xyz(pos.x, pos.y + 2.0, pos.z)))
+        .insert(KinematicCharacterController::default()).id();
 
         let cam_pawn = cmds.spawn(Camera3dBundle {
-            transform: Transform::from_xyz(0.0, 1.0, 0.0).looking_at(Vec3::new(1.0, 1.0, 0.0), Vec3::Y),
+            transform: Transform::from_xyz(0.0, 1.0, 0.0).looking_at(Vec3::new(0.0, 1.0, -1.0), Vec3::Y),
             camera : cam,
             ..default()
         }).id();
