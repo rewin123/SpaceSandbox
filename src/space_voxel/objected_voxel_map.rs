@@ -1,5 +1,5 @@
 
-extern crate test;
+// extern crate test;
 
 use bevy::{prelude::*};
 use super::{VoxelMap, solid_voxel_map::SolidVoxelMap};
@@ -72,7 +72,7 @@ mod tests {
 
     use super::*;
 
-    use test::{Bencher, black_box};
+    // use test::{Bencher, black_box};
 
 
     #[test]
@@ -108,28 +108,28 @@ mod tests {
         
     }
 
-    #[bench]
-    fn add_bench_solid(b : &mut Bencher) {
-        let mut map = SolidVoxelMap::<VoxelVal<i32>>::test_default();
-        let e = Entity::from_raw(12356);
-        let pos = IVec3::new(0,0,0);
-        let bbox = IVec3::new(10, 5,3);
+    // #[bench]
+    // fn add_bench_solid(b : &mut Bencher) {
+    //     let mut map = SolidVoxelMap::<VoxelVal<i32>>::test_default();
+    //     let e = Entity::from_raw(12356);
+    //     let pos = IVec3::new(0,0,0);
+    //     let bbox = IVec3::new(10, 5,3);
 
-        b.iter( black_box(|| {
-            map.can_place_object(&pos, &bbox);
-            map.set_object_by_idx(e, &pos, &bbox);
-        }));
-    }
+    //     b.iter( black_box(|| {
+    //         map.can_place_object(&pos, &bbox);
+    //         map.set_object_by_idx(e, &pos, &bbox);
+    //     }));
+    // }
 
-    #[bench]
-    fn erase_bench_solid(b : &mut Bencher) {
-        let mut map = SolidVoxelMap::<VoxelVal<i32>>::test_default();
-        let e = Entity::from_raw(12356);
-        let pos = IVec3::new(0,0,0);
-        let bbox = IVec3::new(10, 5,3);
+    // #[bench]
+    // fn erase_bench_solid(b : &mut Bencher) {
+    //     let mut map = SolidVoxelMap::<VoxelVal<i32>>::test_default();
+    //     let e = Entity::from_raw(12356);
+    //     let pos = IVec3::new(0,0,0);
+    //     let bbox = IVec3::new(10, 5,3);
 
-        b.iter( black_box(|| {
-            map.erase_object(&pos, &bbox);
-        }));
-    }
+    //     b.iter( black_box(|| {
+    //         map.erase_object(&pos, &bbox);
+    //     }));
+    // }
 }

@@ -1,46 +1,86 @@
 use bevy::utils::HashMap;
-use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize, de::DeserializeOwned};
 use bincode::*;
+use std::sync::mpsc::*;
+use serde::*;
 
 use super::channel::{ByteChannel, EmulatedByteChannel};
 
+pub type ChannelID = u16;
+
+pub trait ByteMsgs {
+    fn msg_to_send(&mut self) -> Option<Vec<u8>>;
+    fn recv_msg(&mut self, msg : Vec<u8>);
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct ChannelMsg {
-    pub channel : u16,
+    pub channel : ChannelID,
     pub data : Vec<u8>
 }
 
+pub struct MessageChannel<T> {
+    pub recv : Receiver<T>,
+    pub send : Sender<T>
+}
+
+pub struct MessageTransform<T : Serialize + DeserializeOwned> {
+    pub to_bytes : Receiver<T>,
+    pub from_bytes : Sender<T>
+}
+
+impl<T : Serialize + DeserializeOwned> ByteMsgs for MessageTransform<T> {
+    fn msg_to_send(&mut self) -> Option<Vec<u8>> {
+        if let Ok(data) = self.to_bytes.try_recv() {
+            let msg = bincode::serialize(&data).unwrap();
+            Some(msg)
+        } else {
+            None
+        }
+    }
+    fn recv_msg(&mut self, msg : Vec<u8>) {
+        let data = bincode::deserialize(&msg).unwrap();
+        self.from_bytes.send(data);
+    }
+}
 
 pub struct PeerRuntime<T : ByteChannel> {
     pub transport : T,
-    pub in_data : HashMap<u16, Vec<Vec<u8>>>,
-    pub out_data : HashMap<u16, Vec<Vec<u8>>>,
-    pub buffer_size : usize
+    pub channels : HashMap<ChannelID, Box<dyn ByteMsgs>>,
+    pub buffer_size : usize,
 }
 
 impl<T : ByteChannel> PeerRuntime<T> {
 
-    fn new(transport : T, buffer_size : usize) -> PeerRuntime<T> {
+    pub fn new(transport : T, buffer_size : usize) -> PeerRuntime<T> {
         Self {
             transport,
-            in_data: HashMap::new(),
-            out_data: HashMap::new(),
+            channels : HashMap::new(),
             buffer_size,
         }
     }
 
-    fn get_or_create_in_data(&mut self, idx : u16) -> &mut Vec<Vec<u8>> {
-        if self.in_data.contains_key(&idx) == false {
-            self.in_data.insert(idx.clone(), vec![]);
-        }
-        self.in_data.get_mut(&idx).unwrap()
-    }
+    pub fn build_channel<D : Serialize + DeserializeOwned + 'static>(&mut self, ch : ChannelID) -> MessageChannel<D> {
+        let (to_net_send, to_net_recv) = channel();
+        let (from_net_send, from_net_recv) = channel();
+        
+        let msg_ch = MessageChannel::<D> {
+            recv : from_net_recv,
+            send : to_net_send
+        };
 
-    fn get_or_create_out_data(&mut self, idx : u16) -> &mut Vec<Vec<u8>> {
-        if self.out_data.contains_key(&idx) == false {
-            self.out_data.insert(idx.clone(), vec![]);
+        let transfer = MessageTransform::<D> {
+            to_bytes : to_net_recv,
+            from_bytes : from_net_send
+        };
+
+        if self.channels.contains_key(&ch) {
+            panic!("Channel already exist!");
         }
-        self.out_data.get_mut(&idx).unwrap()
+
+        self.channels.insert(ch, Box::new(transfer));
+
+        msg_ch
     }
 
     pub fn flush(&mut self) {
@@ -51,13 +91,14 @@ impl<T : ByteChannel> PeerRuntime<T> {
                 break;
             }
             let msg : ChannelMsg = bincode::deserialize(&buffer[0..data_size]).unwrap();
-            let ch = self.get_or_create_in_data(msg.channel);
-            ch.push(msg.data);
+            if let Some(ch) = self.channels.get_mut(&msg.channel) {
+                ch.recv_msg(msg.data);
+            }
         }
 
         //send
-        for (idx, ch) in &mut self.out_data {
-            for msg in ch.iter_mut() {
+        for (idx, ch) in &mut self.channels {
+            while let Some(msg) = ch.msg_to_send() {
                 let ch_msg = ChannelMsg {
                     channel: *idx,
                     data: msg.clone(),
@@ -65,22 +106,6 @@ impl<T : ByteChannel> PeerRuntime<T> {
                 let ser_msg = bincode::serialize(&ch_msg).unwrap();
                 self.transport.send(&ser_msg).unwrap();
             }
-            ch.clear();
-        }
-    }
-
-    pub fn send_msg(&mut self, ch : u16, msg : Vec<u8>) {
-        let channel = self.get_or_create_out_data(ch);
-        channel.push(msg);
-    }
-
-    pub fn recv_msg(&mut self, ch : u16) -> Option<Vec<u8>> {
-        let channel = self.get_or_create_in_data(ch);
-        if channel.len() > 0 {
-            let res = channel.remove(0);
-            Some(res)
-        } else {
-            None
         }
     }
 }
@@ -106,20 +131,24 @@ mod tests {
 
     #[test]
     fn channel_test() {
-        let data = "Hello".as_bytes().to_vec();
+        let data = "Hello".to_string();
 
         let mut runtime = PeerRuntime::new(
             EmulatedByteChannel::default(),
             512
         );
 
-        runtime.send_msg(10, data.clone());
+        let mut channel = runtime.build_channel(10);
+
+        channel.send.send(data);
+
+        runtime.flush();
         runtime.flush();
         runtime.flush();
 
-        let msg = runtime.recv_msg(10);
+        let msg = channel.recv.recv().unwrap();
 
-        assert_eq!(msg, Some(data));
+        assert_eq!(msg, "Hello");
 
     }
 }
