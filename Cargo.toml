@@ -23,6 +23,7 @@ bincode = "*"
 base64 = "*"
 snap = "*"
 egui-notify = "*"
+renet = "*"
 
 bevy_mod_picking = "0.11"
 

@@ -5,6 +5,7 @@ pub mod scenes;
 pub mod ship;
 pub mod space_voxel;
 pub mod pawn_system;
+pub mod network;
 
 use std::default::Default;
 // use winit::window::Window;
