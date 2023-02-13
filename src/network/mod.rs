@@ -4,6 +4,7 @@ use bevy::prelude::*;
 pub mod message;
 pub mod channel;
 pub mod protocol;
+pub mod channel_protocol;
 
 pub struct NetworkPlugin;
 
