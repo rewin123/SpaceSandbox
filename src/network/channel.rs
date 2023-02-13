@@ -1,7 +1,7 @@
 
 use std::net::*;
 use std::sync::mpsc::*;
-
+use rand::Rng;
 
 use serde::*;
 
@@ -81,18 +81,51 @@ impl ByteChannel for EmulatedByteChannel {
     }
 }
 
-pub struct MessageSenderChannel<T> {
-    pub in_channel : (Receiver<T>, Sender<T>),
-    pub out_channel : (Receiver<T>, Sender<T>)
+pub struct EmulatedNetworkChannel {
+    pub recv : Receiver<Vec<u8>>,
+    pub send : Sender<Vec<u8>>,
+    pub drop_rate : f32
 }
 
-impl<T> MessageChannel<T> for MessageSenderChannel<T> {
-    fn get_channel(&mut self) -> (&mut Receiver<T>, Sender<T>) {
-        let rec = &mut self.in_channel.0;
-        let sen = self.out_channel.1.clone();
-        (rec, sen)
+impl Default for EmulatedNetworkChannel {
+    fn default() -> Self {
+        let (send, recv) = std::sync::mpsc::channel();
+        Self { 
+            recv, 
+            send,
+            drop_rate : 0.5
+        }
     }
 }
+
+impl ByteChannel for EmulatedNetworkChannel {
+    fn send(&mut self, data : &[u8]) -> std::io::Result<usize> {
+        self.send.send(data.to_vec());
+        Ok(data.len())
+    }
+
+    fn recv(&mut self, buf : &mut [u8]) -> std::io::Result<usize> {
+        if let Ok(data) = self.recv.try_recv() {
+
+            //check frop rate
+            let mut rnd = rand::thread_rng();
+            let drop_roll = rnd.gen_range(0.0..=1.0);
+            if drop_roll <= self.drop_rate {
+                println!("Dropped package!");
+                return Err(std::io::Error::new(std::io::ErrorKind::NotFound, "No package"));
+            }
+
+            let size = buf.len().min(data.len());
+            for idx in 0..size {
+                buf[idx] = data[idx];
+            }
+            Ok(size)
+        } else {
+            Err(std::io::Error::new(std::io::ErrorKind::NotFound, "No package"))
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
