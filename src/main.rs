@@ -1,3 +1,4 @@
+use SpaceSandbox::network::NetworkPlugin;
 use SpaceSandbox::pawn_system::PawnPlugin;
 use SpaceSandbox::scenes::fps_mode::FPSPlugin;
 use SpaceSandbox::scenes::station_builder::StationBuilderPlugin;
@@ -22,6 +23,7 @@ fn main() {
         .add_plugin(NotificationPlugin)
         .add_plugin(FPSPlugin)
         .add_plugin(PawnPlugin)
+        .add_plugin(NetworkPlugin)
 
         .run();
 }

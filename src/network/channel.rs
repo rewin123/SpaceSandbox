@@ -1,5 +1,6 @@
 
 use std::net::*;
+use std::str::FromStr;
 use std::sync::mpsc::*;
 use rand::Rng;
 
@@ -8,10 +9,8 @@ use serde::*;
 pub trait ByteChannel {
     fn send(&mut self, data : &[u8]) -> std::io::Result<usize>;
     fn recv(&mut self, buf : &mut [u8]) -> std::io::Result<usize>;
-}
-
-pub trait MessageChannel<T> {
-    fn get_channel(&mut self) -> (&mut Receiver<T>, Sender<T>);
+    fn send_to<A : ToSocketAddrs>(&mut self, data : &[u8], a : A) -> std::io::Result<usize>;
+    fn recv_from(&mut self, buf : &mut [u8]) -> std::io::Result<(usize, SocketAddr)>;
 }
 
 pub trait PeerByteChannel {
@@ -31,6 +30,14 @@ impl ByteChannel for UpdChannel {
 
     fn recv(&mut self, buf : &mut [u8]) -> std::io::Result<usize> {
         self.socket.recv(buf)
+    }
+
+    fn send_to<A : ToSocketAddrs>(&mut self, data : &[u8], a : A) -> std::io::Result<usize> {
+        self.socket.send_to(data, a)
+    }
+
+    fn recv_from(&mut self, buf : &mut [u8]) -> std::io::Result<(usize, SocketAddr)> {
+        self.socket.recv_from(buf)
     }
 }
 
@@ -79,6 +86,18 @@ impl ByteChannel for EmulatedByteChannel {
             Ok(0)
         }
     }
+
+    fn send_to<A : ToSocketAddrs>(&mut self, data : &[u8], a : A) -> std::io::Result<usize> {
+        self.send(data)
+    }
+
+    fn recv_from(&mut self, buf : &mut [u8]) -> std::io::Result<(usize, SocketAddr)> {
+        if let Ok(size) = self.recv(buf) {
+            Ok((size, SocketAddr::from_str("0.0.0.0:0").unwrap()))
+        } else {
+            Err(std::io::Error::new(std::io::ErrorKind::NotFound, "No packages"))
+        }
+    }
 }
 
 pub struct EmulatedNetworkChannel {
@@ -122,6 +141,18 @@ impl ByteChannel for EmulatedNetworkChannel {
             Ok(size)
         } else {
             Err(std::io::Error::new(std::io::ErrorKind::NotFound, "No package"))
+        }
+    }
+
+    fn send_to<A : ToSocketAddrs>(&mut self, data : &[u8], a : A) -> std::io::Result<usize> {
+        self.send(data)
+    }
+
+    fn recv_from(&mut self, buf : &mut [u8]) -> std::io::Result<(usize, SocketAddr)> {
+        if let Ok(size) = self.recv(buf) {
+            Ok((size, SocketAddr::from_str("0.0.0.0:0").unwrap()))
+        } else {
+            Err(std::io::Error::new(std::io::ErrorKind::NotFound, "No packages"))
         }
     }
 }

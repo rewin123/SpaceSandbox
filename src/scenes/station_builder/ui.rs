@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_egui::*;
 
-use crate::ship::common::AllVoxelInstances;
+use crate::{ship::common::AllVoxelInstances, network::{NetworkServer, NetworkClient, ServerNetworkCmd, packet_socket::SendPacket}};
 
 use super::*;
 
@@ -21,7 +21,10 @@ impl Plugin for StationBuilderUI {
 
 #[derive(Resource, Default)]
 pub struct BuildMenuState {
-    pub save_name : String
+    pub save_name : String,
+    pub connect_ip : String,
+    pub chat : String,
+    pub chat_msg : String
 }
 
 pub fn ship_build_menu(
@@ -33,9 +36,64 @@ pub fn ship_build_menu(
     mut active_windows : ResMut<ActiveWindows>,
     mut cahed_saved_paths : ResMut<CachedSavedShips>,
     mut cmd_save : EventWriter<CmdShipSave>,
-    mut state : ResMut<BuildMenuState>
+    mut state : ResMut<BuildMenuState>,
+    mut server_op : Option<ResMut<NetworkServer>>,
+    mut client_op : Option<ResMut<NetworkClient>>,
+    mut network_cmds : EventWriter<ServerNetworkCmd>
 ) {
     egui::SidePanel::left("Build panel").show(ctx.ctx_mut(), |ui| {
+        if client_op.is_none() {
+            if let Some(server) = &mut server_op {
+                if let Some(msg) = server.socket.recv_channel(0) {
+                    let data : String = bincode::deserialize(&msg.data).unwrap();
+                    state.chat = format!("{}\n{}", state.chat, data);
+                }
+
+                ui.label(&state.chat);
+
+                ui.add(egui::TextEdit::singleline(&mut state.chat_msg));
+
+                if ui.button("Send message").clicked() {
+                    let msg = SendPacket {
+                        dst : network::packet_socket::SendDestination::Broadcast,
+                        data : bincode::serialize(&state.chat_msg).unwrap()
+                    };
+                    server.socket.send_channel(0, msg);
+                    state.chat_msg = "".to_string();
+                }
+            } else {
+                if ui.button("Start server").clicked() {
+                    network_cmds.send(ServerNetworkCmd::StartServer);
+                }
+            }
+        }
+
+        if server_op.is_none() {
+            if let Some(client) = &mut client_op {
+                if let Some(msg) = client.socket.recv_channel(0) {
+                    let data : String = bincode::deserialize(&msg.data).unwrap();
+                    state.chat = format!("{}\n{}", state.chat, data);
+                }
+
+                ui.label(&state.chat);
+
+                ui.add(egui::TextEdit::singleline(&mut state.chat_msg));
+
+                if ui.button("Send message").clicked() {
+                    let msg = SendPacket {
+                        dst : network::packet_socket::SendDestination::Target(client.server.clone()),
+                        data : bincode::serialize(&state.chat_msg).unwrap()
+                    };
+                    client.socket.send_channel(0, msg);
+                    state.chat_msg = "".to_string();
+                }
+            } else {
+                ui.add(egui::TextEdit::singleline(&mut state.connect_ip));
+                if ui.button("Connect to server").clicked() {
+                    network_cmds.send(ServerNetworkCmd::ConnectToServer(state.connect_ip.clone()));
+                }
+            }
+        }
 
         if ui.button("Play").clicked() {
             block.cmd = StationBuildCmds::GoToFPS;
