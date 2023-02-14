@@ -34,7 +34,7 @@ impl<T> SolidVoxelMap<T>
 {
     #[inline]
     fn get_idx(&self, pos : &IVec3) -> usize {
-        let idx = ((pos.z * self.size.y + pos.y * self.size.x) + pos.x);
+        let idx = (pos.z * self.size.y + pos.y) * self.size.x + pos.x;
         if idx >= 0 {
             idx as usize
         } else {

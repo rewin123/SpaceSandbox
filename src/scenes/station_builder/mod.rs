@@ -182,6 +182,7 @@ fn spawn_block(
         let inst = block.instance.as_ref().unwrap();
 
         let grid_idx = ship.get_grid_idx_by_center(&tr.translation, &inst.bbox);
+        println!("Grid: {:?}", grid_idx);
         if ship.map.can_place_object(&grid_idx, &inst.bbox) {
             // ship.map.set_object_by_idx(e, pos, bbox)
             for inst_cfg in &all_instances.configs {
