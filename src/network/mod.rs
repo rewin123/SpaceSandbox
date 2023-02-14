@@ -5,7 +5,8 @@ use bevy_rapier3d::rapier::crossbeam::channel::{Receiver, Sender};
 use iyes_loopless::prelude::ConditionSet;
 
 use laminar::*;
-use self::protocol::{ChannelSocket, ChannelConfig};
+
+use self::protocol::ConnectionServer;
 
 pub mod message;
 pub mod channel;
@@ -17,31 +18,24 @@ pub struct NetworkPlugin;
 
 #[derive(Resource)]
 pub struct NetworkServer {
-    pub socket : Socket,
-    pub receiver : Receiver<SocketEvent>,
-    pub sender : Sender<Packet>
+    pub server : ConnectionServer
 }
 
 
 impl Default for NetworkServer {
     fn default() -> Self {
-        let socket = Socket::bind("127.0.0.1:1996").unwrap();
-        let receiver = socket.get_event_receiver();
-        let sender = socket.get_packet_sender();
+        let server = ConnectionServer::new(SocketAddr::from_str("127.0.0.1:1996").unwrap(), Instant::now());
+
         Self {
-            socket,
-            receiver,
-            sender
+            server
         }
     }
 }
 
 #[derive(Resource)]
 pub struct NetworkClient {
-    pub socket : Socket,
-    pub receiver : Receiver<SocketEvent>,
-    pub sender : Sender<Packet>,
-    pub server : SocketAddr
+    pub server : ConnectionServer,
+    pub server_addr : SocketAddr
 }
 
 pub enum ServerNetworkCmd {
@@ -74,13 +68,13 @@ impl Plugin for NetworkPlugin {
 fn update_client(
     mut client : ResMut<NetworkClient>
 ) {
-    client.socket.manual_poll(Instant::now());
+    client.server.manual_poll(Instant::now());
 }
 
 fn update_server(
     mut server : ResMut<NetworkServer>
 ) {
-    server.socket.manual_poll(Instant::now());
+    server.server.manual_poll(Instant::now());
 }
 
 
@@ -95,14 +89,12 @@ fn listen_server_cmds(
             },
             ServerNetworkCmd::ConnectToServer(addr) => {
                 if let Ok(socket_addr) = SocketAddr::from_str(addr) {
-                    let socket = Socket::bind("0.0.0.0:1997").unwrap();
-                    let receiver = socket.get_event_receiver();
-                    let sender = socket.get_packet_sender();
+                    
+                    let mut server = ConnectionServer::new(SocketAddr::from_str("127.0.0.1:1997").unwrap(), Instant::now());
+                    server.connect_to(socket_addr.clone());
                     cmds.insert_resource(NetworkClient {
-                        socket,
-                        receiver,
-                        sender,
-                        server : socket_addr
+                        server,
+                        server_addr : socket_addr
                     });
                 }
             },

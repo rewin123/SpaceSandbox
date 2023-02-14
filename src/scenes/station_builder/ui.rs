@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_egui::*;
 use laminar::Packet;
 
-use crate::{ship::common::AllVoxelInstances, network::{NetworkServer, NetworkClient, ServerNetworkCmd, packet_socket::SendPacket}};
+use crate::{ship::common::AllVoxelInstances, network::{NetworkServer, NetworkClient, ServerNetworkCmd, packet_socket::SendPacket, protocol::{ConnectionEvent, ConnectionMsg}}};
 
 use super::*;
 
@@ -45,16 +45,13 @@ pub fn ship_build_menu(
     egui::SidePanel::left("Build panel").show(ctx.ctx_mut(), |ui| {
         if client_op.is_none() {
             if let Some(server) = &mut server_op {
-                if let Ok(msg) = server.receiver.try_recv() {
+                if let Some(msg) = server.server.recv() {
                     println!("{:#?}", msg);
                     match msg {
-                        laminar::SocketEvent::Packet(bindata) => {
-                            let data : String = bincode::deserialize(bindata.payload()).unwrap();
+                        ConnectionEvent::Data(packet) => {
+                            let data : String = bincode::deserialize(&packet.data).unwrap();
                             state.chat = format!("{}\n{}", state.chat, data);
                         },
-                        laminar::SocketEvent::Connect(_) => {},
-                        laminar::SocketEvent::Timeout(_) => {},
-                        laminar::SocketEvent::Disconnect(_) => {},
                     };
                 }
 
@@ -64,6 +61,9 @@ pub fn ship_build_menu(
 
                 if ui.button("Send message").clicked() {
                     
+                    server.server.send_realiable_broadcast(
+                        bincode::serialize(&state.chat_msg).unwrap()
+                    );
                     // server.sender.send(Packet::reliable_unordered(, payload))
                     state.chat_msg = "".to_string();
                 }
@@ -76,16 +76,13 @@ pub fn ship_build_menu(
 
         if server_op.is_none() {
             if let Some(client) = &mut client_op {
-                if let Ok(msg) = client.receiver.try_recv() {
+                if let Some(msg) = client.server.recv() {
                     println!("{:#?}", msg);
                     match msg {
-                        laminar::SocketEvent::Packet(bindata) => {
-                            let data : String = bincode::deserialize(bindata.payload()).unwrap();
+                        ConnectionEvent::Data(packet) => {
+                            let data : String = bincode::deserialize(&packet.data).unwrap();
                             state.chat = format!("{}\n{}", state.chat, data);
                         },
-                        laminar::SocketEvent::Connect(_) => {},
-                        laminar::SocketEvent::Timeout(_) => {},
-                        laminar::SocketEvent::Disconnect(_) => {},
                     };
                 }
 
@@ -94,10 +91,10 @@ pub fn ship_build_menu(
                 ui.add(egui::TextEdit::singleline(&mut state.chat_msg));
 
                 if ui.button("Send message").clicked() {
-                    client.sender.send(
-                        Packet::reliable_unordered(
-                            client.server.clone(), 
-                            bincode::serialize(&state.chat_msg).unwrap())).unwrap();
+                    let addr = client.server_addr.clone();
+                    client.server.send_reliable_unordered(
+                            addr, 
+                            ConnectionMsg::Data(bincode::serialize(&state.chat_msg).unwrap()));
                     state.chat_msg = "".to_string();
                 }
             } else {
