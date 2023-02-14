@@ -60,60 +60,7 @@ pub fn ship_build_menu(
     mut chat_channel : ResMut<NetworkChat>
 ) {
     egui::SidePanel::left("Build panel").show(ctx.ctx_mut(), |ui| {
-        if client_op.is_none() {
-            if let Some(server) = &mut server_op {
-                ui.label(format!("Clients: {}", server.server.client_count()));
-                if let Ok((from, msg)) = chat_channel.channel.receiver.try_recv() {
-                    state.chat = format!("{}\n{}:{}", state.chat, from, msg);
-                }
-                ui.label(&state.chat);
-
-                ui.add(egui::TextEdit::singleline(&mut state.chat_msg));
-
-                if ui.button("Send message").clicked() {
-
-                    chat_channel.channel.sender.send((
-                        SendDestination::Broadcast,
-                        state.chat_msg.clone()
-                    )).unwrap();
-                    // server.sender.send(Packet::reliable_unordered(, payload))
-                    state.chat_msg = "".to_string();
-                }
-            } else {
-                if ui.button("Start server").clicked() {
-                    network_cmds.send(ServerNetworkCmd::StartServer);
-                }
-            }
-        }
-
-        if server_op.is_none() {
-            if let Some(client) = &mut client_op {
-
-                ui.label(format!("Clients: {}", client.server.client_count()));
-
-                if let Ok((from, msg)) = chat_channel.channel.receiver.try_recv() {
-                    state.chat = format!("{}\n{}:{}", state.chat, from, msg);
-                }
-                ui.label(&state.chat);
-
-                ui.add(egui::TextEdit::singleline(&mut state.chat_msg));
-
-                if ui.button("Send message").clicked() {
-
-                    chat_channel.channel.sender.send((
-                        SendDestination::Broadcast,
-                        state.chat_msg.clone()
-                    )).unwrap();
-                    // server.sender.send(Packet::reliable_unordered(, payload))
-                    state.chat_msg = "".to_string();
-                }
-            } else {
-                ui.add(egui::TextEdit::singleline(&mut state.connect_ip));
-                if ui.button("Connect to server").clicked() {
-                    network_cmds.send(ServerNetworkCmd::ConnectToServer(state.connect_ip.clone()));
-                }
-            }
-        }
+        network_chat(client_op, server_op, ui, chat_channel, &mut state, network_cmds);
 
         if ui.button("Play").clicked() {
             block.cmd = StationBuildCmds::GoToFPS;
@@ -156,6 +103,23 @@ pub fn ship_build_menu(
         }
 
         ui.separator();
+
+        let step = 0.5;
+        match &mut block.mode {
+            BuildMode::SingleOnY(lvl) => {
+                if ui.input().key_pressed(egui::Key::Q) {
+                    *lvl -= step;
+                }
+                if ui.input().key_pressed(egui::Key::E) {
+                    *lvl += step;
+                }
+                ui.add(egui::DragValue::new(lvl)
+                    .prefix("Build z level:")
+                    .speed(0.5)
+                    .fixed_decimals(1));
+            },
+        }
+
         for inst in &voxel_instances.configs {
             if ui.button(&inst.name).clicked() {
 
@@ -172,6 +136,63 @@ pub fn ship_build_menu(
             }
         }
     });
+}
+
+fn network_chat(mut client_op: Option<ResMut<NetworkClient>>, mut server_op: Option<ResMut<NetworkServer>>, ui: &mut egui::Ui, chat_channel: ResMut<NetworkChat>, state: &mut ResMut<BuildMenuState>, mut network_cmds: EventWriter<ServerNetworkCmd>) {
+    if client_op.is_none() {
+        if let Some(server) = &mut server_op {
+            ui.label(format!("Clients: {}", server.server.client_count()));
+            if let Ok((from, msg)) = chat_channel.channel.receiver.try_recv() {
+                state.chat = format!("{}\n{}:{}", state.chat, from, msg);
+            }
+            ui.label(&state.chat);
+
+            ui.add(egui::TextEdit::singleline(&mut state.chat_msg));
+
+            if ui.button("Send message").clicked() {
+
+                chat_channel.channel.sender.send((
+                    SendDestination::Broadcast,
+                    state.chat_msg.clone()
+                )).unwrap();
+                // server.sender.send(Packet::reliable_unordered(, payload))
+                state.chat_msg = "".to_string();
+            }
+        } else {
+            if ui.button("Start server").clicked() {
+                network_cmds.send(ServerNetworkCmd::StartServer);
+            }
+        }
+    }
+
+    if server_op.is_none() {
+        if let Some(client) = &mut client_op {
+
+            ui.label(format!("Clients: {}", client.server.client_count()));
+
+            if let Ok((from, msg)) = chat_channel.channel.receiver.try_recv() {
+                state.chat = format!("{}\n{}:{}", state.chat, from, msg);
+            }
+            ui.label(&state.chat);
+
+            ui.add(egui::TextEdit::singleline(&mut state.chat_msg));
+
+            if ui.button("Send message").clicked() {
+
+                chat_channel.channel.sender.send((
+                    SendDestination::Broadcast,
+                    state.chat_msg.clone()
+                )).unwrap();
+                // server.sender.send(Packet::reliable_unordered(, payload))
+                state.chat_msg = "".to_string();
+            }
+        } else {
+            ui.add(egui::TextEdit::singleline(&mut state.connect_ip));
+            if ui.button("Connect to server").clicked() {
+                network_cmds.send(ServerNetworkCmd::ConnectToServer(state.connect_ip.clone()));
+            }
+        }
+    }
 }
 
 pub fn load_ship_ui(
