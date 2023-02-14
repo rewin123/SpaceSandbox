@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_egui::*;
 use laminar::Packet;
 
-use crate::{ship::common::AllVoxelInstances, network::{NetworkServer, NetworkClient, ServerNetworkCmd, packet_socket::SendPacket, protocol::{ConnectionEvent, ConnectionMsg}}};
+use crate::{ship::common::AllVoxelInstances, network::{NetworkServer, NetworkClient, ServerNetworkCmd, packet_socket::{SendPacket, SendDestination}, protocol::{ConnectionEvent, ConnectionMsg}, MessageChannel, NetworkSplitter}};
 
 use super::*;
 
@@ -17,7 +17,23 @@ impl Plugin for StationBuilderUI {
     fn build(&self, app: &mut App) {
         app.insert_resource(CachedSavedShips::default());
         app.insert_resource(BuildMenuState::default());
+
+        app.add_startup_system(setup_chat);
     }
+}
+
+#[derive(Resource)]
+pub struct NetworkChat {
+    pub channel : MessageChannel<String>
+}
+
+fn setup_chat(
+    mut cmds : Commands,
+    mut splitters : ResMut<NetworkSplitter>
+) {
+    cmds.insert_resource(NetworkChat {
+        channel : splitters.register_type::<String>()
+    });
 }
 
 #[derive(Resource, Default)]
@@ -40,31 +56,26 @@ pub fn ship_build_menu(
     mut state : ResMut<BuildMenuState>,
     mut server_op : Option<ResMut<NetworkServer>>,
     mut client_op : Option<ResMut<NetworkClient>>,
-    mut network_cmds : EventWriter<ServerNetworkCmd>
+    mut network_cmds : EventWriter<ServerNetworkCmd>,
+    mut chat_channel : ResMut<NetworkChat>
 ) {
     egui::SidePanel::left("Build panel").show(ctx.ctx_mut(), |ui| {
         if client_op.is_none() {
             if let Some(server) = &mut server_op {
                 ui.label(format!("Clients: {}", server.server.client_count()));
-                if let Some(msg) = server.server.recv() {
-                    println!("{:#?}", msg);
-                    match msg {
-                        ConnectionEvent::Data(packet) => {
-                            let data : String = bincode::deserialize(&packet.data).unwrap();
-                            state.chat = format!("{}\n{}", state.chat, data);
-                        },
-                    };
+                if let Ok((from, msg)) = chat_channel.channel.receiver.try_recv() {
+                    state.chat = format!("{}\n{}:{}", state.chat, from, msg);
                 }
-
                 ui.label(&state.chat);
 
                 ui.add(egui::TextEdit::singleline(&mut state.chat_msg));
 
                 if ui.button("Send message").clicked() {
-                    
-                    server.server.send_realiable_broadcast(
-                        bincode::serialize(&state.chat_msg).unwrap()
-                    );
+
+                    chat_channel.channel.sender.send((
+                        SendDestination::Broadcast,
+                        state.chat_msg.clone()
+                    )).unwrap();
                     // server.sender.send(Packet::reliable_unordered(, payload))
                     state.chat_msg = "".to_string();
                 }
@@ -80,25 +91,20 @@ pub fn ship_build_menu(
 
                 ui.label(format!("Clients: {}", client.server.client_count()));
 
-                if let Some(msg) = client.server.recv() {
-                    println!("{:#?}", msg);
-                    match msg {
-                        ConnectionEvent::Data(packet) => {
-                            let data : String = bincode::deserialize(&packet.data).unwrap();
-                            state.chat = format!("{}\n{}", state.chat, data);
-                        },
-                    };
+                if let Ok((from, msg)) = chat_channel.channel.receiver.try_recv() {
+                    state.chat = format!("{}\n{}:{}", state.chat, from, msg);
                 }
-
                 ui.label(&state.chat);
 
                 ui.add(egui::TextEdit::singleline(&mut state.chat_msg));
 
                 if ui.button("Send message").clicked() {
-                    let addr = client.server_addr.clone();
-                    client.server.send_reliable_unordered(
-                            addr, 
-                            ConnectionMsg::Data(bincode::serialize(&state.chat_msg).unwrap()));
+
+                    chat_channel.channel.sender.send((
+                        SendDestination::Broadcast,
+                        state.chat_msg.clone()
+                    )).unwrap();
+                    // server.sender.send(Packet::reliable_unordered(, payload))
                     state.chat_msg = "".to_string();
                 }
             } else {
