@@ -44,6 +44,10 @@ pub enum ServerNetworkCmd {
     ConnectToServer(String)
 }
 
+pub enum NetworkEvent {
+    NewClient(SocketAddr)
+}
+
 pub struct MessageChannel<T> {
     pub sender : Sender<(SendDestination, T)>,
     pub receiver : Receiver<(SocketAddr, T)>
@@ -117,9 +121,11 @@ impl NetworkSplitter {
 impl Plugin for NetworkPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ServerNetworkCmd>();
+        app.add_event::<NetworkEvent>();
 
         app.add_system(listen_server_cmds);
         app.insert_resource(NetworkSplitter::default());
+        
 
         app.add_system_set(
             ConditionSet::new()
@@ -139,7 +145,8 @@ impl Plugin for NetworkPlugin {
 
 fn update_client(
     mut client : ResMut<NetworkClient>,
-    mut splitter : ResMut<NetworkSplitter>
+    mut splitter : ResMut<NetworkSplitter>,
+    mut events : EventWriter<NetworkEvent>
 ) {
     client.server.manual_poll(Instant::now());
 
@@ -151,6 +158,9 @@ fn update_client(
                 if let Some(ch) = splitter.splits.get_mut(&id) {
                     ch.from_net(raw_data, data.addr);
                 }
+            },
+            protocol::ConnectionEvent::NewClient(addr) => {
+                events.send(NetworkEvent::NewClient(addr));
             },
         }
     }
@@ -169,7 +179,8 @@ fn update_client(
 
 fn update_server(
     mut server : ResMut<NetworkServer>,
-    mut splitter : ResMut<NetworkSplitter>
+    mut splitter : ResMut<NetworkSplitter>,
+    mut events : EventWriter<NetworkEvent>
 ) {
     server.server.manual_poll(Instant::now());
 
@@ -181,6 +192,9 @@ fn update_server(
                 if let Some(ch) = splitter.splits.get_mut(&id) {
                     ch.from_net(raw_data, data.addr);
                 }
+            },
+            protocol::ConnectionEvent::NewClient(addr) => {
+                events.send(NetworkEvent::NewClient(addr));
             },
         }
     }

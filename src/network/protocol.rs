@@ -24,7 +24,8 @@ pub struct ConPacket {
 
 #[derive(Debug)]
 pub enum ConnectionEvent {
-    Data(ConPacket)
+    Data(ConPacket),
+    NewClient(SocketAddr)
 }
 
 pub struct ConnectionServer {

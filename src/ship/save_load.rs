@@ -7,6 +7,7 @@ use bevy::{prelude::*, utils::HashMap};
 use egui_notify::Toast;
 use serde::de::DeserializeSeed;
 
+use crate::network::{NetworkSplitter, MessageChannel};
 use crate::ui::ToastHolder;
 
 use super::common::*;
@@ -71,6 +72,7 @@ impl Plugin for ShipPlugin {
         app.add_event::<CmdShipSave>();
         app.add_event::<CmdShipLoad>();
         app.add_event::<ShipLoaded>();
+        app.add_event::<SpawnBlockCmd>();
 
         app.insert_resource(ShipSaveQueue::default());
         app.insert_resource(SaveLoadCfg::default());
@@ -80,7 +82,28 @@ impl Plugin for ShipPlugin {
         app.add_system(saving_ship_system);
 
         app.add_startup_system(setup_base_save_load_cfg);
+
+        app.add_startup_system(network_setup);
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SpawnBlockCmd {
+    pub replicate : bool
+}
+
+#[derive(Resource)]
+struct SpawnCmdChannel {
+    pub channel : MessageChannel<SpawnBlockCmd>
+}
+
+fn network_setup(
+    mut cmds : Commands,
+    mut splitters : ResMut<NetworkSplitter>
+) {
+    cmds.insert_resource(SpawnCmdChannel {
+        channel : splitters.register_type::<SpawnBlockCmd>()
+    });
 }
 
 fn setup_base_save_load_cfg(
