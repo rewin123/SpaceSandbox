@@ -45,6 +45,7 @@ pub fn ship_build_menu(
     egui::SidePanel::left("Build panel").show(ctx.ctx_mut(), |ui| {
         if client_op.is_none() {
             if let Some(server) = &mut server_op {
+                ui.label(format!("Clients: {}", server.server.client_count()));
                 if let Some(msg) = server.server.recv() {
                     println!("{:#?}", msg);
                     match msg {
@@ -76,6 +77,9 @@ pub fn ship_build_menu(
 
         if server_op.is_none() {
             if let Some(client) = &mut client_op {
+
+                ui.label(format!("Clients: {}", client.server.client_count()));
+
                 if let Some(msg) = client.server.recv() {
                     println!("{:#?}", msg);
                     match msg {
