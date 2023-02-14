@@ -1,8 +1,10 @@
 use std::{net::SocketAddr, str::FromStr};
 
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::Instant};
+use bevy_rapier3d::rapier::crossbeam::channel::{Receiver, Sender};
 use iyes_loopless::prelude::ConditionSet;
 
+use laminar::*;
 use self::protocol::{ChannelSocket, ChannelConfig};
 
 pub mod message;
@@ -10,36 +12,35 @@ pub mod channel;
 pub mod protocol;
 pub mod packet_socket;
 
+
 pub struct NetworkPlugin;
 
 #[derive(Resource)]
 pub struct NetworkServer {
-    pub socket : ChannelSocket
+    pub socket : Socket,
+    pub receiver : Receiver<SocketEvent>,
+    pub sender : Sender<Packet>
 }
 
-fn prepare_socket_channels(mut socket : ChannelSocket) -> ChannelSocket {
-
-    socket.register_channel(ChannelConfig {
-        tp: protocol::ChannelType::Unrealiable,
-        id: 0,
-    });
-
-    socket
-}
 
 impl Default for NetworkServer {
     fn default() -> Self {
-        let addr = SocketAddr::from_str("0.0.0.0:1996").unwrap();
-        let socket = ChannelSocket::new(addr);
+        let socket = Socket::bind("127.0.0.1:1996").unwrap();
+        let receiver = socket.get_event_receiver();
+        let sender = socket.get_packet_sender();
         Self {
-            socket : prepare_socket_channels(socket)
+            socket,
+            receiver,
+            sender
         }
     }
 }
 
 #[derive(Resource)]
 pub struct NetworkClient {
-    pub socket : ChannelSocket,
+    pub socket : Socket,
+    pub receiver : Receiver<SocketEvent>,
+    pub sender : Sender<Packet>,
     pub server : SocketAddr
 }
 
@@ -73,13 +74,13 @@ impl Plugin for NetworkPlugin {
 fn update_client(
     mut client : ResMut<NetworkClient>
 ) {
-    client.socket.update();
+    client.socket.manual_poll(Instant::now());
 }
 
 fn update_server(
     mut server : ResMut<NetworkServer>
 ) {
-    server.socket.update();
+    server.socket.manual_poll(Instant::now());
 }
 
 
@@ -94,10 +95,13 @@ fn listen_server_cmds(
             },
             ServerNetworkCmd::ConnectToServer(addr) => {
                 if let Ok(socket_addr) = SocketAddr::from_str(addr) {
-                    let socket = prepare_socket_channels(ChannelSocket::new(SocketAddr::from_str("0.0.0.0:1997").unwrap()));
-                    socket.socket.connect(socket_addr.clone());
+                    let socket = Socket::bind("0.0.0.0:1997").unwrap();
+                    let receiver = socket.get_event_receiver();
+                    let sender = socket.get_packet_sender();
                     cmds.insert_resource(NetworkClient {
-                        socket: socket,
+                        socket,
+                        receiver,
+                        sender,
                         server : socket_addr
                     });
                 }
