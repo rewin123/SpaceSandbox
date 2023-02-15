@@ -278,6 +278,36 @@ fn setup_build_scene(
         cmd : StationBuildCmds::None
     });
 
+    // ambient light
+    cmds.insert_resource(AmbientLight {
+        color: Color::WHITE,
+        brightness: 1.0,
+    });
+
+    const HALF_SIZE: f32 = 100.0;
+    cmds.spawn(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            // Configure the projection to better fit the scene
+            shadow_projection: OrthographicProjection {
+                left: -HALF_SIZE,
+                right: HALF_SIZE,
+                bottom: -HALF_SIZE,
+                top: HALF_SIZE,
+                near: -100.0 * HALF_SIZE,
+                far: 100.0 * HALF_SIZE,
+                ..default()
+            },
+            shadows_enabled: true,
+            ..default()
+        },
+        transform: Transform {
+            translation: Vec3::new(0.0, 2.0, 0.0),
+            rotation: Quat::from_rotation_x(-3.14 / 4.),
+            ..default()
+        },
+        ..default()
+    });
+
     pawn_event.send(ChangePawn { new_pawn: pawn, new_mode: Gamemode::Godmode, save_stack: false });
 }
 
