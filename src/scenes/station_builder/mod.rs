@@ -159,30 +159,32 @@ fn spawn_block(
     active_blocks : Query<&mut Transform, With<ActiveBlock>>,
     block : ResMut<StationBuildBlock>,
     mut ships : Query<&mut Ship>,
-    all_instances : Res<AllVoxelInstances>
+    all_instances : Res<AllVoxelInstances>,
 ) {
     if block.e.is_none() {
         return;
     }
+
+    let tr;
+    if let Ok(ac_tr) = active_blocks.get(block.e.unwrap()) {
+        tr = ac_tr;
+    } else {
+        return;
+    }
+
+    let mut ship;
+    if let Ok(cur_ship) = ships.get_mut(block.ship) {
+        ship = cur_ship;
+    } else {
+        return;
+    }
+
+    let inst = block.instance.as_ref().unwrap();
+
+    let grid_idx = ship.get_grid_idx_by_center(&tr.translation, &inst.bbox);
+    let id = ship.map.get_by_idx(&grid_idx).clone();
+
     if buttons.pressed(MouseButton::Left) {
-        let tr;
-        if let Ok(ac_tr) = active_blocks.get(block.e.unwrap()) {
-            tr = ac_tr;
-        } else {
-            return;
-        }
-
-        let mut ship;
-        if let Ok(cur_ship) = ships.get_mut(block.ship) {
-            ship = cur_ship;
-        } else {
-            return;
-        }
-
-        let inst = block.instance.as_ref().unwrap();
-
-        let grid_idx = ship.get_grid_idx_by_center(&tr.translation, &inst.bbox);
-        println!("Grid: {:?}", grid_idx);
         if ship.map.can_place_object(&grid_idx, &inst.bbox) {
             // ship.map.set_object_by_idx(e, pos, bbox)
             for inst_cfg in &all_instances.configs {
@@ -195,7 +197,18 @@ fn spawn_block(
                 }
             }
         }
+    } else if buttons.pressed(MouseButton::Right) {
+        
+        ship.map.erase_object(&grid_idx, &IVec3::new(50,50,50));
+        match id {
+            VoxelVal::None => {},
+            VoxelVal::Voxel(_) => todo!(),
+            VoxelVal::Object(e) => {
+                cmds.entity(e).despawn_recursive();
+            },
+        }
     }
+
 }
 
 fn pos_block(

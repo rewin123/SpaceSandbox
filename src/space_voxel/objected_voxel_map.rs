@@ -47,11 +47,15 @@ pub trait ObjectedVoxelMap<T> : VoxelMap<VoxelVal<T>>
     }
 
     fn erase_object(&mut self, pos : &IVec3, search_area : &IVec3) {
-        for z in (pos.z - search_area.z)..=(pos.z + search_area.z) {
-            for y in (pos.y - search_area.y)..=(pos.y + search_area.y) {
-                for x in (pos.x - search_area.x)..=(pos.x + search_area.x) {
-                    if let VoxelVal::Object(_) = self.get_by_idx(&IVec3{x, y, z}) {
-                        self.set_voxel_by_idx(&IVec3{x, y, z}, VoxelVal::None);
+        if let VoxelVal::Object(id) = self.get_by_idx(pos).clone() {
+            for z in (pos.z - search_area.z)..=(pos.z + search_area.z) {
+                for y in (pos.y - search_area.y)..=(pos.y + search_area.y) {
+                    for x in (pos.x - search_area.x)..=(pos.x + search_area.x) {
+                        if let VoxelVal::Object(vox_id) = self.get_by_idx(&IVec3{x, y, z}).clone() {
+                            if vox_id == id {
+                                self.set_voxel_by_idx(&IVec3{x, y, z}, VoxelVal::None);
+                            }
+                        }
                     }
                 }
             }
