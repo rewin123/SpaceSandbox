@@ -275,6 +275,10 @@ fn setup_build_scene(
     cmds.insert_resource(NextState(StationBuildState::Loaded));
     let pawn = cmds.spawn(Camera3dBundle {
         transform: Transform::from_xyz(10.0, 10.0, 10.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
+        camera_3d : Camera3d {
+            clear_color : bevy::core_pipeline::clear_color::ClearColorConfig::Custom(Color::Rgba { red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0 }),
+            ..default()
+        },
         ..default()
     }).id();
 
@@ -294,7 +298,7 @@ fn setup_build_scene(
     // ambient light
     cmds.insert_resource(AmbientLight {
         color: Color::WHITE,
-        brightness: 1.0,
+        brightness: 0.2,
     });
 
     const HALF_SIZE: f32 = 100.0;
@@ -315,7 +319,7 @@ fn setup_build_scene(
         },
         transform: Transform {
             translation: Vec3::new(0.0, 2.0, 0.0),
-            rotation: Quat::from_rotation_x(-3.14 / 4.),
+            rotation: Quat::from_rotation_x(-2.5),
             ..default()
         },
         ..default()
