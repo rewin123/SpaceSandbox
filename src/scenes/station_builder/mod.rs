@@ -39,8 +39,17 @@ impl Plugin for StationBuilderPlugin {
             ConditionSet::new()
                 .run_in_state(SceneType::ShipBuilding)
                 .run_not_in_state(Gamemode::FPS)
+                .label("ship_build_menu")
                 .with_system(ship_build_menu)
                 .with_system(pos_block)
+                .into()
+        );
+
+        app.add_system_set(
+            ConditionSet::new()
+                .run_in_state(SceneType::ShipBuilding)
+                .run_if_resource_exists::<StationBuildBlock>()
+                .after("ship_build_menu")
                 .with_system(spawn_block)
                 .into()
         );
@@ -160,9 +169,17 @@ fn spawn_block(
     block : ResMut<StationBuildBlock>,
     mut ships : Query<&mut Ship>,
     all_instances : Res<AllVoxelInstances>,
+    mut ctx : ResMut<bevy_egui::EguiContext>
 ) {
     if block.e.is_none() {
         return;
+    }
+
+    if ctx.ctx_mut().is_pointer_over_area() {
+        // println!("Captured event of egui");
+        return;
+    } else {
+        // println!("Not captured event of egui");
     }
 
     let tr;
