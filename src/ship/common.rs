@@ -124,6 +124,160 @@ pub fn init_all_voxel_instances(
         indexer += 1;
     }
 
+    {
+        let bbox : IVec3 = [4, 1, 4].into();
+        let cfg = VoxelInstanceConfig {
+            name : "White triangle plate".to_string(),
+            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
+                cmds.spawn(SceneBundle {
+                    scene: asset_server.load("ship/tiles/white_triangle_plate.glb#Scene0"),
+                    
+                    ..default()
+                }).insert(Collider::cuboid(
+                    bbox.x as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.y as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.z as f32 * VOXEL_SIZE / 2.0))
+                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+            }).to_box()
+        };
+
+        configs.push(cfg);
+        indexer += 1;
+    }
+
+    {
+        let bbox : IVec3 = [4, 4, 4].into();
+        let cfg = VoxelInstanceConfig {
+            name : "White door".to_string(),
+            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
+                cmds.spawn(SceneBundle {
+                    scene: asset_server.load("ship/tiles/door.glb#Scene0"),
+                    
+                    ..default()
+                }).insert(Collider::cuboid(
+                    bbox.x as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.y as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.z as f32 * VOXEL_SIZE / 2.0))
+                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+            }).to_box()
+        };
+
+        configs.push(cfg);
+        indexer += 1;
+    }
+
+    {
+        let bbox : IVec3 = [4, 1, 4].into();
+        let cfg = VoxelInstanceConfig {
+            name : "Window".to_string(),
+            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
+                cmds.spawn(SceneBundle {
+                    scene: asset_server.load("ship/tiles/window.glb#Scene0"),
+                    
+                    ..default()
+                }).insert(Collider::cuboid(
+                    bbox.x as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.y as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.z as f32 * VOXEL_SIZE / 2.0))
+                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+            }).to_box()
+        };
+
+        configs.push(cfg);
+        indexer += 1;
+    }
+
+    {
+        let bbox : IVec3 = [4, 1, 4].into();
+        let cfg = VoxelInstanceConfig {
+            name : "Corner window".to_string(),
+            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
+                cmds.spawn(SceneBundle {
+                    scene: asset_server.load("ship/tiles/corner_window.glb#Scene0"),
+                    
+                    ..default()
+                }).insert(Collider::cuboid(
+                    bbox.x as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.y as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.z as f32 * VOXEL_SIZE / 2.0))
+                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+            }).to_box()
+        };
+
+        configs.push(cfg);
+        indexer += 1;
+    }
+
+    {
+        let bbox : IVec3 = [4, 1, 4].into();
+        let cfg = VoxelInstanceConfig {
+            name : "Engine".to_string(),
+            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
+                cmds.spawn(SceneBundle {
+                    scene: asset_server.load("ship/tiles/engine.glb#Scene0"),
+                    
+                    ..default()
+                }).insert(Collider::cuboid(
+                    bbox.x as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.y as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.z as f32 * VOXEL_SIZE / 2.0))
+                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+            }).to_box()
+        };
+
+        configs.push(cfg);
+        indexer += 1;
+    }
+
+    {
+        let bbox : IVec3 = [4, 1, 4].into();
+        let cfg = VoxelInstanceConfig {
+            name : "Pilot seat".to_string(),
+            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
+                cmds.spawn(SceneBundle {
+                    scene: asset_server.load("ship/tiles/pilot_seat.glb#Scene0"),
+                    
+                    ..default()
+                }).insert(Collider::cuboid(
+                    bbox.x as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.y as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.z as f32 * VOXEL_SIZE / 2.0))
+                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+            }).to_box()
+        };
+
+        configs.push(cfg);
+        indexer += 1;
+    }
+
+    {
+        let bbox : IVec3 = [4, 1, 4].into();
+        let cfg = VoxelInstanceConfig {
+            name : "Pilot top window".to_string(),
+            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
+                cmds.spawn(SceneBundle {
+                    scene: asset_server.load("ship/tiles/pilot_top_window.glb#Scene0"),
+                    
+                    ..default()
+                }).insert(Collider::cuboid(
+                    bbox.x as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.y as f32 * VOXEL_SIZE / 2.0, 
+                    bbox.z as f32 * VOXEL_SIZE / 2.0))
+                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+            }).to_box()
+        };
+
+        configs.push(cfg);
+        indexer += 1;
+    }
+
     let all_instances = AllVoxelInstances {
         configs
     };

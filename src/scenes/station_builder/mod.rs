@@ -338,7 +338,7 @@ fn go_to_fps(
 
     if block.cmd == StationBuildCmds::GoToFPS {
         block.cmd = StationBuildCmds::None;
-
+        
         //find teleport spot
         let mut pos = Vec3::ZERO; 
         for idx in &all_instances.configs {
