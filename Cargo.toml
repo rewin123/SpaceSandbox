@@ -8,7 +8,7 @@ default-run = "SpaceSandbox"
 
 [dependencies]
 serde = "*"
-bevy = "0.9.1"
+bevy = {version = "0.9.1", features = ["serialize"]}
 rayon = "*"
 pollster = "*"
 winit = "*"

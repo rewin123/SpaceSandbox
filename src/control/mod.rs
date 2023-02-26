@@ -1,9 +1,10 @@
 use std::hash::Hash;
 
-use bevy::{prelude::*, utils::{HashMap, hashbrown::hash_map::Keys}};
+use bevy::{prelude::*, utils::{HashMap}};
 use bevy_egui::*;
 use bevy_inspector_egui::egui::Key;
 use ron::ser::PrettyConfig;
+
 
 pub trait IAction {
     fn get_area(&self) -> String;
@@ -12,28 +13,9 @@ pub trait IAction {
 }
 
 
-#[derive(Resource)]
-pub struct IKeyMapper<Action : IAction> {
+#[derive(Resource, serde::Deserialize, serde::Serialize)]
+pub struct KeyMapper {
     pub key_map : HashMap<Action, Option<KeyCode>>
-}
-
-impl<Action : IAction + Copy> IKeyMapper<Action> {
-    fn into_ser(&self) -> IKeyMapperSer<Action> {
-        IKeyMapperSer { 
-            key_map: self.key_map.iter().map(|(a, k)| {
-                if let Some(k) = k {
-                    (*a, Some(*k as u32))
-                } else {
-                    (*a, None)
-                }
-            }).collect()
-        }
-    }
-}
-
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct IKeyMapperSer<Action : IAction> {
-    pub key_map : Vec<(Action, Option<u32>)>
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Copy, serde::Serialize, serde::Deserialize)]
@@ -62,7 +44,6 @@ impl FPSAction {
     }
 }
 
-pub type KeyMapper = IKeyMapper<Action>;
 
 impl Default for KeyMapper {
     fn default() -> Self {
@@ -102,7 +83,16 @@ pub struct SpaceControlPlugin;
 impl Plugin for SpaceControlPlugin {
     fn build(&self, app : &mut App) {
         app.insert_resource(Input::<Action>::default());
-        app.init_resource::<KeyMapper>();
+
+        let mut key_mapper = KeyMapper::default();
+
+        if let Ok(data) = std::fs::read_to_string("key_mapping.ron") {
+            if let Ok(ser) = ron::from_str::<KeyMapper>(&data) {
+                key_mapper = ser;
+            }
+        }
+
+        app.insert_resource(key_mapper);
 
         let window = KeyMapperWindow {
             is_shown: true,
@@ -150,7 +140,8 @@ fn key_mapper_window(
     mut ctx : ResMut<EguiContext>,
     mut window : ResMut<KeyMapperWindow>,
     mut key_mapper : ResMut<KeyMapper>,
-    mut key_input : ResMut<Input<KeyCode>>
+    mut key_input : ResMut<Input<KeyCode>>,
+    mut input : Res<Input<Action>>
 ) {
     if window.is_shown {
 
@@ -180,9 +171,16 @@ fn key_mapper_window(
                             }
                         };
                         if Some(*action) != window.listen_action {
-                            if ui.button(selected_text).clicked() {
-                                window.listen_action = Some(*action);
+                            if input.pressed(*action) {
+                                if ui.add(egui::Button::new(selected_text).fill(egui::Color32::GREEN)).clicked() {
+                                    window.listen_action = Some(*action);
+                                }
+                            } else {
+                                if ui.button(selected_text).clicked() {
+                                    window.listen_action = Some(*action);
+                                }
                             }
+                            
                         } else {
                             ui.button("Press any key");
                         }
@@ -194,8 +192,7 @@ fn key_mapper_window(
                 ui.horizontal(|ui| {
 
                     if ui.button("Save").clicked() {
-                        let ser = key_mapper.into_ser();
-                        let data = ron::ser::to_string_pretty(&ser, PrettyConfig::default()).unwrap();
+                        let data = ron::ser::to_string_pretty(key_mapper.as_ref(), PrettyConfig::default()).unwrap();
                         std::fs::write("key_mapping.ron", data);
                     }
 
@@ -220,6 +217,8 @@ fn remap_system(
         if let Some(key) = key {
             if key_input.pressed(*key) {
                 input.press(*action);
+            } else {
+                input.release(*action);
             }
         }
     }
