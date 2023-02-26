@@ -14,7 +14,7 @@ pub enum ShipBlock {
     None
 }
 
-pub const VOXEL_SIZE : f32 = 0.5;
+pub const VOXEL_SIZE : f32 = 0.25;
 
 #[derive(Component)]
 pub struct Ship {

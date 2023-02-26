@@ -1,0 +1,9 @@
+(
+    key_map: [
+        (FPS(MoveForward), None),
+        (FPS(MoveBackward), None),
+        (FPS(MoveLeft), None),
+        (FPS(Interact), None),
+        (FPS(MoveRight), None),
+    ],
+)

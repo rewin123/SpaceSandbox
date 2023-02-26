@@ -59,7 +59,7 @@ pub fn init_all_voxel_instances(
     let mut indexer = 0;
 
     {
-        let bbox : IVec3 = [4, 1, 4].into();
+        let bbox : IVec3 = [8, 1, 8].into();
         let cfg = VoxelInstanceConfig {
             name : "Metal grids".to_string(),
             instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
@@ -81,7 +81,7 @@ pub fn init_all_voxel_instances(
     }
 
     {
-        let bbox : IVec3 = [1, 1, 1].into();
+        let bbox : IVec3 = [2, 1, 2].into();
         let cfg = VoxelInstanceConfig {
             name : TELEPORN_NAME.to_string(),
             instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
@@ -103,7 +103,7 @@ pub fn init_all_voxel_instances(
     }
 
     {
-        let bbox : IVec3 = [4, 1, 4].into();
+        let bbox : IVec3 = [8, 1, 8].into();
         let cfg = VoxelInstanceConfig {
             name : "White plate".to_string(),
             instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
@@ -125,7 +125,7 @@ pub fn init_all_voxel_instances(
     }
 
     {
-        let bbox : IVec3 = [4, 1, 4].into();
+        let bbox : IVec3 = [8, 1, 8].into();
         let cfg = VoxelInstanceConfig {
             name : "White triangle plate".to_string(),
             instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
@@ -147,7 +147,7 @@ pub fn init_all_voxel_instances(
     }
 
     {
-        let bbox : IVec3 = [4, 4, 4].into();
+        let bbox : IVec3 = [8, 8, 8].into();
         let cfg = VoxelInstanceConfig {
             name : "White door".to_string(),
             instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
@@ -169,7 +169,7 @@ pub fn init_all_voxel_instances(
     }
 
     {
-        let bbox : IVec3 = [4, 1, 4].into();
+        let bbox : IVec3 = [8, 1, 8].into();
         let cfg = VoxelInstanceConfig {
             name : "Window".to_string(),
             instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
@@ -191,7 +191,7 @@ pub fn init_all_voxel_instances(
     }
 
     {
-        let bbox : IVec3 = [4, 1, 4].into();
+        let bbox : IVec3 = [8, 1, 8].into();
         let cfg = VoxelInstanceConfig {
             name : "Corner window".to_string(),
             instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
@@ -213,7 +213,7 @@ pub fn init_all_voxel_instances(
     }
 
     {
-        let bbox : IVec3 = [4, 1, 4].into();
+        let bbox : IVec3 = [8, 1, 8].into();
         let cfg = VoxelInstanceConfig {
             name : "Engine".to_string(),
             instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
@@ -235,7 +235,7 @@ pub fn init_all_voxel_instances(
     }
 
     {
-        let bbox : IVec3 = [4, 1, 4].into();
+        let bbox : IVec3 = [8, 1, 8].into();
         let cfg = VoxelInstanceConfig {
             name : "Pilot seat".to_string(),
             instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
@@ -257,7 +257,7 @@ pub fn init_all_voxel_instances(
     }
 
     {
-        let bbox : IVec3 = [4, 1, 4].into();
+        let bbox : IVec3 = [8, 1, 8].into();
         let cfg = VoxelInstanceConfig {
             name : "Pilot top window".to_string(),
             instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },

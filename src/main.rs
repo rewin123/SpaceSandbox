@@ -1,3 +1,4 @@
+use SpaceSandbox::control::SpaceControlPlugin;
 use SpaceSandbox::network::NetworkPlugin;
 use SpaceSandbox::pawn_system::PawnPlugin;
 use SpaceSandbox::scenes::fps_mode::FPSPlugin;
@@ -24,6 +25,7 @@ fn main() {
         .add_plugin(FPSPlugin)
         .add_plugin(PawnPlugin)
         .add_plugin(NetworkPlugin)
+        .add_plugin(SpaceControlPlugin)
 
         .run();
 }

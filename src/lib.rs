@@ -7,6 +7,7 @@ pub mod space_voxel;
 pub mod pawn_system;
 pub mod network;
 pub mod asset_utils;
+pub mod control;
 
 use std::default::Default;
 // use winit::window::Window;
