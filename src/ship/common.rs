@@ -155,7 +155,7 @@ pub fn init_all_voxel_instances(
     {
         let cfg = spawn_static_instance(
             &mut indexer,
-            [8, 8, 8].into(),
+            [8, 8, 1].into(),
             [0.0, 0.0, 0.0].into(),
             "White door",
             "ship/tiles/door.glb#Scene0",
