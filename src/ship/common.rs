@@ -167,7 +167,7 @@ pub fn init_all_voxel_instances(
     {
         let cfg = spawn_static_instance(
             &mut indexer,
-            [8, 1, 8].into(),
+            [8, 8, 1].into(),
             [0.0, 0.0, 0.0].into(),
             "Window",
             "ship/tiles/window.glb#Scene0",
@@ -215,8 +215,8 @@ pub fn init_all_voxel_instances(
     {
         let cfg = spawn_static_instance(
             &mut indexer,
-            [8, 1, 8].into(),
-            [0.0, 0.0, 0.0].into(),
+            [8 * 3 + 2, 8, 8].into(),
+            [0.0, -1.0, 1.0].into(),
             "Pilot top window",
             "ship/tiles/pilot_top_window.glb#Scene0",
             |_|{}
