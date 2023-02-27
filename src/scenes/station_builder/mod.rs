@@ -349,7 +349,7 @@ fn go_to_fps(
     mut cmds : Commands,
     mut pawn_event : EventWriter<ChangePawn>,
     mut block : ResMut<StationBuildBlock>,
-    mut query : Query<(&GlobalTransform, &VoxelInstance)>,
+    mut query : Query<(Entity, &GlobalTransform, &VoxelInstance)>,
     mut ships : Query<&Ship>,
     mut all_instances : Res<AllVoxelInstances>) {
 
@@ -361,8 +361,8 @@ fn go_to_fps(
         for idx in &all_instances.configs {
             if idx.name == TELEPORN_NAME {
                 let teleport_idx = idx.instance.common_id;
-                for (tr, inst) in &query {
-                    if inst.common_id == teleport_idx {
+                for (e, tr, inst) in &query {
+                    if inst.common_id == teleport_idx && Some(e) != block.e {
                         pos = tr.translation();
                         break;
                     }
@@ -375,10 +375,14 @@ fn go_to_fps(
         let mut cam = Camera::default();
         cam.is_active = false;
 
-        let pos = Vec3::new(pos.x, pos.y + 2.0, pos.z);
-        let pawn = cmds.spawn(Collider::capsule(Vec3::new(0.0, -1.0, 0.0), Vec3::new(0.0, 1.0, 0.0), 0.5))
-        .insert(SpatialBundle::from_transform(Transform::from_xyz(pos.x, pos.y + 2.0, pos.z)))
-        .insert(KinematicCharacterController::default()).id();
+        let kinematic_controller = KinematicCharacterController::default();
+
+        let pos = Vec3::new(pos.x, pos.y + 1.0, pos.z);
+        let pawn = cmds.spawn(Collider::capsule(Vec3::new(0.0, -0.75, 0.0), Vec3::new(0.0, 0.75, 0.0), 0.25))
+        .insert(SpatialBundle::from_transform(Transform::from_xyz(pos.x, pos.y, pos.z)))
+        .insert(kinematic_controller)
+        .insert(RigidBody::Dynamic)
+        .insert(GravityScale(1.0)).id();
 
         let cam_pawn = cmds.spawn(Camera3dBundle {
             transform: Transform::from_xyz(0.0, 1.0, 0.0).looking_at(Vec3::new(0.0, 1.0, -1.0), Vec3::Y),

@@ -61,7 +61,9 @@ fn fps_controller(
                     let up = pawn_transform.up();
                     let right = pawn_transform.right();
                     let delta = mv.delta * 0.001;
-                    let changed_frw = (frw + - delta.y * up).normalize();
+                    let mut changed_frw = (frw - delta.y * up).normalize();
+                    changed_frw.y = changed_frw.y.max(-0.95);
+                    changed_frw.y = changed_frw.y.min(0.95);
                     let pos = pawn_transform.translation;
                     pawn_transform.look_at(pos + changed_frw, Vec3::new(0.0, 1.0, 0.0));
                 }
@@ -93,8 +95,10 @@ fn fps_controller(
                 if keys.pressed(Action::FPS(FPSAction::MoveLeft)) {
                     move_dir -= right;
                 }
+                //notmal human walk speed
+                let speed = 5.0 * 1000.0 / 3600.0;
                 move_dir = move_dir.normalize_or_zero();
-                move_dir *= time.delta_seconds();
+                move_dir *= time.delta_seconds() * speed;
                 controller.translation = Some(move_dir);
             } else {
 
