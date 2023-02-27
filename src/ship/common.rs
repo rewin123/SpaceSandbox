@@ -191,7 +191,7 @@ pub fn init_all_voxel_instances(
     {
         let cfg = spawn_static_instance(
             &mut indexer,
-            [8, 1, 8].into(),
+            [8, 8, 26].into(),
             [0.0, 0.0, 0.0].into(),
             "Engine",
             "ship/tiles/engine.glb#Scene0",
