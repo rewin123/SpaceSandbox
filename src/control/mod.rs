@@ -20,7 +20,8 @@ pub struct KeyMapper {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Copy, serde::Serialize, serde::Deserialize)]
 pub enum Action {
-   FPS(FPSAction)
+   FPS(FPSAction),
+   Build(BuildAction)
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Copy, serde::Serialize, serde::Deserialize)]
@@ -29,7 +30,10 @@ pub enum FPSAction {
     MoveBackward,
     MoveLeft,
     MoveRight,
-    Interact
+    Interact,
+    Jump,
+    Crouch,
+    Sprint,
 }
 
 impl FPSAction {
@@ -39,11 +43,31 @@ impl FPSAction {
             FPSAction::MoveBackward,
             FPSAction::MoveLeft,
             FPSAction::MoveRight,
-            FPSAction::Interact
+            FPSAction::Interact,
+            FPSAction::Jump,
+            FPSAction::Crouch,
+            FPSAction::Sprint,
         ]
     }
 }
 
+
+
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Copy, serde::Serialize, serde::Deserialize)]
+pub enum BuildAction {
+    LevelUp,
+    LevelDown,
+}
+
+impl BuildAction {
+    fn all_actions() -> Vec<BuildAction> {
+        vec![
+            BuildAction::LevelUp,
+            BuildAction::LevelDown
+        ]
+    }
+}
 
 impl Default for KeyMapper {
     fn default() -> Self {
@@ -57,6 +81,7 @@ impl IAction for Action {
     fn get_area(&self) -> String {
         let res = match &self {
             Action::FPS(_) => "FPS",
+            Action::Build(_) => "Build"
         };
         res.to_string()
     }
@@ -65,6 +90,9 @@ impl IAction for Action {
         let mut res = vec![];
         res.extend(FPSAction::all_actions().iter().map(|a| {
             Action::FPS(a.clone())
+        }));
+        res.extend(BuildAction::all_actions().iter().map(|a| {
+            Action::Build(a.clone())
         }));
         res
     }
@@ -133,6 +161,15 @@ fn get_keys() -> Vec<KeyCode> {
         KeyCode::B,
         KeyCode::N,
         KeyCode::M,
+        KeyCode::Space,
+        KeyCode::LShift,
+        KeyCode::RShift,
+        KeyCode::LControl,
+        KeyCode::RControl,
+        KeyCode::LAlt,
+        KeyCode::RAlt,
+        KeyCode::LWin,
+        KeyCode::RWin,
     ]
 }
 

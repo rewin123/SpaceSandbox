@@ -1,9 +1,14 @@
 (
     key_map: {
-        FPS(MoveForward): Some(W),
-        FPS(MoveRight): Some(D),
         FPS(MoveBackward): Some(S),
+        FPS(Sprint): Some(LShift),
+        Build(LevelUp): Some(R),
+        FPS(Jump): Some(Space),
         FPS(MoveLeft): Some(A),
+        FPS(MoveForward): Some(W),
+        Build(LevelDown): Some(F),
         FPS(Interact): Some(E),
+        FPS(Crouch): Some(LControl),
+        FPS(MoveRight): Some(D),
     },
 )
