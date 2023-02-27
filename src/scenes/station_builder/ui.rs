@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_egui::*;
 use laminar::Packet;
 
-use crate::{ship::common::AllVoxelInstances, network::{NetworkServer, NetworkClient, ServerNetworkCmd, packet_socket::{SendPacket, SendDestination}, protocol::{ConnectionEvent, ConnectionMsg}, MessageChannel, NetworkSplitter}};
+use crate::{ship::common::AllVoxelInstances, network::{NetworkServer, NetworkClient, ServerNetworkCmd, packet_socket::{SendPacket, SendDestination}, protocol::{ConnectionEvent, ConnectionMsg}, MessageChannel, NetworkSplitter}, control::Action};
 
 use super::*;
 
@@ -57,7 +57,8 @@ pub fn ship_build_menu(
     mut server_op : Option<ResMut<NetworkServer>>,
     mut client_op : Option<ResMut<NetworkClient>>,
     mut network_cmds : EventWriter<ServerNetworkCmd>,
-    mut chat_channel : ResMut<NetworkChat>
+    mut chat_channel : ResMut<NetworkChat>,
+    mut input : ResMut<Input<Action>>
 ) {
     egui::SidePanel::left("Build panel").show(ctx.ctx_mut(), |ui| {
         network_chat(client_op, server_op, ui, chat_channel, &mut state, network_cmds);
@@ -104,13 +105,13 @@ pub fn ship_build_menu(
 
         ui.separator();
 
-        let step = 0.5;
+        let step = 0.25;
         match &mut block.mode {
             BuildMode::SingleOnY(lvl) => {
-                if ui.input().key_pressed(egui::Key::Q) {
+                if input.just_pressed(Action::Build(control::BuildAction::LevelDown)) {
                     *lvl -= step;
                 }
-                if ui.input().key_pressed(egui::Key::E) {
+                if input.just_pressed(Action::Build(control::BuildAction::LevelUp)) {
                     *lvl += step;
                 }
                 ui.add(egui::DragValue::new(lvl)

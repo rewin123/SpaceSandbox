@@ -1,7 +1,7 @@
 use bevy::{input::mouse::MouseMotion, window::WindowFocused};
 use bevy_rapier3d::prelude::KinematicCharacterController;
 
-use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn}};
+use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn}, control::{Action, FPSAction}};
 
 
 pub struct FPSPlugin;
@@ -48,7 +48,7 @@ fn fps_controller(
     mut characters : Query<(&mut Transform, &mut KinematicCharacterController)>,
     mut pawns : Query<(&Pawn)>,
     mut mouse_move : EventReader<MouseMotion>,
-    mut keys : Res<Input<KeyCode>>,
+    mut keys : Res<Input<Action>>,
     mut time : Res<Time>
 ) {
     let moves = mouse_move.iter().map(|m| m.clone()).collect::<Vec<_>>();
@@ -81,16 +81,16 @@ fn fps_controller(
                 let frw = pawn_transform.forward();
                 let right = pawn_transform.right();
                 let mut move_dir = Vec3::ZERO;
-                if keys.pressed(KeyCode::W) {
+                if keys.pressed(Action::FPS(FPSAction::MoveForward)) {
                     move_dir += frw;
                 } 
-                if keys.pressed(KeyCode::S) {
+                if keys.pressed(Action::FPS(FPSAction::MoveBackward)) {
                     move_dir -= frw;
                 }
-                if keys.pressed(KeyCode::D) {
+                if keys.pressed(Action::FPS(FPSAction::MoveRight)) {
                     move_dir += right;
                 }
-                if keys.pressed(KeyCode::A) {
+                if keys.pressed(Action::FPS(FPSAction::MoveLeft)) {
                     move_dir -= right;
                 }
                 move_dir = move_dir.normalize_or_zero();
