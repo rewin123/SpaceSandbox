@@ -269,7 +269,7 @@ fn pos_block(
             let hs = bbox.as_vec3() / 2.0 * ship.map.voxel_size;
             let corner_pos = pos - hs;
             let grid_pos = ship.map.get_grid_pos(&corner_pos);
-            active_tr.translation = grid_pos + hs;
+            active_tr.translation = grid_pos + hs + hs * block.instance.as_ref().unwrap().origin;
         },
     }
 }

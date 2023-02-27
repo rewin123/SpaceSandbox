@@ -35,7 +35,8 @@ impl<F> BuildInstance for ClosureInstance<F>
 #[derive(Component, Clone)]
 pub struct VoxelInstance {
     pub bbox : IVec3,
-    pub common_id : u32
+    pub common_id : u32,
+    pub origin : Vec3
 }
 
 
@@ -60,9 +61,14 @@ pub fn init_all_voxel_instances(
 
     {
         let bbox : IVec3 = [8, 1, 8].into();
+        let instance = VoxelInstance {
+            bbox : bbox.clone(),
+            common_id : indexer,
+            origin : [0.0, 0.0, 0.0].into()
+        };
         let cfg = VoxelInstanceConfig {
             name : "Metal grids".to_string(),
-            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            instance : instance.clone(),
             create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
                 cmds.spawn(SceneBundle {
                     scene: asset_server.load("ss13/wall_models/metal_grid/metal_grid.gltf#Scene0"),
@@ -72,7 +78,7 @@ pub fn init_all_voxel_instances(
                     bbox.x as f32 * VOXEL_SIZE / 2.0, 
                     bbox.y as f32 * VOXEL_SIZE / 2.0, 
                     bbox.z as f32 * VOXEL_SIZE / 2.0))
-                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+                .insert(instance.clone()).id()
             }).to_box()
         };
 
@@ -82,9 +88,14 @@ pub fn init_all_voxel_instances(
 
     {
         let bbox : IVec3 = [2, 1, 2].into();
+        let instance = VoxelInstance {
+            bbox : bbox.clone(),
+            common_id : indexer,
+            origin : [0.0, 0.0, 0.0].into()
+        };
         let cfg = VoxelInstanceConfig {
             name : TELEPORN_NAME.to_string(),
-            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            instance : instance.clone(),
             create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
                 cmds.spawn(SceneBundle {
                     scene: asset_server.load("furniture/teleport_spot.glb#Scene0"),
@@ -94,7 +105,7 @@ pub fn init_all_voxel_instances(
                     bbox.x as f32 * VOXEL_SIZE / 2.0, 
                     bbox.y as f32 * VOXEL_SIZE / 2.0 / 2.0, 
                     bbox.z as f32 * VOXEL_SIZE / 2.0 ))
-                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+                .insert(instance.clone()).id()
             }).to_box()
         };
 
@@ -104,9 +115,14 @@ pub fn init_all_voxel_instances(
 
     {
         let bbox : IVec3 = [8, 1, 8].into();
+        let instance = VoxelInstance {
+            bbox : bbox.clone(),
+            common_id : indexer,
+            origin : [0.0, 0.0, 0.0].into()
+        };
         let cfg = VoxelInstanceConfig {
             name : "White plate".to_string(),
-            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            instance : instance.clone(),
             create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
                 cmds.spawn(SceneBundle {
                     scene: asset_server.load("ship/tiles/base_plate.glb#Scene0"),
@@ -116,7 +132,7 @@ pub fn init_all_voxel_instances(
                     bbox.x as f32 * VOXEL_SIZE / 2.0, 
                     bbox.y as f32 * VOXEL_SIZE / 2.0, 
                     bbox.z as f32 * VOXEL_SIZE / 2.0))
-                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+                .insert(instance.clone()).id()
             }).to_box()
         };
 
@@ -126,9 +142,14 @@ pub fn init_all_voxel_instances(
 
     {
         let bbox : IVec3 = [8, 1, 8].into();
+        let instance = VoxelInstance {
+            bbox : bbox.clone(),
+            common_id : indexer,
+            origin : [0.0, 0.0, 0.0].into()
+        };
         let cfg = VoxelInstanceConfig {
             name : "White triangle plate".to_string(),
-            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            instance : instance.clone(),
             create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
                 cmds.spawn(SceneBundle {
                     scene: asset_server.load("ship/tiles/white_triangle_plate.glb#Scene0"),
@@ -138,7 +159,7 @@ pub fn init_all_voxel_instances(
                     bbox.x as f32 * VOXEL_SIZE / 2.0, 
                     bbox.y as f32 * VOXEL_SIZE / 2.0, 
                     bbox.z as f32 * VOXEL_SIZE / 2.0))
-                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+                .insert(instance.clone()).id()
             }).to_box()
         };
 
@@ -148,9 +169,14 @@ pub fn init_all_voxel_instances(
 
     {
         let bbox : IVec3 = [8, 8, 8].into();
+        let instance = VoxelInstance {
+            bbox : bbox.clone(),
+            common_id : indexer,
+            origin : [0.0, 0.0, 0.0].into()
+        };
         let cfg = VoxelInstanceConfig {
             name : "White door".to_string(),
-            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            instance : instance.clone(),
             create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
                 cmds.spawn(SceneBundle {
                     scene: asset_server.load("ship/tiles/door.glb#Scene0"),
@@ -160,7 +186,7 @@ pub fn init_all_voxel_instances(
                     bbox.x as f32 * VOXEL_SIZE / 2.0, 
                     bbox.y as f32 * VOXEL_SIZE / 2.0, 
                     bbox.z as f32 * VOXEL_SIZE / 2.0))
-                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+                .insert(instance.clone()).id()
             }).to_box()
         };
 
@@ -170,9 +196,14 @@ pub fn init_all_voxel_instances(
 
     {
         let bbox : IVec3 = [8, 1, 8].into();
+        let instance = VoxelInstance {
+            bbox : bbox.clone(),
+            common_id : indexer,
+            origin : [0.0, 0.0, 0.0].into()
+        };
         let cfg = VoxelInstanceConfig {
             name : "Window".to_string(),
-            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            instance : instance.clone(),
             create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
                 cmds.spawn(SceneBundle {
                     scene: asset_server.load("ship/tiles/window.glb#Scene0"),
@@ -182,7 +213,7 @@ pub fn init_all_voxel_instances(
                     bbox.x as f32 * VOXEL_SIZE / 2.0, 
                     bbox.y as f32 * VOXEL_SIZE / 2.0, 
                     bbox.z as f32 * VOXEL_SIZE / 2.0))
-                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+                .insert(instance.clone()).id()
             }).to_box()
         };
 
@@ -192,9 +223,14 @@ pub fn init_all_voxel_instances(
 
     {
         let bbox : IVec3 = [8, 1, 8].into();
+        let instance = VoxelInstance {
+            bbox : bbox.clone(),
+            common_id : indexer,
+            origin : [0.0, 0.0, 0.0].into()
+        };
         let cfg = VoxelInstanceConfig {
             name : "Corner window".to_string(),
-            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            instance : instance.clone(),
             create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
                 cmds.spawn(SceneBundle {
                     scene: asset_server.load("ship/tiles/corner_window.glb#Scene0"),
@@ -204,7 +240,7 @@ pub fn init_all_voxel_instances(
                     bbox.x as f32 * VOXEL_SIZE / 2.0, 
                     bbox.y as f32 * VOXEL_SIZE / 2.0, 
                     bbox.z as f32 * VOXEL_SIZE / 2.0))
-                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+                .insert(instance.clone()).id()
             }).to_box()
         };
 
@@ -214,9 +250,14 @@ pub fn init_all_voxel_instances(
 
     {
         let bbox : IVec3 = [8, 1, 8].into();
+        let instance = VoxelInstance {
+            bbox : bbox.clone(),
+            common_id : indexer,
+            origin : [0.0, 0.0, 0.0].into()
+        };
         let cfg = VoxelInstanceConfig {
             name : "Engine".to_string(),
-            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            instance : instance.clone(),
             create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
                 cmds.spawn(SceneBundle {
                     scene: asset_server.load("ship/tiles/engine.glb#Scene0"),
@@ -226,7 +267,7 @@ pub fn init_all_voxel_instances(
                     bbox.x as f32 * VOXEL_SIZE / 2.0, 
                     bbox.y as f32 * VOXEL_SIZE / 2.0, 
                     bbox.z as f32 * VOXEL_SIZE / 2.0))
-                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+                .insert(instance.clone()).id()
             }).to_box()
         };
 
@@ -235,20 +276,34 @@ pub fn init_all_voxel_instances(
     }
 
     {
-        let bbox : IVec3 = [8, 1, 8].into();
+        let bbox : IVec3 = [8, 4, 8].into();
+        let instance = VoxelInstance {
+            bbox : bbox.clone(),
+            common_id : indexer,
+            origin : [0.0, -1.0, 0.0].into()
+        };
         let cfg = VoxelInstanceConfig {
             name : "Pilot seat".to_string(),
-            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            instance : instance.clone(),
             create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
-                cmds.spawn(SceneBundle {
+                let id = cmds.spawn(SceneBundle {
                     scene: asset_server.load("ship/tiles/pilot_seat.glb#Scene0"),
                     
                     ..default()
-                }).insert(Collider::cuboid(
+                })
+                .insert(instance.clone()).id();
+
+                let collider_pos = -instance.origin.clone() * bbox.as_vec3() / 2.0 * VOXEL_SIZE;
+                
+                let shifted_collider = cmds.spawn((Collider::cuboid(
                     bbox.x as f32 * VOXEL_SIZE / 2.0, 
                     bbox.y as f32 * VOXEL_SIZE / 2.0, 
-                    bbox.z as f32 * VOXEL_SIZE / 2.0))
-                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+                    bbox.z as f32 * VOXEL_SIZE / 2.0)))
+                .insert(SpatialBundle::from(Transform::from_xyz(collider_pos.x, collider_pos.y, collider_pos.z))).id();
+
+                cmds.entity(id).add_child(shifted_collider);
+
+                id
             }).to_box()
         };
 
@@ -258,9 +313,15 @@ pub fn init_all_voxel_instances(
 
     {
         let bbox : IVec3 = [8, 1, 8].into();
+
+        let instance = VoxelInstance {
+            bbox : bbox.clone(),
+            common_id : indexer,
+            origin : [0.0, 0.0, 0.0].into()
+        };
         let cfg = VoxelInstanceConfig {
             name : "Pilot top window".to_string(),
-            instance : VoxelInstance { bbox: bbox.clone(), common_id : indexer },
+            instance : instance.clone(),
             create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
                 cmds.spawn(SceneBundle {
                     scene: asset_server.load("ship/tiles/pilot_top_window.glb#Scene0"),
@@ -270,7 +331,7 @@ pub fn init_all_voxel_instances(
                     bbox.x as f32 * VOXEL_SIZE / 2.0, 
                     bbox.y as f32 * VOXEL_SIZE / 2.0, 
                     bbox.z as f32 * VOXEL_SIZE / 2.0))
-                .insert(VoxelInstance { bbox: bbox.clone(), common_id : indexer }).id()
+                .insert(instance.clone()).id()
             }).to_box()
         };
 
