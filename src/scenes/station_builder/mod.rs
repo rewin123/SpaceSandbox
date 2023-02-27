@@ -197,8 +197,8 @@ fn spawn_block(
     }
 
     let inst = block.instance.as_ref().unwrap();
-
-    let grid_idx = ship.get_grid_idx_by_center(&tr.translation, &inst.bbox);
+    let hs = inst.bbox.as_vec3() / 2.0 * VOXEL_SIZE;
+    let grid_idx = ship.get_grid_idx_by_center(&(tr.translation - hs * inst.origin), &inst.bbox);
     let id = ship.map.get_by_idx(&grid_idx).clone();
 
     if buttons.pressed(MouseButton::Left) {
@@ -267,7 +267,7 @@ fn pos_block(
             let pos = mouse_ray.origin + t * mouse_ray.direction;
             let bbox = block.instance.as_ref().unwrap().bbox.clone();
             let hs = bbox.as_vec3() / 2.0 * ship.map.voxel_size;
-            let corner_pos = pos - hs;
+            let corner_pos = pos - hs - hs * block.instance.as_ref().unwrap().origin;
             let grid_pos = ship.map.get_grid_pos(&corner_pos);
             active_tr.translation = grid_pos + hs + hs * block.instance.as_ref().unwrap().origin;
         },
