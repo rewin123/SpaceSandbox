@@ -58,13 +58,17 @@ impl FPSAction {
 pub enum BuildAction {
     LevelUp,
     LevelDown,
+    RotateClockwise,
+    RotateCounterClockwise,
 }
 
 impl BuildAction {
     fn all_actions() -> Vec<BuildAction> {
         vec![
             BuildAction::LevelUp,
-            BuildAction::LevelDown
+            BuildAction::LevelDown,
+            BuildAction::RotateClockwise,
+            BuildAction::RotateCounterClockwise,
         ]
     }
 }

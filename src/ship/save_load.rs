@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{Read, Write};
 
+use bevy::ecs::system::EntityCommands;
 use bevy::ecs::world::{EntityRef, EntityMut};
 use bevy::scene::serde::SceneDeserializer;
 use bevy::{prelude::*, utils::HashMap};
@@ -10,8 +11,7 @@ use serde::de::DeserializeSeed;
 use crate::network::{NetworkSplitter, MessageChannel};
 use crate::ui::ToastHolder;
 
-use super::common::*;
-use super::*;
+use super::prelude::*;
 
 #[derive(Default)]
 pub struct CopyAlgorithm {
@@ -22,6 +22,19 @@ impl CopyAlgorithm {
     pub fn copy(&self, dst : &mut EntityMut, src : &mut EntityRef) {
         for s in &self.steps {
             (s)(dst, src);
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct BuildAlgorithm {
+    pub steps : Vec<Box<dyn Fn(&mut EntityCommands, &mut EntityRef) + Send + Sync>>
+}
+
+impl BuildAlgorithm {
+    pub fn build(&self, cmds : &mut EntityCommands, src : &mut EntityRef) {
+        for s in &self.steps {
+            (s)(cmds, src);
         }
     }
 }
@@ -38,16 +51,27 @@ impl ComponentClone {
     }
 }
 
+pub struct ComponentBuild;
+
+impl ComponentBuild {
+    fn new<T : Component + Clone>() -> Box<dyn Fn(&mut EntityCommands, &mut EntityRef) + Send + Sync> {
+        Box::new(|cmds : &mut EntityCommands, src : &mut EntityRef| {
+            if let Some(src_cmp) = src.get::<T>() {
+                cmds.insert(src_cmp.clone());
+            }
+        })
+    }
+}
 #[derive(Resource)]
 pub struct SaveLoadCfg {
     pub save : CopyAlgorithm,
-    pub load : CopyAlgorithm
+    pub load : BuildAlgorithm
 }
 
 impl SaveLoadCfg {
     fn add_simple_clone<T : Component + Clone>(&mut self) {
         self.save.steps.push(ComponentClone::new::<T>());
-        self.load.steps.push(ComponentClone::new::<T>());
+        self.load.steps.push(ComponentBuild::new::<T>());
     }
 }
 
@@ -74,12 +98,15 @@ impl Plugin for ShipPlugin {
         app.add_event::<ShipLoaded>();
         app.add_event::<SpawnBlockCmd>();
 
+        app.register_type::<InstanceRotate>();
+
         app.insert_resource(ShipSaveQueue::default());
         app.insert_resource(SaveLoadCfg::default());
 
         app.add_system(loading_ship_system);
         app.add_system(prepare_saving_ship_system);
         app.add_system(saving_ship_system);
+        app.add_system(prepare_instance_rotate);
 
         app.add_startup_system(setup_base_save_load_cfg);
 
@@ -110,6 +137,7 @@ fn setup_base_save_load_cfg(
     mut cfg : ResMut<SaveLoadCfg>
 ) {
     cfg.add_simple_clone::<Transform>();
+    cfg.add_simple_clone::<InstanceRotate>();
 }
 
 fn saving_ship_system(
@@ -174,6 +202,7 @@ fn loading_ship_system(
     all_instances : Res<AllVoxelInstances>,
     mut load_ships : EventReader<CmdShipLoad>,
     mut loaded_ships : EventWriter<ShipLoaded>,
+    mut cfg : ResMut<SaveLoadCfg>,
     mut toast : ResMut<ToastHolder>
 ) {
     for ship_path in load_ships.iter() {
@@ -195,7 +224,7 @@ fn loading_ship_system(
             let mut ship = Ship::new_sized(disk_ship.map.size.clone());
             let mut spawned : HashMap<u32, Entity> = HashMap::new();
 
-            instances_from_disk(disk_ship, &mut ship, &mut spawned, &all_instances, &mut cmds, &asset_server, sub_world);
+            instances_from_disk(disk_ship, &mut ship, &mut spawned, &all_instances, &mut cmds, &asset_server, &mut cfg, sub_world);
 
             let ship_id = cmds.spawn(ship).insert(
                 SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)))
@@ -218,6 +247,7 @@ fn instances_from_disk(
     all_instances: &Res<AllVoxelInstances>, 
     cmds: &mut Commands, 
     asset_server: &Res<AssetServer>, 
+    cfg : &mut SaveLoadCfg,
     sub_world: World) {
 
     for z in 0..disk_ship.map.size.z {
@@ -247,9 +277,11 @@ fn instances_from_disk(
                                         disk_ship.states.get(&id.state_id).unwrap().index()
                                     );
 
-                                    cmds.entity(spawn_e).insert(SpatialBundle::from_transform(
-                                        sub_world.entity(state_e).get::<Transform>().unwrap().clone()
-                                    ));
+                                    cfg.load.build(&mut cmds.entity(spawn_e), &mut sub_world.entity(state_e));
+
+                                    // cmds.entity(spawn_e).insert(SpatialBundle::from_transform(
+                                    //     sub_world.entity(state_e).get::<Transform>().unwrap().clone()
+                                    // ));
 
                                     ship.map.set_voxel_by_idx(&idx, VoxelVal::Object(spawn_e))
                                 }

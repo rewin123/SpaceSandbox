@@ -8,6 +8,14 @@ use self::common::{AllVoxelInstances, VoxelInstance};
 
 pub mod common;
 pub mod save_load;
+pub mod instance_rotate;
+
+pub mod prelude {
+    pub use super::common::*;
+    pub use super::save_load::*;
+    pub use super::instance_rotate::*;
+    pub use super::*;
+}
 
 #[derive(Clone, Reflect, FromReflect, Serialize, Deserialize)]
 pub enum ShipBlock {
@@ -135,6 +143,8 @@ impl DiskShip {
     pub fn to_base64(&self) -> String {
         let bytes =  bincode::serialize(&self).unwrap();
         let compressed_bytes = snap::raw::Encoder::new().compress_vec(&bytes).unwrap();
+        let compressed_bytes = snap::raw::Encoder::new().compress_vec(&compressed_bytes).unwrap();
+        let compressed_bytes = snap::raw::Encoder::new().compress_vec(&compressed_bytes).unwrap();
         let base64 = base64::encode(compressed_bytes);
         base64
     }
@@ -142,6 +152,8 @@ impl DiskShip {
     pub fn from_base64(text : &String) -> DiskShip {
         let bytes = base64::decode(text).unwrap();
         let decompressed_bytes = snap::raw::Decoder::new().decompress_vec(&bytes).unwrap();
+        let decompressed_bytes = snap::raw::Decoder::new().decompress_vec(&decompressed_bytes).unwrap();
+        let decompressed_bytes = snap::raw::Decoder::new().decompress_vec(&decompressed_bytes).unwrap();
         bincode::deserialize(&decompressed_bytes).unwrap()
     }
 }

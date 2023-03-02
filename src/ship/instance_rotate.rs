@@ -1,0 +1,17 @@
+use bevy::prelude::*;
+
+
+#[derive(Component, Clone, Reflect, FromReflect, Default)]
+#[reflect(Component)]
+pub struct InstanceRotate {
+    pub rot_steps : IVec3
+}
+
+pub fn prepare_instance_rotate(
+    mut query : Query<(&mut Transform, &InstanceRotate), Added<InstanceRotate>>
+) {
+    // for (mut transform, rot) in query.iter_mut() {
+    //     let xyz_euler = rot.rot_steps.as_vec3() * 90.0;
+    //     transform.rotation = Quat::from_euler(EulerRot::XYZ, xyz_euler.x, xyz_euler.y, xyz_euler.z);
+    // }
+}

@@ -1,7 +1,7 @@
 use bevy::{prelude::*, ecs::system::EntityCommands};
 use bevy_rapier3d::prelude::Collider;
 
-use super::VOXEL_SIZE;
+use super::{VOXEL_SIZE, instance_rotate::InstanceRotate};
 
 pub const TELEPORN_NAME : &'static str = "Teleport spot";
 
@@ -36,8 +36,10 @@ impl<F> BuildInstance for ClosureInstance<F>
 pub struct VoxelInstance {
     pub bbox : IVec3,
     pub common_id : u32,
-    pub origin : Vec3
+    pub origin : Vec3,
 }
+
+
 
 
 pub struct VoxelInstanceConfig
@@ -77,7 +79,8 @@ fn spawn_static_instance<F>(
                 
                 ..default()
             })
-            .insert(instance.clone()).id();
+            .insert(instance.clone())
+            .insert(InstanceRotate::default()).id();
 
             let collider_pos = -instance.origin.clone() * bbox.as_vec3() / 2.0 * VOXEL_SIZE;
             
@@ -239,3 +242,5 @@ impl Plugin for VoxelInstancePlugin {
         app.add_startup_system(init_all_voxel_instances);
     }
 }
+
+

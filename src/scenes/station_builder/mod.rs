@@ -1,11 +1,15 @@
 mod ui;
 
+use std::f32::consts::PI;
+
 use bevy_rapier3d::prelude::*;
+use instance_rotate::InstanceRotate;
 use ui::*;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
+use crate::control::Action;
 use crate::pawn_system::*;
 use crate::ship::*;
 use crate::ship::common::{AllVoxelInstances, VoxelInstance, TELEPORN_NAME};
@@ -51,6 +55,7 @@ impl Plugin for StationBuilderPlugin {
                 .run_if_resource_exists::<StationBuildBlock>()
                 .after("ship_build_menu")
                 .with_system(spawn_block)
+                .with_system(rotate_block)
                 .into()
         );
 
@@ -161,11 +166,28 @@ fn clear_all_system(
     }
 }
 
+fn rotate_block(
+    mut block : ResMut<StationBuildBlock>,
+    mut query : Query<(&mut Transform, &mut InstanceRotate), With<ActiveBlock>>,
+    input : Res<Input<Action>>,
+) {
+    if let Some(e) = block.e {
+        if input.just_pressed(Action::Build(control::BuildAction::RotateCounterClockwise)) {
+            if let Ok((mut transform, mut rotate)) = query.get_mut(e) {
+                transform.rotate(Quat::from_rotation_y(PI / 2.0));
+                rotate.rot_steps.x += 1;
+                
+            }
+        }
+    }
+   
+}
+
 fn spawn_block(
     mut cmds : Commands,
     asset_server : Res<AssetServer>,
     buttons : Res<Input<MouseButton>>,
-    active_blocks : Query<&mut Transform, With<ActiveBlock>>,
+    active_blocks : Query<(&mut Transform, &InstanceRotate), With<ActiveBlock>>,
     block : ResMut<StationBuildBlock>,
     mut ships : Query<&mut Ship>,
     all_instances : Res<AllVoxelInstances>,
@@ -183,8 +205,10 @@ fn spawn_block(
     }
 
     let tr;
-    if let Ok(ac_tr) = active_blocks.get(block.e.unwrap()) {
-        tr = ac_tr;
+    let rot;
+    if let Ok((ac_tr, ac_rot)) = active_blocks.get(block.e.unwrap()) {
+        tr = ac_tr.clone(); 
+        rot = ac_rot.clone();
     } else {
         return;
     }
@@ -197,20 +221,25 @@ fn spawn_block(
     }
 
     let inst = block.instance.as_ref().unwrap();
-    let hs = inst.bbox.as_vec3() / 2.0 * VOXEL_SIZE;
-    let grid_idx = ship.get_grid_idx_by_center(&(tr.translation - hs * inst.origin), &inst.bbox);
+    let mut bbox = inst.bbox.clone();
+    if rot.rot_steps.x % 2 == 1 {
+        std::mem::swap(&mut bbox.x, &mut bbox.z);
+    }
+    let hs = bbox.as_vec3() / 2.0 * VOXEL_SIZE;
+    let grid_idx = ship.get_grid_idx_by_center(&(tr.translation - hs * inst.origin), &bbox);
     let id = ship.map.get_by_idx(&grid_idx).clone();
 
     if buttons.pressed(MouseButton::Left) {
-        if ship.map.can_place_object(&grid_idx, &inst.bbox) {
+        if ship.map.can_place_object(&grid_idx, &bbox) {
             // ship.map.set_object_by_idx(e, pos, bbox)
             for inst_cfg in &all_instances.configs {
                 if inst_cfg.name == block.cur_name {
                     let e = inst_cfg.create.build(&mut cmds, &asset_server);
-                    ship.map.set_object_by_idx(e, &grid_idx, &inst.bbox);
-                    let inst_e = cmds.entity(e)
-                        .insert(TransformBundle::from_transform(tr.clone())).id();
-                    cmds.entity(block.ship).add_child(inst_e);
+                    ship.map.set_object_by_idx(e, &grid_idx, &bbox);
+                    println!("{:#?}", &tr);
+                    cmds.entity(e)
+                        .insert(tr.clone());
+                    cmds.entity(block.ship).add_child(e);
                 }
             }
         }
