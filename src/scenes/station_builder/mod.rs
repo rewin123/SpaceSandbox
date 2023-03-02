@@ -463,7 +463,7 @@ fn go_to_fps(
         let pawn = cmds.spawn(Collider::capsule(Vec3::new(0.0, -0.75, 0.0), Vec3::new(0.0, 0.75, 0.0), 0.25))
         .insert(SpatialBundle::from_transform(Transform::from_xyz(pos.x, pos.y, pos.z)))
         .insert(kinematic_controller)
-        .insert(RigidBody::Dynamic)
+        .insert(KinematicCharacterController::default())
         .insert(GravityScale(1.0)).id();
 
         let cam_pawn = cmds.spawn(Camera3dBundle {
