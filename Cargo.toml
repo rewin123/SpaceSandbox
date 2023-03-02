@@ -30,6 +30,9 @@ bevy_mod_picking = "0.11"
 [dev-dependencies]
 test-case = "*"
 
+[profile.dev]
+opt-level = 2
+debug = true
 
 #[lib]
 #crate-type = ["cdylib", "rlib"]
