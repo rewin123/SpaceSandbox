@@ -56,6 +56,10 @@ impl FPSAction {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Copy, serde::Serialize, serde::Deserialize)]
 pub enum BuildAction {
+    MoveForward,
+    MoveBackward,
+    MoveRight,
+    MoveLeft,
     LevelUp,
     LevelDown,
     RotateClockwise,
@@ -65,6 +69,10 @@ pub enum BuildAction {
 impl BuildAction {
     fn all_actions() -> Vec<BuildAction> {
         vec![
+            BuildAction::MoveForward,
+            BuildAction::MoveBackward,
+            BuildAction::MoveRight,
+            BuildAction::MoveLeft,
             BuildAction::LevelUp,
             BuildAction::LevelDown,
             BuildAction::RotateClockwise,

@@ -70,6 +70,7 @@ impl Plugin for StationBuilderPlugin {
             .with_system(quick_load)
             .with_system(capture_loaded_ship)
             .with_system(go_to_fps)
+            .with_system(move_camera_build)
             .into()
         );
 
@@ -111,6 +112,38 @@ pub enum StationBuildCmds {
 
 #[derive(Component)]
 pub struct ActiveBlock;
+
+fn move_camera_build(
+    mut pawn_query : Query<&mut Transform, With<Pawn>>,
+    mut pawn : ResMut<CurrentPawn>,
+    mut input : Res<Input<Action>>,
+    mut time : ResMut<Time>,
+) {
+    let Some(pawn_id) = pawn.id else {
+        return;
+    };
+    if let Ok(mut transform) = pawn_query.get_mut(pawn_id) {
+        let frw = transform.forward();
+        let frw = Vec3::new(frw.x, 0.0, frw.z).normalize();
+
+        let right = transform.right();
+        let right = Vec3::new(right.x, 0.0, right.z).normalize();
+
+        let speed = 10.0;
+        if input.pressed(Action::Build(control::BuildAction::MoveForward)) {
+            transform.translation += frw * speed * time.delta_seconds();
+        }
+        if input.pressed(Action::Build(control::BuildAction::MoveBackward)) {
+            transform.translation -= frw * speed * time.delta_seconds();
+        }
+        if input.pressed(Action::Build(control::BuildAction::MoveRight)) {
+            transform.translation += right * speed * time.delta_seconds();
+        }
+        if input.pressed(Action::Build(control::BuildAction::MoveLeft)) {
+            transform.translation -= right * speed * time.delta_seconds();
+        }
+    }
+}
 
 fn capture_loaded_ship(
     mut block : ResMut<StationBuildBlock>,
