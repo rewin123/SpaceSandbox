@@ -71,6 +71,7 @@ impl Plugin for StationBuilderPlugin {
             .with_system(capture_loaded_ship)
             .with_system(go_to_fps)
             .with_system(move_camera_build)
+            .with_system(z_slicing)
             .into()
         );
 
@@ -98,7 +99,8 @@ pub struct StationBuildBlock {
     pub mode : BuildMode,
     pub ship : Entity,
     pub cur_name : String,
-    pub cmd : StationBuildCmds
+    pub cmd : StationBuildCmds,
+    pub z_slice : Option<f32>
 }
 
 #[derive(PartialEq, Eq)]
@@ -112,6 +114,23 @@ pub enum StationBuildCmds {
 
 #[derive(Component)]
 pub struct ActiveBlock;
+
+
+fn z_slicing(
+    mut query : Query<(&Transform, &mut Visibility), (With<VoxelInstance>, Without<ActiveBlock>)>,
+    block : Res<StationBuildBlock>,
+) {
+    let Some(y_slice) = block.z_slice else {
+        return;
+    };
+    for (transform, mut visible) in query.iter_mut() {
+        if transform.translation.y > y_slice {
+            visible.is_visible = false;
+        } else {
+            visible.is_visible = true;
+        }
+    }
+}
 
 fn move_camera_build(
     mut pawn_query : Query<&mut Transform, With<Pawn>>,
@@ -371,7 +390,8 @@ fn setup_build_scene(
         mode: BuildMode::SingleOnY(0.0),
         ship : ship_id,
         cur_name : "".to_string(),
-        cmd : StationBuildCmds::None
+        cmd : StationBuildCmds::None,
+        z_slice : None
     });
 
     // ambient light

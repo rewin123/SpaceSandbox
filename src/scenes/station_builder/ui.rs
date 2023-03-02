@@ -121,6 +121,21 @@ pub fn ship_build_menu(
             },
         }
 
+        if block.z_slice.is_none() {
+            if ui.button("Enable y slicing").clicked() {
+                block.z_slice = Some(10.0);
+            }
+        } else {
+            if let Some(z_slice) = &mut block.z_slice {
+                ui.add(egui::DragValue::new(z_slice)
+                    .prefix("Build z slice:")
+                );
+                if ui.button("Disable y slicing").clicked() {
+                    block.z_slice = None;
+                }
+            }
+        }
+
         for inst in &voxel_instances.configs {
             if ui.button(&inst.name).clicked() {
 
