@@ -1,7 +1,7 @@
 use bevy::{input::mouse::MouseMotion, window::WindowFocused};
 use bevy_rapier3d::prelude::KinematicCharacterController;
 
-use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn}, control::{Action, FPSAction}};
+use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn}, control::{Action, FPSAction}, objects::prelude::MeteorFieldCommand};
 
 
 pub struct FPSPlugin;
@@ -21,10 +21,13 @@ impl Plugin for FPSPlugin {
 }
 
 fn fps_setup(
-    mut windows : ResMut<Windows>
+    mut windows : ResMut<Windows>,
+    mut meteor_spawn_event : EventWriter<MeteorFieldCommand>,
 ) {
     windows.get_primary_mut().unwrap().set_cursor_grab_mode(bevy::window::CursorGrabMode::Confined);
     windows.get_primary_mut().unwrap().set_cursor_visibility(false);
+
+    meteor_spawn_event.send(MeteorFieldCommand::Spawn);
 }
 
 fn fps_focus_control(

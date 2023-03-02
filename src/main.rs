@@ -1,5 +1,6 @@
 use SpaceSandbox::control::SpaceControlPlugin;
 use SpaceSandbox::network::NetworkPlugin;
+use SpaceSandbox::objects::SpaceObjectsPlugin;
 use SpaceSandbox::pawn_system::PawnPlugin;
 use SpaceSandbox::scenes::fps_mode::FPSPlugin;
 use SpaceSandbox::scenes::station_builder::StationBuilderPlugin;
@@ -26,6 +27,7 @@ fn main() {
         .add_plugin(PawnPlugin)
         .add_plugin(NetworkPlugin)
         .add_plugin(SpaceControlPlugin)
+        .add_plugin(SpaceObjectsPlugin)
 
         .run();
 }

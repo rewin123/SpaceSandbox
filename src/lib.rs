@@ -8,6 +8,7 @@ pub mod pawn_system;
 pub mod network;
 pub mod asset_utils;
 pub mod control;
+pub mod objects;
 
 use std::default::Default;
 // use winit::window::Window;
