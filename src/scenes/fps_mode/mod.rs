@@ -14,6 +14,7 @@ impl Plugin for FPSPlugin {
             .run_in_state(Gamemode::FPS)
             .with_system(fps_controller)
             .with_system(fps_focus_control)
+            .with_system(fps_look_controller)
             .into());
 
         app.add_enter_system(Gamemode::FPS, fps_setup);
@@ -45,14 +46,11 @@ fn fps_focus_control(
     }
 }
 
-fn fps_controller(
+fn fps_look_controller(
     pawn : Res<CurrentPawn>,
-    mut transform : Query<&mut Transform, Without<KinematicCharacterController>>,
-    mut characters : Query<(&mut Transform, &mut KinematicCharacterController)>,
+    mut transform : Query<&mut Transform>,
     mut pawns : Query<(&Pawn)>,
     mut mouse_move : EventReader<MouseMotion>,
-    mut keys : Res<Input<Action>>,
-    mut time : Res<Time>
 ) {
     let moves = mouse_move.iter().map(|m| m.clone()).collect::<Vec<_>>();
     if let Some(e) = pawn.id {
@@ -72,17 +70,32 @@ fn fps_controller(
                 }
             }
 
-            if let Ok((mut pawn_transform, mut controller)) = characters.get_mut(e) {
-                for mv in &moves {
-                    let frw = pawn_transform.forward();
-                    let up = pawn_transform.up();
-                    let right = pawn_transform.right();
-                    let delta = mv.delta * 0.001;
-                    let changed_frw = (frw + delta.x * right).normalize();
-                    let pos = pawn_transform.translation;
-                    pawn_transform.look_at(pos + changed_frw, Vec3::new(0.0, 1.0, 0.0));
-                }
+            let Ok(mut pawn_transform) = transform.get_mut(e) else {
+                return;
+            };
+            for mv in &moves {
+                let frw = pawn_transform.forward();
+                let up = pawn_transform.up();
+                let right = pawn_transform.right();
+                let delta = mv.delta * 0.001;
+                let mut changed_frw = (frw + delta.x * right).normalize();
+                changed_frw.y = changed_frw.y.max(-0.95);
+                changed_frw.y = changed_frw.y.min(0.95);
+                let pos = pawn_transform.translation;
+                pawn_transform.look_at(pos + changed_frw, Vec3::new(0.0, 1.0, 0.0));
+            }
+        }
+    }
+}
 
+fn fps_controller(
+    pawn : Res<CurrentPawn>,
+    mut characters : Query<(&mut Transform, &mut KinematicCharacterController)>,
+    mut keys : Res<Input<Action>>,
+    mut time : Res<Time>
+) {
+    if let Some(e) = pawn.id {
+            if let Ok((mut pawn_transform, mut controller)) = characters.get_mut(e) {
                 let frw = pawn_transform.forward();
                 let right = pawn_transform.right();
                 let mut move_dir = Vec3::ZERO;
@@ -106,6 +119,5 @@ fn fps_controller(
             } else {
 
             }
-        }
     }
 }

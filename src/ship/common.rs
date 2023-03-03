@@ -1,6 +1,8 @@
 use bevy::{prelude::*, ecs::system::EntityCommands};
 use bevy_rapier3d::prelude::Collider;
 
+use crate::objects::prelude::PilotSeat;
+
 use super::{VOXEL_SIZE, instance_rotate::InstanceRotate};
 
 pub const TELEPORN_NAME : &'static str = "Teleport spot";
@@ -210,7 +212,9 @@ pub fn init_all_voxel_instances(
             [0.0, -1.0, 0.0].into(),
             "Pilot seat",
             "ship/tiles/pilot_seat.glb#Scene0",
-            |_|{}
+            |cmds|{
+                cmds.insert(PilotSeat::default());
+            }
         );
         configs.push(cfg);
     }
