@@ -24,7 +24,7 @@ pub enum ShipBlock {
 
 pub const VOXEL_SIZE : f32 = 0.25;
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct Ship {
     pub map : SolidVoxelMap<VoxelVal<ShipBlock>>
 }

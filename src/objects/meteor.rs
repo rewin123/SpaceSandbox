@@ -48,7 +48,7 @@ fn meteor_field_spawn(
                 });
                 //spawn new meteors in 1km radius
                 let mut rng = rand::thread_rng();
-                let count = 1000;
+                let count = 100;
                 let radius = 10000.0;
                 let min_dist = 100.0;
                 for _ in 0..count {

@@ -1,5 +1,5 @@
 use bevy::{prelude::*, ecs::system::EntityCommands};
-use bevy_rapier3d::prelude::Collider;
+use bevy_rapier3d::{prelude::{Collider, RigidBody}, rapier::prelude::ColliderBuilder};
 
 use crate::objects::prelude::PilotSeat;
 
@@ -85,14 +85,17 @@ fn spawn_static_instance<F>(
             .insert(InstanceRotate::default()).id();
 
             let collider_pos = -instance.origin.clone() * bbox.as_vec3() / 2.0 * VOXEL_SIZE;
-            
-            let shifted_collider = cmds.spawn((Collider::cuboid(
+
+            let collider = ColliderBuilder::cuboid(
                 bbox.x as f32 * VOXEL_SIZE / 2.0, 
                 bbox.y as f32 * VOXEL_SIZE / 2.0, 
-                bbox.z as f32 * VOXEL_SIZE / 2.0)))
-            .insert(SpatialBundle::from(Transform::from_xyz(collider_pos.x, collider_pos.y, collider_pos.z))).id();
+                bbox.z as f32 * VOXEL_SIZE / 2.0
+            ).translation(collider_pos.into()).build();
 
-            cmds.entity(id).add_child(shifted_collider);
+            cmds.entity(id)
+                .insert(Collider::from(collider.shared_shape().clone()));
+                // .insert(RigidBody::Fixed);
+
             after_build(&mut cmds.entity(id));
 
             id

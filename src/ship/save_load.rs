@@ -5,6 +5,7 @@ use bevy::ecs::system::EntityCommands;
 use bevy::ecs::world::{EntityRef, EntityMut};
 use bevy::scene::serde::SceneDeserializer;
 use bevy::{prelude::*, utils::HashMap};
+use bevy_rapier3d::prelude::RigidBody;
 use egui_notify::Toast;
 use serde::de::DeserializeSeed;
 
@@ -224,11 +225,12 @@ fn loading_ship_system(
             let mut ship = Ship::new_sized(disk_ship.map.size.clone());
             let mut spawned : HashMap<u32, Entity> = HashMap::new();
 
-            instances_from_disk(disk_ship, &mut ship, &mut spawned, &all_instances, &mut cmds, &asset_server, &mut cfg, sub_world);
-
-            let ship_id = cmds.spawn(ship).insert(
+            let ship_id = cmds.spawn(ship.clone()).insert(
                 SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)))
+                .insert(RigidBody::Fixed)
                 .id();
+
+            instances_from_disk(disk_ship, &mut ship, &mut spawned, &all_instances, &mut cmds, &asset_server, &mut cfg, sub_world);
 
             for (_, e) in &spawned {
                 cmds.entity(ship_id).add_child(*e);
@@ -278,10 +280,6 @@ fn instances_from_disk(
                                     );
 
                                     cfg.load.build(&mut cmds.entity(spawn_e), &mut sub_world.entity(state_e));
-
-                                    // cmds.entity(spawn_e).insert(SpatialBundle::from_transform(
-                                    //     sub_world.entity(state_e).get::<Transform>().unwrap().clone()
-                                    // ));
 
                                     ship.map.set_voxel_by_idx(&idx, VoxelVal::Object(spawn_e))
                                 }
