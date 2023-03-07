@@ -10,7 +10,7 @@ impl Plugin for PawnPlugin {
         app.insert_resource(CurrentPawn::default());
         app.add_event::<ChangePawn>();
         
-        app.add_system(change_pawn_system.label(PAWN_CHANGE_SYSTEM));
+        app.add_system(change_pawn_system);
     }
 }
 
@@ -40,7 +40,8 @@ fn change_pawn_system(
     mut event_reader : EventReader<ChangePawn>,
     mut pawn : ResMut<CurrentPawn>,
         pawn_cam_holders : Query<&Pawn>,
-    mut pawn_cams : Query<&mut Camera>
+    mut pawn_cams : Query<&mut Camera>,
+    mut next_pawn_change : ResMut<NextState<Gamemode>>,
 ) {
     for pawn_change in event_reader.iter() {
 
@@ -66,7 +67,7 @@ fn change_pawn_system(
             }
         }
 
-        cmds.insert_resource(NextState(pawn_change.new_mode.clone()));
+        next_pawn_change.set(pawn_change.new_mode.clone());
 
         break;
     }

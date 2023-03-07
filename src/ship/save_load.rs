@@ -157,10 +157,10 @@ fn saving_ship_system(
 
             let mut map = HashMap::new();
             for src_e in world.iter_entities() {
-                let mut src_ref = world.entity(src_e);
+                let mut src_ref = world.entity(src_e.id());
                 let mut dst_ref = sub_world.spawn_empty();
                 cfg.save.copy(&mut dst_ref, &mut src_ref);
-                map.insert(src_e, dst_ref.id());
+                map.insert(src_e.id(), dst_ref.id());
             }
 
 

@@ -11,23 +11,26 @@ pub mod control;
 pub mod objects;
 
 use std::default::Default;
+
+use bevy::prelude::*;
 // use winit::window::Window;
 
 pub mod prelude {
     pub use bevy::prelude::*;
-    pub use iyes_loopless::prelude::*;
     pub use crate::*;
 }
 
-#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug, States, Default)]
 pub enum SceneType {
+    #[default]
     MainMenu,
     ShipBuilding
 }
 
 
-#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug, States, Default)]
 pub enum Gamemode {
+    #[default]
     Godmode,
     FPS
 }

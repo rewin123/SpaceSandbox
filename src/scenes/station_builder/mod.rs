@@ -2,12 +2,14 @@ mod ui;
 
 use std::f32::consts::PI;
 
+use bevy::ecs::schedule::FreeSystemSet;
+use bevy::window::PrimaryWindow;
+use bevy_egui::EguiContext;
 use bevy_rapier3d::prelude::*;
 use instance_rotate::InstanceRotate;
 use ui::*;
 
 use bevy::prelude::*;
-use iyes_loopless::prelude::*;
 
 use crate::control::Action;
 use crate::pawn_system::*;
@@ -23,66 +25,47 @@ pub struct ActiveWindows {
     pub load_ship : bool
 }
 
-#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+#[derive(Default, Clone, Hash, PartialEq, Eq, Debug, States)]
 pub enum StationBuildState {
+    #[default]
     NotLoaded,
     Loaded
 }
 
 pub struct StationBuilderPlugin {}
 
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+#[system_set()]
+enum ShipBuildSet {
+    Base
+}
+
 impl Plugin for StationBuilderPlugin {
     fn build(&self, app: &mut App)  {
 
         app.insert_resource(ActiveWindows::default());
+        app.add_state::<StationBuildState>();
+        app.add_system(setup_build_scene.in_schedule(OnEnter(SceneType::ShipBuilding)));
 
-        app.add_loopless_state(StationBuildState::NotLoaded);
-        app.add_enter_system(SceneType::ShipBuilding, setup_build_scene.label("setup_ship_build_scene"));
+        app.configure_set(ShipBuildSet::Base
+            .run_if(not(in_state(Gamemode::FPS)))
+            .in_set(OnUpdate(SceneType::ShipBuilding)));
 
-        app.add_system_set(
-            ConditionSet::new()
-                .run_in_state(SceneType::ShipBuilding)
-                .run_not_in_state(Gamemode::FPS)
-                .label("ship_build_menu")
-                .with_system(ship_build_menu)
-                .with_system(pos_block)
-                .into()
-        );
-
-        app.add_system_set(
-            ConditionSet::new()
-                .run_in_state(SceneType::ShipBuilding)
-                .run_if_resource_exists::<StationBuildBlock>()
-                .after("ship_build_menu")
-                .with_system(spawn_block)
-                .with_system(rotate_block)
-                .into()
-        );
-
-        app.add_system_set(
-            ConditionSet::new()
-            .run_in_state(SceneType::ShipBuilding)
-            .run_not_in_state(Gamemode::FPS)
-            .run_if_resource_exists::<StationBuildBlock>()
-            .after(PAWN_CHANGE_SYSTEM)
-            .with_system(clear_all_system)
-            .with_system(quick_save)
-            .with_system(quick_load)
-            .with_system(capture_loaded_ship)
-            .with_system(go_to_fps)
-            .with_system(move_camera_build)
-            .with_system(z_slicing)
-            .into()
-        );
-
-        app.add_system_set(
-            ConditionSet::new()
-            .run_in_state(SceneType::ShipBuilding)
-            .run_not_in_state(Gamemode::FPS)
-            .run_if(|windows : Res<ActiveWindows>| windows.load_ship)
-            .with_system(load_ship_ui)
-            .into()
-        );
+        app.add_systems(
+                (
+                    ship_build_menu,
+                    pos_block,
+                    spawn_block.after(ship_build_menu),
+                    rotate_block.after(ship_build_menu),
+                    clear_all_system,
+                    quick_save,
+                    quick_load,
+                    capture_loaded_ship,
+                    go_to_fps,
+                    move_camera_build,
+                    z_slicing,
+                    load_ship_ui.run_if(|windows : Res<ActiveWindows>| windows.load_ship)
+                ).in_set(ShipBuildSet::Base));
 
         app.add_plugin(StationBuilderUI);
     }
@@ -125,9 +108,9 @@ fn z_slicing(
     };
     for (transform, mut visible) in query.iter_mut() {
         if transform.translation.y > y_slice {
-            visible.is_visible = false;
+            *visible = Visibility::Hidden;
         } else {
-            visible.is_visible = true;
+            *visible = Visibility::Visible;
         }
     }
 }
@@ -243,13 +226,14 @@ fn spawn_block(
     block : ResMut<StationBuildBlock>,
     mut ships : Query<&mut Ship>,
     all_instances : Res<AllVoxelInstances>,
-    mut ctx : ResMut<bevy_egui::EguiContext>
+    mut ctx : Query<&EguiContext>
 ) {
+    let ctx = ctx.single_mut();
     if block.e.is_none() {
         return;
     }
 
-    if ctx.ctx_mut().is_pointer_over_area() {
+    if ctx.is_pointer_over_area() {
         // println!("Captured event of egui");
         return;
     } else {
@@ -313,13 +297,13 @@ fn pos_block(
     cameras : Query<(&Camera, &GlobalTransform)>,
     mut active_blocks : Query<&mut Transform, With<ActiveBlock>>,
     block : ResMut<StationBuildBlock>,
-    windows : Res<Windows>,
+    windows : Query<&Window, With<PrimaryWindow>>,
     mut ships : Query<&mut Ship>,
 ) {
     if block.e.is_none() {
         return;
     }
-    let cursot_pos_option = windows.get_primary().unwrap().cursor_position();
+    let cursot_pos_option = windows.single().cursor_position();
     if cursot_pos_option.is_none() {
         return;
     }
@@ -364,13 +348,14 @@ fn new_default_ship(cmds : &mut Commands) -> Entity {
 
 fn setup_build_scene(
     mut cmds : Commands,
-    load_state : Res<CurrentState<StationBuildState>>,
+    load_state : Res<State<StationBuildState>>,
+    mut next_load_state : ResMut<NextState<StationBuildState>>,
     mut pawn_event : EventWriter<ChangePawn>
 ) {
     if load_state.0 != StationBuildState::NotLoaded {
         return;
     }
-    cmds.insert_resource(NextState(StationBuildState::Loaded));
+    next_load_state.set(StationBuildState::Loaded);
     let pawn = cmds.spawn(Camera3dBundle {
         transform: Transform::from_xyz(10.0, 10.0, 10.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
         camera_3d : Camera3d {
@@ -404,15 +389,6 @@ fn setup_build_scene(
     cmds.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
             // Configure the projection to better fit the scene
-            shadow_projection: OrthographicProjection {
-                left: -HALF_SIZE,
-                right: HALF_SIZE,
-                bottom: -HALF_SIZE,
-                top: HALF_SIZE,
-                near: -100.0 * HALF_SIZE,
-                far: 100.0 * HALF_SIZE,
-                ..default()
-            },
             shadows_enabled: true,
             ..default()
         },

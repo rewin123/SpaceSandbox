@@ -8,24 +8,21 @@ default-run = "SpaceSandbox"
 
 [dependencies]
 serde = "*"
-bevy = {version = "0.9.1", features = ["serialize"]}
+bevy = {version = "0.10", features = ["serialize"]}
 rayon = "*"
 pollster = "*"
 winit = "*"
-bevy_rapier3d = "*"
+bevy_rapier3d = "0.21"
 ron = "*"
-bevy_egui = "*"
-iyes_loopless = "0.9.0"
-bevy-inspector-egui = "*"
+bevy_egui = { git = "https://github.com/mvlabat/bevy_egui", branch = "bevy-0.10" }
 postcard = "*"
 block-mesh = "*"
 bincode = "*"
 base64 = "*"
 snap = "*"
-egui-notify = "0.5.0"
+egui-notify = "0.6.0"
 rand = "*"
 laminar = "*"
-bevy_mod_picking = "0.11"
 
 [dev-dependencies]
 test-case = "*"

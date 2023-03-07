@@ -37,10 +37,10 @@ fn meteor_field_spawn(
                     commands.entity(entity).despawn_recursive();
                 }
 
-                let mesh = meshes.add(Mesh::from(shape::Icosphere {
+                let mesh = meshes.add(Mesh::try_from(shape::Icosphere {
                     radius: 200.0,
                     ..Default::default()
-                }));
+                }).unwrap());
                 let material = materials.add(StandardMaterial {
                     //brown color
                     base_color: Color::rgb(0.5, 0.2, 0.1),

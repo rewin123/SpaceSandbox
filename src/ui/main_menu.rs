@@ -1,23 +1,23 @@
 use bevy::prelude::*;
-use iyes_loopless::prelude::*;
 use bevy_egui::*;
 use crate::*;
 
 fn main_menu(
     mut cmds : Commands,
-    mut egui_context: ResMut<EguiContext>,
+    mut egui_context: Query<&EguiContext>,
+    mut next_scene : ResMut<NextState<SceneType>>
 ) {
     egui::Window::new("Space sandbox")
         .resizable(false)
         .collapsible(false)
         .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
-        .show(egui_context.ctx_mut(), |ui| {
+        .show(egui_context.single(), |ui| {
             ui.vertical_centered(|ui| {
                 if ui.button("Play mission").clicked() {
 
                 }
                 if ui.button("Station builder").clicked() {
-                    cmds.insert_resource(NextState(SceneType::ShipBuilding));
+                    next_scene.set(SceneType::ShipBuilding);
                 }
                 if ui.button("Exit").clicked() {
                     // cmds.push(GameCommands::Exit);
@@ -38,12 +38,9 @@ pub struct MainMenuPlugin {
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state(SceneType::MainMenu);
-        app.add_loopless_state(Gamemode::Godmode);
-        
-        app.add_system_set(ConditionSet::new()
-            .run_in_state(SceneType::MainMenu)
-            .with_system(main_menu)
-            .into());
+        app.add_state::<SceneType>();
+        app.add_state::<Gamemode>();
+
+        app.add_system(main_menu.in_set(OnUpdate(SceneType::MainMenu)));
     }
 }

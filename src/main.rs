@@ -7,7 +7,6 @@ use SpaceSandbox::scenes::station_builder::StationBuilderPlugin;
 use SpaceSandbox::ship::{DiskShipBase64};
 use SpaceSandbox::ui::*;
 use bevy::prelude::*;
-use bevy_inspector_egui::quick::*;
 use bevy_rapier3d::prelude::*;
 
 fn main() {
@@ -17,7 +16,6 @@ fn main() {
         .add_plugin(bevy_egui::EguiPlugin)
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
         .add_plugin(RapierDebugRenderPlugin::default())
-        .add_plugin(WorldInspectorPlugin)
         .add_plugin(SpaceSandbox::ship::common::VoxelInstancePlugin)
         .add_plugin(SpaceSandbox::ship::save_load::ShipPlugin)
         .add_plugin(MainMenuPlugin {})

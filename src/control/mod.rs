@@ -2,7 +2,6 @@ use std::hash::Hash;
 
 use bevy::{prelude::*, utils::{HashMap}};
 use bevy_egui::*;
-use bevy_inspector_egui::egui::Key;
 use ron::ser::PrettyConfig;
 
 
@@ -141,7 +140,7 @@ impl Plugin for SpaceControlPlugin {
         };
         app.insert_resource(window);
 
-        app.add_system_to_stage(CoreStage::PreUpdate, remap_system);
+        app.add_system(remap_system);
         app.add_system(key_mapper_window);
     }
 }
@@ -186,12 +185,13 @@ fn get_keys() -> Vec<KeyCode> {
 }
 
 fn key_mapper_window(
-    mut ctx : ResMut<EguiContext>,
+    mut ctx : Query<&EguiContext>,
     mut window : ResMut<KeyMapperWindow>,
     mut key_mapper : ResMut<KeyMapper>,
     mut key_input : ResMut<Input<KeyCode>>,
     mut input : Res<Input<Action>>
 ) {
+    let ctx = ctx.iter().next().unwrap();
     if window.is_shown {
 
         if let Some(action) = window.listen_action.clone() {
@@ -204,7 +204,7 @@ fn key_mapper_window(
         }
 
         bevy_egui::egui::Window::new("Key mapper")
-            .show(ctx.ctx_mut(), |ui| {
+            .show(ctx, |ui| {
                 
                 egui::Grid::new("key mapper grid").show(ui, |ui| {
                     for action in &window.actions.clone() {

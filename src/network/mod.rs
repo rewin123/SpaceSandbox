@@ -2,7 +2,6 @@ use std::{net::SocketAddr, str::FromStr};
 
 use bevy::{prelude::*, utils::{Instant, HashMap}, reflect::erased_serde::Serialize};
 use bevy_rapier3d::rapier::crossbeam::channel::{Receiver, Sender};
-use iyes_loopless::prelude::ConditionSet;
 
 use laminar::*;
 use serde::de::DeserializeOwned;
@@ -125,21 +124,9 @@ impl Plugin for NetworkPlugin {
 
         app.add_system(listen_server_cmds);
         app.insert_resource(NetworkSplitter::default());
-        
 
-        app.add_system_set(
-            ConditionSet::new()
-                .run_if_resource_exists::<NetworkServer>()
-                .with_system(update_server)
-                .into()
-        );
-
-        app.add_system_set(
-            ConditionSet::new()
-                .run_if_resource_exists::<NetworkClient>()
-                .with_system(update_client)
-                .into()
-        );
+        app.add_system(update_server.run_if(resource_exists::<NetworkServer>()));
+        app.add_system(update_client.run_if(resource_exists::<NetworkClient>()));
     }
 }
 
