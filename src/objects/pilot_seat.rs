@@ -40,14 +40,14 @@ impl Plugin for PilotSeatPlugin {
 
 fn piloting(
     mut pilot_seats : Query<(&mut PilotSeat), (Without<Pawn>)>,
-    mut ships : Query<(&Transform, &mut Velocity), With<Ship>>,
+    mut ships : Query<(&Transform, &mut Velocity, &mut ExternalImpulse), With<Ship>>,
     input : Res<Input<Action>>,
     mut pawns : Query<(&mut Transform, &Pawn), (Without<Ship>, Without<Camera>)>,
     mut cameras : Query<&GlobalTransform, (Without<Ship>, With<Camera>)>
 ) {
     for (mut pilot_seat) in pilot_seats.iter_mut() {
         if pilot_seat.pawn.is_some() {
-            let (ship_transform, mut ship_velocity) = ships.iter_mut().next().unwrap();
+            let (ship_transform, mut ship_velocity, mut ship_impulse) = ships.iter_mut().next().unwrap();
             let forward = ship_transform.forward();
             let right = ship_transform.right();
             let up = ship_transform.up();
@@ -59,9 +59,9 @@ fn piloting(
             if input.pressed(Action::Piloting(PilotingAction::MoveBackward)) {
                 target_linvel -= forward * speed;
             }
-            ship_velocity.linvel = target_linvel;
+            ship_impulse.impulse = target_linvel;
 
-            let mut angvel = Vec3::ZERO;
+            let mut angvel = -ship_velocity.angvel * 0.9;
             if input.pressed(Action::Piloting(PilotingAction::TurnUp)) {
                 angvel += right;
             }
@@ -80,7 +80,7 @@ fn piloting(
             if input.pressed(Action::Piloting(PilotingAction::RollRight)) {
                 angvel -= forward;
             }
-            ship_velocity.angvel = angvel;
+            ship_impulse.torque_impulse = angvel;
 
             if let Ok((mut pawn_tranform, pawn)) = pawns.get_mut(pilot_seat.pawn.as_ref().unwrap().pawn) {
                 pawn_tranform.translation = PILOT_POSITION;
@@ -101,15 +101,9 @@ fn pilot_debug_ui(
         for (mut pilot_seat) in pilot_seats.iter_mut() {
             if let Some(pawn) = &mut pilot_seat.pawn {
                 let (ship_transform, ship_vel) = ships.iter().next().unwrap();
-                ui.label(format!("Ship position {:?}", ship_transform.translation));
-                ui.label(format!("Ship velocity {:?}", ship_vel.linvel));
-
-                ui.label(format!("Ship rotation {:?}", ship_transform.rotation));
-                ui.label(format!("Ship rotation velocity {:?}", ship_vel.angvel));
-
-                if let Ok((pawn_transform, pawn)) = pawns.get(pawn.pawn) {
-                    ui.label(format!("Pawn position {:?}", pawn_transform.translation));
-                }
+                ui.label(format!("Distance from world origin: {:.0}", ship_transform.translation.distance(Vec3::ZERO)));
+                ui.label(format!("Ship velocity {:.2}", ship_vel.linvel.length()));
+                ui.label(format!("Ship rotation velocity {:.2}", ship_vel.angvel.length()));
             }
         }
     });

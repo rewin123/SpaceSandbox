@@ -49,6 +49,7 @@ pub fn new_default_ship(cmds : &mut Commands) -> Entity {
             linear_damping: 0.01,
             angular_damping: 0.01,
         })
+        .insert(ExternalImpulse::default())
         .id()
 }
 
