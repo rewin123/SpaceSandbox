@@ -23,8 +23,8 @@ impl Plugin for NotificationPlugin {
 }
 
 fn show_toasts(
-    mut ctx : Query<&EguiContext>,
+    mut ctx : Query<&mut EguiContext>,
     mut toasts : ResMut<ToastHolder>,
 ) {
-    toasts.toast.show(&ctx.single().0);
+    toasts.toast.show(&ctx.single_mut().get_mut());
 }

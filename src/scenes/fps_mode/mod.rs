@@ -1,4 +1,4 @@
-use bevy::{input::mouse::MouseMotion, window::WindowFocused};
+use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, CursorGrabMode}};
 use bevy_rapier3d::prelude::KinematicCharacterController;
 
 use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn}, control::{Action, FPSAction}, objects::prelude::MeteorFieldCommand};
@@ -10,38 +10,40 @@ pub struct FPSPlugin;
 impl Plugin for FPSPlugin {
     fn build(&self, app: &mut App) {
 
-        app.add_system_set(ConditionSet::new()
-            .run_in_state(Gamemode::FPS)
-            .with_system(fps_controller)
-            .with_system(fps_focus_control)
-            .with_system(fps_look_controller)
-            .into());
-
-        app.add_enter_system(Gamemode::FPS, fps_setup);
+        app
+            .add_systems(
+                (fps_controller,
+                fps_focus_control,
+                fps_look_controller).in_set(OnUpdate(Gamemode::FPS))
+            );
+        
+        app.add_system(fps_setup.in_schedule(OnEnter(Gamemode::FPS)));
     }
 }
 
 fn fps_setup(
-    mut windows : ResMut<Windows>,
+    mut windows : Query<&mut Window, With<PrimaryWindow>>,
     mut meteor_spawn_event : EventWriter<MeteorFieldCommand>,
 ) {
-    windows.get_primary_mut().unwrap().set_cursor_grab_mode(bevy::window::CursorGrabMode::Confined);
-    windows.get_primary_mut().unwrap().set_cursor_visibility(false);
+    let mut window = windows.get_single_mut().unwrap();
+    window.cursor.grab_mode = CursorGrabMode::Confined;
+    window.cursor.visible = false;
 
     meteor_spawn_event.send(MeteorFieldCommand::Spawn);
 }
 
 fn fps_focus_control(
     mut window_focus : EventReader<WindowFocused>,
-    mut windows : ResMut<Windows>
+    mut windows : Query<&mut Window, With<PrimaryWindow>>
 ) {
+    let mut window = windows.get_single_mut().unwrap();
     for focus in window_focus.iter() {
         if !focus.focused {
-            windows.get_primary_mut().unwrap().set_cursor_grab_mode(bevy::window::CursorGrabMode::None);
-            windows.get_primary_mut().unwrap().set_cursor_visibility(true);
+            window.cursor.grab_mode = CursorGrabMode::None;
+            window.cursor.visible = true;
         } else {
-            windows.get_primary_mut().unwrap().set_cursor_grab_mode(bevy::window::CursorGrabMode::Confined);
-            windows.get_primary_mut().unwrap().set_cursor_visibility(false);
+            window.cursor.grab_mode = CursorGrabMode::Confined;
+            window.cursor.visible = false;
         }
     }
 }

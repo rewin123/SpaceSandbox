@@ -1,14 +1,15 @@
 
-use bevy::prelude::*;
-use bevy_rapier3d::prelude::KinematicCharacterController;
-use iyes_loopless::prelude::ConditionSet;
+use std::sync::Arc;
 
-use crate::{pawn_system::{ChangePawn, Pawn, CurrentPawn}, Gamemode, control::Action};
+use bevy::prelude::*;
+use bevy_egui::*;
+use bevy_rapier3d::prelude::*;
+
+use crate::{pawn_system::{ChangePawn, Pawn, CurrentPawn}, Gamemode, control::{Action, FPSAction, PilotingAction}, ship::Ship};
 
 struct PawnCache {
     pawn : Entity,
     pawn_transform : Transform,
-    controller : KinematicCharacterController,
 }
 
 #[derive(Component, Default, Reflect, FromReflect)]
@@ -20,16 +21,98 @@ pub struct PilotSeat {
 
 pub struct PilotSeatPlugin;
 
+const PILOT_POSITION : Vec3 = Vec3::new(0.0, 0.5, 0.0);
+
 impl Plugin for PilotSeatPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_system_set(
-                ConditionSet::new()
-                    .run_in_state(Gamemode::FPS)
-                    .with_system(seat_in_pilot_seat)
-                    .into()
-            );
+
+        app.add_system(
+            seat_in_pilot_seat.in_set(OnUpdate(Gamemode::FPS))
+        );
+        app.add_system(
+            pilot_debug_ui.in_set(OnUpdate(Gamemode::FPS))
+        );
+        app.add_system(
+            piloting.in_set(OnUpdate(Gamemode::FPS))
+        );
     }
+}
+
+fn piloting(
+    mut pilot_seats : Query<(&mut PilotSeat), (Without<Pawn>)>,
+    mut ships : Query<(&Transform, &mut Velocity), With<Ship>>,
+    input : Res<Input<Action>>,
+    mut pawns : Query<(&mut Transform, &Pawn), (Without<Ship>, Without<Camera>)>,
+    mut cameras : Query<&GlobalTransform, (Without<Ship>, With<Camera>)>
+) {
+    for (mut pilot_seat) in pilot_seats.iter_mut() {
+        if pilot_seat.pawn.is_some() {
+            let (ship_transform, mut ship_velocity) = ships.iter_mut().next().unwrap();
+            let forward = ship_transform.forward();
+            let right = ship_transform.right();
+            let up = ship_transform.up();
+            let mut target_linvel = Vec3::ZERO;
+            let speed = 100.0;
+            if input.pressed(Action::Piloting(PilotingAction::MoveForward)) {
+                target_linvel += forward * speed;
+            }
+            if input.pressed(Action::Piloting(PilotingAction::MoveBackward)) {
+                target_linvel -= forward * speed;
+            }
+            ship_velocity.linvel = target_linvel;
+
+            let mut angvel = Vec3::ZERO;
+            if input.pressed(Action::Piloting(PilotingAction::TurnUp)) {
+                angvel += right;
+            }
+            if input.pressed(Action::Piloting(PilotingAction::TurnDown)) {
+                angvel -= right;
+            }
+            if input.pressed(Action::Piloting(PilotingAction::TurnLeft)) {
+                angvel += up;
+            }
+            if input.pressed(Action::Piloting(PilotingAction::TurnRight)) {
+                angvel -= up;
+            }
+            if input.pressed(Action::Piloting(PilotingAction::RollLeft)) {
+                angvel += forward;
+            }
+            if input.pressed(Action::Piloting(PilotingAction::RollRight)) {
+                angvel -= forward;
+            }
+            ship_velocity.angvel = angvel;
+
+            if let Ok((mut pawn_tranform, pawn)) = pawns.get_mut(pilot_seat.pawn.as_ref().unwrap().pawn) {
+                pawn_tranform.translation = PILOT_POSITION;
+            }
+        }
+    }
+}
+
+fn pilot_debug_ui(
+   mut pilot_seats : Query<(&mut PilotSeat), (Without<Pawn>)>,
+   mut egui_ctxs : Query<&mut EguiContext>,
+   mut ships : Query<(&Transform, &Velocity), With<Ship>>,
+   mut pawns : Query<(&Transform, &Pawn)>,
+) {
+
+    let mut ctx = egui_ctxs.single_mut();
+    egui::SidePanel::left("pilot_debug_ui").show(ctx.get_mut(), |ui| {
+        for (mut pilot_seat) in pilot_seats.iter_mut() {
+            if let Some(pawn) = &mut pilot_seat.pawn {
+                let (ship_transform, ship_vel) = ships.iter().next().unwrap();
+                ui.label(format!("Ship position {:?}", ship_transform.translation));
+                ui.label(format!("Ship velocity {:?}", ship_vel.linvel));
+
+                ui.label(format!("Ship rotation {:?}", ship_transform.rotation));
+                ui.label(format!("Ship rotation velocity {:?}", ship_vel.angvel));
+
+                if let Ok((pawn_transform, pawn)) = pawns.get(pawn.pawn) {
+                    ui.label(format!("Pawn position {:?}", pawn_transform.translation));
+                }
+            }
+        }
+    });
 }
 
 fn seat_in_pilot_seat(
@@ -43,13 +126,13 @@ fn seat_in_pilot_seat(
     let Some(e) = current_pawn.id else {
         return;
     };
-    let Ok((_, seat_tr, mut seat)) = pilot_seats.get_single_mut() else {
+    let Ok((seat_e, seat_tr, mut seat)) = pilot_seats.get_single_mut() else {
         return;
     };
     if input.just_pressed(Action::FPS(crate::control::FPSAction::Interact)) {
         if let Ok((e, mut tr)) = pawns.get_mut(e) {
             if let Some(cache) = &mut seat.pawn {
-                commands.entity(cache.pawn).insert(cache.controller.clone());
+                commands.entity(cache.pawn).remove::<RigidBodyDisabled>().remove::<ColliderDisabled>().remove_parent();
                 if let Ok((_, mut pawn_transform)) = pawns.get_mut(cache.pawn) {
                     pawn_transform.translation = cache.pawn_transform.translation;
                 }
@@ -59,10 +142,10 @@ fn seat_in_pilot_seat(
                 let cache = PawnCache {
                     pawn : e,
                     pawn_transform : tr.clone(),
-                    controller : KinematicCharacterController::default()
                 };
-                commands.entity(e).remove::<KinematicCharacterController>();
-                tr.translation = seat_tr.translation + Vec3::new(0.0, 0.5, 0.0);
+                commands.entity(e).insert(RigidBodyDisabled).insert(ColliderDisabled);
+                commands.entity(seat_e).add_child(e);
+                tr.translation = PILOT_POSITION.clone();
                 seat.pawn = Some(cache);
             }
         }

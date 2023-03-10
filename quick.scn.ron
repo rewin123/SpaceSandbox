@@ -1,21 +1,7 @@
 (
   entities: {
     0: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
+      components: {},
     ),
     1: (
       components: {
@@ -73,6 +59,23 @@
         "bevy_transform::components::transform::Transform": (
           translation: (
             x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    5: (
+      components: {
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.0,
             y: 2.0,
             z: 0.0,
           ),
@@ -85,7 +88,7 @@
         ),
       },
     ),
-    5: (
+    6: (
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
@@ -102,7 +105,7 @@
         ),
       },
     ),
-    6: (
+    7: (
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
@@ -119,30 +122,13 @@
         ),
       },
     ),
-    7: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
     8: (
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: 1.0,
-            z: -1.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -157,9 +143,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -174,9 +160,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -191,9 +177,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -208,9 +194,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: 0.5,
-            z: -0.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -225,9 +211,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -242,9 +228,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -259,9 +245,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -276,9 +262,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -293,9 +279,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -310,9 +296,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -327,13 +313,13 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
+            x: 0.30523586,
+            y: 0.7586249,
+            z: 0.1995449,
           ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
+          rotation: (0.0, 0.0, -0.0, 1.0),
           scale: (
-            x: 1.0,
+            x: -1.0,
             y: 1.0,
             z: 1.0,
           ),
@@ -344,9 +330,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
+            x: 0.0448457,
+            y: 0.53790885,
+            z: -0.74419713,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -361,9 +347,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: -0.0,
-            z: -0.0,
+            x: -0.023950338,
+            y: 0.13413,
+            z: 0.2220335,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -378,9 +364,9 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.0,
-            y: 0.5,
-            z: -0.0,
+            x: -0.3007083,
+            y: 0.7586249,
+            z: 0.1995449,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -395,22 +381,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 3.5,
-            y: -0.125,
-            z: 0.75,
+            x: -0.0043959618,
+            y: -0.10847454,
+            z: 0.032968998,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -419,22 +398,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 1.5,
-            y: -0.125,
-            z: 2.75,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -443,22 +415,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 3.5,
-            y: -0.125,
-            z: -1.25,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
-          rotation: (0.0, 0.7071067, 0.0, -0.7071067),
+          rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -467,22 +432,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 0.75,
+            x: 0.0,
             y: 0.0,
-            z: -3.625,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -491,22 +449,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 1.5,
-            y: -0.125,
-            z: -1.25,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -515,22 +466,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 3.5,
-            y: -0.125,
-            z: 2.75,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -539,22 +483,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 0.75,
-            y: 1.0,
-            z: -1.5,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -563,22 +500,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 1.5,
-            y: -0.125,
-            z: 0.75,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -587,22 +517,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.5,
-            y: -0.125,
-            z: -1.25,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -611,22 +534,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.5,
-            y: 1.0,
-            z: 5.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
-          rotation: (0.0, 0.0, 0.0, -0.9999999),
+          rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -635,22 +551,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 0.75,
-            y: 0.125,
-            z: 1.25,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -659,22 +568,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 3.5,
-            y: 1.0,
-            z: 5.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
-          rotation: (0.0, 0.0, 0.0, -0.9999999),
+          rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -683,22 +585,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.5,
-            y: -0.125,
-            z: 2.75,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -707,22 +602,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: -0.5,
-            y: -0.125,
-            z: 0.75,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -731,22 +619,15 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 1.5,
+            x: 0.0,
             y: 0.0,
-            z: -1.25,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -789,15 +670,22 @@
       components: {
         "bevy_transform::components::transform::Transform": (
           translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
+            x: -20.0,
+            y: 0.125,
+            z: 5.25,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
           ),
         ),
       },
@@ -824,1147 +712,8 @@
         "bevy_transform::components::transform::Transform": (
           translation: (
             x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    43: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    44: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    45: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    46: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    47: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    48: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    49: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    50: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    51: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    52: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    53: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    54: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    55: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    56: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.70710677, 0.0, 0.7071067),
-          scale: (
-            x: 1.0000001,
-            y: 1.0,
-            z: 1.0000001,
-          ),
-        ),
-      },
-    ),
-    57: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.5, -0.49999997, 0.49999997, -0.5),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    58: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    59: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    60: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    61: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    62: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    63: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.30523586,
-            y: 0.7586249,
-            z: 0.1995449,
-          ),
-          rotation: (0.0, 0.0, -0.0, 1.0),
-          scale: (
-            x: -1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    64: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0448457,
-            y: 0.53790885,
-            z: -0.74419713,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    65: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: -0.023950338,
-            y: 0.13413,
-            z: 0.2220335,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    66: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: -0.3007083,
-            y: 0.7586249,
-            z: 0.1995449,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    67: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: -0.0043959618,
-            y: -0.10847454,
-            z: 0.032968998,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    68: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0003380411,
-            y: -0.0010082498,
-            z: -0.5821792,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    69: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    70: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0003380411,
-            y: -0.0010082498,
-            z: -0.5821792,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    71: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    72: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    73: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.70710677, 0.0, 0.7071067),
-          scale: (
-            x: 1.0000001,
-            y: 1.0,
-            z: 1.0000001,
-          ),
-        ),
-      },
-    ),
-    74: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    75: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0448457,
-            y: 0.53790885,
-            z: -0.74419713,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    76: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: -0.023950338,
-            y: 0.13413,
-            z: 0.2220335,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    77: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: -0.0043959618,
-            y: -0.10847454,
-            z: 0.032968998,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    78: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: -0.3007083,
-            y: 0.7586249,
-            z: 0.1995449,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    79: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.30523586,
-            y: 0.7586249,
-            z: 0.1995449,
-          ),
-          rotation: (0.0, 0.0, -0.0, 1.0),
-          scale: (
-            x: -1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    80: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    81: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    82: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    83: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    84: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    85: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    86: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    87: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    88: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    89: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    90: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    91: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    92: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    93: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    94: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    95: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    96: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    97: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    98: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    99: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    100: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    101: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    102: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    103: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    104: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    105: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    106: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    107: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    108: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    109: (
-      components: {
-        "bevy_transform::components::transform::Transform": (
-          translation: (
-            x: -19.75,
-            y: 0.0,
-            z: 4.75,
+            y: -0.125,
+            z: 0.5,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -1982,10 +731,130 @@
         ),
       },
     ),
-    110: (
+    43: (
       components: {
-        "SpaceSandbox::ship::DiskShipBase64": (
-          data: "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",
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 2.0,
+            y: -0.125,
+            z: 0.5,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
+          ),
+        ),
+      },
+    ),
+    44: (
+      components: {
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 2.0,
+            y: -0.125,
+            z: -1.5,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
+          ),
+        ),
+      },
+    ),
+    45: (
+      components: {
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 0.0,
+            y: -0.125,
+            z: -1.5,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
+          ),
+        ),
+      },
+    ),
+    46: (
+      components: {
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 1.25,
+            y: 0.125,
+            z: 0.75,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
+          ),
+        ),
+      },
+    ),
+    47: (
+      components: {
+        "bevy_transform::components::transform::Transform": (
+          translation: (
+            x: 1.0,
+            y: 0.0,
+            z: -1.25,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
+          ),
+        ),
+      },
+    ),
+    48: (
+      components: {
+        "SpaceSandbox::ship::save_load::DiskShipBase64": (
+          data: "4ElEx8ELKIy19AEMQEIPAP4B/gMA/gMA/gMAGQMo6gMADO4BAAD+/wv+AwD+AwAZAyjq/wsM/gEA+v4CDP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAGYDABjaAgwIAQD+/gsMfgsMELIDAAz6DuELBDMI/gMAcgMAFLozCP5hEKYDAAg6YRD+3Av+3Av+3AvW3AuIdgIMbDoBAAgCAAAFBAEB/gwAbgwAAAENaAFk/gwALgz+ihiOAwAcdooYAL7+GiSmAwCozhokrm8HMH4BACGwAAg9vP4MAD5CjQcUvgEA/tAB7gMACL7QAf5rIP5rIJoGABQ6ayD+zwOCAwDwUo7PAyx+AQAO0JkBBAEBAQiuBgAs/rSdLrSdAVABBAFUOmgD4akgaP60nT60nS5UPoUDEL4BAC58DlwPAE5SwwcQxAFOxAGyNgA6fQCyDwD+izD+/gMAGQMU7osw/jsP7gMAHIo7DwA+/pMYUgMAFIqTGP6HB+4DACCKhwey0xP+LQBGAwAUxi0A/sIWCQMU8sIW/u8CRgMACELvAlKZAI4VAAiqkxjuGQFePAAYzjsP/pMYSu4aASUaUlYB6M6HB/53FTZ3FR7CFhgAAyqkm/4MDhstDAAEHWBSdTwQfgEAQRz+XS3+XS2SXS3+JAE2JAH+TgD+TgD+fgYAFE5OAP5sGIIDAEhmbBgiFA8UAAMNCAEQepQH/pwGjgMAFE6cBv5UA6YDAHyyVAMoDrCcAQT+tJxOtJwO/DsYtJwutJwBsEpbPP4WBC4DABTOFgT+mUmmAwAU0plJ/mkFLgMALM5pBf50AZZ0Af7bDv4DABEDFCLbDv4YDBUDEJ4YDLZxhY9QQSAQDnk+EAUt0BEM/hQIlhQI/mYA/gMANgMAqF5mACwRAQ6gmgEE/sScTsQSWhYMxJwuxFZaFhy+AQAheB7EnP7nYf7nYf5+BgA8fudhImsKAF4O5AoVDv4JAKYDACguCQAAuh5Eaf49Jf4DAH4DACwWPSX+8zxK8zz+bgymAwAULm4M/swD/gMAZgMAFIrMA/4zkv4DAP4DAP4DAMoDABR2M5L+gRyOAwAUloEc/gQY/gMA/gMA/gMA/gMA/gMA/gMA/gMA/gMA/gMA/gMA/gMA/gMAOgMAFFoEGAj+Af5HGS5HGQDGHicNBHcG/gMAEQMUyncG/ukM+gMACCrpDP4nDf4nDf4nDdYnDf72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AP72AKL2APQBAUoCDPD8mgEACGQAABUEDAAASMEZBASAPg5DGQAKAQUcAAAAAgAAAAsBCUgAAABXaGl0ZSBwbGF0ZQcAAAAGARQ0AAAARW5naW5lAQAAAA0BD0gAAABUZWxlcG9ydCBzcG90CAAAFU4oUGlsb3Qgc2VhdAUdQRRXaW5kb3cBTxFBHENvcm5lciB3BRkBUhGDPE1ldGFsIGdyaWRzCQAAABABHAQAAA1YCHRvcA0zAAQddAm2IGRvb3IDAAAAFAEvFcwYdHJpYW5nbA3VAYIBAQEoAQEMKgAAAAFKAQEMKwAAAAG0AQEALgEFDQEALS0kAQE8LwAAAAEAAAAAAAAALAAAAA==",
         ),
       },
     ),

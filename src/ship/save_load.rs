@@ -5,7 +5,6 @@ use bevy::ecs::system::EntityCommands;
 use bevy::ecs::world::{EntityRef, EntityMut};
 use bevy::scene::serde::SceneDeserializer;
 use bevy::{prelude::*, utils::HashMap};
-use bevy_rapier3d::prelude::RigidBody;
 use egui_notify::Toast;
 use serde::de::DeserializeSeed;
 
@@ -13,6 +12,110 @@ use crate::network::{NetworkSplitter, MessageChannel};
 use crate::ui::ToastHolder;
 
 use super::prelude::*;
+
+
+#[derive(Serialize, Deserialize, Clone, Reflect, FromReflect)]
+pub enum DiskShipVoxel {
+    None, 
+    Voxel(ShipBlock),
+    Instance(InstanceId)
+}
+
+impl Default for DiskShipVoxel {
+    fn default() -> Self {
+        DiskShipVoxel::None
+    }
+}
+
+
+#[derive(Reflect, Component, Default)]
+#[reflect(Component)]
+pub struct DiskShipBase64 {
+    pub data : String
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DiskShip {
+    pub map : SolidVoxelMap<DiskShipVoxel>,
+    pub template_names : HashMap<u32, String>,
+    pub states : HashMap<u32, Entity>
+}
+
+impl DiskShip {
+    pub fn from_ship(ship_id : Entity, world : &World, remap : &HashMap<Entity, Entity>) -> DiskShip {
+        let all_instances = world.resource::<AllVoxelInstances>();
+
+        let mut template_names = HashMap::new();
+        for inst in &all_instances.configs {
+            template_names.insert(inst.instance.common_id, inst.name.clone());
+        }
+
+        let ship : &Ship = world.entity(ship_id).get().unwrap();
+
+        let mut map = SolidVoxelMap::<DiskShipVoxel>::new(Vec3::ZERO, ship.map.size, ship.map.voxel_size);
+        
+        let mut entity_id : HashMap<Entity, u32> = HashMap::new();
+        let mut id_indexer = 0;
+
+        let mut states : HashMap<u32, Entity> = HashMap::new();
+
+        for z in 0..map.size.z {
+            for y in 0..map.size.y {
+                for x in 0..map.size.x {
+
+                    let idx = IVec3::new(x, y, z);
+                    let v = ship.map.get_by_idx(&idx);
+
+                    let disk_v =
+                    match v {
+                        VoxelVal::None => DiskShipVoxel::None,
+                        VoxelVal::Voxel(block) => DiskShipVoxel::Voxel(block.clone()),
+                        VoxelVal::Object(e) => {
+                            let template_id = world.entity(*e)
+                                .get::<VoxelInstance>().unwrap()
+                                .common_id;
+
+                            if let Some(state_id) = entity_id.get(e) {
+                                DiskShipVoxel::Instance(InstanceId {template_id, state_id : *state_id })
+                            } else {
+                                entity_id.insert(*e, id_indexer);
+                                let val = DiskShipVoxel::Instance(InstanceId {template_id, state_id : id_indexer });
+                                states.insert(id_indexer, *remap.get(e).unwrap());
+                                id_indexer += 1;
+                                val
+                            }
+                        },
+                    };
+                    map.set_voxel_by_idx(&idx, disk_v);
+                }
+            }
+        }
+
+        DiskShip {
+            map,
+            template_names,
+            states
+        }
+    }
+
+    pub fn to_base64(&self) -> String {
+        let bytes =  bincode::serialize(&self).unwrap();
+        let compressed_bytes = snap::raw::Encoder::new().compress_vec(&bytes).unwrap();
+        let compressed_bytes = snap::raw::Encoder::new().compress_vec(&compressed_bytes).unwrap();
+        let compressed_bytes = snap::raw::Encoder::new().compress_vec(&compressed_bytes).unwrap();
+        let base64 = base64::encode(compressed_bytes);
+        base64
+    }
+
+    pub fn from_base64(text : &String) -> DiskShip {
+        let bytes = base64::decode(text).unwrap();
+        let decompressed_bytes = snap::raw::Decoder::new().decompress_vec(&bytes).unwrap();
+        let decompressed_bytes = snap::raw::Decoder::new().decompress_vec(&decompressed_bytes).unwrap();
+        let decompressed_bytes = snap::raw::Decoder::new().decompress_vec(&decompressed_bytes).unwrap();
+        bincode::deserialize(&decompressed_bytes).unwrap()
+    }
+}
+
 
 #[derive(Default)]
 pub struct CopyAlgorithm {
@@ -225,10 +328,8 @@ fn loading_ship_system(
             let mut ship = Ship::new_sized(disk_ship.map.size.clone());
             let mut spawned : HashMap<u32, Entity> = HashMap::new();
 
-            let ship_id = cmds.spawn(ship.clone()).insert(
-                SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)))
-                .insert(RigidBody::Fixed)
-                .id();
+            let ship_id = new_default_ship(&mut cmds);
+            cmds.entity(ship_id).insert(ship.clone());
 
             instances_from_disk(disk_ship, &mut ship, &mut spawned, &all_instances, &mut cmds, &asset_server, &mut cfg, sub_world);
 

@@ -20,7 +20,36 @@ pub struct KeyMapper {
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Copy, serde::Serialize, serde::Deserialize)]
 pub enum Action {
    FPS(FPSAction),
-   Build(BuildAction)
+   Build(BuildAction),
+   Piloting(PilotingAction)
+}
+
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Copy, serde::Serialize, serde::Deserialize)]
+pub enum PilotingAction {
+    MoveForward,
+    MoveBackward,
+    RollLeft,
+    RollRight,
+    TurnUp,
+    TurnDown,
+    TurnLeft,
+    TurnRight,
+}
+
+impl PilotingAction {
+    fn all_actions() -> Vec<Self> {
+        vec![
+            PilotingAction::MoveForward,
+            PilotingAction::MoveBackward,
+            PilotingAction::RollLeft,
+            PilotingAction::RollRight,
+            PilotingAction::TurnUp,
+            PilotingAction::TurnDown,
+            PilotingAction::TurnLeft,
+            PilotingAction::TurnRight,
+        ]
+    }
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Copy, serde::Serialize, serde::Deserialize)]
@@ -65,6 +94,8 @@ pub enum BuildAction {
     RotateCounterClockwise,
 }
 
+
+
 impl BuildAction {
     fn all_actions() -> Vec<BuildAction> {
         vec![
@@ -92,7 +123,8 @@ impl IAction for Action {
     fn get_area(&self) -> String {
         let res = match &self {
             Action::FPS(_) => "FPS",
-            Action::Build(_) => "Build"
+            Action::Build(_) => "Build",
+            Action::Piloting(_) => "Piloting",
         };
         res.to_string()
     }
@@ -104,6 +136,9 @@ impl IAction for Action {
         }));
         res.extend(BuildAction::all_actions().iter().map(|a| {
             Action::Build(a.clone())
+        }));
+        res.extend(PilotingAction::all_actions().iter().map(|a| {
+            Action::Piloting(a.clone())
         }));
         res
     }
@@ -185,13 +220,13 @@ fn get_keys() -> Vec<KeyCode> {
 }
 
 fn key_mapper_window(
-    mut ctx : Query<&EguiContext>,
+    mut ctx : Query<&mut EguiContext>,
     mut window : ResMut<KeyMapperWindow>,
     mut key_mapper : ResMut<KeyMapper>,
     mut key_input : ResMut<Input<KeyCode>>,
     mut input : Res<Input<Action>>
 ) {
-    let ctx = ctx.iter().next().unwrap();
+    let mut ctx = ctx.single_mut();
     if window.is_shown {
 
         if let Some(action) = window.listen_action.clone() {
@@ -204,7 +239,7 @@ fn key_mapper_window(
         }
 
         bevy_egui::egui::Window::new("Key mapper")
-            .show(ctx, |ui| {
+            .show(ctx.get_mut(), |ui| {
                 
                 egui::Grid::new("key mapper grid").show(ui, |ui| {
                     for action in &window.actions.clone() {

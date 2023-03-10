@@ -48,7 +48,7 @@ pub fn ship_build_menu(
     mut cmds : Commands,
     asset_server : Res<AssetServer>,
     voxel_instances : Res<AllVoxelInstances>,
-    mut ctx : Query<&EguiContext>,
+    mut ctx : Query<&mut EguiContext>,
     mut block : ResMut<StationBuildBlock>,
     mut active_windows : ResMut<ActiveWindows>,
     mut cahed_saved_paths : ResMut<CachedSavedShips>,
@@ -60,8 +60,8 @@ pub fn ship_build_menu(
     mut chat_channel : ResMut<NetworkChat>,
     mut input : ResMut<Input<Action>>
 ) {
-    let ctx = ctx.single();
-    egui::SidePanel::left("Build panel").show(ctx, |ui| {
+    let mut ctx = ctx.single_mut();
+    egui::SidePanel::left("Build panel").show(ctx.get_mut(), |ui| {
         network_chat(client_op, server_op, ui, chat_channel, &mut state, network_cmds);
 
         if ui.button("Play").clicked() {
@@ -213,13 +213,13 @@ fn network_chat(mut client_op: Option<ResMut<NetworkClient>>, mut server_op: Opt
 }
 
 pub fn load_ship_ui(
-    mut ctx : Query<&EguiContext>,
+    mut ctx : Query<&mut EguiContext>,
     mut active_windows : ResMut<ActiveWindows>,
     saved_ships : Res<CachedSavedShips>,
     mut load_ship_cmd : EventWriter<CmdShipLoad>) {
-        let ctx = ctx.single();
+        let mut ctx = ctx.single_mut();
         egui::Window::new("Select ship to load")
-            .show(ctx, |ui| {
+            .show(ctx.get_mut(), |ui| {
 
             ui.label("Ships:");
             for path in &saved_ships.paths {

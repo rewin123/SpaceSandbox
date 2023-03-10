@@ -14,7 +14,7 @@ pollster = "*"
 winit = "*"
 bevy_rapier3d = "0.21"
 ron = "*"
-bevy_egui = { git = "https://github.com/mvlabat/bevy_egui", branch = "bevy-0.10" }
+bevy_egui = "*"
 postcard = "*"
 block-mesh = "*"
 bincode = "*"

@@ -4,14 +4,14 @@ use crate::*;
 
 fn main_menu(
     mut cmds : Commands,
-    mut egui_context: Query<&EguiContext>,
+    mut egui_context: Query<&mut EguiContext>,
     mut next_scene : ResMut<NextState<SceneType>>
 ) {
     egui::Window::new("Space sandbox")
         .resizable(false)
         .collapsible(false)
         .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
-        .show(egui_context.single(), |ui| {
+        .show(egui_context.single_mut().get_mut(), |ui| {
             ui.vertical_centered(|ui| {
                 if ui.button("Play mission").clicked() {
 

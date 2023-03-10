@@ -4,7 +4,7 @@ use SpaceSandbox::objects::SpaceObjectsPlugin;
 use SpaceSandbox::pawn_system::PawnPlugin;
 use SpaceSandbox::scenes::fps_mode::FPSPlugin;
 use SpaceSandbox::scenes::station_builder::StationBuilderPlugin;
-use SpaceSandbox::ship::{DiskShipBase64};
+use SpaceSandbox::ship::save_load::DiskShipBase64;
 use SpaceSandbox::ui::*;
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;

@@ -226,14 +226,14 @@ fn spawn_block(
     block : ResMut<StationBuildBlock>,
     mut ships : Query<&mut Ship>,
     all_instances : Res<AllVoxelInstances>,
-    mut ctx : Query<&EguiContext>
+    mut ctx : Query<&mut EguiContext>
 ) {
-    let ctx = ctx.single_mut();
+    let mut ctx = ctx.single_mut();
     if block.e.is_none() {
         return;
     }
 
-    if ctx.is_pointer_over_area() {
+    if ctx.get_mut().is_pointer_over_area() {
         // println!("Captured event of egui");
         return;
     } else {
@@ -340,12 +340,6 @@ fn pos_block(
 }
 
 
-fn new_default_ship(cmds : &mut Commands) -> Entity {
-    cmds.spawn(Ship::new_sized(IVec3::new(100, 100, 100)))
-        .insert(SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)))
-        .id()
-}
-
 fn setup_build_scene(
     mut cmds : Commands,
     load_state : Res<State<StationBuildState>>,
@@ -408,7 +402,7 @@ fn go_to_fps(
     mut pawn_event : EventWriter<ChangePawn>,
     mut block : ResMut<StationBuildBlock>,
     mut query : Query<(Entity, &GlobalTransform, &VoxelInstance)>,
-    mut ships : Query<&Ship>,
+    mut ships : Query<Entity, With<Ship>>,
     mut all_instances : Res<AllVoxelInstances>) {
 
     if block.cmd == StationBuildCmds::GoToFPS {
@@ -433,12 +427,12 @@ fn go_to_fps(
         let mut cam = Camera::default();
         cam.is_active = false;
 
-        let kinematic_controller = KinematicCharacterController::default();
 
         let pos = Vec3::new(pos.x, pos.y + 1.0, pos.z);
         let pawn = cmds.spawn(Collider::capsule(Vec3::new(0.0, -0.75, 0.0), Vec3::new(0.0, 0.75, 0.0), 0.25))
         .insert(SpatialBundle::from_transform(Transform::from_xyz(pos.x, pos.y, pos.z)))
-        .insert(kinematic_controller)
+        .insert(RigidBody::Dynamic)
+        .insert(LockedAxes::ROTATION_LOCKED)
         .insert(GravityScale(1.0)).id();
 
         let cam_pawn = cmds.spawn(Camera3dBundle {
@@ -452,5 +446,9 @@ fn go_to_fps(
         cmds.entity(pawn).insert(Pawn { camera_id: cam_pawn });
     
         pawn_event.send(ChangePawn { new_pawn: pawn, new_mode: Gamemode::FPS, save_stack: true });
+
+        for ship_e in ships.iter() {
+            cmds.entity(ship_e).insert(LockedAxes::empty());
+        }
     }
 }
