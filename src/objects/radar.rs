@@ -113,7 +113,7 @@ fn radar(
                 let x_axis = commands.spawn(PbrBundle {
                     mesh : cube.clone(),
                     material : x_axis_material.clone(),
-                    transform : Transform::from_xyz(0.0, 0.0, dx_pos.x).with_scale(Vec3::new(50.0, 0.1, 0.1)),
+                    transform : Transform::from_xyz(0.0, -radar.scale, dx_pos.x).with_scale(Vec3::new(50.0, 0.1, 0.1)),
                     ..Default::default()
                 }).id();
                 commands.entity(radar_e).add_child(x_axis);
@@ -121,7 +121,7 @@ fn radar(
                 let z_axis = commands.spawn(PbrBundle {
                     mesh : cube.clone(),
                     material : z_axis_material.clone(),
-                    transform : Transform::from_xyz(dx_pos.x, 0.0, 0.0).with_scale(Vec3::new(0.1, 0.1, 50.0)),
+                    transform : Transform::from_xyz(dx_pos.x, -radar.scale, 0.0).with_scale(Vec3::new(0.1, 0.1, 50.0)),
                     ..Default::default()
                 }).id();
 

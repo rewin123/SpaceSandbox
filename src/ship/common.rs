@@ -219,7 +219,7 @@ pub fn init_all_voxel_instances(
                 cmds.entity(id).insert(PilotSeat::default());
 
                 let radar = 
-                    cmds.spawn(SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.75, -0.75)))
+                    cmds.spawn(SpatialBundle::from_transform(Transform::from_xyz(0.0, 1.0, -0.75)))
                     .insert(Radar::default()).id();
 
                 cmds.entity(id).add_child(radar);
