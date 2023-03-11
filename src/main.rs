@@ -2,12 +2,13 @@ use SpaceSandbox::control::SpaceControlPlugin;
 use SpaceSandbox::network::NetworkPlugin;
 use SpaceSandbox::objects::SpaceObjectsPlugin;
 use SpaceSandbox::pawn_system::PawnPlugin;
+use SpaceSandbox::scenes::NotificationPlugin;
 use SpaceSandbox::scenes::fps_mode::FPSPlugin;
+use SpaceSandbox::scenes::main_menu::MainMenuPlugin;
+use SpaceSandbox::scenes::settings::SettingsPlugin;
 use SpaceSandbox::scenes::station_builder::StationBuilderPlugin;
 use SpaceSandbox::ship::save_load::DiskShipBase64;
-use SpaceSandbox::ui::*;
 use bevy::prelude::*;
-use bevy_prototype_debug_lines::DebugLinesPlugin;
 use bevy_rapier3d::prelude::*;
 
 fn main() {
@@ -28,6 +29,7 @@ fn main() {
         .add_plugin(NetworkPlugin)
         .add_plugin(SpaceControlPlugin)
         .add_plugin(SpaceObjectsPlugin)
+        .add_plugin(SettingsPlugin)
 
         .run();
 }

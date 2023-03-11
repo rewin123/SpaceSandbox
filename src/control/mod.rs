@@ -169,7 +169,7 @@ impl Plugin for SpaceControlPlugin {
         app.insert_resource(key_mapper);
 
         let window = KeyMapperWindow {
-            is_shown: true,
+            is_shown: false,
             actions: Action::all_actions(),
             listen_action : None
         };

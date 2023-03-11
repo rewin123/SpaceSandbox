@@ -9,7 +9,7 @@ use egui_notify::Toast;
 use serde::de::DeserializeSeed;
 
 use crate::network::{NetworkSplitter, MessageChannel};
-use crate::ui::ToastHolder;
+use crate::scenes::ToastHolder;
 
 use super::prelude::*;
 

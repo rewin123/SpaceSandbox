@@ -1,6 +1,5 @@
 // #![feature(test)]
 
-pub mod ui;
 pub mod scenes;
 pub mod ship;
 pub mod space_voxel;
