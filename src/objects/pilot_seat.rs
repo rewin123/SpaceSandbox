@@ -7,6 +7,8 @@ use bevy_rapier3d::prelude::*;
 
 use crate::{pawn_system::{ChangePawn, Pawn, CurrentPawn}, Gamemode, control::{Action, FPSAction, PilotingAction}, ship::Ship};
 
+use super::ship_camera::ShipCamera;
+
 struct PawnCache {
     pawn : Entity,
     pawn_transform : Transform,
@@ -17,6 +19,10 @@ struct PawnCache {
 pub struct PilotSeat {
     #[reflect(ignore)]
     pawn : Option<PawnCache>,
+    #[reflect(ignore)]
+    cameras : Vec<Entity>,
+    #[reflect(ignore)]
+    current_camera : Option<usize>,
 }
 
 pub struct PilotSeatPlugin;
@@ -38,14 +44,20 @@ impl Plugin for PilotSeatPlugin {
     }
 }
 
+fn camera_selection(
+    mut cameras : Query<&mut Transform, With<ShipCamera>>,
+) {
+
+}
+
 fn piloting(
-    mut pilot_seats : Query<(&mut PilotSeat), (Without<Pawn>)>,
+    mut pilot_seats : Query<(&Transform, &mut PilotSeat), (Without<Pawn>)>,
     mut ships : Query<(&Transform, &mut Velocity, &mut ExternalImpulse), With<Ship>>,
     input : Res<Input<Action>>,
     mut pawns : Query<(&mut Transform, &Pawn), (Without<Ship>, Without<Camera>)>,
-    mut cameras : Query<&GlobalTransform, (Without<Ship>, With<Camera>)>
+    mut cameras : Query<&Transform, (Without<Ship>, With<Camera>)>
 ) {
-    for (mut pilot_seat) in pilot_seats.iter_mut() {
+    for (pilot_seat_transform, mut pilot_seat) in pilot_seats.iter_mut() {
         if pilot_seat.pawn.is_some() {
             let (ship_transform, mut ship_velocity, mut ship_impulse) = ships.iter_mut().next().unwrap();
             let forward = ship_transform.forward();
@@ -83,7 +95,24 @@ fn piloting(
             ship_impulse.torque_impulse = angvel;
 
             if let Ok((mut pawn_tranform, pawn)) = pawns.get_mut(pilot_seat.pawn.as_ref().unwrap().pawn) {
-                pawn_tranform.translation = PILOT_POSITION;
+                if pilot_seat.current_camera.is_none() {
+                    pawn_tranform.translation = PILOT_POSITION + pilot_seat_transform.translation;
+                } else {
+                    let camera_transform = cameras.get(pilot_seat.cameras[pilot_seat.current_camera.unwrap()]).unwrap();
+                    pawn_tranform.translation = camera_transform.translation;
+                }
+            }
+
+            if input.just_pressed(Action::Piloting(PilotingAction::GoToNextCamera)) {
+                pilot_seat.current_camera = if pilot_seat.current_camera.is_none() {
+                    Some(0)
+                } else {
+                    Some((pilot_seat.current_camera.unwrap() + 1) % pilot_seat.cameras.len())
+                }
+            }
+
+            if input.just_pressed(Action::Piloting(PilotingAction::BackToSeat)) {
+                pilot_seat.current_camera = None;
             }
         }
     }
@@ -104,6 +133,9 @@ fn pilot_debug_ui(
                 ui.label(format!("Distance from world origin: {:.0}", ship_transform.translation.distance(Vec3::ZERO)));
                 ui.label(format!("Ship velocity {:.2}", ship_vel.linvel.length()));
                 ui.label(format!("Ship rotation velocity {:.2}", ship_vel.angvel.length()));
+
+                ui.label(format!("Camera count: {}", pilot_seat.cameras.len()));
+                ui.label(format!("Current camera: {:?}", pilot_seat.current_camera));
             }
         }
     });
@@ -116,6 +148,8 @@ fn seat_in_pilot_seat(
     mut pawns : Query<(Entity, &mut Transform), With<Pawn>>,
     mut current_pawn : ResMut<CurrentPawn>,
     mut pilot_seats : Query<(Entity, &Transform, &mut PilotSeat), (Without<Pawn>)>,
+    mut cameras : Query<Entity, (Without<Ship>, With<Camera>)>,
+    mut ships : Query<Entity, (With<Ship>, Without<Pawn>)>
 ) {
     let Some(e) = current_pawn.id else {
         return;
@@ -138,9 +172,15 @@ fn seat_in_pilot_seat(
                     pawn_transform : tr.clone(),
                 };
                 commands.entity(e).insert(RigidBodyDisabled).insert(ColliderDisabled);
-                commands.entity(seat_e).add_child(e);
-                tr.translation = PILOT_POSITION.clone();
+
+                let ship_e = ships.single_mut();
+                commands.entity(ship_e).add_child(e);
+                tr.translation = seat_tr.translation + PILOT_POSITION.clone();
                 seat.pawn = Some(cache);
+
+                seat.cameras.clear();
+                seat.cameras.extend(cameras.iter());
+                seat.current_camera = None;
             }
         }
     }

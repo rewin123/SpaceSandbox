@@ -1,12 +1,15 @@
 pub mod pilot_seat;
 pub mod meteor;
 pub mod radar;
+pub mod door;
+pub mod ship_camera;
 
 pub mod prelude {
     pub use super::pilot_seat::*;
     pub use super::meteor::*;
     pub use super::*;
     pub use radar::*;
+    pub use door::*;
 }
 
 use bevy::prelude::*;

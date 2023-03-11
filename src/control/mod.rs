@@ -35,6 +35,8 @@ pub enum PilotingAction {
     TurnDown,
     TurnLeft,
     TurnRight,
+    GoToNextCamera,
+    BackToSeat
 }
 
 impl PilotingAction {
@@ -48,6 +50,8 @@ impl PilotingAction {
             PilotingAction::TurnDown,
             PilotingAction::TurnLeft,
             PilotingAction::TurnRight,
+            PilotingAction::GoToNextCamera,
+            PilotingAction::BackToSeat
         ]
     }
 }

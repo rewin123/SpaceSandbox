@@ -1,7 +1,7 @@
 use bevy::{prelude::*, ecs::system::EntityCommands};
 use bevy_rapier3d::{prelude::{Collider, RigidBody}, rapier::prelude::ColliderBuilder};
 
-use crate::objects::{prelude::PilotSeat, radar::Radar};
+use crate::objects::{prelude::PilotSeat, radar::Radar, ship_camera::ShipCamera};
 
 use super::{VOXEL_SIZE, instance_rotate::InstanceRotate};
 
@@ -236,6 +236,20 @@ pub fn init_all_voxel_instances(
             "Pilot top window",
             "ship/tiles/pilot_top_window.glb#Scene0",
             |_,_|{}
+        );
+        configs.push(cfg);
+    }
+
+    {
+        let cfg = spawn_static_instance(
+            &mut indexer,
+            [1, 1, 1].into(),
+            [0.0, -1.0, 0.0].into(),
+            "Camera",
+            "ship/tiles/camera.glb#Scene0",
+            |cmds,id|{
+                cmds.entity(id).insert(ShipCamera);
+            }
         );
         configs.push(cfg);
     }
