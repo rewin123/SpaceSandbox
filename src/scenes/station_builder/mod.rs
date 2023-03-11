@@ -2,6 +2,8 @@ mod ui;
 
 use std::f32::consts::PI;
 
+use bevy::core_pipeline::bloom::BloomSettings;
+use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::ecs::schedule::FreeSystemSet;
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContext;
@@ -425,6 +427,7 @@ fn go_to_fps(
 
 
         let mut cam = Camera::default();
+        cam.hdr = true;
         cam.is_active = false;
 
 
@@ -438,8 +441,10 @@ fn go_to_fps(
         let cam_pawn = cmds.spawn(Camera3dBundle {
             transform: Transform::from_xyz(0.0, 1.0, 0.0).looking_at(Vec3::new(0.0, 1.0, -1.0), Vec3::Y),
             camera : cam,
+            tonemapping: Tonemapping::TonyMcMapface,
             ..default()
-        }).id();
+        })
+        .insert(BloomSettings::default()).id();
 
         cmds.entity(pawn).add_child(cam_pawn);
     

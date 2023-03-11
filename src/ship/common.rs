@@ -1,7 +1,7 @@
 use bevy::{prelude::*, ecs::system::EntityCommands};
 use bevy_rapier3d::{prelude::{Collider, RigidBody}, rapier::prelude::ColliderBuilder};
 
-use crate::objects::prelude::PilotSeat;
+use crate::objects::{prelude::PilotSeat, radar::Radar};
 
 use super::{VOXEL_SIZE, instance_rotate::InstanceRotate};
 
@@ -63,7 +63,7 @@ fn spawn_static_instance<F>(
         name : &str,
         path : &str,
         after_build : F) -> VoxelInstanceConfig
-    where F : Fn(&mut EntityCommands) + Send  + Sync + 'static {
+    where F : Fn(&mut Commands, Entity) + Send  + Sync + 'static {
     
     let owned_path = path.to_string();
 
@@ -96,7 +96,7 @@ fn spawn_static_instance<F>(
                 .insert(Collider::from(collider.shared_shape().clone()));
                 // .insert(RigidBody::Fixed);
 
-            after_build(&mut cmds.entity(id));
+            after_build(cmds, id);
 
             id
         }).to_box()
@@ -120,7 +120,7 @@ pub fn init_all_voxel_instances(
             [0.0, 0.0, 0.0].into(), 
             "Metal grids", 
             "ss13/wall_models/metal_grid/metal_grid.gltf#Scene0",
-            |_|{});
+            |_,_|{});
         configs.push(cfg);
     }
 
@@ -131,7 +131,7 @@ pub fn init_all_voxel_instances(
             [0.0, 0.0, 0.0].into(),
             TELEPORN_NAME,
             "furniture/teleport_spot.glb#Scene0",
-            |_|{}
+            |_,_|{}
         );
         configs.push(cfg);
     }
@@ -143,7 +143,7 @@ pub fn init_all_voxel_instances(
             [0.0, 0.0, 0.0].into(),
             "White plate",
             "ship/tiles/base_plate.glb#Scene0",
-            |_|{}
+            |_,_|{}
         );
         configs.push(cfg);
     }
@@ -155,7 +155,7 @@ pub fn init_all_voxel_instances(
             [0.0, 0.0, 0.0].into(),
             "White triangle plate",
             "ship/tiles/white_triangle_plate.glb#Scene0",
-            |_|{}
+            |_,_|{}
         );
         configs.push(cfg);
     }
@@ -167,7 +167,7 @@ pub fn init_all_voxel_instances(
             [0.0, 0.0, 0.0].into(),
             "White door",
             "ship/tiles/door.glb#Scene0",
-            |_|{}
+            |_,_|{}
         );
         configs.push(cfg);
     }
@@ -179,7 +179,7 @@ pub fn init_all_voxel_instances(
             [0.0, 0.0, 0.0].into(),
             "Window",
             "ship/tiles/window.glb#Scene0",
-            |_|{}
+            |_,_|{}
         );
         configs.push(cfg);
     }
@@ -191,7 +191,7 @@ pub fn init_all_voxel_instances(
             [0.0, 0.0, 0.0].into(),
             "Corner window",
             "ship/tiles/corner_window.glb#Scene0",
-            |_|{}
+            |_,_|{}
         );
         configs.push(cfg);
     }
@@ -203,7 +203,7 @@ pub fn init_all_voxel_instances(
             [0.0, 0.0, 0.0].into(),
             "Engine",
             "ship/tiles/engine.glb#Scene0",
-            |_|{}
+            |_,_|{}
         );
         configs.push(cfg);
     }
@@ -215,8 +215,14 @@ pub fn init_all_voxel_instances(
             [0.0, -1.0, 0.0].into(),
             "Pilot seat",
             "ship/tiles/pilot_seat.glb#Scene0",
-            |cmds|{
-                cmds.insert(PilotSeat::default());
+            |cmds, id|{
+                cmds.entity(id).insert(PilotSeat::default());
+
+                let radar = 
+                    cmds.spawn(SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.75, -0.75)))
+                    .insert(Radar::default()).id();
+
+                cmds.entity(id).add_child(radar);
             }
         );
         configs.push(cfg);
@@ -229,7 +235,7 @@ pub fn init_all_voxel_instances(
             [0.0, -1.0, 1.0].into(),
             "Pilot top window",
             "ship/tiles/pilot_top_window.glb#Scene0",
-            |_|{}
+            |_,_|{}
         );
         configs.push(cfg);
     }

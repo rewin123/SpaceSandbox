@@ -23,6 +23,7 @@ snap = "*"
 egui-notify = "0.6.0"
 rand = "*"
 laminar = "*"
+bevy_prototype_debug_lines = "*"
 
 [dev-dependencies]
 test-case = "*"

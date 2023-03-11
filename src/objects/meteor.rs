@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use rand::Rng;
 use bevy_rapier3d::prelude::*;
 
+use super::radar::RadarDetected;
+
 #[derive(Component, Reflect, FromReflect, Default)]
 pub struct Meteor {
 
@@ -70,6 +72,7 @@ fn meteor_field_spawn(
                         ),
                         ..Default::default()
                     }).insert(Meteor{})
+                    .insert(RadarDetected{ color : Color::YELLOW})
                     .insert(Collider::ball(200.0));
                 }
             }
