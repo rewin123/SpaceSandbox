@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, math::*};
 
 pub mod commands;
 pub mod components;
@@ -12,6 +12,12 @@ pub mod prelude {
     pub use crate::{
         commands::BuildChildrenDTransformExt, components::*, DTransformBundle, DTransformPlugin,
     };
+}
+
+#[derive(Resource, Clone, Debug)]
+pub enum WorldOrigin {
+    Entity(Entity),
+    Position(DVec3)
 }
 
 use prelude::{DTransform, DGlobalTransform};
@@ -71,11 +77,18 @@ impl Plugin for DTransformPlugin {
         #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
         struct PropagateTransformsSet;
 
-        app.register_type::<Transform>()
-            .register_type::<GlobalTransform>()
-            .add_plugin(ValidParentCheckPlugin::<GlobalTransform>::default())
+        #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+        struct SyncTransforms;
+
+        app.register_type::<DTransform>()
+            .register_type::<DGlobalTransform>()
+            .add_plugin(ValidParentCheckPlugin::<DGlobalTransform>::default())
+            .insert_resource(WorldOrigin::Position(DVec3::ZERO))
             // add transform systems to startup so the first update is "correct"
             .configure_set(DTransformSystem::TransformPropagate.in_base_set(CoreSet::PostUpdate))
+            .configure_set(SyncTransforms.in_base_set(CoreSet::PostUpdate)
+                    .after(DTransformSystem::TransformPropagate)
+                    .after(bevy::transform::TransformSystem::TransformPropagate))
             .configure_set(PropagateTransformsSet.in_set(DTransformSystem::TransformPropagate))
             .edit_schedule(CoreSchedule::Startup, |schedule| {
                 schedule.configure_set(
@@ -96,6 +109,7 @@ impl Plugin for DTransformPlugin {
                     .in_set(DTransformSystem::TransformPropagate)
                     .ambiguous_with(PropagateTransformsSet),
                 propagate_transforms.in_set(PropagateTransformsSet),
+                sync_f64_f32.in_set(SyncTransforms)
             ));
     }
 }

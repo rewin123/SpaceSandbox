@@ -1,9 +1,79 @@
-use crate::components::{DGlobalTransform, DTransform};
-use bevy::ecs::{
+use crate::{components::{DGlobalTransform, DTransform}, WorldOrigin};
+use bevy::{ecs::{
     change_detection::Ref,
     prelude::{Changed, DetectChanges, Entity, Query, With, Without},
-};
+}, prelude::{Added, Commands, GlobalTransform, RemovedComponents, Transform, Res}, math::{Affine3A, Vec3A, DAffine3, DVec3}};
 use bevy::hierarchy::{Children, Parent};
+
+fn daffine_to_f32(
+    affine: &DAffine3,
+) -> Affine3A {
+    Affine3A {
+        matrix3 : bevy::math::Mat3A {
+            x_axis : Vec3A::new(affine.matrix3.x_axis.x as f32, affine.matrix3.x_axis.y as f32, affine.matrix3.x_axis.z as f32),
+            y_axis : Vec3A::new(affine.matrix3.y_axis.x as f32, affine.matrix3.y_axis.y as f32, affine.matrix3.y_axis.z as f32),
+            z_axis : Vec3A::new(affine.matrix3.z_axis.x as f32, affine.matrix3.z_axis.y as f32, affine.matrix3.z_axis.z as f32),
+        },
+        translation : Vec3A::new(affine.translation.x as f32, affine.translation.y as f32, affine.translation.z as f32),
+    }
+}
+
+pub fn sync_f64_f32(
+    mut commands : Commands,
+    mut query: Query<(Entity, &DGlobalTransform), (Added<DGlobalTransform>, Without<GlobalTransform>)>,
+    mut query_changed: Query<(Entity, &DGlobalTransform, &mut GlobalTransform)>,
+    mut query_changed_tranform: Query<(Entity, &DTransform, &mut Transform, Option<&Parent>)>,
+    mut query_deleted: RemovedComponents<DGlobalTransform>,
+    mut f32_transforms : Query<Entity, With<Transform>>,
+    world_origin : Res<WorldOrigin>,
+) {
+
+    let world_origin_pos = match world_origin.clone() {
+        WorldOrigin::Entity(e) => {
+            if let Ok((_, transform, _)) = query_changed.get_mut(e) {
+                transform.translation().clone()
+            } else {
+                println!("Entity not found in sync_f64_f32");
+                DVec3::ZERO
+            }
+        },
+        WorldOrigin::Position(pos) => pos,
+    };
+
+    for (entity, global_transform) in query.iter_mut() {
+        let mut affine = global_transform.affine();
+        let affine_f32 = daffine_to_f32(&affine);
+    
+        commands.entity(entity).insert(
+            bevy::prelude::GlobalTransform::from(affine_f32)
+        );
+    }
+
+    for (entity, d_global_transform, mut global_transforms) in query_changed.iter_mut() {
+        let mut affine = d_global_transform.affine();
+        affine.translation -= world_origin_pos;
+        let affine_f32 = daffine_to_f32(&affine);
+        *global_transforms = GlobalTransform::from(affine_f32);
+    }
+
+    // for (entity, d_transform, mut transform, parent) in query_changed_tranform.iter_mut() {
+    //     if let Some(parent) = parent {
+    //         transform.translation = d_transform.translation.as_vec3();
+    //     } else {
+    //         transform.translation = (d_transform.translation - world_origin_pos).as_vec3();
+    //     }
+    //     transform.scale = d_transform.scale.as_vec3();
+    //     transform.rotation = d_transform.rotation.as_f32();
+    // }
+
+    for entity in query_deleted.iter() {
+        commands.entity(entity).remove::<GlobalTransform>();
+    }
+
+    // for entity in f32_transforms.iter() {
+    //     commands.entity(entity).remove::<bevy::prelude::Transform>();
+    // }
+}
 
 /// Update [`GlobalTransform`] component of entities that aren't in the hierarchy
 ///
