@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use bevy_egui::*;
 use bevy_rapier3d::prelude::*;
 
-use crate::{pawn_system::{ChangePawn, Pawn, CurrentPawn}, Gamemode, control::{Action, FPSAction, PilotingAction}, ship::Ship};
+use crate::{pawn_system::{ChangePawn, Pawn, CurrentPawn}, Gamemode, control::{Action, FPSAction, PilotingAction}, ship::Ship, scenes::settings::settings_system};
 
 use super::ship_camera::ShipCamera;
 
@@ -36,7 +36,7 @@ impl Plugin for PilotSeatPlugin {
             seat_in_pilot_seat.in_set(OnUpdate(Gamemode::FPS))
         );
         app.add_system(
-            pilot_debug_ui.in_set(OnUpdate(Gamemode::FPS))
+            pilot_debug_ui.after(settings_system).in_set(OnUpdate(Gamemode::FPS))
         );
         app.add_system(
             piloting.in_set(OnUpdate(Gamemode::FPS))
