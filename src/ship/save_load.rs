@@ -337,6 +337,8 @@ fn loading_ship_system(
                 cmds.entity(ship_id).add_child(*e);
             }
 
+            cmds.entity(ship_id).insert(ship);
+
             loaded_ships.send(ShipLoaded(ship_id));
             toast.toast.add(Toast::info(format!("Loaded ship from {}", &ship_path.0)));
         }
