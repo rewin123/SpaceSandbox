@@ -54,8 +54,8 @@ fn piloting(
     mut pilot_seats : Query<(&Transform, &mut PilotSeat), (Without<Pawn>)>,
     mut ships : Query<(&Transform, &mut Velocity, &mut ExternalImpulse), With<Ship>>,
     input : Res<Input<Action>>,
-    mut pawns : Query<(&mut Transform, &Pawn), (Without<Ship>, Without<Camera>)>,
-    mut cameras : Query<&Transform, (Without<Ship>, With<Camera>)>
+    mut pawns : Query<(&mut Transform, &Pawn), (Without<Ship>, Without<ShipCamera>)>,
+    mut cameras : Query<&Transform, (Without<Ship>, With<ShipCamera>)>
 ) {
     for (pilot_seat_transform, mut pilot_seat) in pilot_seats.iter_mut() {
         if pilot_seat.pawn.is_some() {
@@ -148,7 +148,7 @@ fn seat_in_pilot_seat(
     mut pawns : Query<(Entity, &mut Transform), With<Pawn>>,
     mut current_pawn : ResMut<CurrentPawn>,
     mut pilot_seats : Query<(Entity, &Transform, &mut PilotSeat), (Without<Pawn>)>,
-    mut cameras : Query<Entity, (Without<Ship>, With<Camera>)>,
+    mut cameras : Query<Entity, (Without<Ship>, With<ShipCamera>)>,
     mut ships : Query<Entity, (With<Ship>, Without<Pawn>)>
 ) {
     let Some(e) = current_pawn.id else {
