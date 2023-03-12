@@ -24,6 +24,10 @@ egui-notify = "0.6.0"
 rand = "*"
 laminar = "*"
 bevy_prototype_debug_lines = "*"
+bevy_transform64 = {path = "crates/bevy_transform64"}
+
+[workspace]
+members = ["crates/bevy_transform64"]
 
 [dev-dependencies]
 test-case = "*"
