@@ -25,9 +25,12 @@ rand = "*"
 laminar = "*"
 bevy_prototype_debug_lines = "*"
 bevy_transform64 = {path = "crates/bevy_transform64"}
+space_physics = {path = "crates/space_physics"}
 
 [workspace]
-members = ["crates/bevy_transform64"]
+members = [
+    "crates/bevy_transform64",
+    "crates/space_physics"]
 
 [dev-dependencies]
 test-case = "*"

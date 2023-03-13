@@ -70,9 +70,9 @@ pub fn sync_f64_f32(
         commands.entity(entity).remove::<GlobalTransform>();
     }
 
-    // for entity in f32_transforms.iter() {
-    //     commands.entity(entity).remove::<bevy::prelude::Transform>();
-    // }
+    for entity in f32_transforms.iter() {
+        commands.entity(entity).remove::<bevy::prelude::Transform>();
+    }
 }
 
 /// Update [`GlobalTransform`] component of entities that aren't in the hierarchy

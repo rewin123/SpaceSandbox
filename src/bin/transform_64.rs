@@ -111,13 +111,13 @@ fn debug_gui(
         ui.label(format!("{:?}", world_origin));
 
         if let WorldOrigin::Entity(entity) = *world_origin {
-            let pos = transforms.get(entity).unwrap().translation;
+            // let pos = transforms.get(entity).unwrap().translation;
             let dpos = dtransforms.get(entity).unwrap().translation;
 
-            let dist = pos.length();
+            // let dist = pos.length();
             let ddist = dpos.length();
 
-            ui.label(format!("f32 dist: {:?}", dist));
+            // ui.label(format!("f32 dist: {:?}", dist));
             ui.label(format!("f64 dist: {:?}", ddist));
         }        
     });
