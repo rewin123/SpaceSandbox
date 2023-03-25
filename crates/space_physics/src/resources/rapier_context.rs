@@ -37,7 +37,7 @@ impl RapierContext {
 
         self.integration_parameters.dt = dt;
 
-        println!("dt: {}", dt);
+        // println!("dt: {}", dt);
 
         self.physics_pipeline.step(
             &rapier3d_f64::math::Vector::new(gravity.x, gravity.y, gravity.z),

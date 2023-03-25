@@ -15,7 +15,7 @@ pub fn update_collider(
     mut commands : Commands,
     mut context : ResMut<RapierContext>,
     mut changed_collider : Query<(&mut RapierColliderHandle, &SpaceCollider), (Changed<SpaceCollider>)>,
-    changed_collider_without_handle : Query<(Entity, &SpaceCollider), (Changed<SpaceCollider>, Without<RapierColliderHandle>, Without<RapierRigidBodyHandle>)>,
+    changed_collider_without_handle : Query<(Entity, &SpaceCollider), (Changed<SpaceCollider>, Without<RapierColliderHandle>, Without<RapierRigidBodyHandle>, Without<SpaceRigidBody>)>,
 ) {
     for (mut handle, collider) in changed_collider.iter_mut() {
         if let Some(collider_in_set) = context.collider_set.get_mut(handle.handle) {
@@ -29,6 +29,7 @@ pub fn update_collider(
         let handle = RapierColliderHandle {
             handle : context.collider_set.insert(collider.collider.clone()),
         };
+        println!("Create just collider {:?}", e);
         commands.entity(e).insert(handle);
     }
 }
@@ -44,6 +45,7 @@ pub fn update_collider_rigidbody(
             handle : context.collider_set.insert_with_parent(
                 collider.collider.clone(), rigidbody.handle, &mut context.rigid_body_set)
         };
+        println!("Create collider with rigidbody {:?}", e);
         commands.entity(e).insert(handle);
     }
 }
@@ -51,10 +53,10 @@ pub fn update_collider_rigidbody(
 pub fn update_rigidbody(
     mut commands : Commands,
     mut context : ResMut<RapierContext>,
-    mut changed_rigidbody : Query<(Entity, &SpaceRigidBody, Option<&mut RapierRigidBodyHandle>), (Changed<SpaceRigidBody>)>,
+    mut changed_rigidbody : Query<(Entity, &SpaceRigidBody, Option<&mut RapierRigidBodyHandle>, Option<&SpaceCollider>), (Changed<SpaceRigidBody>)>,
 ) {
     let context = &mut *context;
-    for (e, rigidbody, handle) in changed_rigidbody.iter_mut() {
+    for (e, rigidbody, handle, collider) in changed_rigidbody.iter_mut() {
         if let Some(mut handle) = handle {
             if let Some(rapier_rigidbody) = context.rigid_body_set.get_mut(handle.handle) {
                 *rapier_rigidbody = rigidbody.rigid_body.clone();
@@ -66,6 +68,15 @@ pub fn update_rigidbody(
             let comp = RapierRigidBodyHandle {
                 handle : handle.clone()
             };
+            if let Some(collider) = collider {
+                let collider_handle = RapierColliderHandle {
+                    handle : context.collider_set.insert_with_parent(
+                        collider.collider.clone(), handle, &mut context.rigid_body_set)
+                };
+                commands.entity(e).insert(collider_handle);
+                println!("Create rigidbody with collider {:?}", e);
+            };
+            
             commands.entity(e).insert(comp);
         };
     }
@@ -100,7 +111,7 @@ pub fn from_physics_engine(
         let rigid_body = context.rigid_body_set.get(rigidbody_handle.handle).unwrap();
         let pos = rigid_body.translation();
         transform.translation = DVec3::new(pos.x, pos.y, pos.z);
-        println!("Pos: {:?}", pos);
+        // println!("Pos: {:?}", pos);
 
         let rot = rigid_body.rotation();
         transform.rotation = DQuat {

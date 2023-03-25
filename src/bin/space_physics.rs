@@ -21,9 +21,9 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let cube_mesh = meshes.add(Mesh::from(bevy::prelude::shape::Cube { size: 0.5 }));
+    let cube_mesh = meshes.add(Mesh::from(bevy::prelude::shape::Cube { size: 1.0 }));
     let material = materials.add(Color::rgb(0.8, 0.7, 0.6).into());
-    let sphere_mesh = meshes.add(Mesh::from(bevy::prelude::shape::UVSphere::default()));
+    let sphere_mesh = meshes.add(Mesh::from(bevy::prelude::shape::UVSphere { radius: 1.0, sectors: 32, stacks: 32 }));
 
     commands.insert_resource(GlobalGravity {
         gravity: DVec3::new(0.0, -9.81, 0.0),
@@ -46,7 +46,7 @@ fn setup(
             ..Default::default()
     }).insert(DTransformBundle::from_transform(DTransform::from_xyz(0.0, 3.0, 0.0)))
     .insert(SpaceCollider{
-        collider: ColliderBuilder::ball(0.5).build()
+        collider: ColliderBuilder::ball(0.4).build()
     })
     .insert(SpaceRigidBody{
         rigid_body: RigidBodyBuilder::dynamic()

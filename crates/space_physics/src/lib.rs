@@ -3,6 +3,7 @@ pub mod systems;
 pub mod resources;
 
 use bevy::prelude::*;
+use bevy_transform64::DTransformSystem;
 use resources::{RapierContext, GlobalGravity};
 use systems::*;
 
@@ -33,7 +34,7 @@ impl Plugin for SpacePhysicsPlugin {
 
         app.configure_set(SpacePhysicSystem::CaptureChanges.before(SpacePhysicSystem::ContextUpdate).in_base_set(CoreSet::PostUpdate));
         app.configure_set(SpacePhysicSystem::ContextUpdate.in_base_set(CoreSet::PostUpdate));
-        app.configure_set(SpacePhysicSystem::WriteToWorld.after(SpacePhysicSystem::ContextUpdate).in_base_set(CoreSet::PostUpdate));
+        app.configure_set(SpacePhysicSystem::WriteToWorld.after(SpacePhysicSystem::ContextUpdate).before(DTransformSystem::TransformPropagate).in_base_set(CoreSet::PostUpdate));
 
         app.add_system(update_collider.in_set(SpacePhysicSystem::CaptureChanges));
         app.add_system(update_collider_rigidbody.in_set(SpacePhysicSystem::CaptureChanges));
