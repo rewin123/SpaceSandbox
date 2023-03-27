@@ -35,9 +35,7 @@ impl Default for RapierContext {
 impl RapierContext {
     pub fn step(&mut self, dt: f64, gravity : &DVec3) {
 
-        self.integration_parameters.dt = dt;
-
-        // println!("dt: {}", dt);
+        self.integration_parameters.dt = dt.min(1.0 / 30.0);
 
         self.physics_pipeline.step(
             &rapier3d_f64::math::Vector::new(gravity.x, gravity.y, gravity.z),

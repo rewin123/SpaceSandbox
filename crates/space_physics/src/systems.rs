@@ -63,6 +63,7 @@ pub fn update_rigidbody(
             } else {
                 handle.handle = context.rigid_body_set.insert(rigidbody.rigid_body.clone());
             }
+            
         } else {
             let handle = context.rigid_body_set.insert(rigidbody.rigid_body.clone());
             let comp = RapierRigidBodyHandle {
