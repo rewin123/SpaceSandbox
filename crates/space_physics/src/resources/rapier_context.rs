@@ -53,4 +53,8 @@ impl RapierContext {
             &()
         );
     }
+
+    pub fn propagate_modified_body_positions_to_colliders(&mut self) {
+        self.rigid_body_set.propagate_modified_body_positions_to_colliders(&mut self.collider_set);
+    }
 }

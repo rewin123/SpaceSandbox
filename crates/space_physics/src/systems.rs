@@ -9,6 +9,8 @@ pub fn update_context(
     time : Res<Time>,
 ) {
     context.step(time.delta_seconds() as f64, &gravity.gravity);
+    context.propagate_modified_body_positions_to_colliders();
+    
 }
 
 pub fn update_collider(
@@ -29,7 +31,7 @@ pub fn update_collider(
         let handle = RapierColliderHandle {
             handle : context.collider_set.insert(collider.collider.clone()),
         };
-        println!("Create just collider {:?}", e);
+        // println!("Create just collider {:?}", e);
         commands.entity(e).insert(handle);
     }
 }
@@ -45,7 +47,7 @@ pub fn update_collider_rigidbody(
             handle : context.collider_set.insert_with_parent(
                 collider.collider.clone(), rigidbody.handle, &mut context.rigid_body_set)
         };
-        println!("Create collider with rigidbody {:?}", e);
+        // println!("Create collider with rigidbody {:?}", e);
         commands.entity(e).insert(handle);
     }
 }
@@ -75,7 +77,7 @@ pub fn update_rigidbody(
                         collider.collider.clone(), handle, &mut context.rigid_body_set)
                 };
                 commands.entity(e).insert(collider_handle);
-                println!("Create rigidbody with collider {:?}", e);
+                // println!("Create rigidbody with collider {:?}", e);
             };
             
             commands.entity(e).insert(comp);
@@ -99,7 +101,7 @@ pub fn add_rigidbody(
             handle : collider_handle.clone()
         });
 
-        println!("Added rigidbody {:?} with handle {:?} and collider {:?}", rigidbody, handle, collider_handle);
+        // println!("Added rigidbody {:?} with handle {:?} and collider {:?}", rigidbody, handle, collider_handle);
     }
 }
 
@@ -110,7 +112,7 @@ pub fn from_physics_engine(
     let context = &mut *context;
     for (mut transform, rigidbody_handle) in rigidbodies.iter_mut() {
         let rigid_body = context.rigid_body_set.get(rigidbody_handle.handle).unwrap();
-        let pos = rigid_body.translation();
+        let pos = rigid_body.position().translation.vector;
         transform.translation = DVec3::new(pos.x, pos.y, pos.z);
         // println!("Pos: {:?}", pos);
 

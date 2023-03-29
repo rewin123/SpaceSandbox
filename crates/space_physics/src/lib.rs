@@ -1,6 +1,7 @@
 pub mod components;
 pub mod systems;
 pub mod resources;
+pub mod debug_draw;
 
 use bevy::prelude::*;
 use bevy_transform64::DTransformSystem;
@@ -44,7 +45,7 @@ impl Plugin for SpacePhysicsPlugin {
         app.add_system(update_context.in_set(SpacePhysicSystem::ContextUpdate));
 
         app.add_system(from_physics_engine.in_set(SpacePhysicSystem::WriteToWorld));
-        
 
+        app.add_plugin(debug_draw::SpacePhysicsDebugDrawPlugin);
     }
 }
