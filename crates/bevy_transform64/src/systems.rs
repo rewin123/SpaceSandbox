@@ -1,4 +1,4 @@
-use crate::{components::{DGlobalTransform, DTransform}, WorldOrigin, SimpleWorldOrigin};
+use crate::{components::{DGlobalTransform, DTransform}, WorldOrigin, SimpleWorldOrigin, DTransformBundle};
 use bevy::{ecs::{
     change_detection::Ref,
     prelude::{Changed, DetectChanges, Entity, Query, With, Without},
@@ -24,7 +24,7 @@ pub fn sync_f64_f32(
     mut query_changed: Query<(Entity, &DGlobalTransform, &mut GlobalTransform)>,
     mut query_changed_tranform: Query<(Entity, &DTransform, &mut Transform, Option<&Parent>)>,
     mut query_deleted: RemovedComponents<DGlobalTransform>,
-    mut f32_transforms : Query<Entity, With<Transform>>,
+    mut query_cmd_add : Query<(Entity, &Transform), (Without<DTransform>)>,
     world_origin : Res<WorldOrigin>,
 ) {
 
@@ -42,6 +42,7 @@ pub fn sync_f64_f32(
 
     for (entity, global_transform) in query.iter_mut() {
         let mut affine = global_transform.affine();
+        affine.translation -= world_origin_pos;
         let affine_f32 = daffine_to_f32(&affine);
     
         commands.entity(entity).insert(
@@ -53,25 +54,38 @@ pub fn sync_f64_f32(
         let mut affine = d_global_transform.affine();
         affine.translation -= world_origin_pos;
         let affine_f32 = daffine_to_f32(&affine);
+        // println!("{:?}", affine_f32);
         *global_transforms = GlobalTransform::from(affine_f32);
     }
 
-    // for (entity, d_transform, mut transform, parent) in query_changed_tranform.iter_mut() {
-    //     if let Some(parent) = parent {
-    //         transform.translation = d_transform.translation.as_vec3();
-    //     } else {
-    //         transform.translation = (d_transform.translation - world_origin_pos).as_vec3();
-    //     }
-    //     transform.scale = d_transform.scale.as_vec3();
-    //     transform.rotation = d_transform.rotation.as_f32();
-    // }
+    for (entity, d_transform, mut transform, parent) in query_changed_tranform.iter_mut() {
+        if let Some(parent) = parent {
+            transform.translation = d_transform.translation.as_vec3();
+        } else {
+            transform.translation = (d_transform.translation - world_origin_pos).as_vec3();
+        }
+        transform.scale = d_transform.scale.as_vec3();
+        transform.rotation = d_transform.rotation.as_f32();
+        // println!("{:?}", d_transform);
+    }
 
     for entity in query_deleted.iter() {
         commands.entity(entity).remove::<GlobalTransform>();
     }
 
-    for entity in f32_transforms.iter() {
-        commands.entity(entity).remove::<bevy::prelude::Transform>();
+    for (entity, f32_transform) in query_cmd_add.iter() {
+        // let mut rot = f32_transform.rotation.as_f64();
+        // if f32_transform.rotation.xyz().is_nan() {
+        //     rot = bevy::math::DQuat::default();
+        // }
+        println!("Spawn dtransform with {:?}", f32_transform.rotation.as_f64());
+        commands.entity(entity).insert(
+            DTransformBundle::from_transform(DTransform {
+                translation : f32_transform.translation.as_dvec3(),
+                rotation: f32_transform.rotation.as_f64(),
+                scale: f32_transform.scale.as_dvec3(),
+            })
+        ).remove::<Transform>();
     }
 }
 
@@ -239,6 +253,32 @@ pub fn convert_world_origin(
             simple_world_origin.origin = DVec3::new(pos.x, pos.y, pos.z);
         },
     };
+}
+
+pub fn replace_transforms(
+    mut commands : Commands,
+    mut query: Query<(&mut Transform, &DTransform), Without<Parent>>,
+    simple_world_origin : Res<SimpleWorldOrigin>
+) {
+    // for (mut transform, dtransform) in query.iter_mut() {
+    //     dtransform.set_f32_transform(&mut transform, simple_world_origin.origin);
+    // }
+    // for (entity, transform) in query.iter() {
+    //     let dtransform = DTransform {
+    //         translation: DVec3::new(transform.translation.x as f64, transform.translation.y as f64, transform.translation.z as f64),
+    //         scale: DVec3::new(transform.scale.x as f64, transform.scale.y as f64, transform.scale.z as f64),
+    //         rotation: bevy::math::DQuat { x: transform.rotation.x as f64, y: transform.rotation.y as f64, z: transform.rotation.z as f64, w: transform.rotation.w as f64 },
+    //     };
+
+    //     commands.entity(entity).insert(DTransformBundle::from_transform(dtransform)).remove::<Transform>().insert(GlobalTransform::default());
+
+    //     println!("Remove with creation transform of {:?}", transform);
+    // }
+
+    // for (entity, transform) in del_query.iter() {
+    //     commands.entity(entity).remove::<Transform>().insert(GlobalTransform::default());
+    //     println!("Remove transform of {:?}", entity);
+    // }
 }
 
 #[cfg(test)]

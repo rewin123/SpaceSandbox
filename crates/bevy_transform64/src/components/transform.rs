@@ -342,6 +342,18 @@ impl DTransform {
         point += self.translation;
         point
     }
+
+    pub fn set_f32_transform(&self, dst : &mut Transform, world_origin : DVec3) {
+        let dp = self.translation - world_origin;
+        dst.translation = Vec3::new(dp.x as f32, dp.y as f32, dp.z as f32);
+        dst.scale = Vec3::new(self.scale.x as f32, self.scale.y as f32, self.scale.z as f32);
+        dst.rotation = Quat::from_xyzw(
+            self.rotation.x as f32,
+            self.rotation.y as f32,
+            self.rotation.z as f32,
+            self.rotation.w as f32,
+        );
+    }
 }
 
 impl Default for DTransform {

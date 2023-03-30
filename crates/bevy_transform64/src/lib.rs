@@ -1,3 +1,5 @@
+use std::mem::replace;
+
 use bevy::{prelude::*, math::*};
 
 pub mod commands;
@@ -116,7 +118,7 @@ impl Plugin for DTransformPlugin {
                     .ambiguous_with(PropagateTransformsSet),
                 propagate_transforms.in_set(PropagateTransformsSet),
                 sync_f64_f32.in_set(SyncTransforms),
-                convert_world_origin.after(sync_simple_transforms).in_set(DTransformSystem::TransformPropagate),
+                convert_world_origin.after(sync_simple_transforms).in_set(DTransformSystem::TransformPropagate)
             ));
     }
 }
