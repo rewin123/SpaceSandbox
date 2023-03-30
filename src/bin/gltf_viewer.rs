@@ -28,6 +28,7 @@ fn setup(
     asset_server : Res<AssetServer>,
     mut loading : ResMut<Loading>
 ) {
+    // let asset_path = "space_objects/asteroid_1.glb#Scene0";
     let asset_path = "space_objects/asteroid_1.glb#Scene0";
 
     let handle = asset_server.load(asset_path);
@@ -44,7 +45,10 @@ fn setup(
 
     // Add a camera
     commands.spawn(Camera3dBundle {
-
+        camera_3d : Camera3d {
+            clear_color : bevy::core_pipeline::clear_color::ClearColorConfig::Custom(Color::Rgba { red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0 }),
+            ..default()
+        },
         ..Default::default()
     })
     .insert(DTransformBundle::from_transform(
@@ -63,15 +67,10 @@ fn setup(
             shadows_enabled: true,
             ..default()
         },
-        transform: Transform {
-            translation: Vec3::new(0.0, 2.0, 0.0),
-            rotation: Quat::from_rotation_x(-2.5),
-            ..default()
-        },
         ..default()
     }).insert(DTransformBundle::from_transform(DTransform {
         translation: DVec3::new(0.0, 2.0, 0.0),
-        rotation: DQuat::from_rotation_x(-2.5),
+        rotation: DQuat::from_rotation_z(-0.5),
         ..default()
     }));
 }
