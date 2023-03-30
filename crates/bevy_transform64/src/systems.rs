@@ -1,8 +1,8 @@
-use crate::{components::{DGlobalTransform, DTransform}, WorldOrigin};
+use crate::{components::{DGlobalTransform, DTransform}, WorldOrigin, SimpleWorldOrigin};
 use bevy::{ecs::{
     change_detection::Ref,
     prelude::{Changed, DetectChanges, Entity, Query, With, Without},
-}, prelude::{Added, Commands, GlobalTransform, RemovedComponents, Transform, Res}, math::{Affine3A, Vec3A, DAffine3, DVec3}};
+}, prelude::{Added, Commands, GlobalTransform, RemovedComponents, Transform, Res, ResMut}, math::{Affine3A, Vec3A, DAffine3, DVec3}};
 use bevy::hierarchy::{Children, Parent};
 
 fn daffine_to_f32(
@@ -220,6 +220,25 @@ unsafe fn propagate_recursive(
             );
         }
     }
+}
+
+pub fn convert_world_origin(
+    world_origin : Res<WorldOrigin>,
+    query: Query<&DGlobalTransform>,
+    mut simple_world_origin : ResMut<SimpleWorldOrigin>
+) {
+    match *world_origin {
+        WorldOrigin::Entity(e) => {
+            if let Ok(transform) = query.get(e) {
+                simple_world_origin.origin = transform.translation();
+            } else {
+                simple_world_origin.origin = DVec3::new(0.0, 0.0, 0.0);
+            }
+        },
+        WorldOrigin::Position(pos) => {
+            simple_world_origin.origin = DVec3::new(pos.x, pos.y, pos.z);
+        },
+    };
 }
 
 #[cfg(test)]

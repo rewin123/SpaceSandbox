@@ -1,5 +1,5 @@
 use bevy::{prelude::*, math::{DQuat, DVec3}};
-use bevy_transform64::{prelude::{DGlobalTransform, DTransform}, WorldOrigin};
+use bevy_transform64::{prelude::{DGlobalTransform, DTransform}, WorldOrigin, SimpleWorldOrigin};
 use crate::prelude::{SpaceCollider, RapierContext};
 
 use super::components::*;
@@ -142,7 +142,7 @@ fn debug_draw_cuboid(
 
 pub fn draw_colliders(
     context : Res<RapierContext>,
-    world_origin : Res<WorldOrigin>,
+    world_origin : Res<SimpleWorldOrigin>,
     mut colliders : Query<(&SpaceCollider, &GlobalTransform)>,
     mut lines: ResMut<DebugLines>,
 ) {
@@ -150,11 +150,34 @@ pub fn draw_colliders(
 
     for (handle, col) in context.collider_set.iter() {
         match col.shape().shape_type() {
-            rapier3d_f64::prelude::ShapeType::Ball => todo!(),
+            rapier3d_f64::prelude::ShapeType::Ball => {
+                if let Some(ball) = col.shape().as_ball() {
+                    let pos = col.position();
+                    let mut d_translation = DVec3::new(pos.translation.x, pos.translation.y, pos.translation.z) - world_origin.origin;
+
+                    debug_draw_circle(
+                        &mut lines,
+                        Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32),
+                        ball.radius as f32,
+                        Color::YELLOW,
+                        Quat::IDENTITY,
+                        10
+                    );
+
+                    debug_draw_circle(
+                        &mut lines,
+                        Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32),
+                        ball.radius as f32,
+                        Color::YELLOW,
+                        Quat::from_euler(EulerRot::XYZ, std::f32::consts::PI / 2.0, 0.0, 0.0),
+                        10
+                    );
+                }
+            },
             rapier3d_f64::prelude::ShapeType::Cuboid => {
                 if let Some(cuboid) = col.shape().as_cuboid() {
                     let pos = col.position();
-                    let mut d_translation = DVec3::new(pos.translation.x, pos.translation.y, pos.translation.z);
+                    let mut d_translation = DVec3::new(pos.translation.x, pos.translation.y, pos.translation.z) - world_origin.origin;
                     let rot = col.rotation();
                     let rot = bevy::math::Quat::from_xyzw(
                         rot.i as f32,
@@ -162,6 +185,11 @@ pub fn draw_colliders(
                         rot.k as f32,
                         rot.w as f32,
                     );
+
+                    let mut transform = Transform::from_translation(Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32));
+                    transform = transform.with_rotation(rot);
+
+                    debug_draw_cuboid(&mut lines, &GlobalTransform::from(transform), Color::YELLOW, cuboid);
 
                 }
             },

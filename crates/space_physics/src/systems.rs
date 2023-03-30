@@ -55,33 +55,33 @@ pub fn update_collider_rigidbody(
 pub fn update_rigidbody(
     mut commands : Commands,
     mut context : ResMut<RapierContext>,
-    mut changed_rigidbody : Query<(Entity, &SpaceRigidBody, Option<&mut RapierRigidBodyHandle>, Option<&SpaceCollider>), (Changed<SpaceRigidBody>)>,
+    mut changed_rigidbody : Query<(Entity, &SpaceRigidBody, &mut RapierRigidBodyHandle, Option<&SpaceCollider>), (Changed<SpaceRigidBody>)>,
 ) {
     let context = &mut *context;
-    for (e, rigidbody, handle, collider) in changed_rigidbody.iter_mut() {
-        if let Some(mut handle) = handle {
+    for (e, rigidbody, mut handle, collider) in changed_rigidbody.iter_mut() {
+        // if let Some(mut handle) = handle {
             if let Some(rapier_rigidbody) = context.rigid_body_set.get_mut(handle.handle) {
                 *rapier_rigidbody = rigidbody.rigid_body.clone();
             } else {
                 handle.handle = context.rigid_body_set.insert(rigidbody.rigid_body.clone());
             }
             
-        } else {
-            let handle = context.rigid_body_set.insert(rigidbody.rigid_body.clone());
-            let comp = RapierRigidBodyHandle {
-                handle : handle.clone()
-            };
-            if let Some(collider) = collider {
-                let collider_handle = RapierColliderHandle {
-                    handle : context.collider_set.insert_with_parent(
-                        collider.collider.clone(), handle, &mut context.rigid_body_set)
-                };
-                commands.entity(e).insert(collider_handle);
-                // println!("Create rigidbody with collider {:?}", e);
-            };
+        // } else {
+        //     let handle = context.rigid_body_set.insert(rigidbody.rigid_body.clone());
+        //     let comp = RapierRigidBodyHandle {
+        //         handle : handle.clone()
+        //     };
+        //     if let Some(collider) = collider {
+        //         let collider_handle = RapierColliderHandle {
+        //             handle : context.collider_set.insert_with_parent(
+        //                 collider.collider.clone(), handle, &mut context.rigid_body_set)
+        //         };
+        //         commands.entity(e).insert(collider_handle);
+        //         println!("Create rigidbody with collider {:?}", e);
+        //     };
             
-            commands.entity(e).insert(comp);
-        };
+        //     commands.entity(e).insert(comp);
+        // };
     }
 }
 
@@ -101,7 +101,7 @@ pub fn add_rigidbody(
             handle : collider_handle.clone()
         });
 
-        // println!("Added rigidbody {:?} with handle {:?} and collider {:?}", rigidbody, handle, collider_handle);
+        println!("Added rigidbody with handle {:?} and collider", handle);
     }
 }
 

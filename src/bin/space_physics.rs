@@ -43,7 +43,7 @@ fn setup(
     let cube_collider = ColliderBuilder::cuboid(0.5, 0.5, 0.5).build();
     let sphere_mesh = meshes.add(Mesh::from(bevy::prelude::shape::UVSphere { radius: 0.5, sectors: 32, stacks : 32 }));
     let mut rng = rand::thread_rng();
-    for i in 0..1000 {
+    for i in 0..10 {
         let x = rng.gen_range(-5.0..5.0);
         let y = rng.gen_range(0.5..50.0);
         let z = rng.gen_range(-5.0..5.0);
@@ -67,29 +67,29 @@ fn setup(
         });
     }
 
-    // for i in 0..10 {
-    //     let x = rng.gen_range(-5.0..5.0);
-    //     let y = rng.gen_range(0.5..5.0);
-    //     let z = rng.gen_range(-5.0..5.0);
-    //     let sphere_transform = DTransform::from_xyz(x, y, z);
-    //     let sphere_rigid_body = RigidBodyBuilder::dynamic()
-    //         .translation(DVec3::new(x, y, z).into())
-    //         .gravity_scale(1.0)
-    //         .can_sleep(true)
-    //         .build();
-    //     commands.spawn(PbrBundle {
-    //         mesh: sphere_mesh.clone(),
-    //         material: cube_material.clone(),
-    //         ..Default::default()
-    //     })
-    //     .insert(DTransformBundle::from_transform(sphere_transform))
-    //     .insert(SpaceCollider {
-    //         collider: ColliderBuilder::ball(0.5).build(),
-    //     })
-    //     .insert(SpaceRigidBody {
-    //         rigid_body: sphere_rigid_body,
-    //     });
-    // }
+    for i in 0..10 {
+        let x = rng.gen_range(-5.0..5.0);
+        let y = rng.gen_range(0.5..5.0);
+        let z = rng.gen_range(-5.0..5.0);
+        let sphere_transform = DTransform::from_xyz(x, y, z);
+        let sphere_rigid_body = RigidBodyBuilder::dynamic()
+            .translation(DVec3::new(x, y, z).into())
+            .gravity_scale(1.0)
+            .can_sleep(true)
+            .build();
+        commands.spawn(PbrBundle {
+            mesh: sphere_mesh.clone(),
+            material: cube_material.clone(),
+            ..Default::default()
+        })
+        .insert(DTransformBundle::from_transform(sphere_transform))
+        .insert(SpaceCollider {
+            collider: ColliderBuilder::ball(0.5).build(),
+        })
+        .insert(SpaceRigidBody {
+            rigid_body: sphere_rigid_body,
+        });
+    }
 
     // Add a camera
     commands.spawn(Camera3dBundle {

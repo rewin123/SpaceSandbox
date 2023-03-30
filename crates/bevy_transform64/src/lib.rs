@@ -20,6 +20,11 @@ pub enum WorldOrigin {
     Position(DVec3)
 }
 
+#[derive(Resource, Clone, Debug)]
+pub struct SimpleWorldOrigin {
+    pub origin: DVec3
+}
+
 use prelude::{DTransform, DGlobalTransform};
 
 #[derive(Bundle, Clone, Copy, Debug, Default)]
@@ -84,6 +89,7 @@ impl Plugin for DTransformPlugin {
             .register_type::<DGlobalTransform>()
             .add_plugin(ValidParentCheckPlugin::<DGlobalTransform>::default())
             .insert_resource(WorldOrigin::Position(DVec3::ZERO))
+            .insert_resource(SimpleWorldOrigin {origin : DVec3::ZERO})
             // add transform systems to startup so the first update is "correct"
             .configure_set(DTransformSystem::TransformPropagate.in_base_set(CoreSet::PostUpdate))
             .configure_set(SyncTransforms.in_base_set(CoreSet::PostUpdate)
@@ -109,7 +115,8 @@ impl Plugin for DTransformPlugin {
                     .in_set(DTransformSystem::TransformPropagate)
                     .ambiguous_with(PropagateTransformsSet),
                 propagate_transforms.in_set(PropagateTransformsSet),
-                sync_f64_f32.in_set(SyncTransforms)
+                sync_f64_f32.in_set(SyncTransforms),
+                convert_world_origin.after(sync_simple_transforms).in_set(DTransformSystem::TransformPropagate),
             ));
     }
 }
