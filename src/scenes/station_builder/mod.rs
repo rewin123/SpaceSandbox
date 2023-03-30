@@ -441,6 +441,10 @@ fn go_to_fps(
         let cam_pawn = cmds.spawn(Camera3dBundle {
             transform: Transform::from_xyz(0.0, 1.0, 0.0).looking_at(Vec3::new(0.0, 1.0, -1.0), Vec3::Y),
             camera : cam,
+            camera_3d : Camera3d {
+                clear_color : bevy::core_pipeline::clear_color::ClearColorConfig::Custom(Color::Rgba { red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0 }),
+                ..default()
+            },
             tonemapping: Tonemapping::TonyMcMapface,
             ..default()
         })

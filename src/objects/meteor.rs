@@ -31,7 +31,9 @@ fn meteor_field_spawn(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut events : EventReader<MeteorFieldCommand>,
     query : Query<Entity, With<Meteor>>,
+    asset_server : Res<AssetServer>
 ) {
+    let asteroid_scene = asset_server.load("space_objects/asteroid_1.glb#Scene0");
     for event in events.iter() {
         match event {
             MeteorFieldCommand::Spawn => {
@@ -39,15 +41,6 @@ fn meteor_field_spawn(
                     commands.entity(entity).despawn_recursive();
                 }
 
-                let mesh = meshes.add(Mesh::try_from(shape::Icosphere {
-                    radius: 200.0,
-                    ..Default::default()
-                }).unwrap());
-                let material = materials.add(StandardMaterial {
-                    //brown color
-                    base_color: Color::rgb(0.5, 0.2, 0.1),
-                    ..Default::default()
-                });
                 //spawn new meteors in 1km radius
                 let mut rng = rand::thread_rng();
                 let count = 100;
@@ -62,18 +55,17 @@ fn meteor_field_spawn(
                     if spawn_pos.length() < min_dist {
                         continue;
                     }
-                    commands.spawn(PbrBundle {
-                        mesh: mesh.clone(),
-                        material: material.clone(),
+                    commands.spawn(SceneBundle {
+                        scene : asteroid_scene.clone(),
                         transform: Transform::from_xyz(
                             spawn_pos.x,
                             spawn_pos.y,
                             spawn_pos.z,
-                        ),
+                        ).with_scale(Vec3::new(200.0, 200.0,200.0)),
                         ..Default::default()
                     }).insert(Meteor{})
                     .insert(RadarDetected{ color : Color::YELLOW})
-                    .insert(Collider::ball(200.0));
+                    .insert(Collider::ball(1.0));
                 }
             }
             MeteorFieldCommand::Despawn => {
