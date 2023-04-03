@@ -22,7 +22,8 @@ pub struct SpacePhysicsPlugin;
 /// Set enum for the systems relating to transform propagation
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum SpacePhysicSystem {
-    CaptureChanges,
+    RigidBodyUpdate,
+    ColliderUpdate,
     ContextUpdate,
     WriteToWorld
 }
@@ -33,14 +34,14 @@ impl Plugin for SpacePhysicsPlugin {
         app.insert_resource(RapierContext::default());
         app.insert_resource(GlobalGravity::default());
 
-        app.configure_set(SpacePhysicSystem::CaptureChanges.before(SpacePhysicSystem::ContextUpdate).in_base_set(CoreSet::PostUpdate));
+        app.configure_set(SpacePhysicSystem::RigidBodyUpdate.before(SpacePhysicSystem::ColliderUpdate).in_base_set(CoreSet::PostUpdate));
+        app.configure_set(SpacePhysicSystem::ColliderUpdate.before(SpacePhysicSystem::ContextUpdate).in_base_set(CoreSet::PostUpdate));
         app.configure_set(SpacePhysicSystem::ContextUpdate.in_base_set(CoreSet::PostUpdate));
         app.configure_set(SpacePhysicSystem::WriteToWorld.after(SpacePhysicSystem::ContextUpdate).before(DTransformSystem::TransformPropagate).in_base_set(CoreSet::PostUpdate));
 
-        app.add_system(update_collider.in_set(SpacePhysicSystem::CaptureChanges));
-        app.add_system(update_collider_rigidbody.in_set(SpacePhysicSystem::CaptureChanges));
-        app.add_system(add_rigidbody.in_set(SpacePhysicSystem::CaptureChanges));
-        app.add_system(update_rigidbody.in_set(SpacePhysicSystem::CaptureChanges));
+
+        app.add_systems((add_rigidbody, apply_system_buffers).chain().in_set(SpacePhysicSystem::RigidBodyUpdate));
+        app.add_systems((add_collider, apply_system_buffers).chain().in_set(SpacePhysicSystem::ColliderUpdate));
         
         app.add_system(update_context.in_set(SpacePhysicSystem::ContextUpdate));
 
