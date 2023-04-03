@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use bevy::{prelude::*, math::{DVec3, DQuat}};
 use bevy_transform64::prelude::*;
-use rapier3d_f64::prelude::RigidBody;
+use rapier3d_f64::{prelude::RigidBody, na::Vector3};
 
 pub fn update_context(
     mut context : ResMut<RapierContext>,
@@ -16,11 +16,14 @@ pub fn update_context(
 pub fn add_rigidbody(
     mut commands : Commands,
     mut context : ResMut<RapierContext>,
-    mut added_rigidbodies : Query<(Entity, &SpaceRigidBody), (Added<SpaceRigidBody>, Without<RapierRigidBodyHandle>)>,
+    mut added_rigidbodies : Query<(Entity, &SpaceRigidBody, &DGlobalTransform), (Added<SpaceRigidBody>, Without<RapierRigidBodyHandle>)>,
 ) {
-    for (e, body) in added_rigidbodies.iter() {
+    for (e, body, transform) in added_rigidbodies.iter() {
+        let mut body = body.rigid_body.clone();
+        let translation = transform.translation();
+        body.set_translation(Vector3::new(translation.x, translation.y, translation.z), true);
         let handle = RapierRigidBodyHandle {
-            handle : context.rigid_body_set.insert(body.rigid_body.clone()),
+            handle : context.rigid_body_set.insert(body),
         };
         commands.entity(e).insert(handle);
     }
