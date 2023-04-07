@@ -12,7 +12,6 @@ bevy = {version = "0.10", features = ["serialize"]}
 rayon = "*"
 pollster = "*"
 winit = "*"
-bevy_rapier3d = "0.21"
 ron = "*"
 bevy_egui = "*"
 postcard = "*"

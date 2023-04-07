@@ -12,6 +12,7 @@ pub mod objects;
 use std::default::Default;
 
 use bevy::prelude::*;
+use bevy_transform64::prelude::*;
 // use winit::window::Window;
 
 pub mod prelude {
@@ -32,4 +33,28 @@ pub enum Gamemode {
     #[default]
     Godmode,
     FPS
+}
+
+#[derive(Bundle, Debug, Default)]
+pub struct DSpatialBundle {
+    /// The visibility of the entity.
+    pub visibility: Visibility,
+    /// The computed visibility of the entity.
+    pub computed: ComputedVisibility,
+    /// The transform of the entity.
+    pub transform: DTransform,
+    /// The global transform of the entity.
+    pub global_transform: DGlobalTransform,
+}
+
+impl DSpatialBundle {
+    pub fn from_transform(transform: DTransform) -> Self {
+        let global_transform = DGlobalTransform::from(transform);
+        Self {
+            visibility: Visibility::default(),
+            computed: ComputedVisibility::default(),
+            transform,
+            global_transform
+        }
+    }
 }

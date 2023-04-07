@@ -19,12 +19,12 @@ pub fn add_rigidbody(
     mut added_rigidbodies : Query<(Entity, &SpaceRigidBody, &DGlobalTransform), (Added<SpaceRigidBody>, Without<RapierRigidBodyHandle>)>,
 ) {
     for (e, body, transform) in added_rigidbodies.iter() {
-        let mut body = body.rigid_body.clone();
+        let mut body = body.0.clone();
         let translation = transform.translation();
         body.set_translation(Vector3::new(translation.x, translation.y, translation.z), true);
-        let handle = RapierRigidBodyHandle {
-            handle : context.rigid_body_set.insert(body),
-        };
+        let handle = RapierRigidBodyHandle(
+            context.rigid_body_set.insert(body));
+
         commands.entity(e).insert(handle);
     }
 }
@@ -49,9 +49,9 @@ pub fn add_collider(
         // If the collider is associated with a rigid body
         if let Some(rigidbody) = rigidbody {
             // Create a RapierColliderHandle that is associated with the collider and rigid body
-            let handle = RapierColliderHandle {
-                handle : collider_set.insert_with_parent(collider.collider.clone(), rigidbody.handle.clone(), rigid_body_set),
-            };
+            let handle = RapierColliderHandle(
+                collider_set.insert_with_parent(collider.0.clone(), rigidbody.0.clone(), rigid_body_set),
+            );
             // Add the RapierColliderHandle component to the entity
             commands.entity(e).insert(handle);
             println!("Create collider with rigidbody");
@@ -59,18 +59,18 @@ pub fn add_collider(
             if let Some(parent) = parent {
                 if let Ok(parent_handle) = rigidbodies.get(parent.get()) {
                     if let Some(transform) = transform {
-                        let mut col = collider.collider.clone();
-                        col.set_translation(transform.translation.into());
-                        let handle = RapierColliderHandle {
-                            handle : collider_set.insert_with_parent(col, parent_handle.handle.clone(), rigid_body_set),
-                        };
+                        let mut col = collider.0.clone();
+                        col.set_translation(Vector3::new(transform.translation.x, transform.translation.y, transform.translation.z));
+                        let handle = RapierColliderHandle(
+                            collider_set.insert_with_parent(col, parent_handle.0.clone(), rigid_body_set),
+                        );
                         commands.entity(e).insert(handle);
                         println!("Create collider with rigidbody parent and transform");
                         continue;
                     } else {
-                        let handle = RapierColliderHandle {
-                            handle : collider_set.insert_with_parent(collider.collider.clone(), parent_handle.handle.clone(), rigid_body_set),
-                        };
+                        let handle = RapierColliderHandle(
+                            collider_set.insert_with_parent(collider.0.clone(), parent_handle.0.clone(), rigid_body_set),
+                        );
                         commands.entity(e).insert(handle);
                         println!("Create collider with rigidbody parent and without transform");
                         continue;
@@ -80,9 +80,9 @@ pub fn add_collider(
 
             {
                 // Create a RapierColliderHandle that is associated with the collider only
-                let handle = RapierColliderHandle {
-                    handle : context.collider_set.insert(collider.collider.clone()),
-                };
+                let handle = RapierColliderHandle(
+                    context.collider_set.insert(collider.0.clone()),
+                );
                 // Add the RapierColliderHandle component to the entity
                 commands.entity(e).insert(handle);
                 println!("Create collider");
@@ -189,7 +189,7 @@ pub fn from_physics_engine(
 ) {
     let context = &mut *context;
     for (mut transform, rigidbody_handle) in rigidbodies.iter_mut() {
-        let rigid_body = context.rigid_body_set.get(rigidbody_handle.handle).unwrap();
+        let rigid_body = context.rigid_body_set.get(rigidbody_handle.0).unwrap();
         let pos = rigid_body.position().translation.vector;
         transform.translation = DVec3::new(pos.x, pos.y, pos.z);
         // println!("Pos: {:?}", pos);

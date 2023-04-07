@@ -1,23 +1,23 @@
 
 use super::*;
-use bevy::reflect::Typed;
+use bevy::{reflect::Typed, math::DVec3};
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Component, Clone)]
 pub struct SolidVoxelMap<T> where T : Default + Clone {
     pub data : Vec<T>,
     pub size : IVec3,
-    pub first_voxel_pos : Vec3,
-    pub voxel_size : f32,
+    pub first_voxel_pos : Real,
+    pub voxel_size : f64,
     pub dummpy : T
 }
 
 impl<T> SolidVoxelMap<T>
     where T : Default + Clone
 {
-    pub fn new(origin : Vec3, size : IVec3, voxel_size : f32) -> SolidVoxelMap<T> {
+    pub fn new(origin : Real, size : IVec3, voxel_size : f64) -> SolidVoxelMap<T> {
         let data = vec![T::default(); (size.x * size.y * size.z) as usize];
-        let first_voxel_pos = origin - size.as_vec3() / 2.0 * voxel_size;
+        let first_voxel_pos = origin - size.as_dvec3() / 2.0 * voxel_size;
 
         SolidVoxelMap {
             data,
@@ -60,23 +60,23 @@ impl<T> SolidVoxelMap<T>
 impl<T> VoxelMap<T> for SolidVoxelMap<T>
     where T : Default + Clone
 {
-    fn get_grid_pos(&self, pos: &Vec3) -> Vec3 {
+    fn get_grid_pos(&self, pos: &Real) -> Real {
         let dp = *pos - self.first_voxel_pos;
         let dp_round = (dp / self.voxel_size).floor();
         dp_round * self.voxel_size + self.first_voxel_pos
     }
 
-    fn get_grid_idx(&self, pos: &Vec3) -> IVec3 {
+    fn get_grid_idx(&self, pos: &Real) -> IVec3 {
         let dp = *pos - self.first_voxel_pos;
         let dp_round = (dp / self.voxel_size).floor();
         dp_round.as_ivec3()
     }
 
-    fn get_idx_pos(&self, pos : &IVec3) -> Vec3 {
-        pos.as_vec3() * self.voxel_size + self.first_voxel_pos
+    fn get_idx_pos(&self, pos : &IVec3) -> Real {
+        pos.as_dvec3() * self.voxel_size + self.first_voxel_pos
     }
 
-    fn get_cloned(&self, pos: &Vec3) -> T {
+    fn get_cloned(&self, pos: &Real) -> T {
         let vec_idx = self.get_grid_idx(pos);
         let idx = self.get_idx(&vec_idx);
         if idx < self.data.len() {
@@ -86,19 +86,19 @@ impl<T> VoxelMap<T> for SolidVoxelMap<T>
         }
     }
 
-    fn get(&self, pos: &Vec3) -> &T {
+    fn get(&self, pos: &Real) -> &T {
         let vec_idx = self.get_grid_idx(pos);
         let idx = self.get_idx(&vec_idx);
         self.data.get(idx).unwrap_or(&self.dummpy)
     }
 
-    fn get_mut(&mut self, pos: &Vec3) -> Option<&mut T> {
+    fn get_mut(&mut self, pos: &Real) -> Option<&mut T> {
         let vec_idx = self.get_grid_idx(pos);
         let idx = self.get_idx(&vec_idx);
         self.data.get_mut(idx)
     }
 
-    fn set_voxel(&mut self, pos : &Vec3, val : T) {
+    fn set_voxel(&mut self, pos : &Real, val : T) {
         let vec_idx = self.get_grid_idx(pos);
         let idx = self.get_idx(&vec_idx);
         if idx < self.data.len() {
@@ -135,15 +135,15 @@ impl<T> VoxelMap<T> for SolidVoxelMap<T>
     fn get_bounds(&self) -> MapBounds {
         MapBounds::Limited { 
             from: self.first_voxel_pos.clone(), 
-            to: self.first_voxel_pos + self.get_voxel_size() * self.size.as_vec3() 
+            to: self.first_voxel_pos + self.get_voxel_size() * self.size.as_dvec3() 
         }
     }
 
-    fn get_voxel_size(&self) -> f32 {
+    fn get_voxel_size(&self) -> f64 {
         self.voxel_size
     }
 
     fn test_default() -> Self {
-        SolidVoxelMap::new(Vec3::new(0.0,0.0,0.0), IVec3::new(100,100,100), 0.5)
+        SolidVoxelMap::new(Real::new(0.0,0.0,0.0), IVec3::new(100,100,100), 0.5)
     }
 }

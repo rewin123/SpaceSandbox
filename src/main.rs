@@ -10,6 +10,8 @@ use SpaceSandbox::scenes::station_builder::StationBuilderPlugin;
 use SpaceSandbox::ship::save_load::DiskShipBase64;
 use bevy::prelude::*;
 use bevy_rapier3d::prelude::*;
+use bevy_transform64::DTransformPlugin;
+use space_physics::SpacePhysicsPlugin;
 
 fn main() {
     App::default()
@@ -30,6 +32,8 @@ fn main() {
         .add_plugin(SpaceControlPlugin)
         .add_plugin(SpaceObjectsPlugin)
         .add_plugin(SettingsPlugin)
+        .add_plugin(DTransformPlugin)
+        .add_plugin(SpacePhysicsPlugin)
 
         .run();
 }

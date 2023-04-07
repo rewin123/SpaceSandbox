@@ -1,5 +1,6 @@
-use bevy::{prelude::*, utils::HashMap};
-use bevy_rapier3d::prelude::*;
+use bevy::{prelude::*, utils::HashMap, math::DVec3};
+use bevy_transform64::{DTransformBundle, prelude::DTransform};
+use space_physics::prelude::*;
 use crate::space_voxel::objected_voxel_map::*;
 use crate::space_voxel::solid_voxel_map::SolidVoxelMap;
 use crate::space_voxel::*;
@@ -23,7 +24,7 @@ pub enum ShipBlock {
     None
 }
 
-pub const VOXEL_SIZE : f32 = 0.25;
+pub const VOXEL_SIZE : f64 = 0.25;
 
 #[derive(Component, Clone)]
 pub struct Ship {
@@ -39,33 +40,32 @@ impl Default for Ship {
 
 
 pub fn new_default_ship(cmds : &mut Commands) -> Entity {
+
+    let body = RigidBodyBuilder::new(RigidBodyType::Dynamic)
+        .locked_axes(LockedAxes::all())
+        .gravity_scale(0.0)
+        .angular_damping(0.01)
+        .build();
+
     cmds.spawn(Ship::new_sized(IVec3::new(100, 100, 100)))
         .insert(SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)))
-        .insert(RigidBody::Dynamic)
-        .insert(LockedAxes::all())
-        .insert(GravityScale(0.0))
-        .insert(Velocity::zero())
-        .insert(Damping {
-            linear_damping: 0.01,
-            angular_damping: 0.01,
-        })
-        .insert(ExternalImpulse::default())
+        .insert(DTransformBundle::from_transform(DTransform::from_xyz(0.0, 0.0, 0.0)))
+        .insert(SpaceRigidBody(body))
         .id()
 }
 
 impl Ship {
     pub fn new_sized(size : IVec3) -> Self {
-        let map = SolidVoxelMap::new(Vec3::ZERO, size, VOXEL_SIZE);
+        let map = SolidVoxelMap::new(DVec3::ZERO, size, VOXEL_SIZE);
         Self {
             map
         }
     }
 
-    pub fn get_grid_idx_by_center(&self, pos : &Vec3, bbox : &IVec3) -> IVec3 {
-        let dp = bbox.as_vec3() / 2.0 * self.map.voxel_size;
+    pub fn get_grid_idx_by_center(&self, pos : &DVec3, bbox : &IVec3) -> IVec3 {
+        let dp = bbox.as_dvec3() / 2.0 * self.map.voxel_size;
         self.map.get_grid_idx(&(*pos - dp))
     }
-
 }
 
 #[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Reflect, FromReflect)]

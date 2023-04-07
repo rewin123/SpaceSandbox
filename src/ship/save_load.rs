@@ -3,6 +3,7 @@ use std::io::{Read, Write};
 
 use bevy::ecs::system::EntityCommands;
 use bevy::ecs::world::{EntityRef, EntityMut};
+use bevy::math::DVec3;
 use bevy::scene::serde::SceneDeserializer;
 use bevy::{prelude::*, utils::HashMap};
 use egui_notify::Toast;
@@ -52,7 +53,7 @@ impl DiskShip {
 
         let ship : &Ship = world.entity(ship_id).get().unwrap();
 
-        let mut map = SolidVoxelMap::<DiskShipVoxel>::new(Vec3::ZERO, ship.map.size, ship.map.voxel_size);
+        let mut map = SolidVoxelMap::<DiskShipVoxel>::new(DVec3::ZERO, ship.map.size, ship.map.voxel_size);
         
         let mut entity_id : HashMap<Entity, u32> = HashMap::new();
         let mut id_indexer = 0;

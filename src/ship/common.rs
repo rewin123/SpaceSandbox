@@ -1,5 +1,5 @@
-use bevy::{prelude::*, ecs::system::EntityCommands};
-use bevy_rapier3d::{prelude::{Collider, RigidBody}, rapier::prelude::ColliderBuilder};
+use bevy::{prelude::*, ecs::system::EntityCommands, math::DVec3};
+use space_physics::prelude::*;
 
 use crate::objects::{prelude::PilotSeat, radar::Radar, ship_camera::ShipCamera};
 
@@ -38,7 +38,7 @@ impl<F> BuildInstance for ClosureInstance<F>
 pub struct VoxelInstance {
     pub bbox : IVec3,
     pub common_id : u32,
-    pub origin : Vec3,
+    pub origin : DVec3,
 }
 
 
@@ -59,7 +59,7 @@ pub struct AllVoxelInstances {
 fn spawn_static_instance<F>(
         indexer : &mut u32,
         bbox : IVec3,
-        origin : Vec3,
+        origin : DVec3,
         name : &str,
         path : &str,
         after_build : F) -> VoxelInstanceConfig
@@ -84,16 +84,16 @@ fn spawn_static_instance<F>(
             .insert(instance.clone())
             .insert(InstanceRotate::default()).id();
 
-            let collider_pos = -instance.origin.clone() * bbox.as_vec3() / 2.0 * VOXEL_SIZE;
+            let collider_pos = -instance.origin.clone() * bbox.as_dvec3() / 2.0 * VOXEL_SIZE;
 
             let collider = ColliderBuilder::cuboid(
-                bbox.x as f32 * VOXEL_SIZE / 2.0, 
-                bbox.y as f32 * VOXEL_SIZE / 2.0, 
-                bbox.z as f32 * VOXEL_SIZE / 2.0
-            ).translation(collider_pos.into()).build();
+                bbox.x as f64 * VOXEL_SIZE / 2.0, 
+                bbox.y as f64 * VOXEL_SIZE / 2.0, 
+                bbox.z as f64 * VOXEL_SIZE / 2.0
+            ).translation(nalgebra::Vector3::new(collider_pos.x, collider_pos.y, collider_pos.y)).build();
 
             cmds.entity(id)
-                .insert(Collider::from(collider.shared_shape().clone()));
+                .insert(SpaceCollider(collider));
                 // .insert(RigidBody::Fixed);
 
             after_build(cmds, id);

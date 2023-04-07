@@ -1,48 +1,48 @@
 use bevy::utils::{HashMap, HashSet};
 use bevy::prelude::*;
 
-use super::VoxelMap;
+use super::{VoxelMap, Real};
 
 
 pub struct ChunkedVoxelMap<T> {
     pub map: HashMap<IVec3, VoxelChunk<T>>,
-    pub voxel_size: f32,
+    pub voxel_size: f64,
     pub chunk_size: IVec3,
     pub dirty_set: HashSet<IVec3>,
 }
 
 impl<T> VoxelMap<T> for ChunkedVoxelMap<T> 
     where T : Default + Clone {
-    fn get_grid_pos(&self, pos: &Vec3) -> Vec3 {
+    fn get_grid_pos(&self, pos: &Real) -> Real {
         let vp = self.get_voxel_pos(pos);
-        Vec3::new(
-            vp.x as f32 * self.voxel_size,
-            vp.y as f32 * self.voxel_size,
-            vp.z as f32 * self.voxel_size,
+        Real::new(
+            vp.x as f64 * self.voxel_size,
+            vp.y as f64 * self.voxel_size,
+            vp.z as f64 * self.voxel_size,
         )
     }
 
-    fn get_grid_idx(&self, pos: &Vec3) -> IVec3 {
+    fn get_grid_idx(&self, pos: &Real) -> IVec3 {
         todo!()
     }
 
-    fn get_idx_pos(&self, pos : &IVec3) -> Vec3 {
+    fn get_idx_pos(&self, pos : &IVec3) -> Real {
         todo!()
     }
 
-    fn get_cloned(&self, pos: &Vec3) -> T {
+    fn get_cloned(&self, pos: &Real) -> T {
         todo!()
     }
 
-    fn get(&self, pos: &Vec3) -> &T {
+    fn get(&self, pos: &Real) -> &T {
         todo!()
     }
 
-    fn get_mut(&mut self, pos: &Vec3) -> Option<&mut T> {
+    fn get_mut(&mut self, pos: &Real) -> Option<&mut T> {
         todo!()
     }
 
-    fn set_voxel(&mut self, pos : &Vec3, val : T) {
+    fn set_voxel(&mut self, pos : &Real, val : T) {
         todo!()
     }
 
@@ -66,7 +66,7 @@ impl<T> VoxelMap<T> for ChunkedVoxelMap<T>
         todo!()
     }
 
-    fn get_voxel_size(&self) -> f32 {
+    fn get_voxel_size(&self) -> f64 {
         todo!()
     }
 
@@ -79,7 +79,7 @@ impl<T> ChunkedVoxelMap<T>
 where
     T: Default + Clone,
 {
-    pub fn new(voxel_size: f32, chunk_size: IVec3) -> ChunkedVoxelMap<T> {
+    pub fn new(voxel_size: f64, chunk_size: IVec3) -> ChunkedVoxelMap<T> {
         ChunkedVoxelMap {
             map: HashMap::new(),
             voxel_size,
@@ -88,7 +88,7 @@ where
         }
     }
 
-    pub fn get_voxel_pos(&self, pos: &Vec3) -> IVec3 {
+    pub fn get_voxel_pos(&self, pos: &Real) -> IVec3 {
         IVec3::new(
             (pos.x / self.voxel_size).round() as i32,
             (pos.y / self.voxel_size).round() as i32,
@@ -116,7 +116,7 @@ where
         }
     }
 
-    pub fn get_chunk(&self, pos: &Vec3) -> Option<&VoxelChunk<T>> {
+    pub fn get_chunk(&self, pos: &Real) -> Option<&VoxelChunk<T>> {
         let vp = self.get_voxel_pos(pos);
         let origin = self.get_origin(&vp);
 
@@ -127,7 +127,7 @@ where
         }
     }
 
-    pub fn get_chunk_mut(&mut self, pos: &Vec3) -> Option<&mut VoxelChunk<T>> {
+    pub fn get_chunk_mut(&mut self, pos: &Real) -> Option<&mut VoxelChunk<T>> {
         let vp = self.get_voxel_pos(pos);
         let origin = self.get_origin(&vp);
 
@@ -138,7 +138,7 @@ where
         }
     }
 
-    pub fn get_mut(&mut self, pos: &Vec3) -> &mut T {
+    pub fn get_mut(&mut self, pos: &Real) -> &mut T {
         let vp = self.get_voxel_pos(pos);
         let origin = self.get_origin(&vp);
         let chunk_size = self.chunk_size.clone();
@@ -156,7 +156,7 @@ where
         chunk.get_mut(lp.x, lp.y, lp.z)
     }
 
-    pub fn get_cloned(&self, pos: &Vec3) -> T {
+    pub fn get_cloned(&self, pos: &Real) -> T {
         if let Some(chunk) = self.get_chunk(pos) {
             let vp = self.get_voxel_pos(pos) - chunk.origin;
             chunk.get(vp.x, vp.y, vp.z).clone()
@@ -165,7 +165,7 @@ where
         }
     }
 
-    pub fn set(&mut self, pos: &Vec3, val: T) {
+    pub fn set(&mut self, pos: &Real, val: T) {
         let vp = self.get_voxel_pos(pos);
         let origin = self.get_origin(&vp);
         if let Some(chunk) = self.get_chunk_mut(pos) {

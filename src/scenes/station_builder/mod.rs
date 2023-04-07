@@ -5,10 +5,12 @@ use std::f32::consts::PI;
 use bevy::core_pipeline::bloom::BloomSettings;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::ecs::schedule::FreeSystemSet;
+use bevy::math::DVec3;
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContext;
-use bevy_rapier3d::prelude::*;
+use bevy_transform64::prelude::DTransform;
 use instance_rotate::InstanceRotate;
+use space_physics::prelude::*;
 use ui::*;
 
 use bevy::prelude::*;
@@ -224,7 +226,7 @@ fn spawn_block(
     mut cmds : Commands,
     asset_server : Res<AssetServer>,
     buttons : Res<Input<MouseButton>>,
-    active_blocks : Query<(&mut Transform, &InstanceRotate), With<ActiveBlock>>,
+    active_blocks : Query<(&mut DTransform, &InstanceRotate), With<ActiveBlock>>,
     block : ResMut<StationBuildBlock>,
     mut ships : Query<&mut Ship>,
     all_instances : Res<AllVoxelInstances>,
@@ -263,7 +265,7 @@ fn spawn_block(
     if rot.rot_steps.x % 2 == 1 {
         std::mem::swap(&mut bbox.x, &mut bbox.z);
     }
-    let hs = bbox.as_vec3() / 2.0 * VOXEL_SIZE;
+    let hs = bbox.as_dvec3() / 2.0 * VOXEL_SIZE;
     let grid_idx = ship.get_grid_idx_by_center(&(tr.translation - hs * inst.origin), &bbox);
     let id = ship.map.get_by_idx(&grid_idx).clone();
 
@@ -297,7 +299,7 @@ fn spawn_block(
 
 fn pos_block(
     cameras : Query<(&Camera, &GlobalTransform)>,
-    mut active_blocks : Query<&mut Transform, With<ActiveBlock>>,
+    mut active_blocks : Query<&mut DTransform, With<ActiveBlock>>,
     block : ResMut<StationBuildBlock>,
     windows : Query<&Window, With<PrimaryWindow>>,
     mut ships : Query<&mut Ship>,
@@ -331,9 +333,9 @@ fn pos_block(
             let ship = ships.get_mut(block.ship).unwrap();
 
             let t = (lvl - mouse_ray.origin.y) / mouse_ray.direction.y;
-            let pos = mouse_ray.origin + t * mouse_ray.direction;
+            let pos = (mouse_ray.origin + t * mouse_ray.direction).as_dvec3();
             let bbox = block.instance.as_ref().unwrap().bbox.clone();
-            let hs = bbox.as_vec3() / 2.0 * ship.map.voxel_size;
+            let hs = bbox.as_dvec3() / 2.0 * ship.map.voxel_size;
             let corner_pos = pos - hs - hs * block.instance.as_ref().unwrap().origin;
             let grid_pos = ship.map.get_grid_pos(&corner_pos);
             active_tr.translation = grid_pos + hs + hs * block.instance.as_ref().unwrap().origin;
@@ -403,7 +405,7 @@ fn go_to_fps(
     mut cmds : Commands,
     mut pawn_event : EventWriter<ChangePawn>,
     mut block : ResMut<StationBuildBlock>,
-    mut query : Query<(Entity, &GlobalTransform, &VoxelInstance)>,
+    mut query : Query<(Entity, &DGlobalTransform, &VoxelInstance)>,
     mut ships : Query<Entity, With<Ship>>,
     mut all_instances : Res<AllVoxelInstances>) {
 
@@ -411,7 +413,7 @@ fn go_to_fps(
         block.cmd = StationBuildCmds::None;
         
         //find teleport spot
-        let mut pos = Vec3::ZERO; 
+        let mut pos = DVec3::ZERO; 
         for idx in &all_instances.configs {
             if idx.name == TELEPORN_NAME {
                 let teleport_idx = idx.instance.common_id;
@@ -431,12 +433,17 @@ fn go_to_fps(
         cam.is_active = false;
 
 
-        let pos = Vec3::new(pos.x, pos.y + 1.0, pos.z);
-        let pawn = cmds.spawn(Collider::capsule(Vec3::new(0.0, -0.75, 0.0), Vec3::new(0.0, 0.75, 0.0), 0.25))
-        .insert(SpatialBundle::from_transform(Transform::from_xyz(pos.x, pos.y, pos.z)))
-        .insert(RigidBody::Dynamic)
-        .insert(LockedAxes::ROTATION_LOCKED)
-        .insert(GravityScale(1.0)).id();
+        let pos = DVec3::new(pos.x, pos.y + 1.0, pos.z);
+        let pawn = cmds.spawn(
+            SpaceCollider(
+            ColliderBuilder::capsule_y(0.75, 0.25).build()))
+        .insert(DSpatialBundle::from_transform(DTransform::from_xyz(pos.x, pos.y, pos.z)))
+        .insert(SpaceRigidBody(
+            RigidBodyBuilder::new(space_physics::prelude::RigidBodyType::Dynamic)
+            .locked_axes(LockedAxes::all())
+            .gravity_scale(1.0)
+            .build()
+        )).id();
 
         let cam_pawn = cmds.spawn(Camera3dBundle {
             transform: Transform::from_xyz(0.0, 1.0, 0.0).looking_at(Vec3::new(0.0, 1.0, -1.0), Vec3::Y),
