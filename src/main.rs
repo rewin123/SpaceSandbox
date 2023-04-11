@@ -9,7 +9,6 @@ use SpaceSandbox::scenes::settings::SettingsPlugin;
 use SpaceSandbox::scenes::station_builder::StationBuilderPlugin;
 use SpaceSandbox::ship::save_load::DiskShipBase64;
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::*;
 use bevy_transform64::DTransformPlugin;
 use space_physics::SpacePhysicsPlugin;
 
@@ -19,8 +18,6 @@ fn main() {
         .register_type::<DiskShipBase64>()
         .add_plugins(bevy::DefaultPlugins)
         .add_plugin(bevy_egui::EguiPlugin)
-        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-        .add_plugin(RapierDebugRenderPlugin::default())
         .add_plugin(SpaceSandbox::ship::common::VoxelInstancePlugin)
         .add_plugin(SpaceSandbox::ship::save_load::ShipPlugin)
         .add_plugin(MainMenuPlugin {})

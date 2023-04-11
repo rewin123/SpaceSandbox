@@ -241,7 +241,7 @@ fn network_setup(
 fn setup_base_save_load_cfg(
     mut cfg : ResMut<SaveLoadCfg>
 ) {
-    cfg.add_simple_clone::<Transform>();
+    cfg.add_simple_clone::<DTransform>();
     cfg.add_simple_clone::<InstanceRotate>();
 }
 

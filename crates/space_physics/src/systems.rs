@@ -2,6 +2,7 @@ use crate::prelude::*;
 use bevy::{prelude::*, math::{DVec3, DQuat}};
 use bevy_transform64::prelude::*;
 use rapier3d_f64::{prelude::RigidBody, na::Vector3};
+use rapier3d_f64::na as na;
 
 pub fn update_context(
     mut context : ResMut<RapierContext>,
@@ -13,15 +14,31 @@ pub fn update_context(
     
 }
 
+
+pub type AddRigidBody<'a> = (
+    Entity,
+    &'a DTransform,
+    &'a SpaceRigidBodyType,
+    Option<&'a mut Velocity>
+);
+
 pub fn add_rigidbody(
     mut commands : Commands,
     mut context : ResMut<RapierContext>,
-    mut added_rigidbodies : Query<(Entity, &SpaceRigidBody, &DGlobalTransform), (Added<SpaceRigidBody>, Without<RapierRigidBodyHandle>)>,
+    mut added_rigidbodies : Query<AddRigidBody, (Added<SpaceRigidBodyType>, Without<RapierRigidBodyHandle>)>,
 ) {
-    for (e, body, transform) in added_rigidbodies.iter() {
-        let mut body = body.0.clone();
-        let translation = transform.translation();
-        body.set_translation(Vector3::new(translation.x, translation.y, translation.z), true);
+    for (e, transform, body_type, vel) in added_rigidbodies.iter() {
+        let mut body = RigidBody::default();
+        let mut body_pos = body.position().clone();
+        body_pos.translation = na::Vector3::new(transform.translation.x, transform.translation.y, transform.translation.z).into();
+        body_pos.rotation = na::Unit::new_normalize(na::Quaternion::new(transform.rotation.w, transform.rotation.x, transform.rotation.y, transform.rotation.z));
+        body.set_position(body_pos, true);
+
+        if let Some(vel) = vel {
+            body.set_linvel(na::Vector3::new(vel.linvel.x, vel.linvel.y, vel.linvel.z).into(), true);
+            body.set_angvel(na::Vector3::new(vel.angvel.x, vel.angvel.y, vel.angvel.z).into(), true);
+        }
+
         let handle = RapierRigidBodyHandle(
             context.rigid_body_set.insert(body));
 
@@ -183,9 +200,38 @@ pub fn add_collider(
 //     }
 // }
 
+pub fn detect_position_change(
+    mut context : ResMut<RapierContext>,
+    mut rigidbodies : Query<(&DTransform, &RapierRigidBodyHandle), Changed<DTransform>>,
+) {
+    let context = &mut *context;
+    for (transform, rigidbody_handle) in rigidbodies.iter_mut() {
+        let mut rigid_body = context.rigid_body_set.get_mut(rigidbody_handle.0).unwrap();
+        rigid_body.set_translation(
+            na::Vector3::new(
+                transform.translation.x, 
+                transform.translation.y, 
+                transform.translation.z), 
+                true);
+        
+        rigid_body.set_rotation(
+             na::Unit::new_normalize(na::Quaternion::new(
+                transform.rotation.w, 
+                transform.rotation.x, 
+                transform.rotation.y, 
+                transform.rotation.z)), 
+                true);
+
+        
+        // println!("Pos: {:?}", pos);
+    }
+
+}
+
 pub fn from_physics_engine(
     mut context : ResMut<RapierContext>,
-    mut rigidbodies : Query<(&mut DTransform, &RapierRigidBodyHandle)>
+    mut rigidbodies : Query<(&mut DTransform, &RapierRigidBodyHandle)>,
+    mut vels : Query<(&mut Velocity, &RapierRigidBodyHandle)>,
 ) {
     let context = &mut *context;
     for (mut transform, rigidbody_handle) in rigidbodies.iter_mut() {
@@ -201,5 +247,13 @@ pub fn from_physics_engine(
             z : rot.k,
             w : rot.w,
         };
+    }
+    
+    for (mut velocity, rigidbody_handle) in vels.iter_mut() {
+        let rigid_body = context.rigid_body_set.get(rigidbody_handle.0).unwrap();
+        let linvel = rigid_body.linvel();
+        let angvel = rigid_body.angvel();
+        velocity.linvel = DVec3::new(linvel.x, linvel.y, linvel.z);
+        velocity.angvel = DVec3::new(angvel.x, angvel.y, angvel.z);
     }
 }

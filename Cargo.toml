@@ -25,6 +25,7 @@ laminar = "*"
 bevy_prototype_debug_lines = "*"
 bevy_transform64 = {path = "crates/bevy_transform64"}
 space_physics = {path = "crates/space_physics"}
+crossbeam = "*"
 
 [workspace]
 members = [

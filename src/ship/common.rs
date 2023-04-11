@@ -1,7 +1,7 @@
 use bevy::{prelude::*, ecs::system::EntityCommands, math::DVec3};
 use space_physics::prelude::*;
 
-use crate::objects::{prelude::PilotSeat, radar::Radar, ship_camera::ShipCamera};
+use crate::{objects::{prelude::PilotSeat, radar::Radar, ship_camera::ShipCamera}, *};
 
 use super::{VOXEL_SIZE, instance_rotate::InstanceRotate};
 
@@ -219,7 +219,7 @@ pub fn init_all_voxel_instances(
                 cmds.entity(id).insert(PilotSeat::default());
 
                 let radar = 
-                    cmds.spawn(SpatialBundle::from_transform(Transform::from_xyz(0.0, 1.0, -0.75)))
+                    cmds.spawn(DSpatialBundle::from_transform(DTransform::from_xyz(0.0, 1.0, -0.75)))
                     .insert(Radar::default()).id();
 
                 cmds.entity(id).add_child(radar);

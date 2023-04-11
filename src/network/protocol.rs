@@ -1,7 +1,7 @@
 use std::{net::SocketAddr, time::Duration};
 
 use bevy::utils::{HashMap, Instant};
-use bevy_rapier3d::rapier::crossbeam::channel::{Sender, Receiver};
+use crossbeam::channel::{Sender, Receiver};
 use laminar::{Socket, Packet, SocketEvent, OrderingGuarantee, DeliveryGuarantee};
 use serde::{Serialize, Deserialize};
 

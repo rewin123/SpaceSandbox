@@ -1,8 +1,8 @@
 use std::{net::SocketAddr, str::FromStr};
 
 use bevy::{prelude::*, utils::{Instant, HashMap}, reflect::erased_serde::Serialize};
-use bevy_rapier3d::rapier::crossbeam::channel::{Receiver, Sender};
 
+use crossbeam::channel::{Sender, Receiver};
 use laminar::*;
 use serde::de::DeserializeOwned;
 
@@ -98,8 +98,8 @@ impl NetworkSplitter {
         let id = self.indexer;
         self.indexer += 1;
 
-        let (to_net_send, to_net_recv) = bevy_rapier3d::rapier::crossbeam::channel::unbounded();
-        let (from_net_send, from_net_recv) = bevy_rapier3d::rapier::crossbeam::channel::unbounded();
+        let (to_net_send, to_net_recv) = crossbeam::channel::unbounded();
+        let (from_net_send, from_net_recv) = crossbeam::channel::unbounded();
 
         let msg = MessageChannel::<T> {
             sender : to_net_send,

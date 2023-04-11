@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_transform64::prelude::*;
 
 
 #[derive(Component, Clone, Reflect, FromReflect, Default)]
@@ -8,7 +9,7 @@ pub struct InstanceRotate {
 }
 
 pub fn prepare_instance_rotate(
-    mut query : Query<(&mut Transform, &InstanceRotate), Added<InstanceRotate>>
+    mut query : Query<(&mut DTransform, &InstanceRotate), Added<InstanceRotate>>
 ) {
     // for (mut transform, rot) in query.iter_mut() {
     //     let xyz_euler = rot.rot_steps.as_vec3() * 90.0;

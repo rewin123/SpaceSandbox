@@ -1,5 +1,8 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, math::DVec3};
 use bevy_prototype_debug_lines::*;
+use bevy_transform64::prelude::{DTransform, DGlobalTransform};
+
+use crate::DSpatialBundle;
 
 #[derive(Component)]
 pub struct RadarDetected {
@@ -9,8 +12,8 @@ pub struct RadarDetected {
 #[derive(Component)]
 pub struct Radar {
     pub points : Vec<Entity>,
-    pub radius : f32,
-    pub scale : f32,
+    pub radius : f64,
+    pub scale : f64,
     pub central_object : Option<Entity>,
 }
 
@@ -67,9 +70,9 @@ fn radar(
     mut commands : Commands,
     mut meshes : ResMut<Assets<Mesh>>,
     mut materials : ResMut<Assets<StandardMaterial>>,
-    mut radars : Query<(Entity, &GlobalTransform, &mut Radar)>,
-    mut objects : Query<(&GlobalTransform, &RadarDetected), Without<Radar>>,
-    mut radar_points : Query<&mut Transform, With<RadarPoint>>,
+    mut radars : Query<(Entity, &DGlobalTransform, &mut Radar)>,
+    mut objects : Query<(&DGlobalTransform, &RadarDetected), Without<Radar>>,
+    mut radar_points : Query<&mut DTransform, With<RadarPoint>>,
     radar_res : Res<RadarResource>
 ) {
     for (radar_e, radar_transform, mut radar) in radars.iter_mut() {
@@ -109,11 +112,11 @@ fn radar(
 
             let ticks = 10;
             for dx in -ticks..=ticks {
-                let dx_pos = Vec3::new(dx as f32, 0.0, 0.0) / ticks as f32 * radar.scale;
+                let dx_pos = Vec3::new(dx as f32, 0.0, 0.0) / ticks as f32 * radar.scale as f32;
                 let x_axis = commands.spawn(PbrBundle {
                     mesh : cube.clone(),
                     material : x_axis_material.clone(),
-                    transform : Transform::from_xyz(0.0, -radar.scale, dx_pos.x).with_scale(Vec3::new(50.0, 0.1, 0.1)),
+                    transform : Transform::from_xyz(0.0, -radar.scale as f32, dx_pos.x).with_scale(Vec3::new(50.0, 0.1, 0.1)),
                     ..Default::default()
                 }).id();
                 commands.entity(radar_e).add_child(x_axis);
@@ -121,7 +124,7 @@ fn radar(
                 let z_axis = commands.spawn(PbrBundle {
                     mesh : cube.clone(),
                     material : z_axis_material.clone(),
-                    transform : Transform::from_xyz(dx_pos.x, -radar.scale, 0.0).with_scale(Vec3::new(0.1, 0.1, 50.0)),
+                    transform : Transform::from_xyz(dx_pos.x, -radar.scale as f32, 0.0).with_scale(Vec3::new(0.1, 0.1, 50.0)),
                     ..Default::default()
                 }).id();
 
@@ -142,13 +145,13 @@ fn radar(
             let distance = dp.length();
             if distance < radar.radius {
                 let radar_pos = dp / radar.radius * radar.scale;
-                let radar_pos = Vec3::new(radar_right.dot(radar_pos),
+                let radar_pos = DVec3::new(radar_right.dot(radar_pos),
                 radar_up.dot(radar_pos),
                        -radar_forward.dot(radar_pos));
                 
                 if idx >= radar.points.len() {
                     let point = commands.spawn(
-                        SpatialBundle::from_transform(Transform::from_xyz(radar_pos.x, radar_pos.y, radar_pos.z))
+                        DSpatialBundle::from_transform(DTransform::from_xyz(radar_pos.x, radar_pos.y, radar_pos.z))
                     ).insert(radar_res.mesh.clone())
                     .insert(radar_res.material.clone())
                     .insert(RadarPoint).id();

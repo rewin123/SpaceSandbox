@@ -1,5 +1,4 @@
 use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, CursorGrabMode}};
-use bevy_rapier3d::prelude::KinematicCharacterController;
 
 use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn}, control::{Action, FPSAction}, objects::prelude::MeteorFieldCommand};
 
@@ -92,34 +91,34 @@ fn fps_look_controller(
 
 fn fps_controller(
     pawn : Res<CurrentPawn>,
-    mut characters : Query<(&mut Transform, &mut KinematicCharacterController)>,
+    mut characters : Query<(&mut Transform)>,
     mut keys : Res<Input<Action>>,
     mut time : Res<Time>
 ) {
-    if let Some(e) = pawn.id {
-            if let Ok((mut pawn_transform, mut controller)) = characters.get_mut(e) {
-                let frw = pawn_transform.forward();
-                let right = pawn_transform.right();
-                let mut move_dir = Vec3::ZERO;
-                if keys.pressed(Action::FPS(FPSAction::MoveForward)) {
-                    move_dir += frw;
-                } 
-                if keys.pressed(Action::FPS(FPSAction::MoveBackward)) {
-                    move_dir -= frw;
-                }
-                if keys.pressed(Action::FPS(FPSAction::MoveRight)) {
-                    move_dir += right;
-                }
-                if keys.pressed(Action::FPS(FPSAction::MoveLeft)) {
-                    move_dir -= right;
-                }
-                //notmal human walk speed
-                let speed = 5.0 * 1000.0 / 3600.0;
-                move_dir = move_dir.normalize_or_zero();
-                move_dir *= time.delta_seconds() * speed;
-                controller.translation = Some(move_dir);
-            } else {
+    // if let Some(e) = pawn.id {
+    //         if let Ok((mut pawn_transform, mut controller)) = characters.get_mut(e) {
+    //             let frw = pawn_transform.forward();
+    //             let right = pawn_transform.right();
+    //             let mut move_dir = Vec3::ZERO;
+    //             if keys.pressed(Action::FPS(FPSAction::MoveForward)) {
+    //                 move_dir += frw;
+    //             } 
+    //             if keys.pressed(Action::FPS(FPSAction::MoveBackward)) {
+    //                 move_dir -= frw;
+    //             }
+    //             if keys.pressed(Action::FPS(FPSAction::MoveRight)) {
+    //                 move_dir += right;
+    //             }
+    //             if keys.pressed(Action::FPS(FPSAction::MoveLeft)) {
+    //                 move_dir -= right;
+    //             }
+    //             //notmal human walk speed
+    //             let speed = 5.0 * 1000.0 / 3600.0;
+    //             move_dir = move_dir.normalize_or_zero();
+    //             move_dir *= time.delta_seconds() * speed;
+    //             controller.translation = Some(move_dir);
+    //         } else {
 
-            }
-    }
+    //         }
+    // }
 }

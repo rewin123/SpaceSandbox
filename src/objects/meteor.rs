@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use rand::Rng;
-use bevy_rapier3d::prelude::*;
+use space_physics::prelude::{SpaceCollider, ColliderBuilder};
 
 use super::radar::RadarDetected;
 
@@ -65,7 +65,7 @@ fn meteor_field_spawn(
                         ..Default::default()
                     }).insert(Meteor{})
                     .insert(RadarDetected{ color : Color::YELLOW})
-                    .insert(Collider::ball(1.0));
+                    .insert(SpaceCollider(ColliderBuilder::ball(0.5).build()));
                 }
             }
             MeteorFieldCommand::Despawn => {

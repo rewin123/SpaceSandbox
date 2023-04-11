@@ -146,7 +146,6 @@ pub fn draw_colliders(
     mut colliders : Query<(&SpaceCollider, &GlobalTransform)>,
     mut lines: ResMut<DebugLines>,
 ) {
-    lines.enabled = true;
 
     for (handle, col) in context.collider_set.iter() {
         match col.shape().shape_type() {

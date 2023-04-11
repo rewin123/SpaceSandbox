@@ -5,6 +5,10 @@ use std::f32::consts::PI;
 use bevy::core_pipeline::bloom::BloomSettings;
 use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::ecs::schedule::FreeSystemSet;
+use bevy::math::DMat3;
+use bevy::math::DMat4;
+use bevy::math::DQuat;
+use bevy::math::DVec2;
 use bevy::math::DVec3;
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContext;
@@ -76,7 +80,7 @@ impl Plugin for StationBuilderPlugin {
 }
 
 pub enum BuildMode {
-    SingleOnY(f32)
+    SingleOnY(f64)
 }
 
 #[derive(Resource)]
@@ -87,7 +91,7 @@ pub struct StationBuildBlock {
     pub ship : Entity,
     pub cur_name : String,
     pub cmd : StationBuildCmds,
-    pub z_slice : Option<f32>
+    pub z_slice : Option<f64>
 }
 
 #[derive(PartialEq, Eq)]
@@ -104,7 +108,7 @@ pub struct ActiveBlock;
 
 
 fn z_slicing(
-    mut query : Query<(&Transform, &mut Visibility), (With<VoxelInstance>, Without<ActiveBlock>)>,
+    mut query : Query<(&DTransform, &mut Visibility), (With<VoxelInstance>, Without<ActiveBlock>)>,
     block : Res<StationBuildBlock>,
 ) {
     let Some(y_slice) = block.z_slice else {
@@ -120,7 +124,7 @@ fn z_slicing(
 }
 
 fn move_camera_build(
-    mut pawn_query : Query<&mut Transform, With<Pawn>>,
+    mut pawn_query : Query<&mut DTransform, With<Pawn>>,
     mut pawn : ResMut<CurrentPawn>,
     mut input : Res<Input<Action>>,
     mut time : ResMut<Time>,
@@ -130,23 +134,23 @@ fn move_camera_build(
     };
     if let Ok(mut transform) = pawn_query.get_mut(pawn_id) {
         let frw = transform.forward();
-        let frw = Vec3::new(frw.x, 0.0, frw.z).normalize();
+        let frw = DVec3::new(frw.x, 0.0, frw.z).normalize();
 
         let right = transform.right();
-        let right = Vec3::new(right.x, 0.0, right.z).normalize();
+        let right = DVec3::new(right.x, 0.0, right.z).normalize();
 
         let speed = 10.0;
         if input.pressed(Action::Build(control::BuildAction::MoveForward)) {
-            transform.translation += frw * speed * time.delta_seconds();
+            transform.translation += frw * speed * time.delta_seconds() as f64;
         }
         if input.pressed(Action::Build(control::BuildAction::MoveBackward)) {
-            transform.translation -= frw * speed * time.delta_seconds();
+            transform.translation -= frw * speed * time.delta_seconds() as f64;
         }
         if input.pressed(Action::Build(control::BuildAction::MoveRight)) {
-            transform.translation += right * speed * time.delta_seconds();
+            transform.translation += right * speed * time.delta_seconds() as f64;
         }
         if input.pressed(Action::Build(control::BuildAction::MoveLeft)) {
-            transform.translation -= right * speed * time.delta_seconds();
+            transform.translation -= right * speed * time.delta_seconds() as f64;
         }
     }
 }
@@ -207,13 +211,13 @@ fn clear_all_system(
 
 fn rotate_block(
     mut block : ResMut<StationBuildBlock>,
-    mut query : Query<(&mut Transform, &mut InstanceRotate), With<ActiveBlock>>,
+    mut query : Query<(&mut DTransform, &mut InstanceRotate), With<ActiveBlock>>,
     input : Res<Input<Action>>,
 ) {
     if let Some(e) = block.e {
         if input.just_pressed(Action::Build(control::BuildAction::RotateCounterClockwise)) {
             if let Ok((mut transform, mut rotate)) = query.get_mut(e) {
-                transform.rotate(Quat::from_rotation_y(PI / 2.0));
+                transform.rotate(DQuat::from_rotation_y(PI as f64 / 2.0));
                 rotate.rot_steps.x += 1;
                 
             }
@@ -297,8 +301,36 @@ fn spawn_block(
 
 }
 
+pub struct DRay {
+    /// Starting point of the ray.
+    pub origin: DVec3,
+    /// Direction of the ray.
+    pub direction: DVec3,
+}
+
+pub fn viewport_to_world(
+    projection_matrix : DMat4,
+    logical_viewport_size : DVec2,
+    camera_transform: &DGlobalTransform,
+    viewport_position: DVec2,
+) -> Option<DRay> {
+    let target_size = logical_viewport_size;
+    let ndc = viewport_position * 2. / target_size - DVec2::ONE;
+
+    let ndc_to_world =
+        camera_transform.compute_matrix() * projection_matrix.inverse();
+    let world_near_plane = ndc_to_world.project_point3(ndc.extend(1.));
+    // Using EPSILON because an ndc with Z = 0 returns NaNs.
+    let world_far_plane = ndc_to_world.project_point3(ndc.extend(f64::EPSILON));
+
+    (!world_near_plane.is_nan() && !world_far_plane.is_nan()).then_some(DRay {
+        origin: world_near_plane,
+        direction: (world_far_plane - world_near_plane).normalize(),
+    })
+}
+
 fn pos_block(
-    cameras : Query<(&Camera, &GlobalTransform)>,
+    cameras : Query<(&Camera, &DGlobalTransform)>,
     mut active_blocks : Query<&mut DTransform, With<ActiveBlock>>,
     block : ResMut<StationBuildBlock>,
     windows : Query<&Window, With<PrimaryWindow>>,
@@ -318,7 +350,11 @@ fn pos_block(
     let (cam, tr) = cameras.iter().next().unwrap();
     let cursor_pos = cursot_pos_option.unwrap();
 
-    let mouse_ray = cam.viewport_to_world(tr, cursor_pos).unwrap();
+    let mouse_ray = viewport_to_world(
+        cam.projection_matrix().as_dmat4(),
+        cam.logical_viewport_size().unwrap().as_dvec2(),
+        &tr,
+        cursor_pos.as_dvec2()).unwrap();
 
     let e = block.e.unwrap();
     let mut active_tr;
@@ -333,7 +369,7 @@ fn pos_block(
             let ship = ships.get_mut(block.ship).unwrap();
 
             let t = (lvl - mouse_ray.origin.y) / mouse_ray.direction.y;
-            let pos = (mouse_ray.origin + t * mouse_ray.direction).as_dvec3();
+            let pos = (mouse_ray.origin + t * mouse_ray.direction);
             let bbox = block.instance.as_ref().unwrap().bbox.clone();
             let hs = bbox.as_dvec3() / 2.0 * ship.map.voxel_size;
             let corner_pos = pos - hs - hs * block.instance.as_ref().unwrap().origin;
@@ -438,12 +474,9 @@ fn go_to_fps(
             SpaceCollider(
             ColliderBuilder::capsule_y(0.75, 0.25).build()))
         .insert(DSpatialBundle::from_transform(DTransform::from_xyz(pos.x, pos.y, pos.z)))
-        .insert(SpaceRigidBody(
-            RigidBodyBuilder::new(space_physics::prelude::RigidBodyType::Dynamic)
-            .locked_axes(LockedAxes::all())
-            .gravity_scale(1.0)
-            .build()
-        )).id();
+        .insert(SpaceRigidBodyType::Dynamic)
+        .insert(SpaceLockedAxes::all())
+        .insert(GravityScale(1.0)).id();
 
         let cam_pawn = cmds.spawn(Camera3dBundle {
             transform: Transform::from_xyz(0.0, 1.0, 0.0).looking_at(Vec3::new(0.0, 1.0, -1.0), Vec3::Y),
@@ -464,7 +497,7 @@ fn go_to_fps(
         pawn_event.send(ChangePawn { new_pawn: pawn, new_mode: Gamemode::FPS, save_stack: true });
 
         for ship_e in ships.iter() {
-            cmds.entity(ship_e).insert(LockedAxes::empty());
+            cmds.entity(ship_e).insert(SpaceLockedAxes::empty());
         }
     }
 }

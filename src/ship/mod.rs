@@ -41,16 +41,10 @@ impl Default for Ship {
 
 pub fn new_default_ship(cmds : &mut Commands) -> Entity {
 
-    let body = RigidBodyBuilder::new(RigidBodyType::Dynamic)
-        .locked_axes(LockedAxes::all())
-        .gravity_scale(0.0)
-        .angular_damping(0.01)
-        .build();
-
     cmds.spawn(Ship::new_sized(IVec3::new(100, 100, 100)))
-        .insert(SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.0, 0.0)))
         .insert(DTransformBundle::from_transform(DTransform::from_xyz(0.0, 0.0, 0.0)))
-        .insert(SpaceRigidBody(body))
+        .insert(SpaceRigidBodyType::Dynamic)
+        .insert(GravityScale(0.0))
         .id()
 }
 

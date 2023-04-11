@@ -33,9 +33,9 @@ fn setup(
         material: plane_material,
         ..Default::default()
     })
-    .insert(SpaceCollider {
-        collider: ColliderBuilder::cuboid(5.0, 0.05, 5.0).build(),
-    });
+    .insert(SpaceCollider(
+        ColliderBuilder::cuboid(5.0, 0.05, 5.0).build(),
+    ));
 
     // Add ten random posed cubes with colliders
     let cube_mesh = meshes.add(Mesh::from(bevy::prelude::shape::Cube { size: 1.0 }));
@@ -48,23 +48,16 @@ fn setup(
         let y = rng.gen_range(0.5..50.0);
         let z = rng.gen_range(-5.0..5.0);
         let cube_transform = DTransform::from_xyz(x, y, z);
-        let cube_rigid_body = RigidBodyBuilder::dynamic()
-            .translation(DVec3::new(x, y, z).into())
-            .gravity_scale(1.0)
-            .can_sleep(true)
-            .build();
         commands.spawn(PbrBundle {
             mesh: cube_mesh.clone(),
             material: cube_material.clone(),
             ..Default::default()
         })
         .insert(DTransformBundle::from_transform(cube_transform))
-        .insert(SpaceCollider {
-            collider: cube_collider.clone(),
-        })
-        .insert(SpaceRigidBody {
-            rigid_body: cube_rigid_body,
-        });
+        .insert(SpaceCollider(
+            cube_collider.clone(),
+        ))
+        .insert(SpaceRigidBodyType::Dynamic);
     }
 
     for i in 0..10 {
@@ -72,23 +65,16 @@ fn setup(
         let y = rng.gen_range(0.5..50.0);
         let z = rng.gen_range(-5.0..5.0);
         let cube_transform = DTransform::from_xyz(x, y, z);
-        let cube_rigid_body = RigidBodyBuilder::dynamic()
-            .translation(DVec3::new(x, y, z).into())
-            .gravity_scale(1.0)
-            .can_sleep(true)
-            .build();
         let parent_id = commands.spawn(PbrBundle {
             mesh: cube_mesh.clone(),
             material: cube_material.clone(),
             ..Default::default()
         })
         .insert(DTransformBundle::from_transform(cube_transform))
-        .insert(SpaceCollider {
-            collider: cube_collider.clone(),
-        })
-        .insert(SpaceRigidBody {
-            rigid_body: cube_rigid_body,
-        }).id();
+        .insert(SpaceCollider(
+            cube_collider.clone(),
+        ))
+        .insert(SpaceRigidBodyType::Dynamic).id();
 
         //create child 
         {
@@ -98,9 +84,9 @@ fn setup(
                 material: cube_material.clone(),
                 ..Default::default()
             }).insert(DTransformBundle::from_transform(child_transform))
-            .insert(SpaceCollider {
-                collider: cube_collider.clone(),
-            }).id();
+            .insert(SpaceCollider(
+                cube_collider.clone(),
+            )).id();
 
             commands.entity(parent_id).add_child(child_id);
         }
@@ -111,23 +97,16 @@ fn setup(
         let y = rng.gen_range(0.5..5.0);
         let z = rng.gen_range(-5.0..5.0);
         let sphere_transform = DTransform::from_xyz(x, y, z);
-        let sphere_rigid_body = RigidBodyBuilder::dynamic()
-            .translation(DVec3::new(x, y, z).into())
-            .gravity_scale(1.0)
-            .can_sleep(true)
-            .build();
         commands.spawn(PbrBundle {
             mesh: sphere_mesh.clone(),
             material: cube_material.clone(),
             ..Default::default()
         })
         .insert(DTransformBundle::from_transform(sphere_transform))
-        .insert(SpaceCollider {
-            collider: ColliderBuilder::ball(0.5).build(),
-        })
-        .insert(SpaceRigidBody {
-            rigid_body: sphere_rigid_body,
-        });
+        .insert(SpaceCollider(
+            ColliderBuilder::ball(0.5).build(),
+        ))
+        .insert(SpaceRigidBodyType::Dynamic);
     }
 
     // Add a camera

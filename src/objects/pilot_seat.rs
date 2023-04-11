@@ -1,9 +1,10 @@
 
 use std::sync::Arc;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, math::DVec3};
 use bevy_egui::*;
-use bevy_rapier3d::prelude::*;
+use bevy_transform64::prelude::DTransform;
+use space_physics::prelude::*;
 
 use crate::{pawn_system::{ChangePawn, Pawn, CurrentPawn}, Gamemode, control::{Action, FPSAction, PilotingAction}, ship::Ship, scenes::settings::settings_system};
 
@@ -11,7 +12,7 @@ use super::ship_camera::ShipCamera;
 
 struct PawnCache {
     pawn : Entity,
-    pawn_transform : Transform,
+    pawn_transform : DTransform,
 }
 
 #[derive(Component, Default, Reflect, FromReflect)]
@@ -27,7 +28,7 @@ pub struct PilotSeat {
 
 pub struct PilotSeatPlugin;
 
-const PILOT_POSITION : Vec3 = Vec3::new(0.0, 0.5, 0.0);
+const PILOT_POSITION : DVec3 = DVec3::new(0.0, 0.5, 0.0);
 
 impl Plugin for PilotSeatPlugin {
     fn build(&self, app: &mut App) {
@@ -51,11 +52,11 @@ fn camera_selection(
 }
 
 fn piloting(
-    mut pilot_seats : Query<(&Transform, &mut PilotSeat), (Without<Pawn>)>,
-    mut ships : Query<(&Transform, &mut Velocity, &mut ExternalImpulse), With<Ship>>,
+    mut pilot_seats : Query<(&DTransform, &mut PilotSeat), (Without<Pawn>)>,
+    mut ships : Query<(&DTransform, &mut Velocity, &mut ExternalImpulse), With<Ship>>,
     input : Res<Input<Action>>,
-    mut pawns : Query<(&mut Transform, &Pawn), (Without<Ship>, Without<ShipCamera>)>,
-    mut cameras : Query<&Transform, (Without<Ship>, With<ShipCamera>)>
+    mut pawns : Query<(&mut DTransform, &Pawn), (Without<Ship>, Without<ShipCamera>)>,
+    mut cameras : Query<&DTransform, (Without<Ship>, With<ShipCamera>)>
 ) {
     for (pilot_seat_transform, mut pilot_seat) in pilot_seats.iter_mut() {
         if pilot_seat.pawn.is_some() {
@@ -63,7 +64,7 @@ fn piloting(
             let forward = ship_transform.forward();
             let right = ship_transform.right();
             let up = ship_transform.up();
-            let mut target_linvel = Vec3::ZERO;
+            let mut target_linvel = DVec3::ZERO;
             let speed = 100.0;
             if input.pressed(Action::Piloting(PilotingAction::MoveForward)) {
                 target_linvel += forward * speed;
@@ -145,9 +146,9 @@ fn seat_in_pilot_seat(
     mut commands : Commands,
     mut change_pawn : EventWriter<ChangePawn>,
     mut input : ResMut<Input<Action>>,
-    mut pawns : Query<(Entity, &mut Transform), With<Pawn>>,
+    mut pawns : Query<(Entity, &mut DTransform), With<Pawn>>,
     mut current_pawn : ResMut<CurrentPawn>,
-    mut pilot_seats : Query<(Entity, &Transform, &mut PilotSeat), (Without<Pawn>)>,
+    mut pilot_seats : Query<(Entity, &DTransform, &mut PilotSeat), (Without<Pawn>)>,
     mut cameras : Query<Entity, (Without<Ship>, With<ShipCamera>)>,
     mut ships : Query<Entity, (With<Ship>, Without<Pawn>)>
 ) {
