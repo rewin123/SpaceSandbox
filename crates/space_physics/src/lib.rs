@@ -22,6 +22,7 @@ pub struct SpacePhysicsPlugin;
 /// Set enum for the systems relating to transform propagation
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum SpacePhysicSystem {
+    CaptureChanges,
     RigidBodyUpdate,
     ColliderUpdate,
     ContextUpdate,
@@ -34,7 +35,7 @@ impl Plugin for SpacePhysicsPlugin {
         app.insert_resource(RapierContext::default());
         app.insert_resource(GlobalGravity::default());
 
-        
+        app.configure_set(SpacePhysicSystem::CaptureChanges.before(SpacePhysicSystem::RigidBodyUpdate).in_base_set(CoreSet::PostUpdate));
         app.configure_set(SpacePhysicSystem::RigidBodyUpdate
             .after(DTransformSystem::TransformPropagate)
             .before(SpacePhysicSystem::ColliderUpdate)
@@ -50,6 +51,8 @@ impl Plugin for SpacePhysicsPlugin {
         app.add_system(update_context.in_set(SpacePhysicSystem::ContextUpdate));
 
         app.add_system(from_physics_engine.in_set(SpacePhysicSystem::WriteToWorld));
+
+        app.add_systems((detect_position_change,).in_set(SpacePhysicSystem::CaptureChanges));
 
         app.add_plugin(debug_draw::SpacePhysicsDebugDrawPlugin);
     }

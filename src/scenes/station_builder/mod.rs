@@ -4,8 +4,6 @@ use std::f32::consts::PI;
 
 use bevy::core_pipeline::bloom::BloomSettings;
 use bevy::core_pipeline::tonemapping::Tonemapping;
-use bevy::ecs::schedule::FreeSystemSet;
-use bevy::math::DMat3;
 use bevy::math::DMat4;
 use bevy::math::DQuat;
 use bevy::math::DVec2;
@@ -391,13 +389,14 @@ fn setup_build_scene(
     }
     next_load_state.set(StationBuildState::Loaded);
     let pawn = cmds.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(10.0, 10.0, 10.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
         camera_3d : Camera3d {
             clear_color : bevy::core_pipeline::clear_color::ClearColorConfig::Custom(Color::Rgba { red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0 }),
             ..default()
         },
         ..default()
-    }).id();
+    }).insert(
+        DTransformBundle::from_transform(
+            DTransform::from_xyz(10.0, 10.0, 10.0).looking_at(DVec3::new(0.0, 0.0, 0.0), DVec3::Y))).id();
 
     cmds.entity(pawn).insert(Pawn { camera_id: pawn });
 

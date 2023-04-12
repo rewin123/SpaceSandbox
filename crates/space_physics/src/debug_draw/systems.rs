@@ -192,7 +192,9 @@ pub fn draw_colliders(
 
                 }
             },
-            rapier3d_f64::prelude::ShapeType::Capsule => todo!(),
+            rapier3d_f64::prelude::ShapeType::Capsule => {
+                
+            },
             rapier3d_f64::prelude::ShapeType::Segment => todo!(),
             rapier3d_f64::prelude::ShapeType::Triangle => todo!(),
             rapier3d_f64::prelude::ShapeType::TriMesh => todo!(),

@@ -9,7 +9,7 @@ pub struct RapierRigidBodyHandle(pub RigidBodyHandle);
 #[derive(Component, Debug)]
 pub enum SpaceRigidBodyType {
     Dynamic,
-    Static
+    Fixed
 }
 
 #[derive(Component, Debug)]

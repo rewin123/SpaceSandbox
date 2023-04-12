@@ -1,7 +1,7 @@
 use bevy::{prelude::*, utils::HashMap, math::DVec3};
 use bevy_transform64::{DTransformBundle, prelude::DTransform};
 use space_physics::prelude::*;
-use crate::space_voxel::objected_voxel_map::*;
+use crate::{space_voxel::objected_voxel_map::*, DSpatialBundle};
 use crate::space_voxel::solid_voxel_map::SolidVoxelMap;
 use crate::space_voxel::*;
 use serde::{Deserialize, Serialize};
@@ -40,10 +40,9 @@ impl Default for Ship {
 
 
 pub fn new_default_ship(cmds : &mut Commands) -> Entity {
-
     cmds.spawn(Ship::new_sized(IVec3::new(100, 100, 100)))
-        .insert(DTransformBundle::from_transform(DTransform::from_xyz(0.0, 0.0, 0.0)))
-        .insert(SpaceRigidBodyType::Dynamic)
+        .insert(DSpatialBundle::from_transform(DTransform::from_xyz(0.0, 0.0, 0.0)))
+        .insert(SpaceRigidBodyType::Fixed)
         .insert(GravityScale(0.0))
         .id()
 }

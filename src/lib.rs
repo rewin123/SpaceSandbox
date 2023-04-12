@@ -8,7 +8,7 @@ pub mod network;
 pub mod asset_utils;
 pub mod control;
 pub mod objects;
-
+pub mod space_bundle;
 use std::default::Default;
 
 use bevy::prelude::*;
@@ -18,6 +18,7 @@ use bevy_transform64::prelude::*;
 pub mod prelude {
     pub use bevy::prelude::*;
     pub use crate::*;
+    pub use space_bundle::*;
 }
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug, States, Default)]

@@ -1,4 +1,5 @@
 use bevy::{prelude::*, ecs::system::EntityCommands, math::DVec3};
+use space_bundle::DSceneBundle;
 use space_physics::prelude::*;
 
 use crate::{objects::{prelude::PilotSeat, radar::Radar, ship_camera::ShipCamera}, *};
@@ -41,9 +42,6 @@ pub struct VoxelInstance {
     pub origin : DVec3,
 }
 
-
-
-
 pub struct VoxelInstanceConfig
  {
     pub name : String,
@@ -76,7 +74,7 @@ fn spawn_static_instance<F>(
         name : name.to_string(),
         instance : instance.clone(),
         create : ClosureInstance::new(move |cmds : &mut Commands, asset_server : &AssetServer| {
-            let id = cmds.spawn(SceneBundle {
+            let id = cmds.spawn(DSceneBundle {
                 scene: asset_server.load(&owned_path),
                 
                 ..default()

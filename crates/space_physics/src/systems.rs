@@ -29,6 +29,14 @@ pub fn add_rigidbody(
 ) {
     for (e, transform, body_type, vel) in added_rigidbodies.iter() {
         let mut body = RigidBody::default();
+        match body_type {
+            SpaceRigidBodyType::Dynamic => {
+                body.set_body_type(RigidBodyType::Dynamic, true);
+            },
+            SpaceRigidBodyType::Fixed => {
+                body.set_body_type(RigidBodyType::Fixed, true);
+            },
+        }
         let mut body_pos = body.position().clone();
         body_pos.translation = na::Vector3::new(transform.translation.x, transform.translation.y, transform.translation.z).into();
         body_pos.rotation = na::Unit::new_normalize(na::Quaternion::new(transform.rotation.w, transform.rotation.x, transform.rotation.y, transform.rotation.z));
@@ -108,101 +116,10 @@ pub fn add_collider(
     }
 }
 
-// pub fn update_collider(
-//     mut commands : Commands,
-//     mut context : ResMut<RapierContext>,
-//     mut changed_collider : Query<(&mut RapierColliderHandle, &SpaceCollider), (Changed<SpaceCollider>)>,
-//     changed_collider_without_handle : Query<(Entity, &SpaceCollider), (Changed<SpaceCollider>, Without<RapierColliderHandle>, Without<RapierRigidBodyHandle>, Without<SpaceRigidBody>)>,
-// ) {
-//     for (mut handle, collider) in changed_collider.iter_mut() {
-//         if let Some(collider_in_set) = context.collider_set.get_mut(handle.handle) {
-//             *collider_in_set = collider.collider.clone();
-//         } else {
-//             handle.handle = context.collider_set.insert(collider.collider.clone());
-//         }
-//     }
-
-//     for (e, collider) in changed_collider_without_handle.iter() {
-//         let handle = RapierColliderHandle {
-//             handle : context.collider_set.insert(collider.collider.clone()),
-//         };
-//         // println!("Create just collider {:?}", e);
-//         commands.entity(e).insert(handle);
-//     }
-// }
-
-// pub fn update_collider_rigidbody(
-//     mut commands : Commands,
-//     mut context : ResMut<RapierContext>,
-//     changed_collider_without_handle : Query<(Entity, &SpaceCollider, &RapierRigidBodyHandle), (Changed<SpaceCollider>, Without<RapierColliderHandle>)>,
-// ) {
-//     let context = &mut *context;
-//     for (e, collider, rigidbody) in changed_collider_without_handle.iter() {
-//         let handle = RapierColliderHandle {
-//             handle : context.collider_set.insert_with_parent(
-//                 collider.collider.clone(), rigidbody.handle, &mut context.rigid_body_set)
-//         };
-//         // println!("Create collider with rigidbody {:?}", e);
-//         commands.entity(e).insert(handle);
-//     }
-// }
-
-// pub fn update_rigidbody(
-//     mut commands : Commands,
-//     mut context : ResMut<RapierContext>,
-//     mut changed_rigidbody : Query<(Entity, &SpaceRigidBody, &mut RapierRigidBodyHandle, Option<&SpaceCollider>), (Changed<SpaceRigidBody>)>,
-// ) {
-//     let context = &mut *context;
-//     for (e, rigidbody, mut handle, collider) in changed_rigidbody.iter_mut() {
-//         // if let Some(mut handle) = handle {
-//             if let Some(rapier_rigidbody) = context.rigid_body_set.get_mut(handle.handle) {
-//                 *rapier_rigidbody = rigidbody.rigid_body.clone();
-//             } else {
-//                 handle.handle = context.rigid_body_set.insert(rigidbody.rigid_body.clone());
-//             }
-            
-//         // } else {
-//         //     let handle = context.rigid_body_set.insert(rigidbody.rigid_body.clone());
-//         //     let comp = RapierRigidBodyHandle {
-//         //         handle : handle.clone()
-//         //     };
-//         //     if let Some(collider) = collider {
-//         //         let collider_handle = RapierColliderHandle {
-//         //             handle : context.collider_set.insert_with_parent(
-//         //                 collider.collider.clone(), handle, &mut context.rigid_body_set)
-//         //         };
-//         //         commands.entity(e).insert(collider_handle);
-//         //         println!("Create rigidbody with collider {:?}", e);
-//         //     };
-            
-//         //     commands.entity(e).insert(comp);
-//         // };
-//     }
-// }
-
-// pub fn add_rigidbody(
-//     mut commands : Commands,
-//     mut context : ResMut<RapierContext>,
-//     mut added_rigidbody : Query<(Entity, &SpaceRigidBody, &SpaceCollider), (Added<SpaceRigidBody>, Added<SpaceCollider>)>,
-// ) {
-//     let context = &mut *context;
-//     for (e, rigidbody, collider) in added_rigidbody.iter_mut() {
-//         let handle = context.rigid_body_set.insert(rigidbody.rigid_body.clone());
-//         let collider_handle = context.collider_set.insert_with_parent(
-//             collider.collider.clone(), handle, &mut context.rigid_body_set);
-//         commands.entity(e).insert(RapierRigidBodyHandle {
-//             handle : handle.clone()
-//         }).insert(RapierColliderHandle {
-//             handle : collider_handle.clone()
-//         });
-
-//         println!("Added rigidbody with handle {:?} and collider", handle);
-//     }
-// }
-
 pub fn detect_position_change(
     mut context : ResMut<RapierContext>,
     mut rigidbodies : Query<(&DTransform, &RapierRigidBodyHandle), Changed<DTransform>>,
+    mut colliders : Query<(&DTransform, &RapierColliderHandle), (Changed<DTransform>, Without<RapierRigidBodyHandle>)>
 ) {
     let context = &mut *context;
     for (transform, rigidbody_handle) in rigidbodies.iter_mut() {
@@ -221,9 +138,22 @@ pub fn detect_position_change(
                 transform.rotation.y, 
                 transform.rotation.z)), 
                 true);
+    }
 
+    for (transform, collider_handle) in colliders.iter_mut() {
+        let collider = context.collider_set.get_mut(collider_handle.0).unwrap();
+        collider.set_translation(
+            na::Vector3::new(
+                transform.translation.x, 
+                transform.translation.y, 
+                transform.translation.z));
         
-        // println!("Pos: {:?}", pos);
+        collider.set_rotation(
+             na::Unit::new_normalize(na::Quaternion::new(
+                transform.rotation.w, 
+                transform.rotation.x, 
+                transform.rotation.y, 
+                transform.rotation.z)));
     }
 
 }

@@ -39,7 +39,7 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "C:\\Users\\rewin\\OneDrive\\Documents\\GitHub\\SpaceSandbox"
         },
         {
             "type": "lldb",
