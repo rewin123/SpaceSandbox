@@ -1,4 +1,4 @@
-use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, CursorGrabMode}};
+use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, CursorGrabMode}, math::DVec3};
 
 use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn}, control::{Action, FPSAction}, objects::prelude::MeteorFieldCommand};
 
@@ -49,7 +49,7 @@ fn fps_focus_control(
 
 fn fps_look_controller(
     pawn : Res<CurrentPawn>,
-    mut transform : Query<&mut Transform>,
+    mut transform : Query<&mut DTransform>,
     mut pawns : Query<(&Pawn)>,
     mut mouse_move : EventReader<MouseMotion>,
 ) {
@@ -62,12 +62,12 @@ fn fps_look_controller(
                     let frw = pawn_transform.forward();
                     let up = pawn_transform.up();
                     let right = pawn_transform.right();
-                    let delta = mv.delta * 0.001;
+                    let delta = mv.delta.as_dvec2() * 0.001;
                     let mut changed_frw = (frw - delta.y * up).normalize();
                     changed_frw.y = changed_frw.y.max(-0.95);
                     changed_frw.y = changed_frw.y.min(0.95);
                     let pos = pawn_transform.translation;
-                    pawn_transform.look_at(pos + changed_frw, Vec3::new(0.0, 1.0, 0.0));
+                    pawn_transform.look_at(pos + changed_frw, DVec3::new(0.0, 1.0, 0.0));
                 }
             }
 
@@ -78,12 +78,12 @@ fn fps_look_controller(
                 let frw = pawn_transform.forward();
                 let up = pawn_transform.up();
                 let right = pawn_transform.right();
-                let delta = mv.delta * 0.001;
+                let delta = mv.delta.as_dvec2() * 0.001;
                 let mut changed_frw = (frw + delta.x * right).normalize();
                 changed_frw.y = changed_frw.y.max(-0.95);
                 changed_frw.y = changed_frw.y.min(0.95);
                 let pos = pawn_transform.translation;
-                pawn_transform.look_at(pos + changed_frw, Vec3::new(0.0, 1.0, 0.0));
+                pawn_transform.look_at(pos + changed_frw, DVec3::new(0.0, 1.0, 0.0));
             }
         }
     }
@@ -91,34 +91,34 @@ fn fps_look_controller(
 
 fn fps_controller(
     pawn : Res<CurrentPawn>,
-    mut characters : Query<(&mut Transform)>,
+    mut characters : Query<(&mut DTransform)>,
     mut keys : Res<Input<Action>>,
     mut time : Res<Time>
 ) {
-    // if let Some(e) = pawn.id {
-    //         if let Ok((mut pawn_transform, mut controller)) = characters.get_mut(e) {
-    //             let frw = pawn_transform.forward();
-    //             let right = pawn_transform.right();
-    //             let mut move_dir = Vec3::ZERO;
-    //             if keys.pressed(Action::FPS(FPSAction::MoveForward)) {
-    //                 move_dir += frw;
-    //             } 
-    //             if keys.pressed(Action::FPS(FPSAction::MoveBackward)) {
-    //                 move_dir -= frw;
-    //             }
-    //             if keys.pressed(Action::FPS(FPSAction::MoveRight)) {
-    //                 move_dir += right;
-    //             }
-    //             if keys.pressed(Action::FPS(FPSAction::MoveLeft)) {
-    //                 move_dir -= right;
-    //             }
-    //             //notmal human walk speed
-    //             let speed = 5.0 * 1000.0 / 3600.0;
-    //             move_dir = move_dir.normalize_or_zero();
-    //             move_dir *= time.delta_seconds() * speed;
-    //             controller.translation = Some(move_dir);
-    //         } else {
+    if let Some(e) = pawn.id {
+            if let Ok((mut pawn_transform)) = characters.get_mut(e) {
+                let frw = pawn_transform.forward();
+                let right = pawn_transform.right();
+                let mut move_dir = DVec3::ZERO;
+                if keys.pressed(Action::FPS(FPSAction::MoveForward)) {
+                    move_dir += frw;
+                } 
+                if keys.pressed(Action::FPS(FPSAction::MoveBackward)) {
+                    move_dir -= frw;
+                }
+                if keys.pressed(Action::FPS(FPSAction::MoveRight)) {
+                    move_dir += right;
+                }
+                if keys.pressed(Action::FPS(FPSAction::MoveLeft)) {
+                    move_dir -= right;
+                }
+                //notmal human walk speed
+                let speed = 5.0 * 1000.0 / 3600.0;
+                move_dir = move_dir.normalize_or_zero();
+                move_dir *= time.delta_seconds_f64() * speed;
+                pawn_transform.translation += move_dir;
+            } else {
 
-    //         }
-    // }
+            }
+    }
 }

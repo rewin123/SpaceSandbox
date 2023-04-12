@@ -23,7 +23,7 @@ pub fn sync_f64_f32(
     mut query: Query<(Entity, &DGlobalTransform), (Added<DGlobalTransform>, Without<GlobalTransform>)>,
     mut query_changed: Query<(Entity, &DGlobalTransform, &mut GlobalTransform)>,
     mut query_changed_tranform: Query<(Entity, &DTransform, &mut Transform, Option<&Parent>)>,
-    mut query_deleted: RemovedComponents<DGlobalTransform>,
+    mut query_deleted: Query<Entity, (With<GlobalTransform>, Without<DGlobalTransform>)>,
     mut query_cmd_add : Query<(Entity, &Transform), (Without<DTransform>)>,
     world_origin : Res<WorldOrigin>,
 ) {
