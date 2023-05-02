@@ -4,6 +4,31 @@ use bevy_transform64::prelude::*;
 use rapier3d_f64::{prelude::RigidBody, na::Vector3};
 use rapier3d_f64::na as na;
 
+pub fn delete_detection(
+    mut context : ResMut<RapierContext>,
+    mut collider_del : RemovedComponents<RapierColliderHandle>,
+    mut rigid_del : RemovedComponents<RapierRigidBodyHandle>
+) {
+    let context = &mut *context;
+    for e in collider_del.iter() {
+        if let Some(handle) = context.entity2collider.get(&e) {
+            context.collider_set.remove(*handle, &mut context.island_manager, &mut context.rigid_body_set, true);
+        }
+    }
+
+    for e in rigid_del.iter() {
+        if let Some(handle) = context.entity2rigidbody.get(&e) {
+            context.rigid_body_set.remove(
+                *handle, 
+                &mut context.island_manager, 
+                &mut context.collider_set, 
+                &mut context.impulse_joint_set,
+                &mut context.multibody_joint_set,
+                true);
+        }
+    }
+}
+
 pub fn update_context(
     mut context : ResMut<RapierContext>,
     gravity : Res<GlobalGravity>,
@@ -50,6 +75,8 @@ pub fn add_rigidbody(
         let handle = RapierRigidBodyHandle(
             context.rigid_body_set.insert(body));
 
+        context.entity2rigidbody.insert(e, handle.0);
+
         commands.entity(e).insert(handle);
     }
 }
@@ -77,6 +104,7 @@ pub fn add_collider(
             let handle = RapierColliderHandle(
                 collider_set.insert_with_parent(collider.0.clone(), rigidbody.0.clone(), rigid_body_set),
             );
+            context.entity2collider.insert(e, handle.0);
             // Add the RapierColliderHandle component to the entity
             commands.entity(e).insert(handle);
             println!("Create collider with rigidbody");
@@ -89,6 +117,7 @@ pub fn add_collider(
                         let handle = RapierColliderHandle(
                             collider_set.insert_with_parent(col, parent_handle.0.clone(), rigid_body_set),
                         );
+                        context.entity2collider.insert(e, handle.0);
                         commands.entity(e).insert(handle);
                         println!("Create collider with rigidbody parent and transform");
                         continue;
@@ -96,6 +125,7 @@ pub fn add_collider(
                         let handle = RapierColliderHandle(
                             collider_set.insert_with_parent(collider.0.clone(), parent_handle.0.clone(), rigid_body_set),
                         );
+                        context.entity2collider.insert(e, handle.0);
                         commands.entity(e).insert(handle);
                         println!("Create collider with rigidbody parent and without transform");
                         continue;
@@ -108,6 +138,7 @@ pub fn add_collider(
                 let handle = RapierColliderHandle(
                     context.collider_set.insert(collider.0.clone()),
                 );
+                context.entity2collider.insert(e, handle.0);
                 // Add the RapierColliderHandle component to the entity
                 commands.entity(e).insert(handle);
                 println!("Create collider");

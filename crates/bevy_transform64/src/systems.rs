@@ -78,7 +78,7 @@ pub fn sync_f64_f32(
         // if f32_transform.rotation.xyz().is_nan() {
         //     rot = bevy::math::DQuat::default();
         // }
-        println!("Spawn dtransform with {:?}", f32_transform.rotation.as_f64());
+        // println!("Spawn dtransform with {:?}", f32_transform.rotation.as_f64());
         commands.entity(entity).insert(
             DTransformBundle::from_transform(DTransform {
                 translation : f32_transform.translation.as_dvec3(),

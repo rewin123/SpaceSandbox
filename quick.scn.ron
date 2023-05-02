@@ -109,9 +109,9 @@
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: -21.0,
+            x: -21.5,
             y: -0.125,
-            z: 4.25,
+            z: 4.5,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -405,75 +405,7 @@
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    25: (
-      components: {
-        "bevy_transform64::components::transform::DTransform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    26: (
-      components: {
-        "bevy_transform64::components::transform::DTransform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    27: (
-      components: {
-        "bevy_transform64::components::transform::DTransform": (
-          translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-      },
-    ),
-    28: (
-      components: {
-        "bevy_transform64::components::transform::DTransform": (
-          translation: (
-            x: 2.75,
+            x: -2.25,
             y: -0.125,
             z: 0.25,
           ),
@@ -493,59 +425,11 @@
         ),
       },
     ),
-    29: (
+    25: (
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: 2.0,
-            y: -0.125,
-            z: 1.5,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
-          ),
-        ),
-      },
-    ),
-    30: (
-      components: {
-        "bevy_transform64::components::transform::DTransform": (
-          translation: (
-            x: 1.5,
-            y: -0.125,
-            z: -0.5,
-          ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
-          scale: (
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
-          ),
-        ),
-      },
-    ),
-    31: (
-      components: {
-        "bevy_transform64::components::transform::DTransform": (
-          translation: (
-            x: 3.5,
+            x: 1.25,
             y: -0.125,
             z: -1.0,
           ),
@@ -565,13 +449,13 @@
         ),
       },
     ),
-    32: (
+    26: (
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: 4.0,
+            x: 0.5,
             y: -0.125,
-            z: 1.0,
+            z: 4.25,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -589,10 +473,34 @@
         ),
       },
     ),
-    33: (
+    27: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -9.0,
+            y: -0.125,
+            z: -6.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
+          ),
+        ),
+      },
+    ),
+    28: (
       components: {
         "SpaceSandbox::ship::save_load::DiskShipBase64": (
-          data: "9UhEwL4LKKKl9AEMQEIPAP4B/gMA/gMA/gMAGQMo6gMADO4BAAD+/wv+AwD+AwAZAyjq/wsM/gEA+v4CDP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAP4DAGYDABjaAgwIAQD+/gsMfgsMELIDAAz6DuELBDMI/gMAcgMAFLozCP5hEKYDAAg6YRD+3Av+3Av+3Av+3Av+3Av+3Aua3At0IgIMLA0BAAIqCPD+DABODP4lJ/4lJ+olJwBe/hIw/gMAHQMoZhIw5WIEiIz+YgcNAwRBL6YDABQ6QS/+zwMJAxRqzwP+DAxGAwAwtgwMcJoBAAACGugoCGEVSAwAcgwAAQERbAEB/gwAEQz+5gIJAxRq5gL+2wD+AwARAyDS2wAQHkic/sB27gMk4gMACD7AnP43SMoDACxyN0gWyw4EaGL+yw7+AwBOAwAUwssO/hkMygMAFH4ZDP7sGWoDAAjG7BkBugTom9a3ABTuyw7+SCRGAwBMtkgk/mQJ/mQJ8mQJ6W8EqDj+bwfKAwA47m8H/oEF/oEF8oEF/r0ARgMAqK69ABYFJRxuwJwRXAFsLg5wLCAAAyo4nf4MAC7+Qzv+QzvuQzv+wwL+wwIJBhTqwwL+ViTKAwCIclYk/tgF/tgF8tgFANoS3jMEOHIa2Q4IYgwA/XUEHXj+dAdGAwAs6nQH/tcC/tcC8tcCRr0AahIAiJq9AAC+/pZI/pZI3pZIADrldwwQDwgEHlU7DAADHWD+bgf+/gMAGQM4em4H/lUL/lUL3lUL/lE7agMAFOZRO/67AhUDHNK7AgC+/oY8jgMALKaGPBbHDgSQSP7HDv4DAIoDABSGxw7+FQyOAwA4qhUM/icU/icU3icU/iKdRgMACOYinQG6BBCC/rcABbdkvscO/j8k/j8k4j8k/qwI/qwI8qwI6W4E0B7+1QEl1Sy+bgf+tQb+tQbytQZJYCDevQAQwJx+wJwVDwj+khFGAwBw5pIR/vsB9vsBAD7+VzD+VzDeVzD+NwH2NwH+fgB2AwAItn4AJSEgWBrHDgBS/ptCRgMAFNqbQv71BHYDABS29QT+7gJ2AwAU2u4C/hEMsgMAFJIRDP4cB3YDABTaHAf+9wLWAwAUlvcC/hC1/gMA/gMA/gMA/gMA/gMA/gMAjgMAOCIQtf4vKP4vKPIvKP4GJP4DAP4DAP4DAGoDABjeBiQI/gEAdvIIgh4ABBUDFr4MBE4F7gMAELlO/pcK7gMAFCKXCv5JBS4DAAiqSQX+wAz+wAz+wAz+wAz+wAz+wAyawAz+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwH+pwHGpwH0AwHKAgzw/poBAAhkAAAVBAkBBCnAVggABNA/ARgACwEFHAAAAAoAAAAGAQkkAAAAQ2FtZXJhBx0SFEVuZ2luZQEgAA0BIQEkOG9ybmVyIHdpbmRvdwEAABUZRFRlbGVwb3J0IHNwb3QDAAAAFAEvZAAAAFdoaXRlIHRyaWFuZ2xlIHBsYXRlAgAAFYIJIAUXAAgNkQEBJFBpbG90IHNlYXQBDhGvLE1ldGFsIGdyaWRzBB0tCUQQZG9vcgUdvgBXBaUQCQAAABABRAQAAA1VCHRvcA3BAS4BAQHJAQEMHgAAAAG8AQEAIAEFDQEMHwAAAAG0AQE8HAAAAAQAAAAAAAAAHQAAAA==",
+          data: "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",
         ),
       },
     ),

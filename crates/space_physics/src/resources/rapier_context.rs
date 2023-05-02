@@ -1,5 +1,5 @@
 use rapier3d_f64::prelude::*;
-use bevy::{prelude::*, math::DVec3};
+use bevy::{prelude::*, math::DVec3, utils::HashMap};
 
 #[derive(Resource)]
 pub struct RapierContext {
@@ -13,6 +13,9 @@ pub struct RapierContext {
     pub narrow_phase: NarrowPhase,
     pub multibody_joint_set: MultibodyJointSet,
     pub ccd_solvers: CCDSolver,   
+
+    pub entity2collider : HashMap<Entity, ColliderHandle>,
+    pub entity2rigidbody : HashMap<Entity, RigidBodyHandle>,
 }
 
 impl Default for RapierContext {
@@ -28,6 +31,8 @@ impl Default for RapierContext {
             narrow_phase: NarrowPhase::default(),
             multibody_joint_set: MultibodyJointSet::default(),
             ccd_solvers: CCDSolver::default(),
+            entity2collider: HashMap::new(),
+            entity2rigidbody: HashMap::new(),
         }
     }
 }

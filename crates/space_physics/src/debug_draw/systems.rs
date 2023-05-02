@@ -151,14 +151,21 @@ pub fn draw_colliders(
         match col.shape().shape_type() {
             rapier3d_f64::prelude::ShapeType::Ball => {
                 if let Some(ball) = col.shape().as_ball() {
+
                     let pos = col.position();
                     let mut d_translation = DVec3::new(pos.translation.x, pos.translation.y, pos.translation.z) - world_origin.origin;
+                    
+                    let color = if col.parent().is_some() {
+                        Color::YELLOW
+                    } else {
+                        Color::RED
+                    };
 
                     debug_draw_circle(
                         &mut lines,
                         Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32),
                         ball.radius as f32,
-                        Color::YELLOW,
+                        color,
                         Quat::IDENTITY,
                         10
                     );
@@ -167,7 +174,7 @@ pub fn draw_colliders(
                         &mut lines,
                         Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32),
                         ball.radius as f32,
-                        Color::YELLOW,
+                        color,
                         Quat::from_euler(EulerRot::XYZ, std::f32::consts::PI / 2.0, 0.0, 0.0),
                         10
                     );
@@ -188,7 +195,13 @@ pub fn draw_colliders(
                     let mut transform = Transform::from_translation(Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32));
                     transform = transform.with_rotation(rot);
 
-                    debug_draw_cuboid(&mut lines, &GlobalTransform::from(transform), Color::YELLOW, cuboid);
+                    let color = if col.parent().is_some() {
+                        Color::YELLOW
+                    } else {
+                        Color::RED
+                    };
+
+                    debug_draw_cuboid(&mut lines, &GlobalTransform::from(transform), color, cuboid);
 
                 }
             },
@@ -213,59 +226,4 @@ pub fn draw_colliders(
             rapier3d_f64::prelude::ShapeType::Custom => todo!(),
         }
     }
-
-    // println!("Draw colliders");
-    // for (collider, transform) in colliders.iter() {
-    //     match collider.collider.shape().shape_type() {
-    //         rapier3d_f64::prelude::ShapeType::Ball => {
-    //             if let Some(ball) = collider.collider.shape().as_ball() {
-    //                 debug_draw_circle(
-    //                     &mut lines,
-    //                     transform.translation(),
-    //                     ball.radius as f32,
-    //                     Color::YELLOW,
-    //                     Quat::IDENTITY,
-    //                     20
-    //                 );
-    //                 //second circle
-    //                 debug_draw_circle(
-    //                     &mut lines,
-    //                     transform.translation(),
-    //                     ball.radius as f32,
-    //                     Color::YELLOW,
-    //                     Quat::from_euler(EulerRot::XYZ, std::f32::consts::PI / 2.0, 0.0, 0.0),
-    //                     10
-    //                 );
-    //             }
-                
-    //         },
-    //         rapier3d_f64::prelude::ShapeType::Cuboid => {
-    //             if let Some(cuboid) = collider.collider.shape().as_cuboid() {
-    //                 debug_draw_cuboid(
-    //                     &mut lines,
-    //                     transform,
-    //                     Color::YELLOW,
-    //                     cuboid
-    //                 );
-    //             }
-    //         },
-    //         rapier3d_f64::prelude::ShapeType::Capsule => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::Segment => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::Triangle => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::TriMesh => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::Polyline => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::HalfSpace => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::HeightField => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::Compound => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::ConvexPolyhedron => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::Cylinder => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::Cone => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::RoundCuboid => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::RoundTriangle => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::RoundCylinder => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::RoundCone => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::RoundConvexPolyhedron => todo!(),
-    //         rapier3d_f64::prelude::ShapeType::Custom => {},
-    //     }
-    // }
 }
