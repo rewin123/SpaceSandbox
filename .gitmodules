@@ -1,0 +1,3 @@
+[submodule "crates/bevy_transform64"]
+	path = crates/bevy_transform64
+	url = https://github.com/rewin123/bevy_transform64
