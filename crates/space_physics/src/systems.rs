@@ -112,7 +112,7 @@ pub fn add_collider(
             if let Some(parent) = parent {
                 if let Ok(parent_handle) = rigidbodies.get(parent.get()) {
                     if let Some(transform) = transform {
-                        let mut col = collider.0.clone();
+                        let mut col: Collider = collider.0.clone();
                         col.set_translation(Vector3::new(transform.translation.x, transform.translation.y, transform.translation.z));
                         let handle = RapierColliderHandle(
                             collider_set.insert_with_parent(col, parent_handle.0.clone(), rigid_body_set),
@@ -144,6 +144,22 @@ pub fn add_collider(
                 println!("Create collider");
             }
         }
+    }
+}
+
+pub fn change_gravity_scale(
+    mut context : ResMut<RapierContext>,
+    gravity_scale : Query<(&RapierRigidBodyHandle, &GravityScale), Changed<GravityScale>>,
+    added_gravity_scale : Query<(&RapierRigidBodyHandle, &GravityScale), Added<GravityScale>>
+) {
+    for (handle, scale) in gravity_scale.iter() {
+        let rigid_body = context.rigid_body_set.get_mut(handle.0).unwrap();
+        rigid_body.set_gravity_scale(scale.0, true);
+    }
+
+    for (handle, scale) in added_gravity_scale.iter() {
+        let rigid_body = context.rigid_body_set.get_mut(handle.0).unwrap();
+        rigid_body.set_gravity_scale(scale.0, true);
     }
 }
 

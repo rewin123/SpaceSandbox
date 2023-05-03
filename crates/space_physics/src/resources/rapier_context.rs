@@ -42,8 +42,10 @@ impl RapierContext {
 
         self.integration_parameters.dt = dt.min(1.0 / 30.0);
 
+
         self.physics_pipeline.step(
-            &rapier3d_f64::math::Vector::new(gravity.x, gravity.y, gravity.z),
+            // &rapier3d_f64::math::Vector::new(gravity.x, gravity.y, gravity.z),
+            &rapier3d_f64::math::Vector::new(0.0, -9.8, 0.0),
             &self.integration_parameters,
             &mut self.island_manager,
             &mut self.broad_phase,

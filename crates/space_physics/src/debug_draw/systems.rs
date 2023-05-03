@@ -140,6 +140,68 @@ fn debug_draw_cuboid(
     );
 }
 
+fn debug_draw_capsule(
+    lines: &mut DebugLines,
+    global_transform: &GlobalTransform,
+    color: Color,
+    shape: &rapier3d_f64::prelude::Capsule,
+) {
+    let radius = shape.radius as f32;
+    let half_height = shape.half_height() as f32;
+
+    let segments = 16;
+    let angle_step = 2.0 * std::f32::consts::PI / segments as f32;
+
+    let mut top_circle_points = Vec::new();
+    let mut bottom_circle_points = Vec::new();
+
+    for i in 0..segments {
+        let angle = i as f32 * angle_step;
+        let x = radius * angle.cos();
+        let z = radius * angle.sin();
+
+        top_circle_points.push(Vec3::new(x, half_height, z));
+        bottom_circle_points.push(Vec3::new(x, -half_height, z));
+    }
+
+    // Transform the vertices by the global transform of the capsule
+    let transformed_top_circle_points = top_circle_points
+        .iter()
+        .map(|v| global_transform.transform_point(*v))
+        .collect::<Vec<_>>();
+    let transformed_bottom_circle_points = bottom_circle_points
+        .iter()
+        .map(|v| global_transform.transform_point(*v))
+        .collect::<Vec<_>>();
+
+    // Draw the top and bottom circles
+    for i in 0..segments {
+        let next_i = (i + 1) % segments;
+        lines.line_colored(
+            transformed_top_circle_points[i],
+            transformed_top_circle_points[next_i],
+            0.0,
+            color,
+        );
+        lines.line_colored(
+            transformed_bottom_circle_points[i],
+            transformed_bottom_circle_points[next_i],
+            0.0,
+            color,
+        );
+    }
+
+    // Draw the lines connecting top and bottom circles
+    for i in 0..segments {
+        lines.line_colored(
+            transformed_top_circle_points[i],
+            transformed_bottom_circle_points[i],
+            0.0,
+            color,
+        );
+    }
+}
+
 pub fn draw_colliders(
     context : Res<RapierContext>,
     world_origin : Res<SimpleWorldOrigin>,
@@ -156,9 +218,9 @@ pub fn draw_colliders(
                     let mut d_translation = DVec3::new(pos.translation.x, pos.translation.y, pos.translation.z) - world_origin.origin;
                     
                     let color = if col.parent().is_some() {
-                        Color::YELLOW
+                        Color::RED 
                     } else {
-                        Color::RED
+                        Color::YELLOW
                     };
 
                     debug_draw_circle(
@@ -196,9 +258,9 @@ pub fn draw_colliders(
                     transform = transform.with_rotation(rot);
 
                     let color = if col.parent().is_some() {
-                        Color::YELLOW
+                        Color::RED 
                     } else {
-                        Color::RED
+                        Color::YELLOW
                     };
 
                     debug_draw_cuboid(&mut lines, &GlobalTransform::from(transform), color, cuboid);
@@ -206,7 +268,20 @@ pub fn draw_colliders(
                 }
             },
             rapier3d_f64::prelude::ShapeType::Capsule => {
-                
+                let pos = col.position();
+                let mut d_translation = DVec3::new(pos.translation.x, pos.translation.y, pos.translation.z) - world_origin.origin;
+                let rot = col.rotation();
+                let rot = bevy::math::Quat::from_xyzw(
+                    rot.i as f32,
+                    rot.j as f32,
+                    rot.k as f32,
+                    rot.w as f32,
+                );
+
+                let mut transform = Transform::from_translation(Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32));
+                transform = transform.with_rotation(rot);
+
+                debug_draw_capsule(&mut lines, &GlobalTransform::from(transform), Color::RED, col.shape().as_capsule().unwrap());
             },
             rapier3d_f64::prelude::ShapeType::Segment => todo!(),
             rapier3d_f64::prelude::ShapeType::Triangle => todo!(),
