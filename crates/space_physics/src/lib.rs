@@ -3,7 +3,7 @@ pub mod systems;
 pub mod resources;
 pub mod debug_draw;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, transform::TransformSystem};
 use bevy_transform64::DTransformSystem;
 use resources::{RapierContext, GlobalGravity};
 use systems::*;
@@ -37,12 +37,12 @@ impl Plugin for SpacePhysicsPlugin {
 
         app.configure_set(SpacePhysicSystem::CaptureChanges.before(SpacePhysicSystem::RigidBodyUpdate).in_base_set(CoreSet::PostUpdate));
         app.configure_set(SpacePhysicSystem::RigidBodyUpdate
-            .after(DTransformSystem::TransformPropagate)
+            .before(DTransformSystem::TransformPropagate)
             .before(SpacePhysicSystem::ColliderUpdate)
             .in_base_set(CoreSet::PostUpdate));
         app.configure_set(SpacePhysicSystem::ColliderUpdate.before(SpacePhysicSystem::ContextUpdate).in_base_set(CoreSet::PostUpdate));
         app.configure_set(SpacePhysicSystem::ContextUpdate.before(SpacePhysicSystem::WriteToWorld).in_base_set(CoreSet::PostUpdate));
-        app.configure_set(SpacePhysicSystem::WriteToWorld.after(DTransformSystem::TransformPropagate).in_base_set(CoreSet::PostUpdate));
+        app.configure_set(SpacePhysicSystem::WriteToWorld.before(DTransformSystem::TransformPropagate).in_base_set(CoreSet::PostUpdate));
 
 
         app.add_systems((add_rigidbody, apply_system_buffers, delete_detection, change_gravity_scale).chain().in_set(SpacePhysicSystem::RigidBodyUpdate));
@@ -52,7 +52,13 @@ impl Plugin for SpacePhysicsPlugin {
 
         app.add_system(from_physics_engine.in_set(SpacePhysicSystem::WriteToWorld));
 
-        app.add_systems((detect_position_change,).in_set(SpacePhysicSystem::CaptureChanges));
+        app.add_systems((
+            detect_position_change,
+            change_external_impule,
+            rigidbody_disabled_system,
+            collider_disabled_system,
+            change_rigidbody_type
+        ).in_set(SpacePhysicSystem::CaptureChanges));
 
         app.add_plugin(debug_draw::SpacePhysicsDebugDrawPlugin);
     }

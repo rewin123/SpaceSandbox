@@ -1,3 +1,5 @@
+use bevy_transform64::WorldOrigin;
+
 use crate::prelude::*;
 
 pub const PAWN_CHANGE_SYSTEM : &'static str = "PAWN_CHANGE_SYSTEM";
@@ -43,6 +45,7 @@ fn change_pawn_system(
         pawn_cam_holders : Query<&Pawn>,
     mut pawn_cams : Query<&mut Camera>,
     mut next_pawn_change : ResMut<NextState<Gamemode>>,
+    mut world_origin : ResMut<WorldOrigin>
 ) {
     for pawn_change in event_reader.iter() {
         info!("Pawn changed: {:?}", pawn_change);
@@ -65,6 +68,7 @@ fn change_pawn_system(
         if let Ok(holder) = pawn_cam_holders.get(pawn_change.new_pawn) {
             if let Ok(mut cam) = pawn_cams.get_mut(holder.camera_id) {
                 cam.is_active = true;
+                *world_origin = WorldOrigin::Entity(holder.camera_id);
             }
         }
 

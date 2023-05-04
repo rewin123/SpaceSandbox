@@ -497,7 +497,7 @@ fn go_to_fps(
         pawn_event.send(ChangePawn { new_pawn: pawn, new_mode: Gamemode::FPS, save_stack: true });
 
         for ship_e in ships.iter() {
-            cmds.entity(ship_e).insert(SpaceLockedAxes::empty());
+            cmds.entity(ship_e).insert(SpaceLockedAxes::empty()).insert(SpaceRigidBodyType::Dynamic);
         }
     }
 }
