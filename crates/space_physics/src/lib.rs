@@ -57,7 +57,8 @@ impl Plugin for SpacePhysicsPlugin {
             change_external_impule,
             rigidbody_disabled_system,
             collider_disabled_system,
-            change_rigidbody_type
+            change_rigidbody_type,
+            locked_axes_system
         ).in_set(SpacePhysicSystem::CaptureChanges));
 
         app.add_plugin(debug_draw::SpacePhysicsDebugDrawPlugin);

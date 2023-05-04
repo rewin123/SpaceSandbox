@@ -10,7 +10,9 @@ pub type AddRigidBody<'a> = (
     Entity,
     &'a DTransform,
     &'a SpaceRigidBodyType,
-    Option<&'a mut Velocity>
+    Option<&'a mut Velocity>,
+    Option<&'a SpaceLockedAxes>,
+    Option<&'a SpaceDominance>
 );
 
 pub fn add_rigidbody(
@@ -18,16 +20,10 @@ pub fn add_rigidbody(
     mut context : ResMut<RapierContext>,
     mut added_rigidbodies : Query<AddRigidBody, (Added<SpaceRigidBodyType>, Without<RapierRigidBodyHandle>)>,
 ) {
-    for (e, transform, body_type, vel) in added_rigidbodies.iter() {
+    for (e, transform, body_type, vel, locked_axes, dominance) in added_rigidbodies.iter() {
         let mut body = RigidBody::default();
-        match body_type {
-            SpaceRigidBodyType::Dynamic => {
-                body.set_body_type(RigidBodyType::Dynamic, true);
-            },
-            SpaceRigidBodyType::Fixed => {
-                body.set_body_type(RigidBodyType::Fixed, true);
-            },
-        }
+        body.set_body_type(body_type.to_rapier(), true);
+        
         let mut body_pos = body.position().clone();
         body_pos.translation = na::Vector3::new(transform.translation.x, transform.translation.y, transform.translation.z).into();
         body_pos.rotation = na::Unit::new_normalize(na::Quaternion::new(transform.rotation.w, transform.rotation.x, transform.rotation.y, transform.rotation.z));
@@ -36,6 +32,14 @@ pub fn add_rigidbody(
         if let Some(vel) = vel {
             body.set_linvel(na::Vector3::new(vel.linvel.x, vel.linvel.y, vel.linvel.z).into(), true);
             body.set_angvel(na::Vector3::new(vel.angvel.x, vel.angvel.y, vel.angvel.z).into(), true);
+        }
+
+        if let Some(locked_axes) = locked_axes {
+            body.set_locked_axes((*locked_axes).into(), true);
+        }
+
+        if let Some(dominance) = dominance {
+            body.set_dominance_group(dominance.0);    
         }
 
         let handle = RapierRigidBodyHandle(
@@ -53,14 +57,7 @@ pub fn change_rigidbody_type(
 ) {
     for (handle, body_type) in rigidbodies.iter_mut() {
         let body = context.rigid_body_set.get_mut(handle.0).unwrap();
-        match body_type {
-            SpaceRigidBodyType::Dynamic => {
-                body.set_body_type(RigidBodyType::Dynamic, true);
-            },
-            SpaceRigidBodyType::Fixed => {
-                body.set_body_type(RigidBodyType::Fixed, true);
-            },
-        }
+        body.set_body_type(body_type.to_rapier(), true);
         info!("Rigidbody type changed to {:?}", body_type);
     }
 }
@@ -107,5 +104,21 @@ pub fn rigidbody_disabled_system(
     for e in enabled_rigidbodies.iter() {
         let handle = *context.entity2rigidbody.get(&e).unwrap();
         context.rigid_body_set.get_mut(handle).unwrap().set_enabled(true);
+    }
+}
+
+pub fn locked_axes_system(
+    mut context : ResMut<RapierContext>,
+    mut locked_axes : Query<(Entity, &RapierRigidBodyHandle, &SpaceLockedAxes), Added<SpaceLockedAxes>>,
+    changed_locked_axes : Query<(Entity, &RapierRigidBodyHandle, &SpaceLockedAxes), Changed<SpaceLockedAxes>>
+) {
+    let context = &mut context;
+    for (e, handle, locked_axes) in locked_axes.iter_mut() {
+        info!("Locked axes changed to {:?} for {:?}", locked_axes.bits(), e);
+        context.rigid_body_set.get_mut(handle.0).unwrap().set_locked_axes(LockedAxes::from(*locked_axes), true);
+    }
+    for (e, handle, locked_axes) in changed_locked_axes.iter() {
+        info!("Locked axes changed to {:?} for {:?}", locked_axes.bits(), e);
+        context.rigid_body_set.get_mut(handle.0).unwrap().set_locked_axes(LockedAxes::from(*locked_axes), true);
     }
 }

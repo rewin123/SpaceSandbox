@@ -47,6 +47,7 @@ pub fn new_default_ship(cmds : &mut Commands) -> Entity {
         .insert(Velocity::default())
         .insert(ExternalImpulse::default())
         .insert(Name::new("Ship"))
+        .insert(SpaceDominance(1))
         .id()
 }
 

@@ -474,8 +474,10 @@ fn go_to_fps(
             ColliderBuilder::capsule_y(0.75, 0.25).build()))
         .insert(DSpatialBundle::from_transform(DTransform::from_xyz(pos.x, pos.y, pos.z)))
         .insert(SpaceRigidBodyType::Dynamic)
-        .insert(SpaceLockedAxes::all())
+        .insert(SpaceLockedAxes::ROTATION_LOCKED)
         .insert(GravityScale(1.0)).id();
+
+        info!("Locked rotation {:?}", SpaceLockedAxes::ROTATION_LOCKED);
 
         let cam_pawn = cmds.spawn(Camera3dBundle {
             camera : cam,

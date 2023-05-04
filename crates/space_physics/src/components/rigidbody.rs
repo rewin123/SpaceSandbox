@@ -12,6 +12,15 @@ pub enum SpaceRigidBodyType {
     Fixed
 }
 
+impl SpaceRigidBodyType {
+    pub fn to_rapier(&self) -> rapier3d_f64::prelude::RigidBodyType {
+        match self {
+            SpaceRigidBodyType::Dynamic => rapier3d_f64::prelude::RigidBodyType::Dynamic,
+            SpaceRigidBodyType::Fixed => rapier3d_f64::prelude::RigidBodyType::Fixed
+        }
+    }
+}
+
 #[derive(Component, Debug, Default)]
 pub struct Velocity {
     pub linvel : DVec3,
@@ -44,7 +53,7 @@ bitflags::bitflags! {
 
 impl From<SpaceLockedAxes> for RapierLockedAxes {
     fn from(locked_axes: SpaceLockedAxes) -> RapierLockedAxes {
-        RapierLockedAxes::from_bits(locked_axes.bits()).expect("Internal conversion error.")
+        RapierLockedAxes::from_bits(locked_axes.bits).expect("Internal conversion error.")
     }
 }
 
@@ -67,3 +76,7 @@ pub struct ColliderDisabled;
 #[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
 #[reflect(Component, PartialEq)]
 pub struct GravityScale(pub f64);
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[reflect(Component, PartialEq)]
+pub struct SpaceDominance(pub i8);
