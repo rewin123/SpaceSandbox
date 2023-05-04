@@ -12,7 +12,7 @@ pub enum SpaceRigidBodyType {
     Fixed
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Default)]
 pub struct Velocity {
     pub linvel : DVec3,
     pub angvel : DVec3

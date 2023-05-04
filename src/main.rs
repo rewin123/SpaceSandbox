@@ -31,6 +31,7 @@ fn main() {
         .add_plugin(SettingsPlugin)
         .add_plugin(DTransformPlugin)
         .add_plugin(SpacePhysicsPlugin)
+        .add_plugin(SpaceSandbox::editor::EditorPlugin)
 
         .run();
 }

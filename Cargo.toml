@@ -8,7 +8,9 @@ default-run = "SpaceSandbox"
 
 [dependencies]
 serde = "*"
-bevy = {version = "0.10", features = ["serialize"]}
+bevy = {version = "0.10.1", features = ["serialize"]}
+bevy-inspector-egui = "*"
+egui_dock = "*"
 rayon = "*"
 pollster = "*"
 winit = "*"
@@ -26,6 +28,7 @@ bevy_prototype_debug_lines = "*"
 bevy_transform64 = {path = "crates/bevy_transform64"}
 space_physics = {path = "crates/space_physics"}
 crossbeam = "*"
+egui-gizmo = "*"
 
 [workspace]
 members = [

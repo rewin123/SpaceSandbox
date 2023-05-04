@@ -9,6 +9,7 @@ pub mod asset_utils;
 pub mod control;
 pub mod objects;
 pub mod space_bundle;
+pub mod editor;
 use std::default::Default;
 
 use bevy::prelude::*;

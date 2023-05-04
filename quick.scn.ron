@@ -109,22 +109,15 @@
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: -21.5,
-            y: -0.125,
-            z: 4.5,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -337,9 +330,9 @@
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
+            x: 0.04484570026397705,
+            y: 0.5379088521003723,
+            z: -0.7441971302032471,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -354,9 +347,9 @@
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
+            x: -0.02395033836364746,
+            y: 0.13413000106811523,
+            z: 0.22203350067138672,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -371,9 +364,9 @@
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
+            x: -0.004395961761474609,
+            y: -0.10847453773021698,
+            z: 0.032968997955322266,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -388,9 +381,9 @@
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
+            x: -0.3007082939147949,
+            y: 0.7586249113082886,
+            z: 0.19954490661621094,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -405,22 +398,15 @@
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: -2.25,
-            y: -0.125,
-            z: 0.25,
+            x: 0.3052358627319336,
+            y: 0.7586249113082886,
+            z: 0.19954490661621094,
           ),
-          rotation: (0.0, 0.0, 0.0, 1.0),
+          rotation: (0.0, 0.0, -0.0, 1.0),
           scale: (
-            x: 1.0,
+            x: -1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -429,22 +415,15 @@
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: 1.25,
-            y: -0.125,
-            z: -1.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -453,22 +432,15 @@
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: 0.5,
-            y: -0.125,
-            z: 4.25,
+            x: 0.04484570026397705,
+            y: 0.5379088521003723,
+            z: -0.7441971302032471,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
             x: 1.0,
             y: 1.0,
             z: 1.0,
-          ),
-        ),
-        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
-          rot_steps: (
-            x: 0,
-            y: 0,
-            z: 0,
           ),
         ),
       },
@@ -477,9 +449,400 @@
       components: {
         "bevy_transform64::components::transform::DTransform": (
           translation: (
-            x: -9.0,
+            x: -0.02395033836364746,
+            y: 0.13413000106811523,
+            z: 0.22203350067138672,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    28: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.004395961761474609,
+            y: -0.10847453773021698,
+            z: 0.032968997955322266,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    29: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.3007082939147949,
+            y: 0.7586249113082886,
+            z: 0.19954490661621094,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    30: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.3052358627319336,
+            y: 0.7586249113082886,
+            z: 0.19954490661621094,
+          ),
+          rotation: (0.0, 0.0, -0.0, 1.0),
+          scale: (
+            x: -1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    31: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    32: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    33: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    34: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    35: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    36: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    37: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    38: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    39: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    40: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    41: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    42: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    43: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    44: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    45: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    46: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    47: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    48: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    49: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    50: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -2.0,
             y: -0.125,
-            z: -6.0,
+            z: -0.75,
           ),
           rotation: (0.0, 0.0, 0.0, 1.0),
           scale: (
@@ -497,10 +860,1650 @@
         ),
       },
     ),
-    28: (
+    51: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -3.25,
+            y: -0.125,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
+          ),
+        ),
+      },
+    ),
+    52: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -1.25,
+            y: -0.125,
+            z: 0.5,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
+          ),
+        ),
+      },
+    ),
+    53: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.75,
+            y: -0.125,
+            z: -1.5,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
+          ),
+        ),
+      },
+    ),
+    54: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -2.75,
+            y: -0.125,
+            z: -2.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
+          ),
+        ),
+      },
+    ),
+    55: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -20.75,
+            y: -0.25,
+            z: 5.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
+          ),
+        ),
+      },
+    ),
+    56: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 1.0,
+            z: -0.75,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    57: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 1.0,
+            z: -0.75,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    58: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    59: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.25,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    60: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.25,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    61: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.22499999403953552,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    62: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.22499999403953552,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    63: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.20000000298023224,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    64: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.20000000298023224,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    65: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.17499999701976776,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    66: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.17499999701976776,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    67: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.15000000596046448,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    68: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.15000000596046448,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    69: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.125,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    70: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.125,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    71: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.10000000149011612,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    72: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.10000000149011612,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    73: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.07500000298023224,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    74: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.07500000298023224,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    75: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.05000000074505806,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    76: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.05000000074505806,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    77: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.02500000037252903,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    78: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.02500000037252903,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    79: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    80: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    81: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.02500000037252903,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    82: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.02500000037252903,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    83: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.05000000074505806,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    84: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.05000000074505806,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    85: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.07500000298023224,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    86: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.07500000298023224,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    87: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.10000000149011612,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    88: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.10000000149011612,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    89: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.125,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    90: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.125,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    91: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.15000000596046448,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    92: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.15000000596046448,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    93: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.17499999701976776,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    94: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.17499999701976776,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    95: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.20000000298023224,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    96: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.20000000298023224,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    97: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.22499999403953552,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    98: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.22499999403953552,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    99: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.25,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    100: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.25,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    101: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+      },
+    ),
+    102: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.25,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    103: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.25,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    104: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.22499999403953552,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    105: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.22499999403953552,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    106: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.20000000298023224,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    107: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.20000000298023224,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    108: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.17499999701976776,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    109: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.17499999701976776,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    110: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.15000000596046448,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    111: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.15000000596046448,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    112: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.125,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    113: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.125,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    114: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.10000000149011612,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    115: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.10000000149011612,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    116: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.07500000298023224,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    117: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.07500000298023224,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    118: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.05000000074505806,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    119: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.05000000074505806,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    120: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: -0.02500000037252903,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    121: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.02500000037252903,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    122: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    123: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    124: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.02500000037252903,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    125: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.02500000037252903,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    126: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.05000000074505806,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    127: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.05000000074505806,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    128: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.07500000298023224,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    129: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.07500000298023224,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    130: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.10000000149011612,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    131: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.10000000149011612,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    132: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.125,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    133: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.125,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    134: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.15000000596046448,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    135: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.15000000596046448,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    136: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.17499999701976776,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    137: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.17499999701976776,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    138: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.20000000298023224,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    139: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.20000000298023224,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    140: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.22499999403953552,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    141: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.22499999403953552,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    142: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.0,
+            y: -0.25,
+            z: 0.25,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 50.0,
+            y: 0.10000000149011612,
+            z: 0.10000000149011612,
+          ),
+        ),
+      },
+    ),
+    143: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: 0.25,
+            y: -0.25,
+            z: 0.0,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 0.10000000149011612,
+            y: 0.10000000149011612,
+            z: 50.0,
+          ),
+        ),
+      },
+    ),
+    144: (
+      components: {
+        "bevy_transform64::components::transform::DTransform": (
+          translation: (
+            x: -0.5,
+            y: 0.0,
+            z: -3.5,
+          ),
+          rotation: (0.0, 0.0, 0.0, 1.0),
+          scale: (
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+          ),
+        ),
+        "SpaceSandbox::ship::instance_rotate::InstanceRotate": (
+          rot_steps: (
+            x: 0,
+            y: 0,
+            z: 0,
+          ),
+        ),
+      },
+    ),
+    145: (
       components: {
         "SpaceSandbox::ship::save_load::DiskShipBase64": (
-          data: "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",
+          data: "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",
         ),
       },
     ),

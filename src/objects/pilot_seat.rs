@@ -122,8 +122,8 @@ fn piloting(
 fn pilot_debug_ui(
    mut pilot_seats : Query<(&mut PilotSeat), (Without<Pawn>)>,
    mut egui_ctxs : Query<&mut EguiContext>,
-   mut ships : Query<(&Transform, &Velocity), With<Ship>>,
-   mut pawns : Query<(&Transform, &Pawn)>,
+   mut ships : Query<(&DTransform, &Velocity), With<Ship>>,
+   mut pawns : Query<(&DTransform, &Pawn)>,
 ) {
 
     let mut ctx = egui_ctxs.single_mut();
@@ -131,7 +131,7 @@ fn pilot_debug_ui(
         for (mut pilot_seat) in pilot_seats.iter_mut() {
             if let Some(pawn) = &mut pilot_seat.pawn {
                 let (ship_transform, ship_vel) = ships.iter().next().unwrap();
-                ui.label(format!("Distance from world origin: {:.0}", ship_transform.translation.distance(Vec3::ZERO)));
+                ui.label(format!("Distance from world origin: {:.0}", ship_transform.translation.distance(DVec3::ZERO)));
                 ui.label(format!("Ship velocity {:.2}", ship_vel.linvel.length()));
                 ui.label(format!("Ship rotation velocity {:.2}", ship_vel.angvel.length()));
 
@@ -159,6 +159,7 @@ fn seat_in_pilot_seat(
         return;
     };
     if input.just_pressed(Action::FPS(crate::control::FPSAction::Interact)) {
+        info!("Interact with pilot seat");
         if let Ok((e, mut tr)) = pawns.get_mut(e) {
             if let Some(cache) = &mut seat.pawn {
                 commands.entity(cache.pawn).remove::<RigidBodyDisabled>().remove::<ColliderDisabled>().remove_parent();

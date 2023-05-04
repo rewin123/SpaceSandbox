@@ -44,6 +44,9 @@ pub fn new_default_ship(cmds : &mut Commands) -> Entity {
         .insert(DSpatialBundle::from_transform(DTransform::from_xyz(0.0, 0.0, 0.0)))
         .insert(SpaceRigidBodyType::Fixed)
         .insert(GravityScale(0.0))
+        .insert(Velocity::default())
+        .insert(ExternalImpulse::default())
+        .insert(Name::new("Ship"))
         .id()
 }
 

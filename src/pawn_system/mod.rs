@@ -21,6 +21,7 @@ pub struct Pawn {
     pub camera_id : Entity
 }
 
+#[derive(Debug)]
 pub struct ChangePawn {
     pub new_pawn : Entity,
     pub new_mode : Gamemode,
@@ -44,7 +45,7 @@ fn change_pawn_system(
     mut next_pawn_change : ResMut<NextState<Gamemode>>,
 ) {
     for pawn_change in event_reader.iter() {
-
+        info!("Pawn changed: {:?}", pawn_change);
         if let Some(e) = pawn.id {
             if let Ok(holder) = pawn_cam_holders.get(e) {
                 if let Ok(mut cam) = pawn_cams.get_mut(holder.camera_id) {
