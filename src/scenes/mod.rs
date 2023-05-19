@@ -2,6 +2,7 @@ pub mod station_builder;
 pub mod fps_mode;
 pub mod main_menu;
 pub mod settings;
+pub mod asset_editor;
 
 use bevy::prelude::*;
 

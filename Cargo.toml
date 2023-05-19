@@ -29,11 +29,14 @@ bevy_transform64 = {path = "crates/bevy_transform64"}
 space_physics = {path = "crates/space_physics"}
 crossbeam = "*"
 egui-gizmo = "*"
+bevy_proto = "0.10"
 
 [workspace]
 members = [
     "crates/bevy_transform64",
-    "crates/space_physics"]
+    "crates/space_physics",
+]
+resolver = "2"
 
 [dev-dependencies]
 test-case = "*"

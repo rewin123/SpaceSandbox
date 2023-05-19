@@ -1,6 +1,10 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, math::DVec3};
+use bevy_proto::prelude::{PrototypesMut, ProtoCommands};
+use bevy_transform64::prelude::DTransform;
 use rand::Rng;
 use space_physics::prelude::{SpaceCollider, ColliderBuilder};
+
+use crate::DSpatialBundle;
 
 use super::radar::RadarDetected;
 
@@ -17,23 +21,34 @@ pub enum MeteorFieldCommand {
 
 pub struct MetorFieldPlugin;
 
+#[derive(Resource, Default)]
+struct MeteorFieldState {
+    pub protos : Vec<HandleUntyped>
+}
+
 impl Plugin for MetorFieldPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MeteorFieldCommand>();
 
+        app.insert_resource(MeteorFieldState::default());
         app.add_system(meteor_field_spawn);
+        app.add_startup_system(proto_loading);
     }
+}
+
+fn proto_loading(mut prototypes : PrototypesMut, mut field : ResMut<MeteorFieldState>) {
+    prototypes.load("space_objects/asteroid_1.prototype.ron");
 }
 
 fn meteor_field_spawn(
     mut commands: Commands,
+    mut proto_commands : ProtoCommands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut events : EventReader<MeteorFieldCommand>,
     query : Query<Entity, With<Meteor>>,
     asset_server : Res<AssetServer>
 ) {
-    let asteroid_scene = asset_server.load("space_objects/asteroid_1.glb#Scene0");
     for event in events.iter() {
         match event {
             MeteorFieldCommand::Spawn => {
@@ -55,17 +70,16 @@ fn meteor_field_spawn(
                     if spawn_pos.length() < min_dist {
                         continue;
                     }
-                    commands.spawn(SceneBundle {
-                        scene : asteroid_scene.clone(),
-                        transform: Transform::from_xyz(
-                            spawn_pos.x,
-                            spawn_pos.y,
-                            spawn_pos.z,
-                        ).with_scale(Vec3::new(200.0, 200.0,200.0)),
-                        ..Default::default()
-                    }).insert(Meteor{})
-                    .insert(RadarDetected{ color : Color::YELLOW})
-                    .insert(SpaceCollider(ColliderBuilder::ball(0.5).build()));
+                    let mut entity = proto_commands.spawn("Asteroid 1");
+                    // entity.entity_commands().insert(
+                    //     DSpatialBundle::from_transform(DTransform::from_xyz(
+                    //         spawn_pos.x as f64,
+                    //         spawn_pos.y as f64,
+                    //         spawn_pos.z as f64,
+                    //     ).with_scale(DVec3::new(200.0, 200.0,200.0))),
+                    // ).insert(Meteor{})
+                    // .insert(RadarDetected{ color : Color::YELLOW})
+                    // .insert(SpaceCollider(ColliderBuilder::ball(0.5).build()));
                 }
             }
             MeteorFieldCommand::Despawn => {

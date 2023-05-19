@@ -13,6 +13,7 @@ pub mod editor;
 use std::default::Default;
 
 use bevy::prelude::*;
+use bevy_proto::prelude::{Schematic, ReflectSchematic};
 use bevy_transform64::prelude::*;
 // use winit::window::Window;
 
@@ -26,7 +27,8 @@ pub mod prelude {
 pub enum SceneType {
     #[default]
     MainMenu,
-    ShipBuilding
+    ShipBuilding,
+    AssetEditor
 }
 
 
@@ -60,3 +62,9 @@ impl DSpatialBundle {
         }
     }
 }
+
+// #[derive(Debug, Reflect, FromReflect, Schematic, Default)]
+// #[reflect(Schematic)]
+// pub struct ProroTransform {
+//     pub transform: DTransform
+// }

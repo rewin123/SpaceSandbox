@@ -19,6 +19,9 @@ fn main_menu(
                 if ui.button("Station builder").clicked() {
                     next_scene.set(SceneType::ShipBuilding);
                 }
+                if ui.button("Asset editor").clicked() {
+                    next_scene.set(SceneType::AssetEditor);
+                }
                 if ui.button("Exit").clicked() {
                     // cmds.push(GameCommands::Exit);
                 }

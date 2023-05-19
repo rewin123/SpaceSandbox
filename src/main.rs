@@ -16,7 +16,11 @@ fn main() {
     App::default()
         .insert_resource(Msaa::default())
         .register_type::<DiskShipBase64>()
-        .add_plugins(bevy::DefaultPlugins)
+        .add_plugins(bevy::DefaultPlugins.set(AssetPlugin {
+            watch_for_changes: true,
+            ..default()
+        }))
+        .add_plugin(bevy_proto::prelude::ProtoPlugin::default())
         .add_plugin(bevy_egui::EguiPlugin)
         .add_plugin(SpaceSandbox::ship::common::VoxelInstancePlugin)
         .add_plugin(SpaceSandbox::ship::save_load::ShipPlugin)
@@ -32,6 +36,6 @@ fn main() {
         .add_plugin(DTransformPlugin)
         .add_plugin(SpacePhysicsPlugin)
         .add_plugin(SpaceSandbox::editor::EditorPlugin)
-
+        .add_plugin(SpaceSandbox::scenes::asset_editor::AssetEditorPlugin)
         .run();
 }
