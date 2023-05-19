@@ -1,0 +1,8 @@
+(
+    name : "Engine",
+    schematics : {
+        "bevy_proto::custom::SceneBundle" : (
+            scene : AssetPath("ship/tiles/engine.glb#Scene0")
+        )
+    }
+)

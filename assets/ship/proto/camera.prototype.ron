@@ -1,0 +1,8 @@
+(
+    name : "Camera",
+    schematics : {
+        "bevy_proto::custom::SceneBundle" : (
+            scene : AssetPath("ship/tiles/camera.glb#Scene0")
+        )
+    }
+)

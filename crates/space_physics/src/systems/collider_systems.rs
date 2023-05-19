@@ -71,6 +71,19 @@ pub fn add_collider(
     }
 }
 
+pub fn collider_change_detection(
+    mut context : ResMut<RapierContext>,
+    mut changed_collider : Query<(Entity, &SpaceCollider, &RapierColliderHandle), Changed<SpaceCollider>>
+) {
+    for (e, collider, handle) in changed_collider.iter() {
+        if let Some(col) = context.collider_set.get_mut(handle.0) {
+            col.set_shape(collider.0.shared_shape().clone());
+        }
+    }
+}
+
+
+
 pub fn collider_disabled_system(
     mut context : ResMut<RapierContext>,
     mut disbled_colliders : Query<(Entity, &RapierColliderHandle), Added<ColliderDisabled>>,

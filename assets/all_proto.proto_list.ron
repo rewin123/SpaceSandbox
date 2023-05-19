@@ -1,0 +1,17 @@
+(
+    paths : [
+        "space_objects/proto/asteroid_1.prototype.ron",
+        "space_objects/proto/asteroid_2.prototype.ron",
+        "space_objects/proto/asteroid_3.prototype.ron",
+        "ship/proto/base_plate.prototype.ron",
+        "ship/proto/camera.prototype.ron",
+        "ship/proto/corner_window.prototype.ron",
+        "ship/proto/door.prototype.ron",
+        "ship/proto/engine.prototype.ron",
+        "ship/proto/fuel_tank.prototype.ron",
+        "ship/proto/pilot_seat.prototype.ron",
+        "ship/proto/pilot_top_window.prototype.ron",
+        "ship/proto/white_triangle_plate.prototype.ron",
+        "ship/proto/window.prototype.ron",
+    ]
+)

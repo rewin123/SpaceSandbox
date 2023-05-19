@@ -1,0 +1,8 @@
+(
+    name : "Window",
+    schematics : {
+        "bevy_proto::custom::SceneBundle" : (
+            scene : AssetPath("ship/tiles/window.glb#Scene0")
+        )
+    }
+)

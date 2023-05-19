@@ -1,0 +1,8 @@
+(
+    name : "White triangle plate",
+    schematics : {
+        "bevy_proto::custom::SceneBundle" : (
+            scene : AssetPath("ship/tiles/white_triangle_plate.glb#Scene0")
+        )
+    }
+)

@@ -1,0 +1,8 @@
+(
+    name : "Asteroid 2",
+    schematics : {
+        "bevy_proto::custom::SceneBundle" : (
+            scene : AssetPath("space_objects/asteroid_2.glb#Scene0")
+        )
+    }
+)

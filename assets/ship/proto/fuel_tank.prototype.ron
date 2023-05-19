@@ -1,0 +1,8 @@
+(
+    name : "Fuel tank",
+    schematics : {
+        "bevy_proto::custom::SceneBundle" : (
+            scene : AssetPath("ship/tiles/fuel_tank.glb#Scene0")
+        )
+    }
+)

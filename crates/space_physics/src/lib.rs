@@ -46,7 +46,7 @@ impl Plugin for SpacePhysicsPlugin {
 
 
         app.add_systems((add_rigidbody, apply_system_buffers, delete_detection, change_gravity_scale).chain().in_set(SpacePhysicSystem::RigidBodyUpdate));
-        app.add_systems((add_collider, apply_system_buffers).chain().in_set(SpacePhysicSystem::ColliderUpdate));
+        app.add_systems((collider_change_detection, add_collider, apply_system_buffers).chain().in_set(SpacePhysicSystem::ColliderUpdate));
         
         app.add_system(update_context.in_set(SpacePhysicSystem::ContextUpdate));
 

@@ -1,0 +1,12 @@
+(
+    name : "Base Plate",
+    schematics : {
+        "bevy_proto::custom::SceneBundle" : (
+            scene : AssetPath("ship/tiles/base_plate.glb#Scene0")
+        ),
+        "SpaceSandbox::scenes::asset_editor::BlockConfig" : (
+            bbox : (x : 8,y : 1,z : 8),
+            origin : (x : 0.0, y :  0.0, z : 0.0)
+        )
+    }
+)

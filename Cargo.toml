@@ -30,6 +30,7 @@ space_physics = {path = "crates/space_physics"}
 crossbeam = "*"
 egui-gizmo = "*"
 bevy_proto = "0.10"
+bevy_common_assets = {version = "*", features = ["ron"]}
 
 [workspace]
 members = [
