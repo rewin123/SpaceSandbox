@@ -43,12 +43,13 @@ pub fn delete_detection(
 
 pub fn detect_position_change(
     mut context : ResMut<RapierContext>,
-    mut rigidbodies : Query<(&DTransform, &RapierRigidBodyHandle), Changed<DTransform>>,
-    mut colliders : Query<(&DTransform, &RapierColliderHandle), (Changed<DTransform>, Without<RapierRigidBodyHandle>)>
+    mut rigidbodies : Query<(&DGlobalTransform, &RapierRigidBodyHandle), Changed<DTransform>>,
+    mut colliders : Query<(&DGlobalTransform, &RapierColliderHandle), (Changed<DTransform>, Without<RapierRigidBodyHandle>)>
 ) {
     let context = &mut *context;
     for (transform, rigidbody_handle) in rigidbodies.iter_mut() {
         let mut rigid_body = context.rigid_body_set.get_mut(rigidbody_handle.0).unwrap();
+        let transform = transform.compute_transform();
         rigid_body.set_translation(
             na::Vector3::new(
                 transform.translation.x, 
@@ -67,6 +68,7 @@ pub fn detect_position_change(
 
     for (transform, collider_handle) in colliders.iter_mut() {
         let collider = context.collider_set.get_mut(collider_handle.0).unwrap();
+        let transform = transform.compute_transform();
         collider.set_translation(
             na::Vector3::new(
                 transform.translation.x, 

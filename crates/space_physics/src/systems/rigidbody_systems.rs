@@ -35,7 +35,7 @@ pub fn add_rigidbody(
         }
 
         if let Some(locked_axes) = locked_axes {
-            body.set_locked_axes((*locked_axes).into(), true);
+            body.set_locked_axes(LockedAxes::from_bits(locked_axes.bits()).unwrap(), true);
         }
 
         if let Some(dominance) = dominance {
@@ -115,10 +115,10 @@ pub fn locked_axes_system(
     let context = &mut context;
     for (e, handle, locked_axes) in locked_axes.iter_mut() {
         info!("Locked axes changed to {:?} for {:?}", locked_axes.bits(), e);
-        context.rigid_body_set.get_mut(handle.0).unwrap().set_locked_axes(LockedAxes::from(*locked_axes), true);
+        context.rigid_body_set.get_mut(handle.0).unwrap().set_locked_axes(LockedAxes::from_bits(locked_axes.bits()).unwrap(), true);
     }
     for (e, handle, locked_axes) in changed_locked_axes.iter() {
         info!("Locked axes changed to {:?} for {:?}", locked_axes.bits(), e);
-        context.rigid_body_set.get_mut(handle.0).unwrap().set_locked_axes(LockedAxes::from(*locked_axes), true);
+        context.rigid_body_set.get_mut(handle.0).unwrap().set_locked_axes(LockedAxes::from_bits(locked_axes.bits()).unwrap(), true);
     }
 }

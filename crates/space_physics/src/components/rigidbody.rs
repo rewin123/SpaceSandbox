@@ -28,8 +28,7 @@ pub struct Velocity {
 }
 
 bitflags::bitflags! {
-    #[derive(Default, Component, Reflect, FromReflect)]
-    #[reflect(Component, PartialEq)]
+    #[derive(Default, Component, Debug)]
     /// Flags affecting the behavior of the constraints solver for a given contact manifold.
     pub struct SpaceLockedAxes: u8 {
         /// Flag indicating that the rigid-body cannot translate along the `X` axis.
@@ -39,7 +38,7 @@ bitflags::bitflags! {
         /// Flag indicating that the rigid-body cannot translate along the `Z` axis.
         const TRANSLATION_LOCKED_Z = 1 << 2;
         /// Flag indicating that the rigid-body cannot translate along any direction.
-        const TRANSLATION_LOCKED = Self::TRANSLATION_LOCKED_X.bits | Self::TRANSLATION_LOCKED_Y.bits | Self::TRANSLATION_LOCKED_Z.bits;
+        const TRANSLATION_LOCKED = Self::TRANSLATION_LOCKED_X.bits() | Self::TRANSLATION_LOCKED_Y.bits() | Self::TRANSLATION_LOCKED_Z.bits();
         /// Flag indicating that the rigid-body cannot rotate along the `X` axis.
         const ROTATION_LOCKED_X = 1 << 3;
         /// Flag indicating that the rigid-body cannot rotate along the `Y` axis.
@@ -47,13 +46,14 @@ bitflags::bitflags! {
         /// Flag indicating that the rigid-body cannot rotate along the `Z` axis.
         const ROTATION_LOCKED_Z = 1 << 5;
         /// Combination of flags indicating that the rigid-body cannot rotate along any axis.
-        const ROTATION_LOCKED = Self::ROTATION_LOCKED_X.bits | Self::ROTATION_LOCKED_Y.bits | Self::ROTATION_LOCKED_Z.bits;
+        const ROTATION_LOCKED = Self::ROTATION_LOCKED_X.bits() | Self::ROTATION_LOCKED_Y.bits() | Self::ROTATION_LOCKED_Z.bits();
     }
 }
 
+
 impl From<SpaceLockedAxes> for RapierLockedAxes {
     fn from(locked_axes: SpaceLockedAxes) -> RapierLockedAxes {
-        RapierLockedAxes::from_bits(locked_axes.bits).expect("Internal conversion error.")
+        RapierLockedAxes::from_bits(locked_axes.bits()).expect("Internal conversion error.")
     }
 }
 

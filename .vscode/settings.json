@@ -1,3 +1,6 @@
 {
-    "cmake.configureOnOpen": false
+    "cmake.configureOnOpen": false,
+    "rust-analyzer.linkedProjects": [
+        ".\\crates\\space_physics\\Cargo.toml"
+    ]
 }

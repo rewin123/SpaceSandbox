@@ -282,9 +282,12 @@ fn setup_block(mut cmds : Commands, mut query : Query<(Entity, &BlockConfig), Ch
             bbox.z as f64 * VOXEL_SIZE / 2.0
         ).translation(nalgebra::Vector3::new(collider_pos.x, collider_pos.y, collider_pos.y)).build();
 
+        let child_col = cmds.spawn(SpaceCollider(collider))
+            .insert(DTransformBundle::from_transform(DTransform::from_xyz(collider_pos.x, collider_pos.y, collider_pos.y))).id();
+
         cmds.entity(entity)
-                .insert(SpaceCollider(collider))
-                .insert(instance);
+                .insert(instance)
+                .add_child(child_col);
 
     }
 }

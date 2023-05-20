@@ -11,4 +11,4 @@ serde = "*"
 rapier3d-f64 = "*"
 bevy_transform64 = {path = "../bevy_transform64"}
 bevy_prototype_debug_lines = {version = "*", features = ["3d"]}
-bitflags = "*"
+bitflags = "2.3.1"
