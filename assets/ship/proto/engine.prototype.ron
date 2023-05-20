@@ -3,6 +3,10 @@
     schematics : {
         "bevy_proto::custom::SceneBundle" : (
             scene : AssetPath("ship/tiles/engine.glb#Scene0")
+        ),
+        "SpaceSandbox::scenes::asset_editor::BlockConfig" : (
+            bbox : (x : 8,y : 8,z : 25),
+            origin : (x : 0.0, y :  0.0, z : -0.05)
         )
     }
 )

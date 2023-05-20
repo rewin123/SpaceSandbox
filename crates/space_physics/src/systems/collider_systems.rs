@@ -10,13 +10,18 @@ pub fn add_collider(
     mut commands : Commands, // A mutable reference to the command buffer used to create, delete or modify entities
     mut context : ResMut<RapierContext>, // A mutable reference to the RapierContext resource, which stores the physics simulation state
     mut rigidbodies : Query<&RapierRigidBodyHandle>,
-    mut added_colliders : Query<(Entity, &SpaceCollider, Option<&RapierRigidBodyHandle>, Option<&Parent>, Option<&DTransform>), (Added<SpaceCollider>, Without<RapierColliderHandle>)>, // A mutable query that finds entities with SpaceCollider components that have not yet been associated with RapierColliderHandles
+    mut added_colliders : Query<(Entity, &SpaceCollider, Option<&RapierRigidBodyHandle>, Option<&Parent>, Option<&DGlobalTransform>), (Added<SpaceCollider>, Without<RapierColliderHandle>)>, // A mutable query that finds entities with SpaceCollider components that have not yet been associated with RapierColliderHandles
 ) {
     // Create a mutable reference to the RapierContext resource
     let context = &mut *context;
 
     // Loop through each (entity, collider, rigidbody) tuple in the query result
-    for (e, collider, rigidbody, parent, transform) in added_colliders.iter() {
+    for (
+        e, 
+        collider, 
+        rigidbody, 
+        parent, 
+        transform) in added_colliders.iter() {
 
         // Create mutable references to the rigid body set and collider set in the RapierContext resource
         let rigid_body_set = &mut context.rigid_body_set;
@@ -37,7 +42,7 @@ pub fn add_collider(
                 if let Ok(parent_handle) = rigidbodies.get(parent.get()) {
                     if let Some(transform) = transform {
                         let mut col: Collider = collider.0.clone();
-                        col.set_translation(Vector3::new(transform.translation.x, transform.translation.y, transform.translation.z));
+                        col.set_translation(Vector3::new(transform.translation().x, transform.translation().y, transform.translation().z));
                         let handle = RapierColliderHandle(
                             collider_set.insert_with_parent(col, parent_handle.0.clone(), rigid_body_set),
                         );
@@ -59,8 +64,14 @@ pub fn add_collider(
 
             {
                 // Create a RapierColliderHandle that is associated with the collider only
+                let mut collider = collider.0.clone();
+                if let Some(transform) = transform {
+                    collider.set_translation(Vector3::new(transform.translation().x, transform.translation().y, transform.translation().z));
+                    info!("Set collider translation to {:?}", transform.translation());
+                }
+
                 let handle = RapierColliderHandle(
-                    context.collider_set.insert(collider.0.clone()),
+                    context.collider_set.insert(collider),
                 );
                 context.entity2collider.insert(e, handle.0);
                 // Add the RapierColliderHandle component to the entity

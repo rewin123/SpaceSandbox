@@ -24,6 +24,9 @@ pub fn delete_detection(
     for e in collider_del.iter() {
         if let Some(handle) = context.entity2collider.get(&e) {
             context.collider_set.remove(*handle, &mut context.island_manager, &mut context.rigid_body_set, true);
+            info!("Collider deleted: {:?}", e);
+        } else {
+            error!("Collider not found: {:?}", e);
         }
     }
 
@@ -36,6 +39,9 @@ pub fn delete_detection(
                 &mut context.impulse_joint_set,
                 &mut context.multibody_joint_set,
                 true);
+            info!("Rigid body deleted: {:?}", e);
+        } else {
+            error!("Rigid body not found: {:?}", e);
         }
     }
 }
@@ -44,7 +50,7 @@ pub fn delete_detection(
 pub fn detect_position_change(
     mut context : ResMut<RapierContext>,
     mut rigidbodies : Query<(&DGlobalTransform, &RapierRigidBodyHandle), Changed<DTransform>>,
-    mut colliders : Query<(&DGlobalTransform, &RapierColliderHandle), (Changed<DTransform>, Without<RapierRigidBodyHandle>)>
+    mut colliders : Query<(&DGlobalTransform, &RapierColliderHandle, &DTransform), (Changed<DGlobalTransform>, Without<RapierRigidBodyHandle>)>
 ) {
     let context = &mut *context;
     for (transform, rigidbody_handle) in rigidbodies.iter_mut() {
@@ -66,21 +72,38 @@ pub fn detect_position_change(
                 true);
     }
 
-    for (transform, collider_handle) in colliders.iter_mut() {
+    for (transform, collider_handle, loc_transform) in colliders.iter_mut() {
         let collider = context.collider_set.get_mut(collider_handle.0).unwrap();
-        let transform = transform.compute_transform();
-        collider.set_translation(
-            na::Vector3::new(
-                transform.translation.x, 
-                transform.translation.y, 
-                transform.translation.z));
+        if collider.parent().is_none() {
+            let transform = transform.compute_transform();
+            collider.set_translation(
+                na::Vector3::new(
+                    transform.translation.x, 
+                    transform.translation.y, 
+                    transform.translation.z));
+            
+            collider.set_rotation(
+                na::Unit::new_normalize(na::Quaternion::new(
+                    transform.rotation.w, 
+                    transform.rotation.x, 
+                    transform.rotation.y, 
+                    transform.rotation.z)));
+        } else {
+            let transform = loc_transform;
+            collider.set_translation(
+                na::Vector3::new(
+                    transform.translation.x, 
+                    transform.translation.y, 
+                    transform.translation.z));
+            
+            collider.set_rotation(
+                na::Unit::new_normalize(na::Quaternion::new(
+                    transform.rotation.w, 
+                    transform.rotation.x, 
+                    transform.rotation.y, 
+                    transform.rotation.z)));
+        }
         
-        collider.set_rotation(
-             na::Unit::new_normalize(na::Quaternion::new(
-                transform.rotation.w, 
-                transform.rotation.x, 
-                transform.rotation.y, 
-                transform.rotation.z)));
     }
 
 }

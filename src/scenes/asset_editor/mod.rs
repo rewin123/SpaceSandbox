@@ -263,8 +263,17 @@ pub struct BlockConfig {
     pub origin : DVec3
 }
 
-fn setup_block(mut cmds : Commands, mut query : Query<(Entity, &BlockConfig), Changed<BlockConfig>>) {
-    for (entity, config) in query.iter() {
+fn setup_block(mut cmds : Commands, mut query : Query<(Entity, &BlockConfig, Option<&Children>), Changed<BlockConfig>>, mut colliders : Query<(Entity, &SpaceCollider)>) {
+    for (entity, config, children) in query.iter() {
+
+        if let Some(children) = children {
+            for child in children {
+                if let Ok((col_e, col)) = colliders.get(*child) {
+                    cmds.entity(col_e).despawn();
+                }
+            }
+        }
+
         cmds.entity(entity).insert(InstanceRotate::default());
 
         let instance = VoxelInstance {
@@ -280,10 +289,10 @@ fn setup_block(mut cmds : Commands, mut query : Query<(Entity, &BlockConfig), Ch
             bbox.x as f64 * VOXEL_SIZE / 2.0, 
             bbox.y as f64 * VOXEL_SIZE / 2.0, 
             bbox.z as f64 * VOXEL_SIZE / 2.0
-        ).translation(nalgebra::Vector3::new(collider_pos.x, collider_pos.y, collider_pos.y)).build();
+        ).build();
 
         let child_col = cmds.spawn(SpaceCollider(collider))
-            .insert(DTransformBundle::from_transform(DTransform::from_xyz(collider_pos.x, collider_pos.y, collider_pos.y))).id();
+            .insert(DTransformBundle::from_transform(DTransform::from_xyz(collider_pos.x, collider_pos.y, collider_pos.z))).id();
 
         cmds.entity(entity)
                 .insert(instance)
