@@ -1,12 +1,17 @@
 use bevy::prelude::*;
-use bevy_egui::*;
+use bevy_egui::{*, egui::{TextureHandle, TextureId}};
 use crate::*;
 
 fn main_menu(
     mut cmds : Commands,
     mut egui_context: Query<&mut EguiContext>,
-    mut next_scene : ResMut<NextState<SceneType>>
+    mut next_scene : ResMut<NextState<SceneType>>,
+    background : ResMut<BackgroundImage>,
 ) {
+    egui::CentralPanel::default().show(egui_context.single_mut().get_mut(), |ui| {
+        let size = ui.available_size();
+        ui.image(background.0, size);
+    });
     egui::Window::new("Space sandbox")
         .resizable(false)
         .collapsible(false)
@@ -35,8 +40,21 @@ fn main_menu(
 //     });
 // }
 
+#[derive(Resource)]
+struct BackgroundImage(TextureId, Handle<Image>);
+
 pub struct MainMenuPlugin {
 
+}
+
+fn setup_main_menu(
+    mut commands: Commands, 
+    asset_server : ResMut<AssetServer>,
+    mut egui_context: EguiContexts) {
+
+    let image : Handle<Image> = asset_server.load("background_main_menu.png");
+    let id = egui_context.add_image(image.clone());
+    commands.insert_resource(BackgroundImage(id, image));
 }
 
 impl Plugin for MainMenuPlugin {
@@ -45,5 +63,6 @@ impl Plugin for MainMenuPlugin {
         app.add_state::<Gamemode>();
 
         app.add_system(main_menu.in_set(OnUpdate(SceneType::MainMenu)));
+        app.add_startup_system(setup_main_menu);
     }
 }
