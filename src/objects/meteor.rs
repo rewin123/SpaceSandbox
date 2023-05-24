@@ -1,5 +1,5 @@
 use bevy::{prelude::*, math::DVec3};
-use bevy_proto::prelude::{PrototypesMut, ProtoCommands};
+use bevy_proto::prelude::{PrototypesMut, ProtoCommands, Schematic, ReflectSchematic};
 use bevy_transform64::prelude::DTransform;
 use rand::Rng;
 use space_physics::prelude::{SpaceCollider, ColliderBuilder};
@@ -8,7 +8,8 @@ use crate::DSpatialBundle;
 
 use super::radar::RadarDetected;
 
-#[derive(Component, Reflect, FromReflect, Default)]
+#[derive(Component, Reflect, FromReflect, Default, Schematic)]
+#[reflect(Schematic)]
 pub struct Meteor {
 
 }
@@ -33,6 +34,7 @@ impl Plugin for MetorFieldPlugin {
         app.insert_resource(MeteorFieldState::default());
         app.add_system(meteor_field_spawn);
         app.add_startup_system(proto_loading);
+        app.register_type::<Meteor>();
     }
 }
 

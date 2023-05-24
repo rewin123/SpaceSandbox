@@ -7,6 +7,7 @@
         "SpaceSandbox::scenes::asset_editor::BlockConfig" : (
             bbox : (x : 1,y : 1,z : 1),
             origin : (x : 0.0, y :  -1.0, z : 0.0)
-        )
+        ),
+        "SpaceSandbox::objects::ship_camera::ShipCamera" : ()
     }
 )

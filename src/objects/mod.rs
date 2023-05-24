@@ -21,5 +21,7 @@ impl Plugin for SpaceObjectsPlugin {
         app.add_plugin(pilot_seat::PilotSeatPlugin);
         app.add_plugin(meteor::MetorFieldPlugin);
         app.add_plugin(radar::RadarPlugin);
+        app.add_plugin(door::DoorPlugin);
+        app.register_type::<ship_camera::ShipCamera>();
     }
 }

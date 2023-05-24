@@ -7,6 +7,9 @@
         "SpaceSandbox::scenes::asset_editor::BlockConfig" : (
             bbox : (x : 8,y : 1,z : 8),
             origin : (x : 0.0, y :  -1.0, z : -0.00)
+        ),
+        "SpaceSandbox::objects::pilot_seat::PilotSeat" : (
+            
         )
     }
 )

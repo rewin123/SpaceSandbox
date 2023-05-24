@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bevy::{prelude::*, math::{DVec3, DQuat}};
+use bevy::{prelude::*, math::{DVec3, DQuat}, pbr::CascadeShadowConfigBuilder};
 use bevy_transform64::prelude::*;
 use rand::Rng;
 use space_physics::prelude::*;
@@ -127,8 +127,14 @@ fn setup(
         directional_light: DirectionalLight {
             // Configure the projection to better fit the scene
             shadows_enabled: true,
+            
             ..default()
         },
+        cascade_shadow_config: CascadeShadowConfigBuilder {
+            first_cascade_far_bound: 4.0,
+            maximum_distance: 10.0,
+            ..default()
+        }.into(),
         transform: Transform {
             translation: Vec3::new(0.0, 2.0, 0.0),
             rotation: Quat::from_rotation_x(-2.5),

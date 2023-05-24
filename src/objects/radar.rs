@@ -1,4 +1,5 @@
 use bevy::{prelude::*, math::DVec3};
+use bevy_proto::prelude::{Schematic, ReflectSchematic};
 use bevy_prototype_debug_lines::*;
 use bevy_transform64::prelude::{DTransform, DGlobalTransform};
 
@@ -9,7 +10,8 @@ pub struct RadarDetected {
     pub color : Color
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect, FromReflect, Schematic)]
+#[reflect(Schematic)]
 pub struct Radar {
     pub points : Vec<Entity>,
     pub radius : f64,
@@ -42,7 +44,7 @@ struct RadarResource {
 impl Plugin for RadarPlugin {
     fn build(&self, app: &mut App) {
         app.add_startup_system(radar_resource_init);
-
+        app.register_type::<Radar>();
         app.add_system(
             radar
         );

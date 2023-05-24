@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use bevy::{prelude::*, math::DVec3};
 use bevy_egui::*;
+use bevy_proto::prelude::{Schematic, ReflectSchematic};
 use bevy_transform64::prelude::DTransform;
 use space_physics::prelude::*;
 
@@ -15,8 +16,8 @@ struct PawnCache {
     pawn_transform : DTransform,
 }
 
-#[derive(Component, Default, Reflect, FromReflect)]
-#[reflect(Component)]
+#[derive(Component, Default, Reflect, FromReflect, Schematic)]
+#[reflect(Component, Schematic)]
 pub struct PilotSeat {
     #[reflect(ignore)]
     pawn : Option<PawnCache>,
@@ -42,6 +43,8 @@ impl Plugin for PilotSeatPlugin {
         app.add_system(
             piloting.in_set(OnUpdate(Gamemode::FPS))
         );
+
+        app.register_type::<PilotSeat>();
     }
 }
 
