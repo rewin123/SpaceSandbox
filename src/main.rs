@@ -9,6 +9,8 @@ use SpaceSandbox::scenes::settings::SettingsPlugin;
 use SpaceSandbox::scenes::station_builder::StationBuilderPlugin;
 use SpaceSandbox::ship::save_load::DiskShipBase64;
 use bevy::prelude::*;
+use bevy::render::RenderPlugin;
+use bevy::render::settings::{WgpuSettings, WgpuFeatures};
 use bevy_transform64::DTransformPlugin;
 use space_physics::SpacePhysicsPlugin;
 
@@ -19,6 +21,11 @@ fn main() {
         .add_plugins(bevy::DefaultPlugins.set(AssetPlugin {
             watch_for_changes: true,
             ..default()
+        }).set(RenderPlugin {
+            wgpu_settings: WgpuSettings {
+                features: WgpuFeatures::POLYGON_MODE_LINE,
+                ..default()
+            }
         }))
         .add_plugin(bevy_proto::prelude::ProtoPlugin::default())
         .add_plugin(bevy_egui::EguiPlugin)

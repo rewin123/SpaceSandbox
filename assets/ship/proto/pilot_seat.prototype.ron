@@ -10,6 +10,20 @@
         ),
         "SpaceSandbox::objects::pilot_seat::PilotSeat" : (
             
+        ),
+        "SpaceSandbox::scenes::asset_editor::ron_collider::RonColliderCompound" : (
+            colliders : [
+                Box((
+                    position : (x : 0.0, y : 0.1, z : 0.0),
+                    rotation : (x : 0.0, y : 0.0, z : 0.0),
+                    size : (x : 1.0, y : 0.125, z : 1.0),
+                )),
+                Box((
+                    position : (x : 0.0, y : 0.5, z : -0.5),
+                    rotation : (x : 0.0, y : 0.0, z : 0.0),
+                    size : (x : 1.0, y : 0.25, z : 0.5),
+                ))
+            ]
         )
     }
 )

@@ -7,6 +7,15 @@
         "SpaceSandbox::scenes::asset_editor::BlockConfig" : (
             bbox : (x : 8,y : 8,z : 15),
             origin : (x : 0.0, y :  -1.0, z : -0.00)
+        ),
+        "SpaceSandbox::scenes::asset_editor::ron_collider::RonColliderCompound" : (
+            colliders : [
+                Box((
+                    position : (x : 0.0, y : 1.0, z : 0.0),
+                    rotation : (x : 0.0, y : 0.0, z : 0.0),
+                    size : (x : 1.0, y : 1.0, z : 1.9),
+                ))
+            ]
         )
     }
 )

@@ -8,6 +8,15 @@
             bbox : (x : 1,y : 1,z : 1),
             origin : (x : 0.0, y :  -1.0, z : 0.0)
         ),
-        "SpaceSandbox::objects::ship_camera::ShipCamera" : ()
+        "SpaceSandbox::objects::ship_camera::ShipCamera" : (),
+        "SpaceSandbox::scenes::asset_editor::ron_collider::RonColliderCompound" : (
+            colliders : [
+                Box((
+                    position : (x : 0.0, y : 0.125, z : 0.0),
+                    rotation : (x : 0.0, y : 0.0, z : 0.0),
+                    size : (x : 0.125, y : 0.125, z : 0.125),
+                ))
+            ]
+        )
     }
 )

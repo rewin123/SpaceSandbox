@@ -25,7 +25,7 @@ pub struct RonSphereCollider {
 #[derive(Reflect, FromReflect)]
 pub struct RonBoxCollider {
     pub position : DVec3,
-    pub rotation : DQuat,
+    pub rotation : DVec3,
     pub size : DVec3
 }
 
@@ -59,10 +59,9 @@ impl RonSphereCollider {
 impl RonBoxCollider {
     pub fn into_shape(&self) -> (Isometry<Real>, SharedShape) {
         let shape = SharedShape::cuboid(self.size.x as f64, self.size.y as f64, self.size.z as f64);
-        let (euler_angles, _) = self.rotation.to_axis_angle();
         let pos = Isometry::new(
             Vector3::new(self.position.x, self.position.y, self.position.z), 
-            Vector3::new(euler_angles.x, euler_angles.y, euler_angles.z));
+            Vector3::new(self.rotation.x, self.rotation.y, self.rotation.z));
         (pos, shape)
     }
 }
