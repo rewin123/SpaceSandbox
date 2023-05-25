@@ -3,14 +3,18 @@ use std::path::PathBuf;
 use bevy::{prelude::*, math::DVec3, reflect::TypeUuid};
 use bevy_egui::{egui::{Ui, self}, EguiContext};
 use bevy_proto::{prelude::{PrototypesMut, ProtoAssetEvent, ProtoCommands, prototype_ready, Prototypical, ReflectSchematic, Schematic}, backend::schematics::FromSchematicInput};
-use bevy_transform64::{DTransformBundle, prelude::DTransform};
+use bevy_prototype_debug_lines::DebugLines;
+use bevy_transform64::{DTransformBundle, prelude::{DTransform, DGlobalTransform}, SimpleWorldOrigin};
 use serde::{Serialize, Deserialize};
 use space_physics::prelude::{ColliderBuilder, nalgebra, SpaceCollider};
 
 use crate::{SceneType, pawn_system::Pawn, ship::{instance_rotate::InstanceRotate, prelude::VoxelInstance, VOXEL_SIZE}};
 use bevy_common_assets::ron::RonAssetPlugin;
 
+use self::ron_collider::{RonColliderCompound, RonCollider, RonBoxCollider, RonSphereCollider};
+
 mod explorer;
+pub mod ron_collider;
 
 #[derive(Serialize, Deserialize, TypeUuid)]
 #[uuid = "576c943a-477a-4885-add8-28d774f44beb"]
@@ -40,7 +44,13 @@ impl Plugin for AssetEditorPlugin {
         app.configure_set(AsssetEditorSet::Base.run_if(in_state(SceneType::AssetEditor)));
 
         app.register_type::<BlockConfig>();
-        app.add_systems((load,show_proto_editor, setup_block).in_set(AsssetEditorSet::Base));
+        app.register_type::<RonColliderCompound>();
+        app.register_type::<RonCollider>();
+        app.register_type::<RonBoxCollider>();
+        app.register_type::<RonSphereCollider>();
+        app.register_type::<Vec<RonCollider>>();
+
+        app.add_systems((load,show_proto_editor, setup_block, update_ron_collider).in_set(AsssetEditorSet::Base));
         app.add_system(listen_load_event.after(load).in_set(AsssetEditorSet::Base));
         app.add_system(setup.in_schedule(OnEnter(SceneType::AssetEditor)));
         app.insert_resource(ProtoEditor::default());
@@ -141,6 +151,19 @@ fn spawn_proto(cur_state: &mut ResMut<CurrentProto>, handle: &Handle<bevy_proto:
                 &prev_id,
                 &cur_id);
         }
+    }
+}
+
+fn draw_bbox(mut query : Query<(&DGlobalTransform, &VoxelInstance)>, origin : Res<SimpleWorldOrigin>, mut lines : ResMut<DebugLines>) {
+    for (transform, voxel) in query.iter_mut() {
+        //draw bbox
+        let center = (transform.translation() - origin.origin).as_vec3();
+        lines.line_colored(
+          center + Vec3::new(-voxel.bbox.x as f32 / 2.0, -voxel.bbox.y as f32 / 2.0, -voxel.bbox.z as f32 / 2.0),  
+          center + Vec3::new(voxel.bbox.x as f32 / 2.0, -voxel.bbox.y as f32 / 2.0, -voxel.bbox.z as f32 / 2.0),
+          0.0,
+          Color::CYAN
+        );
     }
 }
 
@@ -263,6 +286,19 @@ pub struct BlockConfig {
     pub origin : DVec3
 }
 
+fn update_ron_collider(
+    mut cmds : Commands,
+    mut query : Query<(Entity, &RonColliderCompound, Option<&mut SpaceCollider>), Changed<BlockConfig>>
+) {
+    for (entity, compound, col) in query.iter_mut() {
+        if let Some(collider) = compound.into_collider() {
+            cmds.entity(entity).insert(SpaceCollider(collider));
+        } else {
+            debug!("No collider");
+        }
+    }
+}
+
 fn setup_block(mut cmds : Commands, mut query : Query<(Entity, &BlockConfig, Option<&Children>), Changed<BlockConfig>>, mut colliders : Query<(Entity, &SpaceCollider)>) {
     for (entity, config, children) in query.iter() {
 
@@ -283,20 +319,9 @@ fn setup_block(mut cmds : Commands, mut query : Query<(Entity, &BlockConfig, Opt
         };
         let bbox = instance.bbox.clone();
 
-        let collider_pos = -instance.origin.clone() * bbox.as_dvec3() / 2.0 * VOXEL_SIZE;
-
-        let collider = ColliderBuilder::cuboid(
-            bbox.x as f64 * VOXEL_SIZE / 2.0, 
-            bbox.y as f64 * VOXEL_SIZE / 2.0, 
-            bbox.z as f64 * VOXEL_SIZE / 2.0
-        ).build();
-
-        let child_col = cmds.spawn(SpaceCollider(collider))
-            .insert(DTransformBundle::from_transform(DTransform::from_xyz(collider_pos.x, collider_pos.y, collider_pos.z))).id();
-
+        
         cmds.entity(entity)
-                .insert(instance)
-                .add_child(child_col);
+                .insert(instance);
 
     }
 }

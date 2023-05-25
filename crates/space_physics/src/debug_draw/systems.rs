@@ -1,5 +1,6 @@
 use bevy::{prelude::*, math::{DQuat, DVec3}};
 use bevy_transform64::{prelude::{DGlobalTransform, DTransform}, WorldOrigin, SimpleWorldOrigin};
+use rapier3d_f64::prelude::ColliderBuilder;
 use crate::prelude::{SpaceCollider, RapierContext};
 
 use super::components::*;
@@ -208,97 +209,113 @@ pub fn draw_colliders(
     mut colliders : Query<(&SpaceCollider, &GlobalTransform)>,
     mut lines: ResMut<DebugLines>,
 ) {
-
     for (handle, col) in context.collider_set.iter() {
-        match col.shape().shape_type() {
-            rapier3d_f64::prelude::ShapeType::Ball => {
-                if let Some(ball) = col.shape().as_ball() {
-
-                    let pos = col.position();
-                    let mut d_translation = DVec3::new(pos.translation.x, pos.translation.y, pos.translation.z) - world_origin.origin;
-                    
-                    let color = if col.parent().is_some() {
-                        Color::RED 
-                    } else {
-                        Color::YELLOW
-                    };
-
-                    debug_draw_circle(
-                        &mut lines,
-                        Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32),
-                        ball.radius as f32,
-                        color,
-                        Quat::IDENTITY,
-                        10
-                    );
-
-                    debug_draw_circle(
-                        &mut lines,
-                        Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32),
-                        ball.radius as f32,
-                        color,
-                        Quat::from_euler(EulerRot::XYZ, std::f32::consts::PI / 2.0, 0.0, 0.0),
-                        10
-                    );
-                }
-            },
-            rapier3d_f64::prelude::ShapeType::Cuboid => {
-                if let Some(cuboid) = col.shape().as_cuboid() {
-                    let pos = col.position();
-                    let mut d_translation = DVec3::new(pos.translation.x, pos.translation.y, pos.translation.z) - world_origin.origin;
-                    let rot = col.rotation();
-                    let rot = bevy::math::Quat::from_xyzw(
-                        rot.i as f32,
-                        rot.j as f32,
-                        rot.k as f32,
-                        rot.w as f32,
-                    );
-
-                    let mut transform = Transform::from_translation(Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32));
-                    transform = transform.with_rotation(rot);
-
-                    let color = if col.parent().is_some() {
-                        Color::RED 
-                    } else {
-                        Color::YELLOW
-                    };
-
-                    debug_draw_cuboid(&mut lines, &GlobalTransform::from(transform), color, cuboid);
-
-                }
-            },
-            rapier3d_f64::prelude::ShapeType::Capsule => {
-                let pos = col.position();
-                let mut d_translation = DVec3::new(pos.translation.x, pos.translation.y, pos.translation.z) - world_origin.origin;
-                let rot = col.rotation();
-                let rot = bevy::math::Quat::from_xyzw(
-                    rot.i as f32,
-                    rot.j as f32,
-                    rot.k as f32,
-                    rot.w as f32,
-                );
-
-                let mut transform = Transform::from_translation(Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32));
-                transform = transform.with_rotation(rot);
-
-                debug_draw_capsule(&mut lines, &GlobalTransform::from(transform), Color::RED, col.shape().as_capsule().unwrap());
-            },
-            rapier3d_f64::prelude::ShapeType::Segment => todo!(),
-            rapier3d_f64::prelude::ShapeType::Triangle => todo!(),
-            rapier3d_f64::prelude::ShapeType::TriMesh => todo!(),
-            rapier3d_f64::prelude::ShapeType::Polyline => todo!(),
-            rapier3d_f64::prelude::ShapeType::HalfSpace => todo!(),
-            rapier3d_f64::prelude::ShapeType::HeightField => todo!(),
-            rapier3d_f64::prelude::ShapeType::Compound => todo!(),
-            rapier3d_f64::prelude::ShapeType::ConvexPolyhedron => todo!(),
-            rapier3d_f64::prelude::ShapeType::Cylinder => todo!(),
-            rapier3d_f64::prelude::ShapeType::Cone => todo!(),
-            rapier3d_f64::prelude::ShapeType::RoundCuboid => todo!(),
-            rapier3d_f64::prelude::ShapeType::RoundTriangle => todo!(),
-            rapier3d_f64::prelude::ShapeType::RoundCylinder => todo!(),
-            rapier3d_f64::prelude::ShapeType::RoundCone => todo!(),
-            rapier3d_f64::prelude::ShapeType::RoundConvexPolyhedron => todo!(),
-            rapier3d_f64::prelude::ShapeType::Custom => todo!(),
-        }
+        iter_draw_colliders(col, &world_origin, &mut lines);
     }
+}
+
+fn iter_draw_colliders(col: &rapier3d_f64::prelude::Collider, world_origin: &Res<SimpleWorldOrigin>, lines: &mut ResMut<DebugLines>) {
+    match col.shape().shape_type() {
+        rapier3d_f64::prelude::ShapeType::Ball => {
+            if let Some(ball) = col.shape().as_ball() {
+                draw_ball(col, world_origin, lines, ball);
+            }
+        },
+        rapier3d_f64::prelude::ShapeType::Cuboid => {
+            if let Some(cuboid) = col.shape().as_cuboid() {
+                draw_cuboid(col, world_origin, lines, cuboid);
+            }
+        },
+        rapier3d_f64::prelude::ShapeType::Capsule => {
+            let pos = col.position();
+            let mut d_translation = DVec3::new(pos.translation.x, pos.translation.y, pos.translation.z) - world_origin.origin;
+            let rot = col.rotation();
+            let rot = bevy::math::Quat::from_xyzw(
+                rot.i as f32,
+                rot.j as f32,
+                rot.k as f32,
+                rot.w as f32,
+            );
+
+            let mut transform = Transform::from_translation(Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32));
+            transform = transform.with_rotation(rot);
+
+            debug_draw_capsule(lines, &GlobalTransform::from(transform), Color::RED, col.shape().as_capsule().unwrap());
+        },
+        rapier3d_f64::prelude::ShapeType::Segment => todo!(),
+        rapier3d_f64::prelude::ShapeType::Triangle => todo!(),
+        rapier3d_f64::prelude::ShapeType::TriMesh => todo!(),
+        rapier3d_f64::prelude::ShapeType::Polyline => todo!(),
+        rapier3d_f64::prelude::ShapeType::HalfSpace => todo!(),
+        rapier3d_f64::prelude::ShapeType::HeightField => todo!(),
+        rapier3d_f64::prelude::ShapeType::Compound => {
+            if let Some(compound) = col.shape().as_compound() {
+                for (pos, shape) in compound.shapes() {
+                    let collider = ColliderBuilder::new(shape.clone()).position(pos.clone()).build();
+                    iter_draw_colliders(&collider, world_origin, lines);
+                }
+            }
+        },
+        rapier3d_f64::prelude::ShapeType::ConvexPolyhedron => todo!(),
+        rapier3d_f64::prelude::ShapeType::Cylinder => todo!(),
+        rapier3d_f64::prelude::ShapeType::Cone => todo!(),
+        rapier3d_f64::prelude::ShapeType::RoundCuboid => todo!(),
+        rapier3d_f64::prelude::ShapeType::RoundTriangle => todo!(),
+        rapier3d_f64::prelude::ShapeType::RoundCylinder => todo!(),
+        rapier3d_f64::prelude::ShapeType::RoundCone => todo!(),
+        rapier3d_f64::prelude::ShapeType::RoundConvexPolyhedron => todo!(),
+        rapier3d_f64::prelude::ShapeType::Custom => todo!(),
+    }
+}
+
+fn draw_cuboid(col: &rapier3d_f64::prelude::Collider, world_origin: &Res<SimpleWorldOrigin>, lines: &mut ResMut<DebugLines>, cuboid: &rapier3d_f64::parry::shape::Cuboid) {
+    let pos = col.position();
+    let mut d_translation = DVec3::new(pos.translation.x, pos.translation.y, pos.translation.z) - world_origin.origin;
+    let rot = col.rotation();
+    let rot = bevy::math::Quat::from_xyzw(
+        rot.i as f32,
+        rot.j as f32,
+        rot.k as f32,
+        rot.w as f32,
+    );
+
+    let mut transform = Transform::from_translation(Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32));
+    transform = transform.with_rotation(rot);
+
+    let color = if col.parent().is_some() {
+        Color::RED 
+    } else {
+        Color::YELLOW
+    };
+
+    debug_draw_cuboid(lines, &GlobalTransform::from(transform), color, cuboid);
+}
+
+fn draw_ball(col: &rapier3d_f64::prelude::Collider, world_origin: &Res<SimpleWorldOrigin>, lines: &mut ResMut<DebugLines>, ball: &rapier3d_f64::parry::shape::Ball) {
+    let pos = col.position();
+    let mut d_translation = DVec3::new(pos.translation.x, pos.translation.y, pos.translation.z) - world_origin.origin;
+                    
+    let color = if col.parent().is_some() {
+        Color::RED 
+    } else {
+        Color::YELLOW
+    };
+
+    debug_draw_circle(
+        lines,
+        Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32),
+        ball.radius as f32,
+        color,
+        Quat::IDENTITY,
+        10
+    );
+
+    debug_draw_circle(
+        lines,
+        Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32),
+        ball.radius as f32,
+        color,
+        Quat::from_euler(EulerRot::XYZ, std::f32::consts::PI / 2.0, 0.0, 0.0),
+        10
+    );
 }
