@@ -1,21 +1,31 @@
 (
     name : "Engine",
     schematics : {
-        "bevy_proto::custom::SceneBundle" : (
-            scene : AssetPath("ship/tiles/engine.glb#Scene0")
-        ),
         "SpaceSandbox::scenes::asset_editor::BlockConfig" : (
             bbox : (x : 8,y : 8,z : 25),
-            origin : (x : 0.0, y :  0.0, z : -0.05)
+            origin : (x : 0.0, y : 0.0, z : 0.0)
         ),
         "SpaceSandbox::scenes::asset_editor::ron_collider::RonColliderCompound" : (
             colliders : [
                 Box((
-                    position : (x : 0.0, y : 0.0, z : 0.1),
+                    position : (x : 0.0, y : 0.0, z : 0.0),
                     rotation : (x : 0.0, y : 0.0, z : 0.0),
                     size : (x : 1.0, y : 1.0, z : 3.1),
                 ))
             ]
+        ),
+        "bevy_proto::custom::SpatialBundle" : ()
+    },
+    children : [
+        (
+            value : Inline((
+                name : "Engine model",
+                schematics : {
+                    "bevy_proto::custom::SceneBundle" : (
+                        scene : AssetPath("ship/tiles/engine.glb#Scene0")
+                    )
+                }
+            ))
         )
-    }
+    ]
 )

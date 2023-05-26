@@ -50,7 +50,7 @@ impl Plugin for AssetEditorPlugin {
         app.register_type::<RonSphereCollider>();
         app.register_type::<Vec<RonCollider>>();
 
-        app.add_systems((load,show_proto_editor, setup_block, update_ron_collider).in_set(AsssetEditorSet::Base));
+        app.add_systems((load,show_proto_editor, setup_block, update_ron_collider, draw_bbox).in_set(AsssetEditorSet::Base));
         app.add_system(listen_load_event.after(load).in_set(AsssetEditorSet::Base));
         app.add_system(setup.in_schedule(OnEnter(SceneType::AssetEditor)));
         app.insert_resource(ProtoEditor::default());
@@ -157,12 +157,110 @@ fn spawn_proto(cur_state: &mut ResMut<CurrentProto>, handle: &Handle<bevy_proto:
 fn draw_bbox(mut query : Query<(&DGlobalTransform, &VoxelInstance)>, origin : Res<SimpleWorldOrigin>, mut lines : ResMut<DebugLines>) {
     for (transform, voxel) in query.iter_mut() {
         //draw bbox
-        let center = (transform.translation() - origin.origin).as_vec3();
+        let half_extents = Vec3::new(voxel.bbox.x as f32 / 2.0, voxel.bbox.y as f32 / 2.0, voxel.bbox.z as f32 / 2.0) * (VOXEL_SIZE as f32);
+        
+        let mut d_translation = DVec3::new(transform.translation().x, transform.translation().y, transform.translation().z) - origin.origin;
+        let rot = transform.compute_transform().rotation;
+        let rot = bevy::math::Quat::from_xyzw(
+            rot.x as f32,
+            rot.y as f32,
+            rot.z as f32,
+            rot.w as f32,
+        );
+
+        let mut global_transform = Transform::from_translation(Vec3::new(d_translation.x as f32, d_translation.y as f32, d_translation.z as f32));
+        global_transform = global_transform.with_rotation(rot);
+        let color = Color::PINK;
+
+        let vertices = [
+            Vec3::new(half_extents.x, half_extents.y, half_extents.z),
+            Vec3::new(-half_extents.x, half_extents.y, half_extents.z),
+            Vec3::new(half_extents.x, -half_extents.y, half_extents.z),
+            Vec3::new(-half_extents.x, -half_extents.y, half_extents.z),
+            Vec3::new(half_extents.x, half_extents.y, -half_extents.z),
+            Vec3::new(-half_extents.x, half_extents.y, -half_extents.z),
+            Vec3::new(half_extents.x, -half_extents.y, -half_extents.z),
+            Vec3::new(-half_extents.x, -half_extents.y, -half_extents.z),
+        ];
+
+        // Transform the vertices by the global transform of the cuboid
+        let transformed_vertices = vertices
+            .iter()
+            .map(|v| global_transform.transform_point(*v))
+            .collect::<Vec<_>>();
+
+        // Draw the edges of the cuboid using the transformed vertices
         lines.line_colored(
-          center + Vec3::new(-voxel.bbox.x as f32 / 2.0, -voxel.bbox.y as f32 / 2.0, -voxel.bbox.z as f32 / 2.0),  
-          center + Vec3::new(voxel.bbox.x as f32 / 2.0, -voxel.bbox.y as f32 / 2.0, -voxel.bbox.z as f32 / 2.0),
-          0.0,
-          Color::CYAN
+            transformed_vertices[0],
+            transformed_vertices[1],
+            0.0,
+            color,
+        );
+        lines.line_colored(
+            transformed_vertices[1],
+            transformed_vertices[3],
+            0.0,
+            color,
+        );
+        lines.line_colored(
+            transformed_vertices[3],
+            transformed_vertices[2],
+            0.0,
+            color,
+        );
+        lines.line_colored(
+            transformed_vertices[2],
+            transformed_vertices[0],
+            0.0,
+            color,
+        );
+        lines.line_colored(
+            transformed_vertices[0],
+            transformed_vertices[4],
+            0.0,
+            color,
+        );
+        lines.line_colored(
+            transformed_vertices[1],
+            transformed_vertices[5],
+            0.0,
+            color,
+        );
+        lines.line_colored(
+            transformed_vertices[3],
+            transformed_vertices[7],
+            0.0,
+            color,
+        );
+        lines.line_colored(
+            transformed_vertices[2],
+            transformed_vertices[6],
+            0.0,
+            color,
+        );
+        lines.line_colored(
+            transformed_vertices[4],
+            transformed_vertices[5],
+            0.0,
+            color,
+        );
+        lines.line_colored(
+            transformed_vertices[5],
+            transformed_vertices[7],
+            0.0,
+            color,
+        );
+        lines.line_colored(
+            transformed_vertices[7],
+            transformed_vertices[6],
+            0.0,
+            color,
+        );
+        lines.line_colored(
+            transformed_vertices[6],
+            transformed_vertices[4],
+            0.0,
+            color,
         );
     }
 }
