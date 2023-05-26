@@ -22,7 +22,10 @@
                 name : "Engine model",
                 schematics : {
                     "bevy_proto::custom::SceneBundle" : (
-                        scene : AssetPath("ship/tiles/engine.glb#Scene0")
+                        scene : AssetPath("ship/tiles/engine.glb#Scene0"),
+                        transform : (
+                            translation : (x : 0.0, y : 0.0, z : 0.0),
+                        )
                     )
                 }
             ))
