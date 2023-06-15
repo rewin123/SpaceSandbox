@@ -8,13 +8,13 @@
         "type": "tabs",
         "children": [
           {
-            "id": "de5a93057470ef5b",
+            "id": "a49f0e53a9bb21ba",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Диздок Frontier Folly.md",
-                "mode": "source",
+                "file": "Frontier Folly - альфа версия.md",
+                "mode": "preview",
                 "source": false
               }
             }
@@ -86,7 +86,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Диздок Frontier Folly.md",
+                "file": "Frontier Folly - альфа версия.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -103,7 +103,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Диздок Frontier Folly.md",
+                "file": "Frontier Folly - альфа версия.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -126,7 +126,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Диздок Frontier Folly.md"
+                "file": "Frontier Folly - альфа версия.md"
               }
             }
           }
@@ -147,9 +147,11 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "de5a93057470ef5b",
+  "active": "a49f0e53a9bb21ba",
   "lastOpenFiles": [
-    "Диздок Frontier Folly.md",
+    "Лор.md",
+    "Пилот.md",
+    "Frontier Folly - альфа версия.md",
     "Диздок Frontier Folly.pdf",
     "imgs/Pasted image 20230615005943.png",
     "imgs",
