@@ -14,7 +14,7 @@
               "type": "markdown",
               "state": {
                 "file": "Frontier Folly - альфа версия.md",
-                "mode": "preview",
+                "mode": "source",
                 "source": false
               }
             }
@@ -69,8 +69,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "9de8ab980f1a557e",
@@ -149,12 +148,22 @@
   },
   "active": "a49f0e53a9bb21ba",
   "lastOpenFiles": [
+    "imgs/Pasted image 20230616162217.png",
+    "imgs/Pasted image 20230616161855.png",
+    "imgs/Pasted image 20230616161739.png",
+    "imgs/Pasted image 20230616125331.png",
+    "imgs/Pasted image 20230616125132.png",
+    "imgs/Pasted image 20230616124918.png",
+    "imgs/Pasted image 20230616121836.png",
+    "imgs/Pasted image 20230616121816.png",
+    "imgs/Pasted image 20230616121747.png",
+    "Ship design.canvas",
+    "imgs/Pasted image 20230616121705.png",
+    "imgs/Pasted image 20230616121648.png",
+    "Frontier Folly - альфа версия.md",
     "Лор.md",
     "Пилот.md",
-    "Frontier Folly - альфа версия.md",
     "Диздок Frontier Folly.pdf",
-    "imgs/Pasted image 20230615005943.png",
-    "imgs",
-    "Pasted image 20230615005704.png"
+    "imgs"
   ]
 }
