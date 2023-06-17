@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "cdc4c3302b185ded",
+        "id": "3dabedf5ba50bbbb",
         "type": "tabs",
         "children": [
           {
-            "id": "a49f0e53a9bb21ba",
+            "id": "c2f891e9c4e68136",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -146,8 +146,12 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "a49f0e53a9bb21ba",
+  "active": "c2f891e9c4e68136",
   "lastOpenFiles": [
+    "Frontier Folly - альфа версия.pdf",
+    "imgs/Pasted image 20230616223740.png",
+    "Pasted image 20230616162825.png.md",
+    "Frontier Folly - альфа версия.md",
     "imgs/Pasted image 20230616162217.png",
     "imgs/Pasted image 20230616161855.png",
     "imgs/Pasted image 20230616161739.png",
@@ -158,9 +162,6 @@
     "imgs/Pasted image 20230616121816.png",
     "imgs/Pasted image 20230616121747.png",
     "Ship design.canvas",
-    "imgs/Pasted image 20230616121705.png",
-    "imgs/Pasted image 20230616121648.png",
-    "Frontier Folly - альфа версия.md",
     "Лор.md",
     "Пилот.md",
     "Диздок Frontier Folly.pdf",
