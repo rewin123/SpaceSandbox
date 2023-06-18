@@ -26,27 +26,53 @@ fn main() {
 
     //generate star map
     let mut stars = vec![];
-    let star_count = 10;
-    for _ in 0..star_count {
-        let id = state.world.spawn(Location::default()).id();
+    let star_count = 100;
+    for i in 0..star_count {
+        let id = state.world.spawn(Location::default())
+            .insert(Name::new(format!("Star {i}")))
+            .id();
         stars.push(id);
     }
     let mut rnd = rand::thread_rng();
     let star_distr = rand::distributions::Uniform::new(0, stars.len());
     for i in 0..star_count {
-        let links = rand::distributions::Uniform::new(1, 5).sample(&mut rnd);
-        let mut star_loc = state.world.get_mut::<Location>(stars[i]).unwrap();
+        let links = rand::distributions::Uniform::new(1, 4).sample(&mut rnd);
         for _ in 0..links {
-            star_loc.paths.push(stars[star_distr.sample(&mut rnd)]);
+            let star_idx = star_distr.sample(&mut rnd);
+            {
+                let mut star_loc = state.world.get_mut::<Location>(stars[i]).unwrap();
+                star_loc.paths.push(stars[star_idx]);
+            }
+            {
+                let mut star_loc = state.world.get_mut::<Location>(stars[star_idx]).unwrap();
+                star_loc.paths.push(stars[i]);
+            }
         }
     }
 
-    let ship_id = state.world.spawn(AtLocation {id : stars[0]})
+    let mut planets = vec![];
+    //generate planets
+    for star_idx in 0..star_count {
+        let planet_count = rand::distributions::Uniform::new(1, 10).sample(&mut rnd);
+        let star_id = stars[star_idx];
+        let star_name = state.world.get::<Name>(star_id).unwrap().to_string();
+        for planet_idx in 0..planet_count {
+            let planet_id = state.world
+                .spawn(Location {paths : vec![star_id]})
+                .insert(Name::new(format!("Planet {planet_idx} of {star_name}")))
+                .id();
+            planets.push(planet_id);
+            state.world.get_mut::<Location>(star_id).unwrap().paths.push(planet_id);
+        }
+    }
+
+    let ship_id = state.world.spawn(AtLocation {id : planets[0]})
         .insert(Ship)
+        .insert(Name::new("Ship"))
         .id();
 
     let goal = Goal {
-        pred : vec![Box::new(GoalLocation {target_loc : stars[stars.len() - 1], target_obj : ship_id})],
+        pred : vec![Box::new(GoalLocation {target_loc : planets[planets.len() - 1], target_obj : ship_id})],
     };
 
 
@@ -57,10 +83,12 @@ fn main() {
     
     let seq = find_sequence(&state, &goal);
     
-    // let res = pathfinding::prelude::dijkstra_all(&state, |s| s.clone().successors());
-    
     let elapsed_time = start_time.elapsed();
-    println!("Res (time {elapsed_time:?}): {:#?}", seq);
+    if let Some(seq) = seq {
+        println!("Res (time {elapsed_time:?}): {}", print_planning_plan(&state.world, &seq));
+    } else {
+        println!("No sequence");
+    }
 
     // for i in 0..1000 {
     //     state.world.spawn(AtLocation {id : ship_id}).id();

@@ -55,6 +55,10 @@ impl Operator for EmptyOp {
         format!("EmptyOp")
     }
 
+    fn to_pretty(&self, world : &World) -> String {
+        format!("Chilling")
+    }
+
     fn effect(&self, state : &mut State) -> State {
         state.clone()
     }
@@ -74,7 +78,7 @@ pub fn find_sequence(s0 : &State, goal : &Goal) -> Option<Vec<Box<dyn Operator +
 
     let start_time = Instant::now();
     let goal = goal.clone();
-    let mut find_thr = thread::spawn(move || {
+    let find_thr = thread::spawn(move || {
         let start_node = find_node;
         let res = pathfinding::prelude::dijkstra(
             &start_node, 
@@ -82,7 +86,7 @@ pub fn find_sequence(s0 : &State, goal : &Goal) -> Option<Vec<Box<dyn Operator +
             |s| goal.precondition(&s.state));
         res
     });
-    while !find_thr.is_finished() && start_time.elapsed() < Duration::from_secs(1) {
+    while !find_thr.is_finished() && start_time.elapsed() < Duration::from_secs(10) {
         thread::sleep(Duration::from_millis(1));
     }
 
@@ -99,5 +103,15 @@ pub fn find_sequence(s0 : &State, goal : &Goal) -> Option<Vec<Box<dyn Operator +
     }
 
     None
+}
+
+pub fn print_planning_plan(world : &World, plan : &Vec<Box<dyn Operator + Send + Sync>>) -> String {
+    let mut res = String::new();
+
+    for op in plan {
+        res.push_str(&op.to_pretty(world));
+        res.push_str(" \n");
+    }
+    res
 }
 

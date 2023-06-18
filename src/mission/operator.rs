@@ -20,6 +20,7 @@ pub trait OperatorRule {
 
 pub trait Operator : Debug {
     fn to_string(&self) -> String;
+    fn to_pretty(&self, world : &World) -> String;
     fn effect(&self, state : &mut State) -> State;
     fn clone_operator(&self) -> Box<dyn Operator + Send + Sync>;
 }
@@ -59,6 +60,13 @@ impl OperatorRule for GoRule {
 impl Operator for Go {
     fn to_string(&self) -> String {
         format!("Go({:?}, {:?})", self.id, self.move_to)
+    }
+
+    fn to_pretty(&self, world : &World) -> String {
+        let none = Name::new("None");
+        let obj_name = world.get::<Name>(self.id).unwrap_or(&none).to_string();
+        let loc_name = world.get::<Name>(self.move_to).unwrap_or(&none).to_string();
+        format!("Go {} to {}", obj_name, loc_name)
     }
 
     fn effect(&self, state : &mut State) -> State {
