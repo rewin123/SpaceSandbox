@@ -10,6 +10,7 @@ pub mod control;
 pub mod objects;
 pub mod space_bundle;
 pub mod editor;
+pub mod mission;
 use std::default::Default;
 
 use bevy::prelude::*;

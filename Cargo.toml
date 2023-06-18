@@ -29,6 +29,9 @@ crossbeam = "*"
 egui-gizmo = "*"
 bevy_proto = "0.10"
 bevy_common_assets = {version = "*", features = ["ron"]}
+genevo = "0.7"
+pathfinding = "4.3.0"
+downcast-rs = "1.2.0"
 
 [workspace]
 members = [
