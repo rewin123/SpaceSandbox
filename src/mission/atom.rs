@@ -1,4 +1,4 @@
-use bevy::{prelude::*, ecs::world::{EntityMut, EntityRef}};
+use bevy::{prelude::*, ecs::world::{EntityMut, EntityRef}, utils::HashSet};
 use std::fmt::Debug;
 
 pub type AtomCopy = Box<dyn Fn(&mut EntityMut, &EntityRef) + Send + Sync>;
@@ -109,5 +109,49 @@ impl Atom for Ship {
 
     fn eq_fn() -> AtomEq {
         auto_eq_fn::<Self>()
+    }
+}
+
+#[derive(Debug, Clone, Component, Default, Eq, PartialEq)]
+pub struct HasItem {
+    pub items : HashSet<Entity>,
+}
+
+impl Atom for HasItem {
+    fn name(&self) -> String {
+        "HasItem".to_string()
+    }
+
+    fn copy_fn() -> AtomCopy {
+        auto_copy_fn::<HasItem>()
+    }
+
+    fn debug_fn() -> AtomDebug {
+        auto_debug_fn::<HasItem>()
+    }
+
+    fn eq_fn() -> AtomEq {
+        auto_eq_fn::<HasItem>()
+    }
+}
+
+#[derive(Debug, Clone, Component, Default, Eq, PartialEq)]
+pub struct Item;
+
+impl Atom for Item {
+    fn name(&self) -> String {
+        "Item".to_string()
+    }
+
+    fn copy_fn() -> AtomCopy {
+        auto_copy_fn::<Item>()
+    }
+
+    fn debug_fn() -> AtomDebug {
+        auto_debug_fn::<Item>()
+    }
+
+    fn eq_fn() -> AtomEq {
+        auto_eq_fn::<Item>()
     }
 }

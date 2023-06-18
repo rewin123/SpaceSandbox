@@ -1,3 +1,4 @@
+use std::hash::Hasher;
 use std::sync::{Mutex, Arc};
 
 use bevy::prelude::*;
@@ -29,26 +30,34 @@ impl StateConext {
     }
 }
 
+pub enum StateEntity {
+    DynObj(Entity),
+    StaticObj(Entity)
+}
 
 pub struct State {
     pub world : World,
     pub ctx : Arc<StateConext>,
-    pub id : u64
+    pub hash : u64
 }
 
 impl State {
     pub fn new(ctx : Arc<StateConext>) -> Self {
-        let id;
-        {
-            let mut ctx_id = ctx.hash_indexer.lock().unwrap();
-            id = *ctx_id;
-            *ctx_id += 1;
-        }
         State {
             world : World::default(),
             ctx,
-            id
+            hash : 0
         }
+    }
+
+    pub fn setup_hash(&mut self) {
+        let mut query = self.world.query::<&AtLocation>();
+        let mut hash = 0;
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        for at_loc in query.iter(&self.world) {
+            at_loc.id.hash(&mut hasher);
+        }
+        self.hash = hasher.finish();
     }
 }
 
@@ -68,7 +77,7 @@ impl PartialEq for State {
 
 impl Hash for State {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
+        self.hash.hash(state);
     }
 }
 
@@ -105,6 +114,7 @@ impl Clone for State {
         }
         let mut state = State::new(self.ctx.clone());
         state.world = new_world;
+        state.setup_hash();
         state
     }
 }

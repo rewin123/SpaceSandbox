@@ -16,6 +16,14 @@ impl Goal {
         }
         true
     }
+
+    pub fn heteruistic(&self, state : &State) -> u64 {
+        let mut res = 0;
+        for pred in self.pred.iter() {
+            res += pred.heteruistic(state);
+        }
+        res
+    }
 }
 
 impl Clone for Goal {
@@ -29,6 +37,7 @@ impl Clone for Goal {
 pub trait GoalPred : Debug {
     fn name(&self) -> String;
     fn precondition(&self, state : &State) -> bool;
+    fn heteruistic(&self, state : &State) -> u64;
     fn clone_goal(&self) -> Box<dyn GoalPred + Send + Sync>;
 }
 
@@ -53,5 +62,36 @@ impl GoalPred for GoalLocation{
 
     fn clone_goal(&self) -> Box<dyn GoalPred + Send + Sync> {
         Box::new(self.clone())
+    }
+
+    fn heteruistic(&self, state : &State) -> u64 {
+        10
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct GoalItem {
+    pub target_owner : Entity,
+    pub target_obj : Entity
+}
+
+impl GoalPred for GoalItem {
+    fn name(&self) -> String {
+        "GoalItem".to_string()
+    }
+
+    fn precondition(&self, state : &State) -> bool {
+        if let Some(has) = state.world.get::<HasItem>(self.target_owner) {
+            return has.items.contains(&self.target_obj);
+        }
+        false
+    }
+
+    fn clone_goal(&self) -> Box<dyn GoalPred + Send + Sync> {
+        Box::new(self.clone())
+    }
+
+    fn heteruistic(&self, state : &State) -> u64 {
+        10
     }
 }
