@@ -1,0 +1,123 @@
+use std::sync::{Mutex, Arc};
+
+use bevy::prelude::*;
+use super::FindNode;
+use super::atom::*;
+use super::operator::*;
+use std::fmt::Debug;
+use std::hash::Hash;
+
+#[derive(Default)]
+pub struct StateConext {
+    pub writers : Vec<AtomCopy>,
+    pub debuggers : Vec<AtomDebug>,
+    pub equals : Vec<AtomEq>,
+    pub op_rules : Vec<Box<dyn OperatorRule + Send + Sync>>,
+    pub hash_indexer : Mutex<u64>
+}
+
+
+impl StateConext {
+    pub fn register_atom<T: Atom>(&mut self) {
+        self.writers.push(T::copy_fn());
+        self.debuggers.push(T::debug_fn());
+        self.equals.push(T::eq_fn());
+    }
+
+    pub fn regiter_rule<T: OperatorRule + 'static + Send + Sync>(&mut self, rule : T) {
+        self.op_rules.push(Box::new(rule));
+    }
+}
+
+
+pub struct State {
+    pub world : World,
+    pub ctx : Arc<StateConext>,
+    pub id : u64
+}
+
+impl State {
+    pub fn new(ctx : Arc<StateConext>) -> Self {
+        let id;
+        {
+            let mut ctx_id = ctx.hash_indexer.lock().unwrap();
+            id = *ctx_id;
+            *ctx_id += 1;
+        }
+        State {
+            world : World::default(),
+            ctx,
+            id
+        }
+    }
+}
+
+impl PartialEq for State {
+    fn eq(&self, other: &Self) -> bool {
+        for entity in self.world.iter_entities() {
+            let e = other.world.entity(entity.id());
+            for atom in self.ctx.equals.iter() {
+                if !atom(&entity, &e) {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+}
+
+impl Hash for State {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
+impl Eq for State {
+
+}
+
+impl Debug for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = f.debug_list();
+        for entity in self.world.iter_entities() {
+            let mut res = format!("{:?}", entity.id()).to_string();
+            for atom in self.ctx.debuggers.iter() {
+                if let Some(s) = atom(&entity) {
+                    res = format!("{res}, {s}");
+                }
+            }
+            s.entry(&res);
+        }
+        s.finish()
+    }
+}
+
+
+impl Clone for State {
+    fn clone(&self) -> Self {
+        let mut new_world = World::default();
+        for src in self.world.iter_entities() {
+            if let Some(mut dst) = new_world.get_or_spawn(src.id()) {
+                for atom in self.ctx.writers.iter() {
+                    atom(&mut dst, &src);
+                }
+            }
+        }
+        let mut state = State::new(self.ctx.clone());
+        state.world = new_world;
+        state
+    }
+}
+
+impl State {
+    pub fn successors(&mut self) -> Vec<(FindNode, i32)> {
+        
+        let mut res = vec![];
+        let ctx = self.ctx.clone();
+        for rule in ctx.op_rules.iter() {
+            res.extend(rule.batch_effect(self));
+        }
+        res
+    }
+}
+
