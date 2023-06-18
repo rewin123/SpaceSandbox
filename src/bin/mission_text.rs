@@ -1,4 +1,4 @@
-use std::{sync::Arc, ops::Deref, fmt::Debug, time::{Instant, Duration}, any::TypeId, hash::Hash, thread};
+use std::{sync::{Arc, RwLock}, ops::Deref, fmt::Debug, time::{Instant, Duration}, any::TypeId, hash::Hash, thread};
 
 use bevy::{prelude::*, utils::{HashMap, HashSet}, ecs::{entity::EntityMap, world::{EntityRef, EntityMut}}};
 use bevy_egui::egui::mutex::Mutex;
@@ -84,8 +84,9 @@ fn main() {
         .id();
 
     let goal = Goal {
-        // pred : vec![Box::new(GoalLocation {target_loc : planets[planets.len() - 1], target_obj : ship_id})],
-        pred : vec![Box::new(GoalItem {target_owner : ship_id, target_obj : items[items.len() - 1]})],
+        pred : vec![Box::new(GoalLocation {target_loc : planets[planets.len() - 1], target_obj : ship_id}), 
+            Box::new(GoalItem {target_owner : ship_id, target_obj : items[items.len() - 1]})],
+        best_heter : RwLock::new(1000000)
     };
 
 

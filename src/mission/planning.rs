@@ -80,9 +80,10 @@ pub fn find_sequence(s0 : &State, goal : &Goal) -> Option<Vec<Box<dyn Operator +
     let goal = goal.clone();
     let find_thr = thread::spawn(move || {
         let start_node = find_node;
-        let res = pathfinding::prelude::dijkstra(
+        let res = pathfinding::prelude::fringe(
             &start_node, 
             |s| s.successors(), 
+            |s| goal.heteruistic(&s.state),
             |s| goal.precondition(&s.state));
         res
     });

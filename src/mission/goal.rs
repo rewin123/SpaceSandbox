@@ -1,10 +1,11 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::RwLock};
 use super::state::State;
 use bevy::prelude::*;
 use super::atom::*;
 
 pub struct Goal {
-    pub pred : Vec<Box<dyn GoalPred + Send + Sync>>
+    pub pred : Vec<Box<dyn GoalPred + Send + Sync>>,
+    pub best_heter : RwLock<i32>
 }
 
 impl Goal {
@@ -17,10 +18,14 @@ impl Goal {
         true
     }
 
-    pub fn heteruistic(&self, state : &State) -> u64 {
+    pub fn heteruistic(&self, state : &State) -> i32 {
         let mut res = 0;
         for pred in self.pred.iter() {
             res += pred.heteruistic(state);
+        }
+        if res < *self.best_heter.read().unwrap() {
+            *self.best_heter.write().unwrap() = res;
+            println!("new best: {}", res);
         }
         res
     }
@@ -29,7 +34,8 @@ impl Goal {
 impl Clone for Goal {
     fn clone(&self) -> Self {
         Goal {
-            pred : self.pred.iter().map(|x| x.clone_goal()).collect()
+            pred : self.pred.iter().map(|x| x.clone_goal()).collect(),
+            best_heter : RwLock::new(*self.best_heter.read().unwrap())
         }
     }
 }
@@ -37,7 +43,7 @@ impl Clone for Goal {
 pub trait GoalPred : Debug {
     fn name(&self) -> String;
     fn precondition(&self, state : &State) -> bool;
-    fn heteruistic(&self, state : &State) -> u64;
+    fn heteruistic(&self, state : &State) -> i32;
     fn clone_goal(&self) -> Box<dyn GoalPred + Send + Sync>;
 }
 
@@ -64,8 +70,12 @@ impl GoalPred for GoalLocation{
         Box::new(self.clone())
     }
 
-    fn heteruistic(&self, state : &State) -> u64 {
-        10
+    fn heteruistic(&self, state : &State) -> i32 {
+        if self.precondition(state) {
+            0
+        } else {
+            10 
+        }
     }
 }
 
@@ -91,7 +101,11 @@ impl GoalPred for GoalItem {
         Box::new(self.clone())
     }
 
-    fn heteruistic(&self, state : &State) -> u64 {
-        10
+    fn heteruistic(&self, state : &State) -> i32 {
+        if self.precondition(state) {
+            0
+        } else {
+            10 
+        }
     }
 }
