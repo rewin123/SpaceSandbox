@@ -1,9 +1,9 @@
-use std::{sync::Arc, ops::Deref, fmt::Debug, time::Instant, any::TypeId, hash::Hash};
+use std::{sync::Arc, ops::Deref, fmt::Debug, time::{Instant, Duration}, any::TypeId, hash::Hash, thread};
 
 use bevy::{prelude::*, utils::HashMap, ecs::{entity::EntityMap, world::{EntityRef, EntityMut}}};
 use bevy_egui::egui::mutex::Mutex;
 use rand::prelude::Distribution;
-use rayon::str;
+use rayon::{str, ThreadBuilder};
 
 pub type Id = u32;
 
@@ -13,9 +13,9 @@ pub struct QuestGenome {
     pub sequence : Vec<Box<dyn Operator>>
 }
 
-pub type AtomCopy = Box<dyn Fn(&mut EntityMut, &EntityRef)>;
-pub type AtomDebug = Box<dyn Fn(&EntityRef) -> Option<String>>;
-pub type AtomEq = Box<dyn Fn(&EntityRef, &EntityRef) -> bool>;
+pub type AtomCopy = Box<dyn Fn(&mut EntityMut, &EntityRef) + Send + Sync>;
+pub type AtomDebug = Box<dyn Fn(&EntityRef) -> Option<String> + Send + Sync>;
+pub type AtomEq = Box<dyn Fn(&EntityRef, &EntityRef) -> bool + Send + Sync>;
 pub trait Atom : Debug { 
     fn name(&self) -> String;
     fn copy_fn() -> AtomCopy;
@@ -27,7 +27,7 @@ pub struct StateConext {
     pub writers : Vec<AtomCopy>,
     pub debuggers : Vec<AtomDebug>,
     pub equals : Vec<AtomEq>,
-    pub op_rules : Vec<Box<dyn OperatorRule>>,
+    pub op_rules : Vec<Box<dyn OperatorRule + Send + Sync>>,
     pub hash_indexer : Mutex<u64>
 }
 
@@ -39,7 +39,7 @@ impl StateConext {
         self.equals.push(T::eq_fn());
     }
 
-    pub fn regiter_rule<T: OperatorRule + 'static>(&mut self, rule : T) {
+    pub fn regiter_rule<T: OperatorRule + 'static + Send + Sync>(&mut self, rule : T) {
         self.op_rules.push(Box::new(rule));
     }
 }
@@ -384,7 +384,7 @@ fn main() {
     let mut rnd = rand::thread_rng();
     let star_distr = rand::distributions::Uniform::new(0, stars.len());
     for i in 0..100 {
-        let links = rand::distributions::Uniform::new(1, 4).sample(&mut rnd);
+        let links = rand::distributions::Uniform::new(1, 5).sample(&mut rnd);
         let mut star_loc = state.world.get_mut::<Location>(stars[i]).unwrap();
         for _ in 0..links {
             star_loc.paths.push(stars[star_distr.sample(&mut rnd)]);
@@ -408,8 +408,21 @@ fn main() {
 
     let start_time = Instant::now();
     
-    let res = pathfinding::prelude::dijkstra_all(&state, |s| s.clone().successors());
-    // let res = pathfinding::prelude::dijkstra(&state, |s| s.clone().successors(), |s| goal.precondition(s));
+    let mut find_thr = thread::spawn(move || {
+        let state = state;
+        let res = pathfinding::prelude::dijkstra(&state, |s| s.clone().successors(), |s| goal.precondition(s));
+        res
+    });
+    while !find_thr.is_finished() && start_time.elapsed() < Duration::from_secs(1) {
+        thread::sleep(Duration::from_millis(1));
+    }
+    let res = if find_thr.is_finished() {
+        find_thr.join().unwrap()
+    } else {
+        None
+    };
+    // let res = pathfinding::prelude::dijkstra_all(&state, |s| s.clone().successors());
+    
     let elapsed_time = start_time.elapsed();
     println!("Res (time {elapsed_time:?}): {:#?}", res);
 
