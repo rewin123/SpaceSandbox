@@ -26,15 +26,65 @@ pub trait QuestComponent: Any {
     fn manual_clone(&self) -> Box<dyn QuestComponent>;
 }
 
-pub trait QuestComponentCopy : QuestComponent + Copy {}
-
 impl<T: Any + Clone> QuestComponent for T {
     fn manual_clone(&self) -> Box<dyn QuestComponent> {
         Box::new(self.as_any().downcast_ref::<T>().unwrap().clone())
     }
 }
 
-impl<T: Any + Clone + Copy> QuestComponentCopy for T {}
+trait QuestStorage {
+
+    fn get_component(&self, entity : QuestEntity) -> Option<&dyn QuestComponent>;
+    fn get_component_mut(&mut self, entity : QuestEntity) -> Option<&mut dyn QuestComponent>;
+    fn insert(&mut self, entity : QuestEntity, component : Box<dyn QuestComponent>);
+    fn manual_clone(&self) -> Box<dyn QuestStorage>;
+} 
+
+#[derive(Clone)]
+pub struct QuestTableStorage<T : QuestComponent + Copy> {
+    storage : Vec<Option<T>>
+}
+
+impl<T : QuestComponent + Copy> QuestStorage for QuestTableStorage<T> {
+    fn get_component(&self, entity : QuestEntity) -> Option<&dyn QuestComponent> {
+        if let Some(comp) = self.storage.get(entity.0 as usize) {
+            if let Some(val) = comp {
+                Some(val)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    fn get_component_mut(&mut self, entity : QuestEntity) -> Option<&mut dyn QuestComponent> {
+        if let Some(comp) = self.storage.get_mut(entity.0 as usize) {
+            if let Some(val) = comp {
+                Some(val)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    fn insert(&mut self, entity : QuestEntity, component : Box<dyn QuestComponent>) {
+        let comp = component;
+        if let Some(data) = comp.to_owned().as_any().downcast_ref::<T>() {
+            if (entity.0 as usize > self.storage.len()) {
+                self.storage.resize(entity.0 as usize, None);
+            }
+            self.storage[entity.0 as usize] = Some(*data);
+        }
+    }
+
+    fn manual_clone(&self) -> Box<dyn QuestStorage> {
+        Box::new(self.clone())
+    }
+}
+
 
 impl Clone for Box<dyn QuestComponent> {
     fn clone(&self) -> Self {
@@ -45,7 +95,7 @@ impl Clone for Box<dyn QuestComponent> {
 
 pub struct QuestWorld {
     next_id: QuestEntityId,
-    components : HashMap<TypeId, HashMap<QuestEntityId, QuestComponentBox>>
+    components : HashMap<TypeId, HashMap<QuestEntityId, QuestComponentBox>>,
 }
 
 impl QuestWorld {
