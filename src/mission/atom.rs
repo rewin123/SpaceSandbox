@@ -1,6 +1,8 @@
 use bevy::{prelude::*, ecs::world::{EntityMut, EntityRef}, utils::HashSet};
 use std::fmt::Debug;
 
+use super::QuestComponent;
+
 pub type AtomCopy = Box<dyn Fn(&mut EntityMut, &EntityRef) + Send + Sync>;
 pub type AtomDebug = Box<dyn Fn(&EntityRef) -> Option<String> + Send + Sync>;
 pub type AtomEq = Box<dyn Fn(&EntityRef, &EntityRef) -> bool + Send + Sync>;
