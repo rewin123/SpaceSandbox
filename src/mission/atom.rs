@@ -1,7 +1,7 @@
 use bevy::{prelude::*, ecs::world::{EntityMut, EntityRef}, utils::HashSet};
 use std::fmt::Debug;
 
-pub type AtomCopy = Box<dyn Fn(&mut EntityMut, &EntityRef) + Send + Sync>;
+pub type AtomCopy = Box<dyn Fn(&mut World, &World) + Send + Sync>;
 pub type AtomDebug = Box<dyn Fn(&EntityRef) -> Option<String> + Send + Sync>;
 pub type AtomEq = Box<dyn Fn(&EntityRef, &EntityRef) -> bool + Send + Sync>;
 pub trait Atom : Debug { 
@@ -13,8 +13,10 @@ pub trait Atom : Debug {
 
 fn auto_copy_fn<T: Atom + Component + Clone>() -> AtomCopy {
     Box::new(move |dst, src| {
-        if let Some(data) = src.get::<T>() {
-            dst.insert(data.clone());
+        for e in src.iter_entities() {
+            if let Some(val) = e.get::<T>() {
+                dst.entity_mut(e.id()).insert(val.clone());
+            }
         }
     })
 }

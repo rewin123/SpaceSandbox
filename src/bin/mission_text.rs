@@ -27,6 +27,48 @@ fn main() {
 
     let mut state = State::new(Arc::new(ctx));
 
+    let goal = generate_state(&mut state);
+
+    println!("{:#?}", &state);
+    println!("Test eq: {}", state == state.clone());
+
+    println!("Banching state copy...");
+    {
+        let time_start = Instant::now();
+        for _ in 0..1000 {
+            let state_2 = state.clone();
+        }
+        println!("Copy per second: {:?}", 1000.0 / time_start.elapsed().as_secs_f32());
+    }
+
+
+    let start_time = Instant::now();
+    
+    let seq = find_sequence(&state, &goal);
+    
+    let elapsed_time = start_time.elapsed();
+    if let Some(seq) = seq {
+        println!("Res (time {elapsed_time:?}): {}", print_planning_plan(&state.world, &seq));
+    } else {
+        println!("No sequence");
+    }
+
+    // for i in 0..1000 {
+    //     state.world.spawn(AtLocation {id : ship_id}).id();
+    //     state.world.spawn(Location::default());
+    // }
+
+    // let start = Instant::now();
+    // for _ in 0..1000 {
+    //     let state_2 = state.clone();
+    // }
+    // println!("{:?}", 1000.0 / start.elapsed().as_secs_f32());
+
+
+    // pathfinding::prelude::astar(start, successors, heuristic, success)
+}
+
+fn generate_state(state: &mut State) -> Goal {
     //generate star map
     let mut stars = vec![];
     let star_count = 100;
@@ -88,33 +130,5 @@ fn main() {
             Box::new(GoalItem {target_owner : ship_id, target_obj : items[items.len() - 1]})],
         best_heter : RwLock::new(1000000)
     };
-
-
-    println!("{:#?}", &state);
-    println!("Test eq: {}", state == state.clone());
-
-    let start_time = Instant::now();
-    
-    let seq = find_sequence(&state, &goal);
-    
-    let elapsed_time = start_time.elapsed();
-    if let Some(seq) = seq {
-        println!("Res (time {elapsed_time:?}): {}", print_planning_plan(&state.world, &seq));
-    } else {
-        println!("No sequence");
-    }
-
-    // for i in 0..1000 {
-    //     state.world.spawn(AtLocation {id : ship_id}).id();
-    //     state.world.spawn(Location::default());
-    // }
-
-    // let start = Instant::now();
-    // for _ in 0..1000 {
-    //     let state_2 = state.clone();
-    // }
-    // println!("{:?}", 1000.0 / start.elapsed().as_secs_f32());
-
-
-    // pathfinding::prelude::astar(start, successors, heuristic, success)
+    goal
 }

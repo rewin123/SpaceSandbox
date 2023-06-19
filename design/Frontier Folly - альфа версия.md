@@ -529,7 +529,7 @@ https://ianparberry.com/techreports/LARC-2011-02.pdf
 
 Идеи
 
-GPT-2 тонкая настрояка для общения с персонажем https://dl.acm.org/doi/fullHtml/10.1145/3472538.3472595
+GPT-2 fine-tuning для общения с персонажем https://dl.acm.org/doi/fullHtml/10.1145/3472538.3472595
 
 # Системы:
 
