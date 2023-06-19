@@ -111,17 +111,19 @@ impl Clone for State {
             new_world.get_or_spawn(e.id());
         }
 
-        for atom in self.ctx.writers.iter() {
-            atom(&mut new_world, &self.world);
+        // for atom in self.ctx.writers.iter() {
+        //     atom(&mut new_world, &self.world);
+        // }
+
+        for src in self.world.iter_entities() {
+            if let Some(mut dst) = new_world.get_or_spawn(src.id()) {
+                for atom in self.ctx.writers.iter() {
+                    atom(&mut dst, &src);
+                }
+            }
         }
 
-        // for src in self.world.iter_entities() {
-        //     if let Some(mut dst) = new_world.get_or_spawn(src.id()) {
-        //         for atom in self.ctx.writers.iter() {
-        //             atom(&mut dst, &src);
-        //         }
-        //     }
-        // }
+        
         let mut state = State::new(self.ctx.clone());
         state.world = new_world;
         state.setup_hash();
