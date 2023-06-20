@@ -1,7 +1,7 @@
+use std::borrow::BorrowMut;
 use std::hash::Hasher;
 use std::sync::{Mutex, Arc};
 
-use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::prelude::*;
 use downcast_rs::Downcast;
 use super::FindNode;
@@ -17,7 +17,7 @@ use std::collections::HashMap;
 pub type QuestEntityId = u32;
 pub type QuestComponentBox = Box<dyn QuestComponent>;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Copy)]
 pub struct QuestEntity(QuestEntityId);
 
 pub trait QC {}
@@ -32,58 +32,6 @@ impl<T: Any + Clone> QuestComponent for T {
     }
 }
 
-trait QuestStorage {
-
-    fn get_component(&self, entity : QuestEntity) -> Option<&dyn QuestComponent>;
-    fn get_component_mut(&mut self, entity : QuestEntity) -> Option<&mut dyn QuestComponent>;
-    fn insert(&mut self, entity : QuestEntity, component : Box<dyn QuestComponent>);
-    fn manual_clone(&self) -> Box<dyn QuestStorage>;
-} 
-
-#[derive(Clone)]
-pub struct QuestTableStorage<T : QuestComponent + Copy> {
-    storage : Vec<Option<T>>
-}
-
-impl<T : QuestComponent + Copy> QuestStorage for QuestTableStorage<T> {
-    fn get_component(&self, entity : QuestEntity) -> Option<&dyn QuestComponent> {
-        if let Some(comp) = self.storage.get(entity.0 as usize) {
-            if let Some(val) = comp {
-                Some(val)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-
-    fn get_component_mut(&mut self, entity : QuestEntity) -> Option<&mut dyn QuestComponent> {
-        if let Some(comp) = self.storage.get_mut(entity.0 as usize) {
-            if let Some(val) = comp {
-                Some(val)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-
-    fn insert(&mut self, entity : QuestEntity, component : Box<dyn QuestComponent>) {
-        let comp = component;
-        if let Some(data) = comp.to_owned().as_any().downcast_ref::<T>() {
-            if (entity.0 as usize > self.storage.len()) {
-                self.storage.resize(entity.0 as usize, None);
-            }
-            self.storage[entity.0 as usize] = Some(*data);
-        }
-    }
-
-    fn manual_clone(&self) -> Box<dyn QuestStorage> {
-        Box::new(self.clone())
-    }
-}
 
 
 impl Clone for Box<dyn QuestComponent> {
@@ -91,6 +39,12 @@ impl Clone for Box<dyn QuestComponent> {
         let cl = self.as_ref().manual_clone();
         cl
     }
+}
+
+pub struct QuestEntityMut<'s, T : 'static + QuestComponent> {
+    id: QuestEntityId,
+    component: &'s mut T,
+    boxed : &'s mut Box<dyn QuestComponent>
 }
 
 pub struct QuestWorld {
@@ -131,11 +85,15 @@ impl QuestWorld {
             .downcast_ref::<T>()
     }
 
-    pub fn get_component_mut<T : 'static>(&'static mut self, entity : QuestEntity) -> Option<&mut T> {
-        self.components.get_mut(&TypeId::of::<T>())?
-            .get_mut(&entity.0)?
-            .as_any_mut()
-            .downcast_mut::<T>()
+    pub fn get_component_mut<'w, T>(&'w mut self, entity : QuestEntity) -> Option<&'w mut T> 
+            where T : 'w + QuestComponent {
+        if let Some(component_map) = self.components.get_mut(&TypeId::of::<T>()) {
+            if let Some(component) = component_map.get_mut(&entity.0) {
+                let component_any = component.as_mut().as_any_mut();
+                return component_any.downcast_mut::<T>();
+            }
+        }
+        None
     }
 
     pub fn clone(&self) -> Self {

@@ -80,32 +80,40 @@ fn generate_state(state: &mut State, quest_state : &mut QuestWorld) -> Goal {
     //generate star map
     let mut stars = vec![];
     let star_count = 10000;
+    let mut remap = HashMap::new();
     for i in 0..star_count {
         let id = state.world.spawn(Location::default())
             // .insert(Name::new(format!("Star {i}")))
             .id();
         stars.push(id);
 
-        let id = quest_state.create_entity();
-        quest_state.add_component(id, Location::default());
+        let quest_id = quest_state.create_entity();
+        quest_state.add_component(quest_id, Location::default());
+        remap.insert(id, quest_id);
         // quest_state.add_component(Name::new(), component)
     }
-    // let mut rnd = rand::thread_rng();
-    // let star_distr = rand::distributions::Uniform::new(0, stars.len());
-    // for i in 0..star_count {
-    //     let links = rand::distributions::Uniform::new(1, 4).sample(&mut rnd);
-    //     for _ in 0..links {
-    //         let star_idx = star_distr.sample(&mut rnd);
-    //         {
-    //             let mut star_loc = state.world.get_mut::<Location>(stars[i]).unwrap();
-    //             star_loc.paths.push(stars[star_idx]);
-    //         }
-    //         {
-    //             let mut star_loc = state.world.get_mut::<Location>(stars[star_idx]).unwrap();
-    //             star_loc.paths.push(stars[i]);
-    //         }
-    //     }
-    // }
+    let mut rnd = rand::thread_rng();
+    let star_distr = rand::distributions::Uniform::new(0, stars.len());
+    for i in 0..star_count {
+        let links = rand::distributions::Uniform::new(1, 4).sample(&mut rnd);
+        for _ in 0..links {
+            let star_idx = star_distr.sample(&mut rnd);
+            {
+                let mut star_loc = state.world.get_mut::<Location>(stars[i]).unwrap();
+                star_loc.paths.push(stars[star_idx]);
+
+                let quest_id = remap.get(&stars[i]).unwrap();
+                quest_state.get_component_mut::<Location>(*quest_id).unwrap().paths.push(stars[star_idx]);
+            }
+            {
+                let mut star_loc = state.world.get_mut::<Location>(stars[star_idx]).unwrap();
+                star_loc.paths.push(stars[i]);
+
+                let quest_id = remap.get(&stars[star_idx]).unwrap();
+                quest_state.get_component_mut::<Location>(*quest_id).unwrap().paths.push(stars[i]);
+            }
+        }
+    }
 
     // let mut planets = vec![];
     // let mut items = vec![];
