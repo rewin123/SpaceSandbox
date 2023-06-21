@@ -1,5 +1,6 @@
 use std::borrow::BorrowMut;
 use std::hash::Hasher;
+use std::marker::PhantomData;
 use std::sync::{Mutex, Arc};
 
 use bevy::prelude::*;
@@ -12,127 +13,6 @@ use std::hash::Hash;
 
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
-
-
-pub type QuestEntityId = u32;
-pub type QuestComponentBox = Box<dyn QuestComponent>;
-
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Copy)]
-pub struct QuestEntity(QuestEntityId);
-
-pub trait QC {}
-
-pub trait QuestComponent: Any {
-    fn manual_clone(&self) -> Box<dyn QuestComponent>;
-}
-
-impl<T: Any + Clone> QuestComponent for T {
-    fn manual_clone(&self) -> Box<dyn QuestComponent> {
-        Box::new(self.as_any().downcast_ref::<T>().unwrap().clone())
-    }
-}
-
-
-
-impl Clone for Box<dyn QuestComponent> {
-    fn clone(&self) -> Self {
-        let cl = self.as_ref().manual_clone();
-        cl
-    }
-}
-
-pub struct QuestEntityMut<'s, T : 'static + QuestComponent> {
-    id: QuestEntityId,
-    component: &'s mut T,
-    boxed : &'s mut Box<dyn QuestComponent>
-}
-
-pub struct QuestWorld {
-    next_id: QuestEntityId,
-    components : HashMap<TypeId, HashMap<QuestEntityId, QuestComponentBox>>,
-}
-
-impl QuestWorld {
-    pub fn new() -> Self {
-        QuestWorld {
-            next_id: 0,
-            components: HashMap::new(),
-        }
-    }
-
-    pub fn create_entity(&mut self) -> QuestEntity {
-        let id = self.next_id;
-        self.next_id += 1;
-        QuestEntity(id)
-    }
-
-    pub fn add_component<T: 'static>(&mut self, entity: QuestEntity, component: T) 
-    where 
-        T: QuestComponent
-    {
-        let components = self.components.entry(TypeId::of::<T>())
-            .or_insert_with(HashMap::new);
-        components.insert(entity.0, Box::new(component));
-    }
-
-    pub fn get_component<T: 'static>(&self, entity: QuestEntity) -> Option<&T> 
-    where 
-        T: QuestComponent
-    {
-        self.components.get(&TypeId::of::<T>())?
-            .get(&entity.0)?
-            .as_any()
-            .downcast_ref::<T>()
-    }
-
-    pub fn get_component_mut<'w, T>(&'w mut self, entity : QuestEntity) -> Option<&'w mut T> 
-            where T : 'w + QuestComponent {
-        if let Some(component_map) = self.components.get_mut(&TypeId::of::<T>()) {
-            if let Some(component) = component_map.get_mut(&entity.0) {
-                let component_any = component.as_mut().as_any_mut();
-                return component_any.downcast_mut::<T>();
-            }
-        }
-        None
-    }
-
-    pub fn clone(&self) -> Self {
-        QuestWorld {
-            next_id: self.next_id,
-            components: self.components.clone(),
-        }
-    }
-}
-
-
-// Example of usage
-// fn main() {
-//     let mut world = World::new();
-
-//     // Create some entities
-//     let entity1 = world.create_entity();
-//     let entity2 = world.create_entity();
-
-//     // Add some components
-//     world.add_component(entity1, Position { x: 1.0, y: 2.0 });
-//     world.add_component(entity1, Velocity { x: 0.1, y: 0.1 });
-
-//     world.add_component(entity2, Position { x: 5.0, y: 7.0 });
-
-//     // Query entities with Position and Velocity components
-//     for (pos, vel) in world.query::<(&mut Position, &mut Velocity)>() {
-//         pos.x += vel.x;
-//         pos.y += vel.y;
-//     }
-
-//     // Get a component from an entity
-//     let position1 = world.get_component::<Position>(entity1);
-//     println!("{:?}", position1); // prints Some(Position { x: 1.1, y: 2.1 })
-
-//     // Clone the world
-//     let cloned_world = world.clone();
-// }
-
 
 #[derive(Default)]
 pub struct StateConext {
@@ -239,8 +119,11 @@ impl Clone for State {
         // for atom in self.ctx.writers.iter() {
         //     atom(&mut new_world, &self.world);
         // }
-
+        
         for src in self.world.iter_entities() {
+
+            
+
             if let Some(mut dst) = new_world.get_or_spawn(src.id()) {
                 for atom in self.ctx.writers.iter() {
                     atom(&mut dst, &src);

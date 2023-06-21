@@ -1,8 +1,6 @@
 use bevy::{prelude::*, ecs::world::{EntityMut, EntityRef}, utils::HashSet};
 use std::fmt::Debug;
 
-use super::QuestComponent;
-
 pub type AtomCopy = Box<dyn Fn(&mut EntityMut, &EntityRef) + Send + Sync>;
 pub type AtomDebug = Box<dyn Fn(&EntityRef) -> Option<String> + Send + Sync>;
 pub type AtomEq = Box<dyn Fn(&EntityRef, &EntityRef) -> bool + Send + Sync>;
@@ -157,5 +155,46 @@ impl Atom for Item {
 
     fn eq_fn() -> AtomEq {
         auto_eq_fn::<Item>()
+    }
+}
+
+#[derive(Debug, Clone, Component, Default, Eq, PartialEq)]
+pub struct Player;
+
+impl Atom for Player {
+    fn name(&self) -> String {
+        "Player".to_string()
+    }
+
+    fn copy_fn() -> AtomCopy {
+        auto_copy_fn::<Player>()
+    }
+
+    fn debug_fn() -> AtomDebug {
+        auto_debug_fn::<Player>()
+    }
+
+    fn eq_fn() -> AtomEq {
+        auto_eq_fn::<Player>()
+    }
+}
+
+#[derive(Debug, Clone, Component, Default, Eq, PartialEq)]
+pub struct Enemy;
+impl Atom for Enemy {
+    fn name(&self) -> String {
+        "Enemy".to_string()
+    }
+
+    fn copy_fn() -> AtomCopy {
+        auto_copy_fn::<Enemy>()
+    }
+
+    fn debug_fn() -> AtomDebug {
+        auto_debug_fn::<Enemy>()
+    }
+
+    fn eq_fn() -> AtomEq {
+        auto_eq_fn::<Enemy>()
     }
 }
