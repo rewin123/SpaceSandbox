@@ -1,5 +1,8 @@
+use std::{fs::*, io::*};
+
 use bevy::{prelude::*, render::{RenderPlugin, settings::{WgpuSettings, WgpuFeatures}}, math::DVec3, core_pipeline::bloom::BloomSettings};
 use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{main_menu::MainMenuPlugin, station_builder::StationBuilderPlugin, NotificationPlugin, fps_mode::{FPSPlugin, FPSController}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, Pawn, ChangePawn}, network::NetworkPlugin, control::SpaceControlPlugin, objects::SpaceObjectsPlugin};
+use bevy_egui::{EguiContext, egui};
 use space_physics::prelude::*;
 use bevy_transform64::prelude::*;
 
@@ -25,11 +28,57 @@ fn main() {
         .add_plugin(DTransformPlugin)
         .add_plugin(SpacePhysicsPlugin)
         .add_plugin(SpaceControlPlugin)
+        .add_plugin(SettingsPlugin)
 
         .add_startup_system(startup)
         .add_startup_system(startup_player)
+        .add_system(show_controller_settings)
         .run();
 }
+
+fn show_controller_settings(
+    mut ctx : Query<&mut EguiContext>,
+    mut query : Query<(Entity, &mut FPSController)>
+) {
+    if let Ok(mut ctx) = ctx.get_single_mut() {
+        egui::Window::new("Controller Settings").show(ctx.get_mut(), |ui| {
+            for (entity, mut con) in query.iter_mut() {
+                ui.label(format!("{:?}", entity));
+
+                ui.add(
+                    egui::DragValue::new(&mut con.walk_speed)
+                    .prefix("Walk Speed:")
+                    .fixed_decimals(1)
+                );
+                ui.add(
+                    egui::DragValue::new(&mut con.run_speed)
+                    .prefix("Run Speed:")
+                    .fixed_decimals(1)
+                );
+                ui.add(
+                    egui::Checkbox::new(&mut con.capture_control, "Capture Control")
+                );
+
+                ui.add(
+                    egui::DragValue::new(&mut con.speed_relax)
+                        .prefix("Speed Relax:")
+                        .fixed_decimals(3)
+                );
+                ui.label(format!("Current speed: {:.2}", con.current_move.length()));
+
+
+                if ui.button("Save").clicked() {
+                    let mut file = File::create(PATH_TO_CONTROLLER).unwrap();
+                    file.write(
+                        ron::to_string(con.as_ref()).unwrap().as_bytes()
+                    );
+                }
+            }
+        });
+    }
+}
+
+const PATH_TO_CONTROLLER : &str = "conroller.ron";
 
 fn startup_player(
     mut commands : Commands,
@@ -39,6 +88,17 @@ fn startup_player(
     cam.hdr = false;
     cam.is_active = false;
 
+    let controller_setting = {
+        let mut con = FPSController::default();
+        if let Ok(mut file) = File::open(PATH_TO_CONTROLLER) {
+            let mut data = String::new();
+            file.read_to_string(&mut data);
+            if let Ok(file_con) = ron::from_str::<FPSController>(&data) {
+                con = file_con;
+            }
+        }
+        con
+    };
 
     let pos = DVec3::new(0.0, 3.0, 0.0);
     let pawn = commands.spawn(
@@ -48,7 +108,7 @@ fn startup_player(
     .insert(SpaceRigidBodyType::Dynamic)
     .insert(SpaceLockedAxes::ROTATION_LOCKED)
     .insert(GravityScale(1.0))
-    .insert(FPSController)
+    .insert(controller_setting)
     .id();
 
     info!("Locked rotation {:?}", SpaceLockedAxes::ROTATION_LOCKED);
