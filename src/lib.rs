@@ -33,12 +33,6 @@ pub enum SceneType {
 }
 
 
-#[derive(Clone, Hash, PartialEq, Eq, Debug, States, Default)]
-pub enum Gamemode {
-    #[default]
-    Godmode,
-    FPS
-}
 
 #[derive(Bundle, Debug, Default)]
 pub struct DSpatialBundle {

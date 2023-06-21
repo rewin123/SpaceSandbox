@@ -26,6 +26,8 @@ use crate::ship::save_load::*;
 use crate::space_voxel::VoxelMap;
 use crate::space_voxel::objected_voxel_map::*;
 
+use super::fps_mode::IsFPSMode;
+
 #[derive(Resource, Default)]
 pub struct ActiveWindows {
     pub load_ship : bool
@@ -54,7 +56,7 @@ impl Plugin for StationBuilderPlugin {
         app.add_system(setup_build_scene.in_schedule(OnEnter(SceneType::ShipBuilding)));
 
         app.configure_set(ShipBuildSet::Base
-            .run_if(not(in_state(Gamemode::FPS)))
+            .run_if(not(in_state(IsFPSMode::Yes)))
             .in_set(OnUpdate(SceneType::ShipBuilding)));
 
         app.add_systems(
@@ -433,7 +435,7 @@ fn setup_build_scene(
         ..default()
     });
 
-    pawn_event.send(ChangePawn { new_pawn: pawn, new_mode: Gamemode::Godmode, save_stack: false });
+    pawn_event.send(ChangePawn { new_pawn: pawn, save_stack: false });
 }
 
 fn go_to_fps(
@@ -496,7 +498,7 @@ fn go_to_fps(
     
         cmds.entity(pawn).insert(Pawn { camera_id: cam_pawn });
     
-        pawn_event.send(ChangePawn { new_pawn: pawn, new_mode: Gamemode::FPS, save_stack: true });
+        pawn_event.send(ChangePawn { new_pawn: pawn, save_stack: true });
 
         for ship_e in ships.iter() {
             cmds.entity(ship_e).insert(SpaceLockedAxes::empty()).insert(SpaceRigidBodyType::Dynamic);

@@ -26,7 +26,6 @@ pub struct Pawn {
 #[derive(Debug)]
 pub struct ChangePawn {
     pub new_pawn : Entity,
-    pub new_mode : Gamemode,
     pub save_stack : bool
 }
 
@@ -37,6 +36,8 @@ pub struct CurrentPawn {
     pub stack : Vec<Entity>
 }
 
+#[derive(Component)]
+pub struct CurrentPawnMarker;
 
 fn change_pawn_system(
     mut cmds : Commands,
@@ -44,7 +45,6 @@ fn change_pawn_system(
     mut pawn : ResMut<CurrentPawn>,
         pawn_cam_holders : Query<&Pawn>,
     mut pawn_cams : Query<&mut Camera>,
-    mut next_pawn_change : ResMut<NextState<Gamemode>>,
     mut world_origin : ResMut<WorldOrigin>
 ) {
     for pawn_change in event_reader.iter() {
@@ -55,6 +55,7 @@ fn change_pawn_system(
                     cam.is_active = false;
                 }
             }
+            cmds.entity(e).remove::<CurrentPawnMarker>();
             if pawn_change.save_stack {
                 pawn.stack.push(e);
             }
@@ -65,14 +66,13 @@ fn change_pawn_system(
         }
 
         pawn.id = Some(pawn_change.new_pawn);
+        cmds.entity(pawn_change.new_pawn).insert(CurrentPawnMarker);
         if let Ok(holder) = pawn_cam_holders.get(pawn_change.new_pawn) {
             if let Ok(mut cam) = pawn_cams.get_mut(holder.camera_id) {
                 cam.is_active = true;
                 *world_origin = WorldOrigin::Entity(holder.camera_id);
             }
         }
-
-        next_pawn_change.set(pawn_change.new_mode.clone());
 
         break;
     }

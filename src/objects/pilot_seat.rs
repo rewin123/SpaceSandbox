@@ -7,7 +7,7 @@ use bevy_proto::prelude::{Schematic, ReflectSchematic};
 use bevy_transform64::prelude::DTransform;
 use space_physics::prelude::*;
 
-use crate::{pawn_system::{ChangePawn, Pawn, CurrentPawn}, Gamemode, control::{Action, FPSAction, PilotingAction}, ship::Ship, scenes::settings::settings_system};
+use crate::{pawn_system::{ChangePawn, Pawn, CurrentPawn}, control::{Action, FPSAction, PilotingAction}, ship::Ship, scenes::{settings::settings_system, fps_mode::IsFPSMode}};
 
 use super::ship_camera::ShipCamera;
 
@@ -35,13 +35,13 @@ impl Plugin for PilotSeatPlugin {
     fn build(&self, app: &mut App) {
 
         app.add_system(
-            seat_in_pilot_seat.in_set(OnUpdate(Gamemode::FPS))
+            seat_in_pilot_seat.in_set(OnUpdate(IsFPSMode::Yes))
         );
         app.add_system(
-            pilot_debug_ui.after(settings_system).in_set(OnUpdate(Gamemode::FPS))
+            pilot_debug_ui.after(settings_system).in_set(OnUpdate(IsFPSMode::Yes))
         );
         app.add_system(
-            piloting.in_set(OnUpdate(Gamemode::FPS))
+            piloting.in_set(OnUpdate(IsFPSMode::Yes))
         );
 
         app.register_type::<PilotSeat>();

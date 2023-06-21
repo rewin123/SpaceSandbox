@@ -1,34 +1,62 @@
+use std::default;
+
 use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, CursorGrabMode}, math::DVec3};
 
-use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn}, control::{Action, FPSAction}, objects::prelude::MeteorFieldCommand};
+use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn, CurrentPawnMarker}, control::{Action, FPSAction}, objects::prelude::MeteorFieldCommand};
 
+
+#[derive(Component)]
+pub struct FPSController;
 
 pub struct FPSPlugin;
 
+#[derive(States, Default, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum IsFPSMode {
+    Yes,
+    #[default]
+    No
+}
 
 impl Plugin for FPSPlugin {
     fn build(&self, app: &mut App) {
 
+        app.add_state::<IsFPSMode>();
         app
             .add_systems(
                 (fps_controller,
                 fps_focus_control,
-                fps_look_controller).in_set(OnUpdate(Gamemode::FPS))
+                fps_look_controller).in_set(OnUpdate(IsFPSMode::Yes))
             );
         
-        app.add_system(fps_setup.in_schedule(OnEnter(Gamemode::FPS)));
+        app.add_system(fps_setup.in_schedule(OnEnter(IsFPSMode::Yes)));
+
+        app.add_system(fps_mod_control);
+    }
+}
+
+fn fps_mod_control(
+    added : Query<Entity, (Added<CurrentPawnMarker>, With<FPSController>)>,
+    removed : RemovedComponents<CurrentPawnMarker>,
+    mut next_state : ResMut<NextState<IsFPSMode>>,
+    
+) {
+    let added_sum = added.iter().collect::<Vec<_>>().len();
+    let sum = added_sum as i32 - removed.len() as i32;
+    if sum > 0 {
+        next_state.set(IsFPSMode::Yes);
+        info!("FPS mode enabled");
+    } else if sum < 0 {
+        next_state.set(IsFPSMode::No);
+        info!("FPS mode disabled");
     }
 }
 
 fn fps_setup(
-    mut windows : Query<&mut Window, With<PrimaryWindow>>,
-    mut meteor_spawn_event : EventWriter<MeteorFieldCommand>,
+    mut windows : Query<&mut Window, With<PrimaryWindow>>
 ) {
     let mut window = windows.get_single_mut().unwrap();
     window.cursor.grab_mode = CursorGrabMode::Confined;
     window.cursor.visible = false;
-
-    meteor_spawn_event.send(MeteorFieldCommand::Spawn);
 }
 
 fn fps_focus_control(
@@ -57,6 +85,7 @@ fn fps_look_controller(
     if let Some(e) = pawn.id {
         if let Ok(pawn) = pawns.get(e) {
             let cam_id = pawn.camera_id;
+            //head control
             if let Ok(mut pawn_transform) = transform.get_mut(cam_id) {
                 for mv in &moves {
                     let frw = pawn_transform.forward();
@@ -71,7 +100,9 @@ fn fps_look_controller(
                 }
             }
 
+            //body control
             let Ok(mut pawn_transform) = transform.get_mut(e) else {
+                warn!("No pawn transform found for FPS controller");
                 return;
             };
             for mv in &moves {

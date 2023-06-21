@@ -37,12 +37,12 @@ impl Plugin for SpacePhysicsPlugin {
 
         app.configure_set(SpacePhysicSystem::CaptureChanges.before(SpacePhysicSystem::RigidBodyUpdate).in_base_set(CoreSet::PostUpdate));
         app.configure_set(SpacePhysicSystem::RigidBodyUpdate
-            .before(DTransformSystem::TransformPropagate)
+            .after(DTransformSystem::TransformPropagate)
             .before(SpacePhysicSystem::ColliderUpdate)
             .in_base_set(CoreSet::PostUpdate));
         app.configure_set(SpacePhysicSystem::ColliderUpdate.before(SpacePhysicSystem::ContextUpdate).in_base_set(CoreSet::PostUpdate));
         app.configure_set(SpacePhysicSystem::ContextUpdate.before(SpacePhysicSystem::WriteToWorld).in_base_set(CoreSet::PostUpdate));
-        app.configure_set(SpacePhysicSystem::WriteToWorld.before(DTransformSystem::TransformPropagate).in_base_set(CoreSet::PostUpdate));
+        app.configure_set(SpacePhysicSystem::WriteToWorld.after(DTransformSystem::TransformPropagate).in_base_set(CoreSet::PostUpdate));
 
 
         app.add_systems((add_rigidbody, apply_system_buffers, delete_detection, change_gravity_scale).chain().in_set(SpacePhysicSystem::RigidBodyUpdate));
