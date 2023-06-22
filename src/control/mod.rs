@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use bevy::{prelude::*, utils::{HashMap}};
+use bevy::{prelude::*, utils::{HashMap, HashSet}};
 use bevy_egui::*;
 use ron::ser::PrettyConfig;
 
@@ -155,6 +155,33 @@ pub struct KeyMapperWindow {
     pub listen_action : Option<Action>
 }
 
+#[derive(Resource)]
+pub struct TwiceClick {
+    action_times : HashMap<Action, f64>,
+    twice_threhold : f64,
+    is_twice : HashSet<Action>
+}
+
+impl TwiceClick {
+    pub fn is_twice(&self, action : &Action) -> bool {
+        self.is_twice.contains(action)
+    }
+
+    pub fn get_time(&self, action : &Action) -> f64 {
+        *self.action_times.get(action).unwrap_or(&0.0)
+    }
+}
+
+impl Default for TwiceClick {
+    fn default() -> Self {
+        TwiceClick {
+            action_times : HashMap::new(),
+            twice_threhold : 0.5,
+            is_twice : HashSet::new(),
+        }
+    }
+}
+
 pub struct SpaceControlPlugin;
 
 
@@ -171,6 +198,7 @@ impl Plugin for SpaceControlPlugin {
         }
 
         app.insert_resource(key_mapper);
+        app.insert_resource(TwiceClick::default());
 
         let window = KeyMapperWindow {
             is_shown: false,
@@ -295,18 +323,31 @@ fn key_mapper_window(
 }
 
 
-fn remap_system(
+pub fn remap_system(
     mut key_mapper : ResMut<KeyMapper>,
     mut input : ResMut<Input<Action>>,
-    mut key_input : ResMut<Input<KeyCode>>
+    mut key_input : ResMut<Input<KeyCode>>,
+    mut twice_click : ResMut<TwiceClick>,
+    time : Res<Time>
 ) {
     input.clear();
+    let time_now = time.elapsed_seconds_f64();
+    twice_click.is_twice.clear();
     for (action, key) in &key_mapper.key_map {
         if let Some(key) = key {
             if key_input.pressed(*key) {
                 input.press(*action);
             } else {
                 input.release(*action);
+            }
+
+            if key_input.just_pressed(*key) {
+                let dt = time_now - twice_click.get_time(action);
+                info!("dt: {} threhold: {} time_now: {}", dt, twice_click.twice_threhold, time_now);
+                if dt < twice_click.twice_threhold {
+                    twice_click.is_twice.insert(*action);
+                }
+                twice_click.action_times.insert(*action, time_now);
             }
         }
     }

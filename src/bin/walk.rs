@@ -71,6 +71,15 @@ fn show_controller_settings(
                 );
                 ui.label(format!("Current speed: {:.2}", con.current_move.length()));
 
+                ui.add(
+                    egui::DragValue::new(&mut con.dash_speed)
+                        .prefix("Dash Speed:")
+                );
+                ui.add(
+                    egui::DragValue::new(&mut con.dash_interval)
+                        .prefix("Dash Interval:")
+                );
+                ui.label(format!("Dash time: {:.2}", con.dash_time));
 
                 if ui.button("Save").clicked() {
                     let mut file = File::create(PATH_TO_CONTROLLER).unwrap();

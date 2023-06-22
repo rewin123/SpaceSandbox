@@ -16,7 +16,10 @@ pub struct FPSController {
     pub capture_control : bool,
     pub speed_relax : f64,
     pub current_move : DVec3,
-    pub jump_force : f64
+    pub jump_force : f64,
+    pub dash_speed : f64,
+    pub dash_time : f64,
+    pub dash_interval : f64
 }
 
 pub struct FPSPlugin;
@@ -36,7 +39,7 @@ impl Plugin for FPSPlugin {
             .add_systems(
                 (fps_controller,
                 fps_focus_control,
-                fps_look_controller).in_set(OnUpdate(IsFPSMode::Yes))
+                fps_look_controller).after(control::remap_system).in_set(OnUpdate(IsFPSMode::Yes))
             );
         
         app.add_system(fps_setup.in_schedule(OnEnter(IsFPSMode::Yes)));
@@ -148,7 +151,8 @@ fn fps_controller(
     mut keys : Res<Input<Action>>,
     mut time : Res<Time>,
     mut physics : ResMut<RapierContext>,
-    mut bodies : Query<&mut Velocity>
+    mut bodies : Query<&mut Velocity>,
+    mut twice_click : ResMut<control::TwiceClick>
 ) {
     if let Some(e) = pawn.id {
             if let Ok((mut pawn_transform, mut controller)) = characters.get_mut(e) {
@@ -173,9 +177,38 @@ fn fps_controller(
                 } else if move_dir.length() < 0.1 {
                     0.0
                 } else {
-                    controller.walk_speed
+                    controller.walk_speed 
                 };
-                let target_move = move_dir.normalize_or_zero() * target_speed;
+                let mut target_move = move_dir.normalize_or_zero() * target_speed;
+
+                let mut dash_move_dir = DVec3::ZERO;
+                let mut is_dash = false;
+                if twice_click.is_twice(&Action::FPS(FPSAction::MoveForward)) {
+                    dash_move_dir += frw;
+                    is_dash = true;
+                }
+                if twice_click.is_twice(&Action::FPS(FPSAction::MoveBackward)) {
+                    dash_move_dir -= frw;
+                    is_dash = true;
+                }
+                if twice_click.is_twice(&Action::FPS(FPSAction::MoveRight)) {
+                    dash_move_dir += right;
+                    is_dash = true;
+                }
+                if twice_click.is_twice(&Action::FPS(FPSAction::MoveLeft)) {
+                    dash_move_dir -= right;
+                    is_dash = true;
+                }
+                dash_move_dir = dash_move_dir.normalize_or_zero() * controller.dash_speed;
+                if is_dash && time.elapsed_seconds_f64() - controller.dash_time < controller.dash_interval {
+                    info!("Dash timeout");
+                    is_dash = false;
+                }
+
+                if is_dash {
+                    controller.dash_time = time.delta_seconds_f64();
+                    target_move = dash_move_dir;
+                }
 
                 controller.current_move = 
                 target_move  + 
@@ -205,7 +238,7 @@ fn fps_controller(
                     let intersection_point = floor_ray.point_at(toi);
                     // info!("toi: {:?} point: {:?}", toi, intersection_point);
 
-                    if keys.pressed(Action::FPS(FPSAction::Jump)) {
+                    if keys.just_pressed(Action::FPS(FPSAction::Jump)) {
                         // info!("jump");
                         if let Ok(mut vel) = bodies.get_mut(e) {
                             vel.linvel.y += controller.jump_force;
