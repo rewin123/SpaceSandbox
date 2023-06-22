@@ -56,6 +56,11 @@ fn show_controller_settings(
                     .fixed_decimals(1)
                 );
                 ui.add(
+                    egui::DragValue::new(&mut con.jump_force)
+                    .prefix("Jump Force:")
+                    .fixed_decimals(1)
+                );
+                ui.add(
                     egui::Checkbox::new(&mut con.capture_control, "Capture Control")
                 );
 
@@ -108,6 +113,7 @@ fn startup_player(
     .insert(SpaceRigidBodyType::Dynamic)
     .insert(SpaceLockedAxes::ROTATION_LOCKED)
     .insert(GravityScale(1.0))
+    .insert(Velocity::default())
     .insert(controller_setting)
     .id();
 

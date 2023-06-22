@@ -13,6 +13,7 @@ pub struct RapierContext {
     pub narrow_phase: NarrowPhase,
     pub multibody_joint_set: MultibodyJointSet,
     pub ccd_solvers: CCDSolver,   
+    pub query_pipeline : QueryPipeline,
 
     pub entity2collider : HashMap<Entity, ColliderHandle>,
     pub entity2rigidbody : HashMap<Entity, RigidBodyHandle>,
@@ -31,6 +32,7 @@ impl Default for RapierContext {
             narrow_phase: NarrowPhase::default(),
             multibody_joint_set: MultibodyJointSet::default(),
             ccd_solvers: CCDSolver::default(),
+            query_pipeline : QueryPipeline::default(),
             entity2collider: HashMap::new(),
             entity2rigidbody: HashMap::new(),
         }
@@ -55,7 +57,7 @@ impl RapierContext {
             &mut self.impulse_joint_set,
             &mut self.multibody_joint_set,
             &mut self.ccd_solvers,
-            None,
+            Some(&mut self.query_pipeline),
             &(),
             &()
         );

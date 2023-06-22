@@ -2,9 +2,11 @@ use std::default;
 
 use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, CursorGrabMode}, math::DVec3};
 use serde::{Deserialize, Serialize};
+use space_physics::{resources::RapierContext, prelude::{Velocity, point, vector, QueryFilter}};
 
 use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn, CurrentPawnMarker}, control::{Action, FPSAction}, objects::prelude::MeteorFieldCommand};
 
+use space_physics::prelude::nalgebra;
 
 #[derive(Component, Default, Serialize, Deserialize, Clone, PartialEq)]
 pub struct FPSController {
@@ -13,7 +15,8 @@ pub struct FPSController {
     pub show_develop_window : bool,
     pub capture_control : bool,
     pub speed_relax : f64,
-    pub current_move : DVec3
+    pub current_move : DVec3,
+    pub jump_force : f64
 }
 
 pub struct FPSPlugin;
@@ -96,7 +99,7 @@ fn fps_look_controller(
     pawn : Res<CurrentPawn>,
     mut transform : Query<&mut DTransform>,
     mut pawns : Query<(&Pawn, &FPSController)>,
-    mut mouse_move : EventReader<MouseMotion>,
+    mut mouse_move : EventReader<MouseMotion>
 ) {
     let moves = mouse_move.iter().map(|m| m.clone()).collect::<Vec<_>>();
     if let Some(e) = pawn.id {
@@ -143,7 +146,9 @@ fn fps_controller(
     pawn : Res<CurrentPawn>,
     mut characters : Query<(&mut DTransform, &mut FPSController)>,
     mut keys : Res<Input<Action>>,
-    mut time : Res<Time>
+    mut time : Res<Time>,
+    mut physics : ResMut<RapierContext>,
+    mut bodies : Query<&mut Velocity>
 ) {
     if let Some(e) = pawn.id {
             if let Ok((mut pawn_transform, mut controller)) = characters.get_mut(e) {
@@ -181,6 +186,35 @@ fn fps_controller(
                 // move_dir = move_dir.normalize_or_zero();
                 // move_dir *= time.delta_seconds_f64() * controller.current_speed;
                 pawn_transform.translation += controller.current_move * time.delta_seconds_f64();
+
+                let up = pawn_transform.up();
+                let start_pos = pawn_transform.translation - up * 1.1;
+                let floor_ray = space_physics::prelude::Ray::new(point![start_pos.x, start_pos.y, start_pos.z],
+                    vector![-up.x, -up.y, -up.z]);
+
+                let physics = physics.as_mut();
+
+                if let Some((handle, toi)) = physics.query_pipeline.cast_ray(
+                    &physics.rigid_body_set,
+                    &physics.collider_set,
+                    &floor_ray,
+                    0.1,
+                    false,
+                    QueryFilter::default()
+                ) {
+                    let intersection_point = floor_ray.point_at(toi);
+                    // info!("toi: {:?} point: {:?}", toi, intersection_point);
+
+                    if keys.pressed(Action::FPS(FPSAction::Jump)) {
+                        // info!("jump");
+                        if let Ok(mut vel) = bodies.get_mut(e) {
+                            vel.linvel.y += controller.jump_force;
+                            // info!("change vel to {:?}", vel.linvel);
+                        }
+                    }
+                }
+
+                
             } else {
 
             }

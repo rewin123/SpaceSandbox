@@ -91,6 +91,17 @@ pub fn change_external_impule(
     }
 }
 
+pub fn change_velosity(
+    mut context : ResMut<RapierContext>,
+    changed_velosity : Query<(&RapierRigidBodyHandle, &Velocity), Changed<Velocity>>
+) {
+    for (handle, velosity) in changed_velosity.iter() {
+        let rigid_body = context.rigid_body_set.get_mut(handle.0).unwrap();
+        rigid_body.set_linvel(na::Vector3::new(velosity.linvel.x, velosity.linvel.y, velosity.linvel.z).into(), true);
+        rigid_body.set_angvel(na::Vector3::new(velosity.angvel.x, velosity.angvel.y, velosity.angvel.z).into(), true);
+    }
+}
+
 pub fn rigidbody_disabled_system(
     mut context : ResMut<RapierContext>,
     mut disabled_rigidbodies : Query<(Entity, &RapierRigidBodyHandle), Added<RigidBodyDisabled>>,
