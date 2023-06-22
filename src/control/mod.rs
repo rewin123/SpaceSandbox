@@ -66,6 +66,7 @@ pub enum FPSAction {
     Jump,
     Crouch,
     Sprint,
+    Dash
 }
 
 impl FPSAction {
@@ -79,6 +80,7 @@ impl FPSAction {
             FPSAction::Jump,
             FPSAction::Crouch,
             FPSAction::Sprint,
+            FPSAction::Dash
         ]
     }
 }

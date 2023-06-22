@@ -1,1 +1,1 @@
-(walk_speed:2.5,run_speed:11.0,show_develop_window:false,capture_control:false,speed_relax:10.0,current_move:(0.000007787029931760893,0.0,-0.001598901164931001),jump_force:5.0,dash_speed:1000.0,dash_time:0.0,dash_interval:1.0)
+(walk_speed:2.5,run_speed:11.0,show_develop_window:false,capture_control:false,speed_relax:10.0,current_move:(0.0000000007250022837850962,0.0,0.0000000002937902202011819),jump_force:7.0,dash_speed:1000.0,dash_time:27.6335805,dash_interval:1.0,is_sprinting:true)

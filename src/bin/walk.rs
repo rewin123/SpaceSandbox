@@ -1,8 +1,8 @@
 use std::{fs::*, io::*};
 
 use bevy::{prelude::*, render::{RenderPlugin, settings::{WgpuSettings, WgpuFeatures}}, math::DVec3, core_pipeline::bloom::BloomSettings};
-use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{main_menu::MainMenuPlugin, station_builder::StationBuilderPlugin, NotificationPlugin, fps_mode::{FPSPlugin, FPSController}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, Pawn, ChangePawn}, network::NetworkPlugin, control::SpaceControlPlugin, objects::SpaceObjectsPlugin};
-use bevy_egui::{EguiContext, egui};
+use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{main_menu::MainMenuPlugin, station_builder::StationBuilderPlugin, NotificationPlugin, fps_mode::{FPSPlugin, FPSController, self}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, Pawn, ChangePawn}, network::NetworkPlugin, control::SpaceControlPlugin, objects::SpaceObjectsPlugin};
+use bevy_egui::{EguiContext, egui::{self, Color32}};
 use space_physics::prelude::*;
 use bevy_transform64::prelude::*;
 
@@ -38,7 +38,8 @@ fn main() {
 
 fn show_controller_settings(
     mut ctx : Query<&mut EguiContext>,
-    mut query : Query<(Entity, &mut FPSController)>
+    mut query : Query<(Entity, &mut FPSController)>,
+    time : Res<Time>
 ) {
     if let Ok(mut ctx) = ctx.get_single_mut() {
         egui::Window::new("Controller Settings").show(ctx.get_mut(), |ui| {
@@ -81,8 +82,16 @@ fn show_controller_settings(
                 );
                 ui.label(format!("Dash time: {:.2}", con.dash_time));
 
+                if time.elapsed_seconds_f64() - con.dash_time > con.dash_interval {
+                    ui.colored_label(Color32::GREEN, "Dash");
+                } else {
+                    ui.colored_label(Color32::YELLOW, "No dash");
+                }
+
+                ui.checkbox(&mut con.is_sprinting, "Is sprinting");
+
                 if ui.button("Save").clicked() {
-                    let mut file = File::create(PATH_TO_CONTROLLER).unwrap();
+                    let mut file = File::create(fps_mode::PATH_TO_CONTROLLER).unwrap();
                     file.write(
                         ron::to_string(con.as_ref()).unwrap().as_bytes()
                     );
@@ -92,60 +101,12 @@ fn show_controller_settings(
     }
 }
 
-const PATH_TO_CONTROLLER : &str = "conroller.ron";
 
 fn startup_player(
     mut commands : Commands,
     mut pawn_event : EventWriter<ChangePawn>,
 ) {
-    let mut cam = Camera::default();
-    cam.hdr = false;
-    cam.is_active = false;
-
-    let controller_setting = {
-        let mut con = FPSController::default();
-        if let Ok(mut file) = File::open(PATH_TO_CONTROLLER) {
-            let mut data = String::new();
-            file.read_to_string(&mut data);
-            if let Ok(file_con) = ron::from_str::<FPSController>(&data) {
-                con = file_con;
-            }
-        }
-        con
-    };
-
-    let pos = DVec3::new(0.0, 3.0, 0.0);
-    let pawn = commands.spawn(
-        SpaceCollider(
-        ColliderBuilder::capsule_y(0.75, 0.25).build()))
-    .insert(DSpatialBundle::from_transform(DTransform::from_xyz(pos.x, pos.y, pos.z)))
-    .insert(SpaceRigidBodyType::Dynamic)
-    .insert(SpaceLockedAxes::ROTATION_LOCKED)
-    .insert(GravityScale(1.0))
-    .insert(Velocity::default())
-    .insert(controller_setting)
-    .id();
-
-    info!("Locked rotation {:?}", SpaceLockedAxes::ROTATION_LOCKED);
-
-    let cam_pawn = commands.spawn(Camera3dBundle {
-        camera : cam,
-        camera_3d : Camera3d {
-            clear_color : bevy::core_pipeline::clear_color::ClearColorConfig::Custom(Color::Rgba { red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0 }),
-            ..default()
-        },
-        ..default()
-    })
-    .insert(DTransformBundle::from_transform(
-        DTransform::from_xyz(0.0, 1.0, 0.0).looking_at(DVec3::new(0.0, 1.0, -1.0), DVec3::Y)
-    ))
-    .insert(BloomSettings::default()).id();
-
-    commands.entity(pawn).add_child(cam_pawn);
-
-    commands.entity(pawn).insert(Pawn { camera_id: cam_pawn });
-
-    pawn_event.send(ChangePawn { new_pawn: pawn, save_stack: true });
+    fps_mode::startup_player(&mut commands, &mut pawn_event);
 }
 
 fn startup(
