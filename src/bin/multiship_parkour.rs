@@ -6,6 +6,11 @@ use bevy_egui::{EguiContext, egui::{self, Color32}};
 use space_physics::prelude::*;
 use bevy_transform64::prelude::*;
 
+#[derive(Component)]
+struct RotateMe {
+    pub ang_vel : DVec3
+}
+
 fn main() {
     App::default()
         .insert_resource(Msaa::default())
@@ -32,7 +37,10 @@ fn main() {
 
         .add_startup_system(startup)
         .add_startup_system(startup_player)
+
         .add_system(show_controller_settings)
+        .add_system(rotate_my_system)
+
         .run();
 }
 
@@ -114,12 +122,70 @@ fn startup(
     mut meshes : ResMut<Assets<Mesh>>,
     mut materials : ResMut<Assets<StandardMaterial>>,
 ) {
-    prepare_enviroment(meshes, materials, commands);
+    prepare_enviroment(
+        &mut meshes,
+        &mut materials, 
+        &mut commands);
+    spawn_ship(
+        DVec3::new(11.0, -0.5, 0.0),
+        &mut meshes,
+        &mut materials,
+        &mut commands);
 }
 
-fn prepare_enviroment(mut meshes: ResMut<'_, Assets<Mesh>>, mut materials: ResMut<'_, Assets<StandardMaterial>>, mut commands: Commands<'_, '_>) {
+fn spawn_ship(
+    pos : DVec3,
+    mut meshes: &mut Assets<Mesh>, 
+    mut materials: &mut Assets<StandardMaterial>, 
+    mut commands: &mut Commands) {
+
     let plane_mesh = meshes.add(
-        Mesh::from(bevy::prelude::shape::Box::new(100.0, 0.5, 100.0))
+        Mesh::from(bevy::prelude::shape::Box::new(10.0, 0.5, 10.0))
+    );
+
+    let mat = materials.add(
+        StandardMaterial {
+            base_color : Color::DARK_GREEN,
+            ..default()
+        }
+    );
+
+    commands.spawn(
+        PbrBundle {
+            mesh: plane_mesh.clone(),
+            material : mat.clone(),
+            ..default()
+        }
+    ).insert(DTransformBundle::from_transform(
+        DTransform::from_xyz(pos.x, pos.y, pos.z)
+    ))
+    .insert(SpaceCollider(
+        space_physics::prelude::ColliderBuilder::cuboid(5.0, 0.25, 5.0).build()
+    ))
+    .insert(SpaceRigidBodyType::Dynamic)
+    .insert(GravityScale(0.0))
+    .insert(
+        RotateMe {
+            ang_vel : DVec3::new(0.5, 0.0, 0.0)
+        }
+    );
+}
+
+fn rotate_my_system(
+    mut query : Query<(&RotateMe, &mut Velocity)>,
+
+) {
+    for (me, mut vel) in query.iter_mut() {
+        vel.angvel = me.ang_vel;
+    }
+}
+
+fn prepare_enviroment(
+        mut meshes: &mut Assets<Mesh>, 
+        mut materials: &mut Assets<StandardMaterial>, 
+        mut commands: &mut Commands) {
+    let plane_mesh = meshes.add(
+        Mesh::from(bevy::prelude::shape::Box::new(10.0, 0.5, 10.0))
     );
     let cube_mesh = meshes.add(
         Mesh::from(bevy::prelude::shape::Cube::new(1.0))
@@ -141,7 +207,7 @@ fn prepare_enviroment(mut meshes: ResMut<'_, Assets<Mesh>>, mut materials: ResMu
         DTransform::from_xyz(0.0, -0.5, 0.0)
     ))
     .insert(SpaceCollider(
-        space_physics::prelude::ColliderBuilder::cuboid(50.0, 0.25, 50.0).build()
+        space_physics::prelude::ColliderBuilder::cuboid(5.0, 0.25, 5.0).build()
     ));
 
     let cube_poses = vec![
