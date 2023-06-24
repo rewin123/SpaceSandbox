@@ -148,6 +148,12 @@ fn startup(
         &mut meshes,
         &mut materials,
         &mut commands);
+    
+        spawn_ship(
+            DVec3::new(11.0, 11.0, 0.0),
+            &mut meshes,
+            &mut materials,
+            &mut commands);
 }
 
 fn spawn_ship(

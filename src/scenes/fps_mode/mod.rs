@@ -284,7 +284,7 @@ pub fn startup_player(
     let mut cam = Camera::default();
     cam.hdr = false;
     cam.is_active = false;
-
+    
     let controller_setting = {
         let mut con = FPSController::default();
         if let Ok(mut file) = File::open(PATH_TO_CONTROLLER) {
@@ -316,6 +316,7 @@ pub fn startup_player(
         camera : cam,
         camera_3d : Camera3d {
             clear_color : bevy::core_pipeline::clear_color::ClearColorConfig::Custom(Color::Rgba { red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0 }),
+            
             ..default()
         },
         ..default()
