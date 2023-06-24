@@ -3,6 +3,7 @@ pub mod meteor;
 pub mod radar;
 pub mod door;
 pub mod ship_camera;
+pub mod gravity_generator;
 
 pub mod prelude {
     pub use super::pilot_seat::*;
@@ -10,6 +11,7 @@ pub mod prelude {
     pub use super::*;
     pub use radar::*;
     pub use door::*;
+    pub use gravity_generator::*;
 }
 
 use bevy::prelude::*;
@@ -22,6 +24,7 @@ impl Plugin for SpaceObjectsPlugin {
         app.add_plugin(meteor::MetorFieldPlugin);
         app.add_plugin(radar::RadarPlugin);
         app.add_plugin(door::DoorPlugin);
+        app.add_plugin(gravity_generator::GravityGeneratorPlugin);
         app.register_type::<ship_camera::ShipCamera>();
     }
 }

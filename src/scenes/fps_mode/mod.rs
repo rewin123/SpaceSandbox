@@ -1,14 +1,15 @@
-use std::{default, fs::File, io::Read};
+use std::{default, fs::File, io::Read, ops::Mul};
 
 use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, CursorGrabMode}, math::DVec3, core_pipeline::bloom::BloomSettings};
 use serde::{Deserialize, Serialize};
 use space_physics::{resources::RapierContext, prelude::{Velocity, point, vector, QueryFilter, SpaceCollider, ColliderBuilder, SpaceRigidBodyType, SpaceLockedAxes, GravityScale}};
 
-use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn, CurrentPawnMarker, ChangePawn}, control::{Action, FPSAction}, objects::prelude::MeteorFieldCommand};
+use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn, CurrentPawnMarker, ChangePawn}, control::{Action, FPSAction}, objects::prelude::{MeteorFieldCommand, GravitySenitive}};
 
 use space_physics::prelude::nalgebra;
 
 #[derive(Component, Default, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(default)]
 pub struct FPSController {
     pub walk_speed : f64,
     pub run_speed : f64,
@@ -21,7 +22,12 @@ pub struct FPSController {
     #[serde(skip)]
     pub dash_time : f64,
     pub dash_interval : f64,
-    pub is_sprinting : bool
+    pub is_sprinting : bool,
+
+    #[serde(skip)]
+    pub current_up : DVec3,
+
+    pub default_up : DVec3
 }
 
 pub struct FPSPlugin;
@@ -47,6 +53,9 @@ impl Plugin for FPSPlugin {
         app.add_system(fps_setup.in_schedule(OnEnter(IsFPSMode::Yes)));
 
         app.add_system(fps_mod_control);
+        app.add_system(
+            gravity_process.before(fps_look_controller)
+        );
     }
 }
 
@@ -100,6 +109,37 @@ fn fps_focus_control(
     
 }
 
+fn gravity_process(
+    mut controllers : Query<(&mut DTransform, &mut FPSController, &GravitySenitive, &mut Velocity)>,
+    time : Res<Time>
+) {
+    let speed = 500.0;
+    for (mut transform, mut controller, gravity, mut vel) in controllers.iter_mut() {
+        if gravity.is_senitive {
+            controller.current_up = -gravity.g;
+            vel.linvel += gravity.g * time.delta_seconds_f64();
+        } else {
+            // controller.current_up = controller.default_up;
+        }
+        controller.current_up = controller.current_up.normalize_or_zero();
+        let rot_axis = controller.current_up - transform.up();
+        let right_dot = transform.right().dot(rot_axis);
+        let frw_dot = transform.forward().dot(rot_axis);
+        if !rot_axis.is_nan() {
+            let angle = controller.current_up.angle_between(transform.up());
+            if !angle.is_nan() {
+                let frw = transform.forward();
+                let right= transform.right();
+
+                let angle = angle.min(0.01);
+                
+                transform.rotate_axis(frw, right_dot * angle * speed * time.delta_seconds_f64());
+                transform.rotate_axis(right, -frw_dot * angle * speed * time.delta_seconds_f64());
+            }
+        }
+    }
+}
+
 fn fps_look_controller(
     pawn : Res<CurrentPawn>,
     mut transform : Query<&mut DTransform>,
@@ -111,6 +151,12 @@ fn fps_look_controller(
         if let Ok((pawn, controller)) = pawns.get(e) {
             if controller.capture_control {
                 let cam_id = pawn.camera_id;
+                let pawn_up = if let Ok(pawn_transform) = transform.get(e) {
+                    pawn_transform.up()
+                } else {
+                    warn!("No pawn transform found for FPS controller");
+                    return;
+                };
                 //head control
                 if let Ok(mut pawn_transform) = transform.get_mut(cam_id) {
                     for mv in &moves {
@@ -140,12 +186,14 @@ fn fps_look_controller(
                     changed_frw.y = changed_frw.y.max(-0.95);
                     changed_frw.y = changed_frw.y.min(0.95);
                     let pos = pawn_transform.translation;
-                    pawn_transform.look_at(pos + changed_frw, DVec3::new(0.0, 1.0, 0.0));
+                    pawn_transform.look_at(pos + changed_frw, pawn_up);
                 }
             }
         }
     }
 }
+
+
 
 fn fps_controller(
     pawn : Res<CurrentPawn>,
@@ -215,7 +263,7 @@ fn fps_controller(
                     if keys.just_pressed(Action::FPS(FPSAction::Jump)) {
                         // info!("jump");
                         if let Ok(mut vel) = bodies.get_mut(e) {
-                            vel.linvel.y += controller.jump_force;
+                            vel.linvel += controller.jump_force * pawn_transform.up();
                             // info!("change vel to {:?}", vel.linvel);
                         }
                     }
@@ -256,9 +304,10 @@ pub fn startup_player(
     .insert(DSpatialBundle::from_transform(DTransform::from_xyz(pos.x, pos.y, pos.z)))
     .insert(SpaceRigidBodyType::Dynamic)
     .insert(SpaceLockedAxes::ROTATION_LOCKED)
-    .insert(GravityScale(1.0))
+    .insert(GravityScale(0.0))
     .insert(Velocity::default())
     .insert(controller_setting)
+    .insert(GravitySenitive::default())
     .id();
 
     info!("Locked rotation {:?}", SpaceLockedAxes::ROTATION_LOCKED);

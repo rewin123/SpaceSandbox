@@ -1,7 +1,7 @@
-use std::{fs::*, io::*};
+use std::{fs::*, io::*, fmt::format};
 
 use bevy::{prelude::*, render::{RenderPlugin, settings::{WgpuSettings, WgpuFeatures}}, math::DVec3, core_pipeline::bloom::BloomSettings};
-use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{main_menu::MainMenuPlugin, station_builder::StationBuilderPlugin, NotificationPlugin, fps_mode::{FPSPlugin, FPSController, self}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, Pawn, ChangePawn}, network::NetworkPlugin, control::SpaceControlPlugin, objects::SpaceObjectsPlugin};
+use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{main_menu::MainMenuPlugin, station_builder::StationBuilderPlugin, NotificationPlugin, fps_mode::{FPSPlugin, FPSController, self}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, Pawn, ChangePawn}, network::NetworkPlugin, control::SpaceControlPlugin, objects::{SpaceObjectsPlugin, prelude::{GravityGenerator, GravityGeneratorPlugin}}};
 use bevy_egui::{EguiContext, egui::{self, Color32}};
 use space_physics::prelude::*;
 use bevy_transform64::prelude::*;
@@ -34,6 +34,7 @@ fn main() {
         .add_plugin(SpacePhysicsPlugin)
         .add_plugin(SpaceControlPlugin)
         .add_plugin(SettingsPlugin)
+        .add_plugin(GravityGeneratorPlugin)
 
         .add_startup_system(startup)
         .add_startup_system(startup_player)
@@ -46,12 +47,12 @@ fn main() {
 
 fn show_controller_settings(
     mut ctx : Query<&mut EguiContext>,
-    mut query : Query<(Entity, &mut FPSController)>,
+    mut query : Query<(Entity, &DTransform, &mut FPSController)>,
     time : Res<Time>
 ) {
     if let Ok(mut ctx) = ctx.get_single_mut() {
         egui::Window::new("Controller Settings").show(ctx.get_mut(), |ui| {
-            for (entity, mut con) in query.iter_mut() {
+            for (entity, tr, mut con) in query.iter_mut() {
                 ui.label(format!("{:?}", entity));
 
                 ui.add(
@@ -97,6 +98,22 @@ fn show_controller_settings(
                 }
 
                 ui.checkbox(&mut con.is_sprinting, "Is sprinting");
+
+                ui.horizontal(|ui| {
+                    ui.label("Default Up:");
+                    ui.add(
+                        egui::DragValue::new(&mut con.default_up.x)
+                    );
+                    ui.add(
+                        egui::DragValue::new(&mut con.default_up.y)
+                    );
+                    ui.add(
+                        egui::DragValue::new(&mut con.default_up.z)
+                    );
+                });
+
+                ui.label(format!("Current Up: {:.2} {:.2} {:.2}", con.current_up.x, con.current_up.y, con.current_up.z));
+                ui.label(format!("Current transform Up: {:.2} {:.2} {:.2}", tr.up().x, tr.up().y, tr.up().z));
 
                 if ui.button("Save").clicked() {
                     let mut file = File::create(fps_mode::PATH_TO_CONTROLLER).unwrap();
@@ -166,9 +183,15 @@ fn spawn_ship(
     .insert(GravityScale(0.0))
     .insert(
         RotateMe {
-            ang_vel : DVec3::new(0.5, 0.0, 0.0)
+            ang_vel : DVec3::new(0.1, 0.0, 0.0)
         }
-    );
+    )
+    .insert(SpaceDominance(1))
+    .insert(Velocity::default())
+    .insert(GravityGenerator {
+        gravity_force: DVec3::new(0.0, -9.81, 0.0),
+        radius: 5.0,
+    });
 }
 
 fn rotate_my_system(
@@ -208,7 +231,11 @@ fn prepare_enviroment(
     ))
     .insert(SpaceCollider(
         space_physics::prelude::ColliderBuilder::cuboid(5.0, 0.25, 5.0).build()
-    ));
+    ))
+    .insert(GravityGenerator {
+        gravity_force : DVec3::new(0.0, -9.81, 0.0),
+        radius : 5.0
+    });
 
     let cube_poses = vec![
         DVec3::new(5.0, 0.0, 0.0),
