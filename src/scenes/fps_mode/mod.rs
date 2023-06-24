@@ -280,7 +280,7 @@ pub const PATH_TO_CONTROLLER : &str = "conroller.ron";
 pub fn startup_player(
     mut commands : &mut Commands,
     mut pawn_event : &mut EventWriter<ChangePawn>,
-) {
+) -> Entity {
     let mut cam = Camera::default();
     cam.hdr = false;
     cam.is_active = false;
@@ -330,4 +330,6 @@ pub fn startup_player(
     commands.entity(pawn).insert(Pawn { camera_id: cam_pawn });
 
     pawn_event.send(ChangePawn { new_pawn: pawn, save_stack: true });
+
+    return pawn;
 }

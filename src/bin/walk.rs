@@ -106,7 +106,9 @@ fn startup_player(
     mut commands : Commands,
     mut pawn_event : EventWriter<ChangePawn>,
 ) {
-    fps_mode::startup_player(&mut commands, &mut pawn_event);
+    let pawn = fps_mode::startup_player(&mut commands, &mut pawn_event);
+    commands.entity(pawn).
+        insert(GravityScale(1.0));
 }
 
 fn startup(
