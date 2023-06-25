@@ -149,11 +149,11 @@ fn startup(
         &mut materials,
         &mut commands);
     
-        spawn_ship(
-            DVec3::new(11.0, 11.0, 0.0),
-            &mut meshes,
-            &mut materials,
-            &mut commands);
+    spawn_ship(
+        DVec3::new(11.0, 11.0, 0.0),
+        &mut meshes,
+        &mut materials,
+        &mut commands);
 }
 
 fn spawn_ship(
@@ -189,7 +189,7 @@ fn spawn_ship(
     .insert(GravityScale(0.0))
     .insert(
         RotateMe {
-            ang_vel : DVec3::new(0.1, 0.0, 0.0)
+            ang_vel : DVec3::new(0.3, 0.0, 0.0)
         }
     )
     .insert(SpaceDominance(1))
