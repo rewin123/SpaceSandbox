@@ -1,6 +1,7 @@
-use std::{default, fs::File, io::Read, ops::Mul};
+use std::{default, fs::File, io::{Read, Write}, ops::Mul};
 
 use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, CursorGrabMode}, math::DVec3, core_pipeline::bloom::BloomSettings};
+use bevy_egui::{EguiContext, egui};
 use serde::{Deserialize, Serialize};
 use space_physics::{resources::RapierContext, prelude::{Velocity, point, vector, QueryFilter, SpaceCollider, ColliderBuilder, SpaceRigidBodyType, SpaceLockedAxes, GravityScale}};
 
@@ -276,11 +277,16 @@ fn fps_controller(
     }
 }
 
+pub struct FpsPlayerEntities {
+    pub pawn : Entity,
+    pub camera : Entity
+}
+
 pub const PATH_TO_CONTROLLER : &str = "conroller.ron";
 pub fn startup_player(
     mut commands : &mut Commands,
     mut pawn_event : &mut EventWriter<ChangePawn>,
-) -> Entity {
+) -> FpsPlayerEntities {
     let mut cam = Camera::default();
     cam.hdr = false;
     cam.is_active = false;
@@ -332,5 +338,90 @@ pub fn startup_player(
 
     pawn_event.send(ChangePawn { new_pawn: pawn, save_stack: true });
 
-    return pawn;
+    FpsPlayerEntities {
+        pawn,
+        camera: cam_pawn
+    }
+}
+
+
+pub fn show_controller_settings(
+    mut ctx : Query<&mut EguiContext>,
+    mut query : Query<(Entity, &DTransform, &mut FPSController)>,
+    time : Res<Time>
+) {
+    if let Ok(mut ctx) = ctx.get_single_mut() {
+        egui::Window::new("Controller Settings").show(ctx.get_mut(), |ui| {
+            for (entity, tr, mut con) in query.iter_mut() {
+                ui.label(format!("{:?}", entity));
+
+                ui.add(
+                    egui::DragValue::new(&mut con.walk_speed)
+                    .prefix("Walk Speed:")
+                    .fixed_decimals(1)
+                );
+                ui.add(
+                    egui::DragValue::new(&mut con.run_speed)
+                    .prefix("Run Speed:")
+                    .fixed_decimals(1)
+                );
+                ui.add(
+                    egui::DragValue::new(&mut con.jump_force)
+                    .prefix("Jump Force:")
+                    .fixed_decimals(1)
+                );
+                ui.add(
+                    egui::Checkbox::new(&mut con.capture_control, "Capture Control")
+                );
+
+                ui.add(
+                    egui::DragValue::new(&mut con.speed_relax)
+                        .prefix("Speed Relax:")
+                        .fixed_decimals(3)
+                );
+                ui.label(format!("Current speed: {:.2}", con.current_move.length()));
+
+                ui.add(
+                    egui::DragValue::new(&mut con.dash_speed)
+                        .prefix("Dash Speed:")
+                );
+                ui.add(
+                    egui::DragValue::new(&mut con.dash_interval)
+                        .prefix("Dash Interval:")
+                );
+                ui.label(format!("Dash time: {:.2}", con.dash_time));
+
+                if time.elapsed_seconds_f64() - con.dash_time > con.dash_interval {
+                    ui.colored_label(egui::Color32::GREEN, "Dash");
+                } else {
+                    ui.colored_label(egui::Color32::YELLOW, "No dash");
+                }
+
+                ui.checkbox(&mut con.is_sprinting, "Is sprinting");
+
+                ui.horizontal(|ui| {
+                    ui.label("Default Up:");
+                    ui.add(
+                        egui::DragValue::new(&mut con.default_up.x)
+                    );
+                    ui.add(
+                        egui::DragValue::new(&mut con.default_up.y)
+                    );
+                    ui.add(
+                        egui::DragValue::new(&mut con.default_up.z)
+                    );
+                });
+
+                ui.label(format!("Current Up: {:.2} {:.2} {:.2}", con.current_up.x, con.current_up.y, con.current_up.z));
+                ui.label(format!("Current transform Up: {:.2} {:.2} {:.2}", tr.up().x, tr.up().y, tr.up().z));
+
+                if ui.button("Save").clicked() {
+                    let mut file = File::create(PATH_TO_CONTROLLER).unwrap();
+                    file.write(
+                        ron::to_string(con.as_ref()).unwrap().as_bytes()
+                    );
+                }
+            }
+        });
+    }
 }

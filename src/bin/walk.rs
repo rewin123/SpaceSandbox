@@ -32,73 +32,8 @@ fn main() {
 
         .add_startup_system(startup)
         .add_startup_system(startup_player)
-        .add_system(show_controller_settings)
+        .add_system(fps_mode::show_controller_settings)
         .run();
-}
-
-fn show_controller_settings(
-    mut ctx : Query<&mut EguiContext>,
-    mut query : Query<(Entity, &mut FPSController)>,
-    time : Res<Time>
-) {
-    if let Ok(mut ctx) = ctx.get_single_mut() {
-        egui::Window::new("Controller Settings").show(ctx.get_mut(), |ui| {
-            for (entity, mut con) in query.iter_mut() {
-                ui.label(format!("{:?}", entity));
-
-                ui.add(
-                    egui::DragValue::new(&mut con.walk_speed)
-                    .prefix("Walk Speed:")
-                    .fixed_decimals(1)
-                );
-                ui.add(
-                    egui::DragValue::new(&mut con.run_speed)
-                    .prefix("Run Speed:")
-                    .fixed_decimals(1)
-                );
-                ui.add(
-                    egui::DragValue::new(&mut con.jump_force)
-                    .prefix("Jump Force:")
-                    .fixed_decimals(1)
-                );
-                ui.add(
-                    egui::Checkbox::new(&mut con.capture_control, "Capture Control")
-                );
-
-                ui.add(
-                    egui::DragValue::new(&mut con.speed_relax)
-                        .prefix("Speed Relax:")
-                        .fixed_decimals(3)
-                );
-                ui.label(format!("Current speed: {:.2}", con.current_move.length()));
-
-                ui.add(
-                    egui::DragValue::new(&mut con.dash_speed)
-                        .prefix("Dash Speed:")
-                );
-                ui.add(
-                    egui::DragValue::new(&mut con.dash_interval)
-                        .prefix("Dash Interval:")
-                );
-                ui.label(format!("Dash time: {:.2}", con.dash_time));
-
-                if time.elapsed_seconds_f64() - con.dash_time > con.dash_interval {
-                    ui.colored_label(Color32::GREEN, "Dash");
-                } else {
-                    ui.colored_label(Color32::YELLOW, "No dash");
-                }
-
-                ui.checkbox(&mut con.is_sprinting, "Is sprinting");
-
-                if ui.button("Save").clicked() {
-                    let mut file = File::create(fps_mode::PATH_TO_CONTROLLER).unwrap();
-                    file.write(
-                        ron::to_string(con.as_ref()).unwrap().as_bytes()
-                    );
-                }
-            }
-        });
-    }
 }
 
 
@@ -106,7 +41,7 @@ fn startup_player(
     mut commands : Commands,
     mut pawn_event : EventWriter<ChangePawn>,
 ) {
-    let pawn = fps_mode::startup_player(&mut commands, &mut pawn_event);
+    let pawn = fps_mode::startup_player(&mut commands, &mut pawn_event).pawn;
     commands.entity(pawn).
         insert(GravityScale(1.0));
 }
