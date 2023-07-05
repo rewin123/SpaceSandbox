@@ -7,5 +7,7 @@
     "downscalePercent": 100
   },
   "attachmentFolderPath": "imgs",
-  "promptDelete": false
+  "promptDelete": false,
+  "newFileLocation": "root",
+  "newFileFolderPath": ""
 }
