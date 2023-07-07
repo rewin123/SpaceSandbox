@@ -1,7 +1,7 @@
 use std::{fs::*, io::*, fmt::format, ops::{Add, Sub, Mul}};
 
 use bevy::{prelude::*, render::{RenderPlugin, settings::{WgpuSettings, WgpuFeatures}}, math::{DVec3, DQuat}, core_pipeline::bloom::BloomSettings};
-use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{main_menu::MainMenuPlugin, station_builder::StationBuilderPlugin, NotificationPlugin, fps_mode::{FPSPlugin, FPSController, self}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, Pawn, ChangePawn}, network::NetworkPlugin, control::SpaceControlPlugin, objects::{SpaceObjectsPlugin, prelude::{GravityGenerator, GravityGeneratorPlugin}}};
+use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{main_menu::MainMenuPlugin, station_builder::StationBuilderPlugin, NotificationPlugin, fps_mode::{FPSPlugin, FPSController, self}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, Pawn, ChangePawn}, network::NetworkPlugin, control::SpaceControlPlugin, objects::{SpaceObjectsPlugin, prelude::{GravityGenerator, GravityGeneratorPlugin}, guns::gun_grab::{GunGrabPlugin, GunGrab}}};
 use bevy_egui::{EguiContext, egui::{self, Color32}};
 use space_physics::prelude::*;
 use bevy_transform64::prelude::*;
@@ -104,6 +104,7 @@ fn main() {
         .add_plugin(SpaceControlPlugin)
         .add_plugin(SettingsPlugin)
         .add_plugin(GravityGeneratorPlugin)
+        .add_plugin(GunGrabPlugin)
 
         .add_startup_system(startup)
         .add_startup_system(startup_player)
@@ -201,16 +202,20 @@ fn startup_player(
             ..default()
         }
     ).insert(DTransformBundle::from_transform(
-        DTransform::from_xyz(0.1, -0.5, 0.5)
+        DTransform::from_xyz(-0.5, 0.5, 0.5)
         .with_rotation(DQuat::from_axis_angle(DVec3::X, 3.14 / 2.0))
     ))
     .id();
 
     commands.entity(player.pawn).
-        insert(GravityScale(1.0));
+        insert(GravityScale(1.0))
+        .insert(GunGrab {
+            gun_id : gun,
+            cam_id : player.camera,
+            shift : DVec3::new(0.5, 0.5, 0.5)
+        });
 
-    commands.entity(player.camera)
-        .insert(SpatialBundle::default())
+    commands.entity(player.pawn)
         .add_child(gun);
 }
 

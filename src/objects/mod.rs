@@ -4,6 +4,7 @@ pub mod radar;
 pub mod door;
 pub mod ship_camera;
 pub mod gravity_generator;
+pub mod guns;
 
 pub mod prelude {
     pub use super::pilot_seat::*;

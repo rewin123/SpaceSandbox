@@ -40,7 +40,7 @@ fn gravity_sensetive_fill(
                 let gravity_force = -dir * force / (9.0 * dist * dist / g.radius / g.radius + 1.0);
                 s.is_senitive = true;
                 s.g += gravity_force;
-                info!("Sensitive: {:?} with gravity generator: {:?}", e_s, e_g);
+                trace!("Sensitive: {:?} with gravity generator: {:?}", e_s, e_g);
             }
         }
     }
