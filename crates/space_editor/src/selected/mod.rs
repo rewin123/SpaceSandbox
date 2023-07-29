@@ -1,6 +1,6 @@
 use bevy::{prelude::*, utils::HashSet};
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Clone)]
 pub struct SelectedEntities {
     pub list : HashSet<Entity>
 }

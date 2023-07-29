@@ -34,9 +34,9 @@ fn show_hierarchy(
 ) {
     egui::SidePanel::left("Scene hierarchy")
         .show(contexts.ctx_mut(), |ui| {
-        for (entity, name, children, parent) in query.iter() {
+        for (entity, _, _, parent) in query.iter() {
             if parent.is_none() {
-                draw_entity(ui, &query, 0, entity, name, children, &mut selected);
+                draw_entity(ui, &query, entity, &mut selected);
             }
         }
     });
@@ -45,12 +45,11 @@ fn show_hierarchy(
 fn draw_entity(
     ui: &mut egui::Ui,
     query: &Query<(Entity, Option<&Name>, Option<&Children>, Option<&Parent>)>,
-    indent: usize,
     entity: Entity,
-    name: Option<&Name>,
-    children: Option<&Children>,
     selected : &mut SelectedEntities
 ) {
+    let (_, name, children, parent) = query.get(entity).unwrap();
+
     let entity_name = name.map_or_else(
         || format!("Entity {:?}", entity),
         |name| format!("Entity {:?}: {:?}", entity, name.as_str()),
@@ -68,9 +67,7 @@ fn draw_entity(
         }
         if let Some(children) = children {
             for child in children.iter() {
-                if let Ok((_, child_name, child_children, _)) = query.get(*child) {
-                    draw_entity(ui, query, indent + 1, *child, child_name, child_children, selected);
-                }
+                draw_entity(ui, query, *child, selected);
             }
         }
     });

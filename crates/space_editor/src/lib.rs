@@ -1,5 +1,6 @@
 pub mod hierarchy; 
 pub mod selected;
+pub mod inspector;
 
 use bevy::prelude::*;
 
