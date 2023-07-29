@@ -41,13 +41,67 @@ fn ui_for_reflect(
     match value.reflect_mut() {
         bevy::reflect::ReflectMut::Struct(value) => {ui_for_struct(ui, value, hash, name, set_changed)},
         bevy::reflect::ReflectMut::TupleStruct(value) => {ui_for_tuple_struct(ui, value, hash, name, set_changed)},
-        bevy::reflect::ReflectMut::Tuple(value) => {println!("Tuple")},
+        bevy::reflect::ReflectMut::Tuple(value) => {ui_for_tuple(ui, value, hash, name, set_changed)},
         bevy::reflect::ReflectMut::List(value) => {ui_for_list(ui, value, hash, name, set_changed)},
-        bevy::reflect::ReflectMut::Array(value) => {println!("Array")},
-        bevy::reflect::ReflectMut::Map(value) => {println!("Map")},
+        bevy::reflect::ReflectMut::Array(value) => {ui_for_array(ui, value, hash, name, set_changed)},
+        bevy::reflect::ReflectMut::Map(value) => {ui_for_map(ui, value, hash, name, set_changed)},
         bevy::reflect::ReflectMut::Enum(value) => {ui_for_enum(ui, value, hash, name, set_changed)},
         bevy::reflect::ReflectMut::Value(value) => {ui_for_value(ui, value, hash, name, set_changed)},
     }
+}
+
+
+
+fn ui_for_map(
+    ui : &mut egui::Ui,
+    value : &mut dyn bevy::reflect::Map,
+    hash : &str,
+    name : &str,
+    set_changed : &mut impl FnMut()
+) {
+    let hash = format!("{}{}", hash, name);
+    ui.label(name);
+    ui.indent(&hash, |ui| {
+        for idx in 0..value.len() {
+            let (key, subvalue) = value.get_at_mut(idx).unwrap();
+            let subname = format!("{:?}", key);
+            ui_for_reflect(ui, subvalue , &format!("{}{}", hash, subname), &subname, set_changed);
+        }
+    });
+}
+
+fn ui_for_tuple(
+    ui : &mut egui::Ui,
+    value : &mut dyn bevy::reflect::Tuple,
+    hash : &str,
+    name : &str,
+    set_changed : &mut impl FnMut()
+) {
+    let hash = format!("{}{}", hash, name);
+    ui.label(name);
+    ui.indent(&hash, |ui| {
+        for idx in 0..value.field_len() {
+            let subname = format!("{}", idx);
+            ui_for_reflect(ui, value.field_mut(idx).unwrap(), &format!("{}{}", hash, subname), &subname, set_changed);
+        }
+    });
+}
+
+fn ui_for_array(
+    ui : &mut egui::Ui,
+    value : &mut dyn bevy::reflect::Array,
+    hash : &str,
+    name : &str,
+    set_changed : &mut impl FnMut()
+) {
+    let hash = format!("{}{}", hash, name);
+    ui.label(name);
+    ui.indent(&hash, |ui| {
+        for idx in 0..value.len() {
+            let subname = format!("{}", idx);
+            ui_for_reflect(ui, value.get_mut(idx).unwrap(), &format!("{}{}", hash, subname), &subname, set_changed);
+        }
+    });
 }
 
 fn ui_for_list(
