@@ -1,4 +1,6 @@
-use bevy::{prelude::*, ecs::{component::ComponentId, change_detection::MutUntyped}, reflect::ReflectFromPtr, ptr::PtrMut};
+use std::fmt::format;
+
+use bevy::{prelude::*, ecs::{component::ComponentId, change_detection::MutUntyped}, reflect::{ReflectFromPtr, TypeInfo, DynamicEnum, DynamicVariant, DynamicTuple, DynamicStruct}, ptr::PtrMut};
 use bevy_egui::*;
 
 
@@ -37,15 +39,97 @@ fn ui_for_reflect(
         name : &str,
         set_changed : &mut impl FnMut()) {
     match value.reflect_mut() {
-        bevy::reflect::ReflectMut::Struct(s) => {ui_for_struct(ui, s, hash, name, set_changed)},
-        bevy::reflect::ReflectMut::TupleStruct(_) => {println!("TupleStruct")},
-        bevy::reflect::ReflectMut::Tuple(_) => {println!("Tuple")},
-        bevy::reflect::ReflectMut::List(_) => {println!("List")},
-        bevy::reflect::ReflectMut::Array(_) => {println!("Array")},
-        bevy::reflect::ReflectMut::Map(_) => {println!("Map")},
-        bevy::reflect::ReflectMut::Enum(_) => {println!("Enum")},
+        bevy::reflect::ReflectMut::Struct(value) => {ui_for_struct(ui, value, hash, name, set_changed)},
+        bevy::reflect::ReflectMut::TupleStruct(value) => {ui_for_tuple_struct(ui, value, hash, name, set_changed)},
+        bevy::reflect::ReflectMut::Tuple(value) => {println!("Tuple")},
+        bevy::reflect::ReflectMut::List(value) => {ui_for_list(ui, value, hash, name, set_changed)},
+        bevy::reflect::ReflectMut::Array(value) => {println!("Array")},
+        bevy::reflect::ReflectMut::Map(value) => {println!("Map")},
+        bevy::reflect::ReflectMut::Enum(value) => {ui_for_enum(ui, value, hash, name, set_changed)},
         bevy::reflect::ReflectMut::Value(value) => {ui_for_value(ui, value, hash, name, set_changed)},
     }
+}
+
+fn ui_for_list(
+    ui : &mut egui::Ui,
+    value : &mut dyn bevy::reflect::List,
+    hash : &str,
+    name : &str,
+    set_changed : &mut impl FnMut()
+) {
+    let hash = format!("{}{}", hash, name);
+    ui.label(name);
+    ui.indent(&hash, |ui| {
+        for idx in 0..value.len() {
+            let subname = format!("{}", idx);
+            ui_for_reflect(ui, value.get_mut(idx).unwrap(), &format!("{}{}", hash, subname), &subname, set_changed);
+        }
+    });
+}
+
+fn ui_for_enum(
+    ui : &mut egui::Ui,
+    value : &mut dyn bevy::reflect::Enum,
+    hash : &str,
+    name : &str,
+    set_changed : &mut impl FnMut()
+) {
+    let hash = format!("{}{}", hash, name);
+    let varian_idx = value.variant_index();
+    let selected_name = value.variant_name().to_string();
+    let TypeInfo::Enum(enum_info) = value.get_represented_type_info().unwrap() else {
+        ui.label("Broken enum");
+        return;
+    };
+    let mut next_name = selected_name.clone();
+    egui::ComboBox::new(&hash, name)
+            .selected_text(&selected_name)
+            .show_ui(ui, |ui| {
+        for idx in 0..enum_info.variant_len() {
+            let name = enum_info.variant_at(idx).unwrap().name();
+            ui.selectable_value(&mut next_name, name.to_string(), name);
+        }
+    });
+    if next_name != selected_name {
+        let info = enum_info.variant(&next_name).unwrap();
+        let variant = match info {
+            bevy::reflect::VariantInfo::Struct(s) => DynamicVariant::Struct(DynamicStruct::default()),
+            bevy::reflect::VariantInfo::Tuple(s) => DynamicVariant::Tuple(DynamicTuple::default()),
+            bevy::reflect::VariantInfo::Unit(s) => DynamicVariant::Unit,
+        };
+        let new_variant = DynamicEnum::new(next_name, variant);
+        value.apply(&new_variant);
+    }
+    ui.label(&format!("Enum: {}", selected_name));
+    if value.field_len() > 0 {
+        ui.indent(&format!("{}indent", hash), |ui| {
+            for idx in 0..value.field_len() {
+                let name = value.name_at(idx).unwrap_or("").to_string();
+                let field = value.field_at_mut(idx).unwrap();
+                ui_for_reflect(ui, field, &hash, &name, set_changed);
+            }
+        });
+    }
+}
+
+fn ui_for_tuple_struct(
+    ui : &mut egui::Ui,
+    value : &mut dyn TupleStruct,
+    hash : &str,
+    name : &str,
+    set_changed : &mut impl FnMut()
+) {
+    let hash = format!("{}{}", hash, value.type_name());
+    egui::CollapsingHeader::new(format!("{}", name))
+            .show(ui, |ui| {
+        ui.indent(&hash, |ui| {
+            for idx in 0..value.field_len() {
+                if let Some(field) = value.field_mut(idx) {
+                    ui_for_reflect(ui, field, format!("{}{}", hash, name).as_str(), "", set_changed)
+                }
+            }
+        });
+    });
 }
 
 fn ui_for_value(
@@ -64,7 +148,12 @@ fn ui_for_value(
                 set_changed();
             }
         });
+    } else if value.represents::<Entity>() {
+        let val = value.downcast_ref::<Entity>().unwrap();
+        ui.label(format!("{} : {:?}", name, val));
         
+    } else {
+        ui.label(format!("{} not reflected", name));
     }
 }
 
@@ -89,7 +178,6 @@ fn ui_for_struct(
             }
         });
     });
-   
 }
 
 fn inspect(
