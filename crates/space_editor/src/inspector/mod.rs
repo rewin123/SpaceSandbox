@@ -34,16 +34,17 @@ fn ui_for_reflect(
         ui : &mut egui::Ui,
         value : &mut dyn Reflect,
         hash : &str,
+        name : &str,
         set_changed : &mut impl FnMut()) {
     match value.reflect_mut() {
-        bevy::reflect::ReflectMut::Struct(s) => {ui_for_struct(ui, s, hash, set_changed)},
+        bevy::reflect::ReflectMut::Struct(s) => {ui_for_struct(ui, s, hash, name, set_changed)},
         bevy::reflect::ReflectMut::TupleStruct(_) => {println!("TupleStruct")},
         bevy::reflect::ReflectMut::Tuple(_) => {println!("Tuple")},
         bevy::reflect::ReflectMut::List(_) => {println!("List")},
         bevy::reflect::ReflectMut::Array(_) => {println!("Array")},
         bevy::reflect::ReflectMut::Map(_) => {println!("Map")},
         bevy::reflect::ReflectMut::Enum(_) => {println!("Enum")},
-        bevy::reflect::ReflectMut::Value(value) => {ui_for_value(ui, value, hash, set_changed)},
+        bevy::reflect::ReflectMut::Value(value) => {ui_for_value(ui, value, hash, name, set_changed)},
     }
 }
 
@@ -51,14 +52,19 @@ fn ui_for_value(
         ui : &mut egui::Ui,
         value : &mut dyn Reflect,
         hash : &str,
+        name : &str,
         set_changed : &mut impl FnMut()) {
     let hash = format!("{}{}", hash, value.type_name());
     
     if value.represents::<f32>() {
         let val = value.downcast_mut::<f32>().unwrap();
-        if ui.add(egui::DragValue::new(val)).changed() {
-            set_changed();
-        }
+        ui.horizontal(|ui| {
+            ui.label(name);
+            if ui.add(egui::DragValue::new(val).min_decimals(2).speed(0.1)).changed() {
+                set_changed();
+            }
+        });
+        
     }
 }
 
@@ -66,9 +72,10 @@ fn ui_for_struct(
         ui : &mut egui::Ui,
         value : &mut dyn Struct,
         hash : &str,
+        name : &str,
         set_changed : &mut impl FnMut()) {
     let hash = format!("{}{}", hash, value.type_name());
-    egui::CollapsingHeader::new(format!("{}", value.type_name()))
+    egui::CollapsingHeader::new(format!("{}", name))
             .show(ui, |ui| {
         ui.indent(&hash, |ui| {
             for idx in 0..value.field_len() {
@@ -77,8 +84,7 @@ fn ui_for_struct(
                     name = name_str.to_string();
                 }
                 if let Some(field) = value.field_at_mut(idx) {
-                    ui.label(&name);
-                    ui_for_reflect(ui, field, format!("{}{}", hash, name).as_str(), set_changed)
+                    ui_for_reflect(ui, field, format!("{}{}", hash, name).as_str(), &name, set_changed)
                 }
             }
         });
@@ -134,9 +140,8 @@ fn inspect(
                                     let (ptr, mut set_changed) = mut_untyped_split(data);
         
                                     let value = reflect_from_ptr.as_reflect_ptr_mut(ptr);
-            
-                                    ui.label(registration.short_name());
-                                    ui_for_reflect(ui, value, &name, &mut set_changed);
+        
+                                    ui_for_reflect(ui, value, &name, registration.short_name(),&mut set_changed);
                                 }
                             }
                         }
