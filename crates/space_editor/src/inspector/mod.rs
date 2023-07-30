@@ -20,6 +20,7 @@ impl Plugin for InspectorPlugin {
         }
 
         app.register_type::<Transform>();
+        app.init_resource::<InspectState>();
 
         app.add_systems(Update, inspect);
     }
@@ -34,6 +35,28 @@ pub fn mut_untyped_split<'a>(mut mut_untyped: MutUntyped<'a>) -> (PtrMut<'a>, im
     (ptr, move || mut_untyped.set_changed())
 }
 
+#[derive(Default, Resource)]
+struct InspectState {
+    create_component_type : Option<ComponentId>,
+    commands : Vec<InspectCommand>
+}
+
+enum InspectCommand {
+    AddComponent(Entity, ComponentId)
+}
+
+fn execute_inspect_command(
+    mut commands : Commands,
+    mut state : ResMut<InspectState>,
+) {
+    for c in state.commands {
+        match c {
+            InspectCommand::AddComponent(e, c_id) => {
+                
+            },
+        }
+    }
+}
 
 fn inspect(
     world : &mut World
@@ -61,7 +84,10 @@ fn inspect(
 
     unsafe {
         let cell = world.as_unsafe_world_cell();
+        let mut state = cell.get_resource_mut::<InspectState>().unwrap();
+
         let mut ctx = cell.get_entity(ctx_e).unwrap().get_mut::<EguiContext>().unwrap();
+        let mut commands : Vec<InspectCommand> = vec![];
         egui::SidePanel::right("Inspector").show(ctx.get_mut(), |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 for e in selected.list.iter() {
@@ -88,12 +114,41 @@ fn inspect(
                                 }
                             }
                         }
+
+                        //add component
+                        let selected_name;
+                        if let Some(selected_id) = state.create_component_type {
+                            let selected_info = cell.components().get_name(selected_id).unwrap();
+                            selected_name = selected_info.to_string();
+                        } else {
+                            selected_name = "Press to select".to_string();
+                        }
+                        let combo = egui::ComboBox::new(format!("inspect_select"), "New")
+                            .selected_text(&selected_name).show_ui(ui, |ui| {
+                                for idx in 0..components_id.len() {
+                                    let c_id = components_id[idx];
+                                    let t_id = types_id[idx];
+                                    
+                                    let info = cell.components().get_name(c_id).unwrap();
+                                    ui.selectable_value(
+                                        &mut state.create_component_type, 
+                                        Some(c_id),
+                                            info.to_string());
+                                }
+                            });
+                        if ui.button("Add component").clicked() {
+                            if let Some(id) = state.create_component_type {
+                                commands.push(InspectCommand::AddComponent(e.id(), id));
+                            }
+                        }
                         
                     }
                 }
             });
         });
         
+        //execute commands
+        world.get_c
     }
     
 }
