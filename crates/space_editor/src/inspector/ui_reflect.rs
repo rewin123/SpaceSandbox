@@ -5,21 +5,21 @@ use bevy_egui::*;
 
 
 pub fn ui_for_reflect(
-    ui : &mut egui::Ui,
-    value : &mut dyn Reflect,
-    hash : &str,
-    name : &str,
-    set_changed : &mut impl FnMut()) {
-match value.reflect_mut() {
-    bevy::reflect::ReflectMut::Struct(value) => {ui_for_struct(ui, value, hash, name, set_changed)},
-    bevy::reflect::ReflectMut::TupleStruct(value) => {ui_for_tuple_struct(ui, value, hash, name, set_changed)},
-    bevy::reflect::ReflectMut::Tuple(value) => {ui_for_tuple(ui, value, hash, name, set_changed)},
-    bevy::reflect::ReflectMut::List(value) => {ui_for_list(ui, value, hash, name, set_changed)},
-    bevy::reflect::ReflectMut::Array(value) => {ui_for_array(ui, value, hash, name, set_changed)},
-    bevy::reflect::ReflectMut::Map(value) => {ui_for_map(ui, value, hash, name, set_changed)},
-    bevy::reflect::ReflectMut::Enum(value) => {ui_for_enum(ui, value, hash, name, set_changed)},
-    bevy::reflect::ReflectMut::Value(value) => {ui_for_value(ui, value, hash, name, set_changed)},
-}
+        ui : &mut egui::Ui,
+        value : &mut dyn Reflect,
+        hash : &str,
+        name : &str,
+        set_changed : &mut impl FnMut()) {
+    match value.reflect_mut() {
+        bevy::reflect::ReflectMut::Struct(value) => {ui_for_struct(ui, value, hash, name, set_changed)},
+        bevy::reflect::ReflectMut::TupleStruct(value) => {ui_for_tuple_struct(ui, value, hash, name, set_changed)},
+        bevy::reflect::ReflectMut::Tuple(value) => {ui_for_tuple(ui, value, hash, name, set_changed)},
+        bevy::reflect::ReflectMut::List(value) => {ui_for_list(ui, value, hash, name, set_changed)},
+        bevy::reflect::ReflectMut::Array(value) => {ui_for_array(ui, value, hash, name, set_changed)},
+        bevy::reflect::ReflectMut::Map(value) => {ui_for_map(ui, value, hash, name, set_changed)},
+        bevy::reflect::ReflectMut::Enum(value) => {ui_for_enum(ui, value, hash, name, set_changed)},
+        bevy::reflect::ReflectMut::Value(value) => {ui_for_value(ui, value, hash, name, set_changed)},
+    }
 }
 
 
@@ -84,13 +84,20 @@ pub fn ui_for_list(
     set_changed : &mut impl FnMut()
 ) {
     let hash = format!("{}{}", hash, name);
+    if name != "" {
     ui.label(name);
-    ui.indent(&hash, |ui| {
+        ui.indent(&hash, |ui| {
+            for idx in 0..value.len() {
+                let subname = format!("{}", idx);
+                ui_for_reflect(ui, value.get_mut(idx).unwrap(), &format!("{}{}", hash, subname), &subname, set_changed);
+            }
+        });
+    } else {
         for idx in 0..value.len() {
             let subname = format!("{}", idx);
             ui_for_reflect(ui, value.get_mut(idx).unwrap(), &format!("{}{}", hash, subname), &subname, set_changed);
         }
-    });
+    }
 }
 
 pub fn ui_for_enum(
@@ -135,26 +142,40 @@ pub fn ui_for_enum(
             }
         });
     }
-    }
+}
 
-    pub fn ui_for_tuple_struct(
+pub fn ui_for_tuple_struct(
     ui : &mut egui::Ui,
     value : &mut dyn TupleStruct,
     hash : &str,
     name : &str,
     set_changed : &mut impl FnMut()
-    ) {
+) {
     let hash = format!("{}{}", hash, value.type_name());
-    egui::CollapsingHeader::new(format!("{}", name))
-            .show(ui, |ui| {
-        ui.indent(&hash, |ui| {
-            for idx in 0..value.field_len() {
-                if let Some(field) = value.field_mut(idx) {
-                    ui_for_reflect(ui, field, format!("{}{}", hash, name).as_str(), "", set_changed)
+    if name != "" {
+        egui::CollapsingHeader::new(format!("{}", name))
+                .show(ui, |ui| {
+            if value.field_len() == 1 {
+                ui_for_reflect(ui, value.field_mut(0).unwrap(), format!("{}{}", hash, &format!("{}", 0)).as_str(), "", set_changed)
+            } else {
+                for idx in 0..value.field_len() {
+                    if let Some(field) = value.field_mut(idx) {
+                        ui_for_reflect(ui, field, format!("{}{}", hash, &format!("{}", idx)).as_str(), &format!("{}", idx), set_changed)
+                    }
                 }
             }
         });
-    });
+    } else {
+        if value.field_len() == 1 {
+            ui_for_reflect(ui, value.field_mut(0).unwrap(), format!("{}{}", hash, &format!("{}", 0)).as_str(), "", set_changed)
+        } else {
+            for idx in 0..value.field_len() {
+                if let Some(field) = value.field_mut(idx) {
+                    ui_for_reflect(ui, field, format!("{}{}", hash, &format!("{}", idx)).as_str(), &format!("{}", idx), set_changed)
+                }
+            }
+        }
+    }
 }
 
 pub fn ui_for_value(
@@ -188,10 +209,21 @@ pub fn ui_for_struct(
     hash : &str,
     name : &str,
     set_changed : &mut impl FnMut()) {
-let hash = format!("{}{}", hash, value.type_name());
-egui::CollapsingHeader::new(format!("{}", name))
-        .show(ui, |ui| {
-    ui.indent(&hash, |ui| {
+    let hash = format!("{}{}", hash, value.type_name());
+    if name != "" {
+        egui::CollapsingHeader::new(format!("{}", name))
+                .show(ui, |ui| {
+            for idx in 0..value.field_len() {
+                let mut name = "".to_string();
+                if let Some(name_str) = value.name_at(idx) {
+                    name = name_str.to_string();
+                }
+                if let Some(field) = value.field_at_mut(idx) {
+                    ui_for_reflect(ui, field, format!("{}{}", hash, name).as_str(), &name, set_changed)
+                }
+            }
+        });
+    } else {
         for idx in 0..value.field_len() {
             let mut name = "".to_string();
             if let Some(name_str) = value.name_at(idx) {
@@ -201,6 +233,5 @@ egui::CollapsingHeader::new(format!("{}", name))
                 ui_for_reflect(ui, field, format!("{}{}", hash, name).as_str(), &name, set_changed)
             }
         }
-    });
-});
+    }
 }
