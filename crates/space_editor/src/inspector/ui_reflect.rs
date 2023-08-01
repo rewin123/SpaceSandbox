@@ -197,7 +197,12 @@ if value.represents::<f32>() {
 } else if value.represents::<Entity>() {
     let val = value.downcast_ref::<Entity>().unwrap();
     ui.label(format!("{} : {:?}", name, val));
-    
+} else if(value.represents::<String>()) {
+    let val = value.downcast_mut::<String>().unwrap();   
+    ui.horizontal(|ui| {
+        ui.label(name);
+        ui.add(egui::TextEdit::singleline(val));
+    });
 } else {
     ui.label(format!("{} not reflected", name));
 }

@@ -1,12 +1,15 @@
-use std::fmt::format;
 pub mod ui_reflect;
+pub mod registration;
 
-use bevy::{prelude::*, ecs::{component::ComponentId, change_detection::MutUntyped}, reflect::{ReflectFromPtr, TypeInfo, DynamicEnum, DynamicVariant, DynamicTuple, DynamicStruct}, ptr::PtrMut};
+use std::any::TypeId;
+
+use bevy::{prelude::*, ecs::{component::ComponentId, change_detection::MutUntyped}, reflect::{ReflectFromPtr, TypeInfo, DynamicEnum, DynamicVariant, DynamicTuple, DynamicStruct}, ptr::PtrMut, app::AppLabel};
 use bevy_egui::*;
 
 
 use crate::selected::{SelectedPlugin, SelectedEntities};
 use ui_reflect::*;
+use registration::*;
 
 #[derive(Component)]
 pub struct SkipInspector;
@@ -19,10 +22,13 @@ impl Plugin for InspectorPlugin {
             app.add_plugins(SelectedPlugin);
         }
 
-        app.register_type::<Transform>();
         app.init_resource::<InspectState>();
+        app.init_resource::<EditorRegistry>();
 
-        app.add_systems(Update, inspect);
+        app.editor_registry::<Transform>();
+        app.editor_registry::<Name>();
+
+        app.add_systems(Update, (inspect, execute_inspect_command).chain());
     }
 }
 
@@ -41,21 +47,25 @@ struct InspectState {
     commands : Vec<InspectCommand>
 }
 
+
 enum InspectCommand {
-    AddComponent(Entity, ComponentId)
+    AddComponent(Entity, TypeId)
 }
 
 fn execute_inspect_command(
     mut commands : Commands,
     mut state : ResMut<InspectState>,
+    registration : Res<EditorRegistry>
 ) {
-    for c in state.commands {
+    for c in &state.commands {
         match c {
-            InspectCommand::AddComponent(e, c_id) => {
-                
+            InspectCommand::AddComponent(e, id) => {
+                info!("inspector adding component {:?} to entity {:?}", id, e);
+                commands.entity(*e).add(registration.get_spawn_command(id));
             },
         }
     }
+    state.commands.clear();
 }
 
 fn inspect(
@@ -63,7 +73,9 @@ fn inspect(
 ) {
 
     let selected = world.resource::<SelectedEntities>().clone();
-    let all_registry = world.resource::<AppTypeRegistry>().clone();
+
+    let editor_registry = world.resource::<EditorRegistry>().clone();
+    let all_registry = editor_registry.registry.clone();
     let registry = all_registry.read();
     let ctx_e;
     {
@@ -118,8 +130,8 @@ fn inspect(
                         //add component
                         let selected_name;
                         if let Some(selected_id) = state.create_component_type {
-                            let selected_info = cell.components().get_name(selected_id).unwrap();
-                            selected_name = selected_info.to_string();
+                            let selected_info = cell.components().get_info(selected_id).unwrap();
+                            selected_name = registry.get(selected_info.type_id().unwrap()).unwrap().short_name().to_string();
                         } else {
                             selected_name = "Press to select".to_string();
                         }
@@ -129,15 +141,18 @@ fn inspect(
                                     let c_id = components_id[idx];
                                     let t_id = types_id[idx];
                                     
-                                    let info = cell.components().get_name(c_id).unwrap();
+                                    let name = registry.get(t_id).unwrap().short_name();
                                     ui.selectable_value(
                                         &mut state.create_component_type, 
                                         Some(c_id),
-                                            info.to_string());
+                                        name);
                                 }
                             });
                         if ui.button("Add component").clicked() {
-                            if let Some(id) = state.create_component_type {
+                            info!("adding component button clicked");
+                            if let Some(c_id) = state.create_component_type {
+                                info!("adding component {:?}", c_id);
+                                let id = cell.components().get_info(c_id).unwrap().type_id().unwrap();
                                 commands.push(InspectCommand::AddComponent(e.id(), id));
                             }
                         }
@@ -146,9 +161,8 @@ fn inspect(
                 }
             });
         });
-        
-        //execute commands
-        world.get_c
+
+        state.commands = commands;
     }
     
 }
