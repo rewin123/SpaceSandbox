@@ -44,7 +44,7 @@ fn show_hierarchy(
 
 fn draw_entity(
     ui: &mut egui::Ui,
-    query: &Query<(Entity, Option<&Name>, Option<&Children>, Option<&Parent>)>,
+    query: &                                                                       Query<(Entity, Option<&Name>, Option<&Children>, Option<&Parent>)>,
     entity: Entity,
     selected : &mut SelectedEntities
 ) {
