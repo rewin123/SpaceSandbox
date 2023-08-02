@@ -32,11 +32,13 @@ fn show_hierarchy(
     query: Query<(Entity, Option<&Name>, Option<&Children>, Option<&Parent>)>,
     mut selected : ResMut<SelectedEntities>
 ) {
+    let mut all : Vec<_> = query.iter().collect();
+    all.sort_by_key(|a| a.0);
     egui::SidePanel::left("Scene hierarchy")
         .show(contexts.ctx_mut(), |ui| {
-        for (entity, _, _, parent) in query.iter() {
+        for (entity, _, _, parent) in all.iter() {
             if parent.is_none() {
-                draw_entity(ui, &query, entity, &mut selected);
+                draw_entity(ui, &query, *entity, &mut selected);
             }
         }
     });
@@ -44,7 +46,7 @@ fn show_hierarchy(
 
 fn draw_entity(
     ui: &mut egui::Ui,
-    query: &                                                                       Query<(Entity, Option<&Name>, Option<&Children>, Option<&Parent>)>,
+    query: &Query<(Entity, Option<&Name>, Option<&Children>, Option<&Parent>)>,
     entity: Entity,
     selected : &mut SelectedEntities
 ) {
@@ -60,6 +62,9 @@ fn draw_entity(
 
         if ui.selectable_label(is_selected, entity_name).clicked() {
             if !is_selected {
+                if !ui.input(|i| i.modifiers.shift) {
+                    selected.list.clear();
+                }
                 selected.list.insert(entity);
             } else {
                 selected.list.remove(&entity);
