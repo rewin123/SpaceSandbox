@@ -2,7 +2,13 @@
 use bevy::{prelude::*, ecs::{component::ComponentId, change_detection::MutUntyped}, reflect::{ReflectFromPtr, TypeInfo, DynamicEnum, DynamicVariant, DynamicTuple, DynamicStruct}, ptr::PtrMut};
 use bevy_egui::*;
 
-
+pub struct UiReflectData<'a> {
+    ui : &'a mut egui::Ui,
+    value : &'a mut dyn Reflect,
+    hash : &'a str,
+    name : &'a str,
+    set_changed : &'a mut dyn FnMut()
+}
 
 pub fn ui_for_reflect(
         ui : &mut egui::Ui,
@@ -10,6 +16,11 @@ pub fn ui_for_reflect(
         hash : &str,
         name : &str,
         set_changed : &mut impl FnMut()) {
+
+    //custom reflect detect
+    
+
+    //default reflect path
     match value.reflect_mut() {
         bevy::reflect::ReflectMut::Struct(value) => {ui_for_struct(ui, value, hash, name, set_changed)},
         bevy::reflect::ReflectMut::TupleStruct(value) => {ui_for_tuple_struct(ui, value, hash, name, set_changed)},

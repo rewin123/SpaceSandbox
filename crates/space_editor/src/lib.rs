@@ -1,6 +1,7 @@
 pub mod hierarchy; 
 pub mod selected;
 pub mod inspector;
+pub mod asset_parser;
 
 use bevy::prelude::*;
 
