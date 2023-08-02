@@ -17,3 +17,19 @@ pub fn reflect_name(
         });
     });
 }
+
+pub fn reflect_string(
+    ui :  &mut egui::Ui,
+    name : &mut String,
+    hash : &str,
+    label : &str,
+    setup_updated : &mut dyn FnMut(),
+    world : &mut UnsafeWorldCell
+) {
+    ui.horizontal(|ui| {
+        ui.label(label);
+        if ui.add(egui::TextEdit::singleline(name)).changed() {
+            setup_updated();
+        }
+    });
+}

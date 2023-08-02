@@ -8,7 +8,7 @@ use bevy::{prelude::*, ecs::{component::ComponentId, change_detection::MutUntype
 use bevy_egui::*;
 
 
-use crate::selected::{SelectedPlugin, SelectedEntities};
+use crate::{selected::{SelectedPlugin, SelectedEntities}, asset_insector::AssetDetectorPlugin};
 use ui_reflect::*;
 use registration::*;
 
@@ -31,6 +31,7 @@ impl Plugin for InspectorPlugin {
         app.editor_registry::<Name>();
 
         app.editor_custom_reflect(refl_impl::reflect_name);
+        app.editor_custom_reflect::<String, _>(refl_impl::reflect_string);
 
         app.add_systems(Update, (inspect, execute_inspect_command).chain());
     }

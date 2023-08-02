@@ -1,6 +1,8 @@
 pub mod hierarchy; 
 pub mod selected;
 pub mod inspector;
+pub mod asset_insector;
+pub mod prefab;
 
 use bevy::prelude::*;
 

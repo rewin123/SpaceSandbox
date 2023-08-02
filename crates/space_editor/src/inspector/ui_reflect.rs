@@ -217,7 +217,7 @@ if value.represents::<f32>() {
 } else if value.represents::<Entity>() {
     let val = value.downcast_ref::<Entity>().unwrap();
     ui.label(format!("{} : {:?}", name, val));
-} else if(value.represents::<String>()) {
+} else if value.represents::<String>() {
     let val = value.downcast_mut::<String>().unwrap();   
     ui.horizontal(|ui| {
         ui.label(name);
@@ -235,6 +235,7 @@ pub fn ui_for_struct(
     name : &str,
     set_changed : &mut impl FnMut(),
     world : &mut UnsafeWorldCell) {
+        
     let hash = format!("{}{}", hash, value.type_name());
     if name != "" {
         egui::CollapsingHeader::new(format!("{}", name))

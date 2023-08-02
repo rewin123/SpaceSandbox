@@ -1,0 +1,565 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'bevy_transform64'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=bevy_transform64"
+                ],
+                "filter": {
+                    "name": "bevy_transform64",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'space_physics'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=space_physics"
+                ],
+                "filter": {
+                    "name": "space_physics",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'space_editor'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=space_editor"
+                ],
+                "filter": {
+                    "name": "space_editor",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'space_editor'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=space_editor",
+                    "--package=space_editor"
+                ],
+                "filter": {
+                    "name": "space_editor",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'space_editor'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=space_editor",
+                    "--package=space_editor"
+                ],
+                "filter": {
+                    "name": "space_editor",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'hierarchy_test'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=hierarchy_test",
+                    "--package=space_editor"
+                ],
+                "filter": {
+                    "name": "hierarchy_test",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'hierarchy_test'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=hierarchy_test",
+                    "--package=space_editor"
+                ],
+                "filter": {
+                    "name": "hierarchy_test",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'inspector_test'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=inspector_test",
+                    "--package=space_editor"
+                ],
+                "filter": {
+                    "name": "inspector_test",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'inspector_test'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=inspector_test",
+                    "--package=space_editor"
+                ],
+                "filter": {
+                    "name": "inspector_test",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'prefab_test'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=prefab_test",
+                    "--package=space_editor"
+                ],
+                "filter": {
+                    "name": "prefab_test",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'prefab_test'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=prefab_test",
+                    "--package=space_editor"
+                ],
+                "filter": {
+                    "name": "prefab_test",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'SpaceSandbox'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "SpaceSandbox",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'SpaceSandbox'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=SpaceSandbox",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "SpaceSandbox",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'SpaceSandbox'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=SpaceSandbox",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "SpaceSandbox",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'gltf_viewer'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=gltf_viewer",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "gltf_viewer",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'gltf_viewer'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=gltf_viewer",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "gltf_viewer",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'guns'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=guns",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "guns",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'guns'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=guns",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "guns",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'mission_text'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=mission_text",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "mission_text",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'mission_text'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=mission_text",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "mission_text",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'multiship_parkour'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=multiship_parkour",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "multiship_parkour",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'multiship_parkour'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=multiship_parkour",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "multiship_parkour",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'progress_bar_test'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=progress_bar_test",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "progress_bar_test",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'progress_bar_test'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=progress_bar_test",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "progress_bar_test",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'space_physics'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=space_physics",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "space_physics",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'space_physics'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=space_physics",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "space_physics",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'transform_64'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=transform_64",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "transform_64",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'transform_64'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=transform_64",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "transform_64",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'walk'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=walk",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "walk",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'walk'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=walk",
+                    "--package=SpaceSandbox"
+                ],
+                "filter": {
+                    "name": "walk",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
