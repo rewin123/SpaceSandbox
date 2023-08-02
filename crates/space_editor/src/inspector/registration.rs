@@ -46,19 +46,28 @@ impl EditorRegistry {
 
     pub fn get_spawn_command(&self, id : &TypeId) -> AddDefaultComponent {
         self.spawn_components.get(id).unwrap().clone()
-        
     }
 }
 
 pub struct CustomReflect {
-    reflect : Box<dyn Fn(&mut egui::Ui, &mut dyn Reflect, &mut UnsafeWorldCell) + 'static + Send + Sync>,
+    pub reflect : Box<dyn Fn(&mut egui::Ui,
+        &mut dyn Reflect,
+        &str,
+        &str,
+        &mut dyn FnMut(),
+        &mut UnsafeWorldCell) + 'static + Send + Sync>,
 }
 
 pub trait EditorRegistryExt {
     fn editor_registry<T : Component + Default + Send + 'static + GetTypeRegistration>(&mut self);
 
-    fn editor_custom_reflect<T, F, S>(&mut self, reflect_fun : F)
-        where T : Component + 'static + Reflect + GetTypeRegistration, F : Fn(&mut egui::Ui, &mut T, &mut S) + 'static + Send + Sync, S : Resource;
+    fn editor_custom_reflect<T, F>(&mut self, reflect_fun : F)
+        where T : Component + 'static + Reflect + GetTypeRegistration, F : Fn(&mut egui::Ui,
+            &mut T,
+            &str,
+            &str,
+            &mut dyn FnMut(),
+            &mut UnsafeWorldCell) + 'static + Send + Sync;
 }
 
 impl EditorRegistryExt for App {
@@ -66,16 +75,23 @@ impl EditorRegistryExt for App {
         self.world.resource_mut::<EditorRegistry>().register::<T>();
     }
 
-    fn editor_custom_reflect<T, F, S>(&mut self, reflect_fun : F )
-            where T : Component + 'static + Reflect + GetTypeRegistration, F : Fn(&mut egui::Ui, &mut T, &mut S) + 'static + Send + Sync, S : Resource {
-        let box_fun = Box::new(move |ui : &mut egui::Ui, r : &mut dyn Reflect, world : &mut UnsafeWorldCell| {
+    fn editor_custom_reflect<T, F>(&mut self, reflect_fun : F )
+    where T : Component + 'static + Reflect + GetTypeRegistration, F : Fn(&mut egui::Ui,
+        &mut T,
+        &str,
+        &str,
+        &mut dyn FnMut(),
+        &mut UnsafeWorldCell) + 'static + Send + Sync {
+        let box_fun = Box::new(move |
+                ui : &mut egui::Ui, 
+                r : &mut dyn Reflect, 
+                hash : &str,
+                name : &str,
+                set_changed : &mut dyn FnMut(),
+                world : &mut UnsafeWorldCell| {
             unsafe {
                 if let Some(t) = r.downcast_mut::<T>() {
-                    if let Some(mut s) = world.get_resource_mut::<S>() {
-                        reflect_fun(ui, t, &mut s);
-                    } else {
-                        ui.label(format!("Error to load state of custom reflect"));
-                    }
+                    reflect_fun(ui, t, hash, name, set_changed, world);
                 } else {
                     ui.label(format!("Error to custom reflect"));
                 }

@@ -1,5 +1,6 @@
 pub mod ui_reflect;
 pub mod registration;
+pub mod refl_impl;
 
 use std::any::TypeId;
 
@@ -14,6 +15,7 @@ use registration::*;
 #[derive(Component)]
 pub struct SkipInspector;
 
+
 pub struct InspectorPlugin;
 
 impl Plugin for InspectorPlugin {
@@ -27,6 +29,8 @@ impl Plugin for InspectorPlugin {
 
         app.editor_registry::<Transform>();
         app.editor_registry::<Name>();
+
+        app.editor_custom_reflect(refl_impl::reflect_name);
 
         app.add_systems(Update, (inspect, execute_inspect_command).chain());
     }
@@ -95,7 +99,7 @@ fn inspect(
     }
 
     unsafe {
-        let cell = world.as_unsafe_world_cell();
+        let mut cell = world.as_unsafe_world_cell();
         let mut state = cell.get_resource_mut::<InspectState>().unwrap();
 
         let mut ctx = cell.get_entity(ctx_e).unwrap().get_mut::<EguiContext>().unwrap();
@@ -122,7 +126,7 @@ fn inspect(
         
                                     let value = reflect_from_ptr.as_reflect_ptr_mut(ptr);
         
-                                    ui_for_reflect(ui, value, &name, registration.short_name(),&mut set_changed);
+                                    ui_for_reflect(ui, value, &name, registration.short_name(),&mut set_changed, &mut cell);
                                 }
                             }
                         }
