@@ -15,5 +15,5 @@ impl Default for ScenePrefab {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect, Default)]
 pub struct PrefabAutoChild;

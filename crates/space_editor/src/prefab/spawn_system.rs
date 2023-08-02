@@ -10,10 +10,24 @@ pub fn spawn_scene(
     asset_server : Res<AssetServer>
 ) {
     for (e, prefab, children) in prefabs.iter() {
-        let id = commands.spawn(
-             SceneBundle { 
+
+        if let Some(children) = children {
+            for e in children {
+                if auto_childs.contains(*e) {
+                    commands.entity(*e).despawn_recursive();
+                }
+            }
+        }
+
+        let id = commands.spawn(HookedSceneBundle {
+              scene : SceneBundle { 
                 scene: asset_server.load(format!("{}#{}", &prefab.path, &prefab.scene)), 
-                ..default() })
+                ..default() },
+                hook : SceneHook::new(|e, cmd| {
+                    cmd.insert(PrefabAutoChild);
+                })
+             })
+             .insert(PrefabAutoChild)
             .id();
         commands.entity(e).add_child(id);
         commands.entity(e).

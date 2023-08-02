@@ -77,6 +77,7 @@ fn draw_entity(
                 }
                 if ui.button("Delete").clicked() {
                     commands.entity(entity).despawn();
+                    selected.list.remove(&entity);
                     ui.close_menu();
                 }
             });
