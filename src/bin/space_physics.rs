@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bevy::{prelude::*, math::{DVec3, DQuat}, pbr::{CascadeShadowConfigBuilder, ScreenSpaceAmbientOcclusionBundle}, core_pipeline::experimental::taa::{TemporalAntiAliasBundle, TemporalAntiAliasPlugin}};
+use bevy::{prelude::*, math::{DVec3, DQuat}, pbr::{CascadeShadowConfigBuilder, ScreenSpaceAmbientOcclusionBundle, DirectionalLightShadowMap}, core_pipeline::experimental::taa::{TemporalAntiAliasBundle, TemporalAntiAliasPlugin}};
 use bevy_transform64::prelude::*;
 use rand::Rng;
 use bevy_xpbd_3d::prelude::*;
@@ -12,6 +12,7 @@ fn main() {
         .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins(PhysicsPlugins::default().build().disable::<SyncPlugin>().add(PhysicsSync))
         .insert_resource(Msaa::Off)
+        .insert_resource(DirectionalLightShadowMap { size: 4096 })
         .add_plugins(TemporalAntiAliasPlugin)
         .add_systems(Startup,setup)
         .run();
@@ -190,6 +191,7 @@ fn setup(
         directional_light: DirectionalLight {
             // Configure the projection to better fit the scene
             shadows_enabled: true,
+
             
             ..default()
         },
