@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bevy::{prelude::*, math::{DVec3, DQuat}, pbr::CascadeShadowConfigBuilder};
+use bevy::{prelude::*, math::{DVec3, DQuat}, pbr::{CascadeShadowConfigBuilder, ScreenSpaceAmbientOcclusionBundle}, core_pipeline::experimental::taa::{TemporalAntiAliasBundle, TemporalAntiAliasPlugin}};
 use bevy_transform64::prelude::*;
 use rand::Rng;
 use bevy_xpbd_3d::prelude::*;
@@ -11,7 +11,8 @@ fn main() {
         .add_plugins(DTransformPlugin)
         .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins(PhysicsPlugins::default().build().disable::<SyncPlugin>().add(PhysicsSync))
-
+        .insert_resource(Msaa::Off)
+        .add_plugins(TemporalAntiAliasPlugin)
         .add_systems(Startup,setup)
         .run();
 }
@@ -167,11 +168,17 @@ fn setup(
 
     // Add a camera
     commands.spawn(Camera3dBundle {
+        camera : Camera {
+            hdr: true,
+            ..Default::default()
+        },
         ..Default::default()
     })
     .insert(DTransformBundle::from_transform(
         DTransform::from_xyz(5.0, 5.0, 5.0).looking_at(DVec3::ZERO, DVec3::Y),
-    ));
+    ))
+    .insert(ScreenSpaceAmbientOcclusionBundle::default())
+    .insert(TemporalAntiAliasBundle::default());
 
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
