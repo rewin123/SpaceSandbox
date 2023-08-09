@@ -31,6 +31,8 @@ bevy_common_assets = {version = "*", features = ["ron"]}
 genevo = "0.7"
 pathfinding = "4.3.0"
 downcast-rs = "1.2.0"
+bevy_proto = "0.11.0"
+bevy_xpbd_3d = {version = "0.2.0", default-features = false, features = ["3d", "f64"]}
 
 [workspace]
 members = [

@@ -242,14 +242,14 @@ fn get_keys() -> Vec<KeyCode> {
         KeyCode::N,
         KeyCode::M,
         KeyCode::Space,
-        KeyCode::LShift,
-        KeyCode::RShift,
-        KeyCode::LControl,
-        KeyCode::RControl,
-        KeyCode::LAlt,
-        KeyCode::RAlt,
-        KeyCode::LWin,
-        KeyCode::RWin,
+        // KeyCode::LShift,
+        // KeyCode::RShift,
+        // KeyCode::LControl,
+        // KeyCode::RControl,
+        // KeyCode::LAlt,
+        // KeyCode::RAlt,
+        // KeyCode::LWin,
+        // KeyCode::RWin,
     ]
 }
 

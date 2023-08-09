@@ -10,7 +10,7 @@ pub struct RadarDetected {
     pub color : Color
 }
 
-#[derive(Component, Reflect, FromReflect, Schematic)]
+#[derive(Component, Reflect, Schematic)]
 #[reflect(Schematic)]
 pub struct Radar {
     pub points : Vec<Entity>,

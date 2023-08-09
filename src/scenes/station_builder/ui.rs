@@ -18,7 +18,7 @@ impl Plugin for StationBuilderUI {
         app.insert_resource(CachedSavedShips::default());
         app.insert_resource(BuildMenuState::default());
 
-        app.add_startup_system(setup_chat);
+        app.add_systems(Startup, setup_chat);
     }
 }
 

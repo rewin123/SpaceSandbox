@@ -4,17 +4,19 @@ use bevy::{prelude::*, math::{DVec3, DQuat}, pbr::CascadeShadowConfigBuilder};
 use bevy_transform64::prelude::*;
 use rand::Rng;
 use space_physics::prelude::*;
+use bevy_xpbd_3d::prelude::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugin(DTransformPlugin)
-        .add_plugin(bevy_egui::EguiPlugin)
-        .add_plugin(SpacePhysicsPlugin)
+        .add_plugins(DefaultPlugins.build().disable::<TransformPlugin>())
+        .add_plugins(DTransformPlugin)
+        .add_plugins(bevy_egui::EguiPlugin)
+        .add_plugins(PhysicsPlugins::default().build().disable::<SyncPlugin>())
 
-        .add_startup_system(setup)
+        .add_systems(Startup,setup)
         .run();
 }
+
 
 fn setup(
     mut commands: Commands,

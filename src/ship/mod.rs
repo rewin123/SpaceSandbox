@@ -19,7 +19,7 @@ pub mod prelude {
     pub use super::*;
 }
 
-#[derive(Clone, Reflect, FromReflect, Serialize, Deserialize)]
+#[derive(Clone, Reflect, Serialize, Deserialize)]
 pub enum ShipBlock {
     None
 }
@@ -65,7 +65,7 @@ impl Ship {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Reflect, FromReflect)]
+#[derive(Serialize, Deserialize, Clone, Hash, PartialEq, Eq, Reflect)]
 pub struct InstanceId {
     pub template_id : u32,
     pub state_id : u32

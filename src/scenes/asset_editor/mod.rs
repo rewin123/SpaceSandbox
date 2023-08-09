@@ -16,7 +16,7 @@ use self::ron_collider::{RonColliderCompound, RonCollider, RonBoxCollider, RonSp
 mod explorer;
 pub mod ron_collider;
 
-#[derive(Serialize, Deserialize, TypeUuid)]
+#[derive(Serialize, Deserialize, TypeUuid, Reflect)]
 #[uuid = "576c943a-477a-4885-add8-28d774f44beb"]
 struct ProtoPaths {
     paths: Vec<String>
@@ -31,7 +31,6 @@ struct AssetEditorState<'a> {
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
-#[system_set()]
 enum AsssetEditorSet {
     Base
 }
@@ -41,7 +40,7 @@ pub struct AssetEditorPlugin;
 impl Plugin for AssetEditorPlugin {
     fn build(&self, app: &mut App) {
 
-        app.configure_set(AsssetEditorSet::Base.run_if(in_state(SceneType::AssetEditor)));
+        app.configure_set(Update, AsssetEditorSet::Base.run_if(in_state(SceneType::AssetEditor)));
 
         app.register_type::<BlockConfig>();
         app.register_type::<RonColliderCompound>();
@@ -50,12 +49,12 @@ impl Plugin for AssetEditorPlugin {
         app.register_type::<RonSphereCollider>();
         app.register_type::<Vec<RonCollider>>();
 
-        app.add_systems((load,show_proto_editor, setup_block, update_ron_collider, draw_bbox).in_set(AsssetEditorSet::Base));
-        app.add_system(listen_load_event.after(load).in_set(AsssetEditorSet::Base));
-        app.add_system(setup.in_schedule(OnEnter(SceneType::AssetEditor)));
+        app.add_systems(Update, (load,show_proto_editor, setup_block, update_ron_collider, draw_bbox).in_set(AsssetEditorSet::Base));
+        app.add_systems(Update, listen_load_event.after(load).in_set(AsssetEditorSet::Base));
+        app.add_systems(OnEnter(SceneType::AssetEditor), setup);
         app.insert_resource(ProtoEditor::default());
-        app.add_startup_systems((load_state,));
-        app.add_plugin(RonAssetPlugin::<ProtoPaths>::new(&["proto_list.ron"]));
+        app.add_systems(Startup, (load_state,));
+        app.add_plugins(RonAssetPlugin::<ProtoPaths>::new(&["proto_list.ron"]));
         app.insert_resource(AssetEditorHandleState {
             paths : Handle::<ProtoPaths>::default()
         });
@@ -76,7 +75,7 @@ struct CurrentProto {
     proto_handle : Handle<bevy_proto::prelude::Prototype>,
     entity : Option<Entity>
 }
-
+#[derive(Event)]
 pub struct LabelClickedEvent {
     pub path: String,
 }
@@ -377,7 +376,7 @@ fn setup(mut cmds : Commands) {
 }
 
 
-#[derive(Component, Reflect, FromReflect, Schematic)]
+#[derive(Component, Reflect, Schematic)]
 #[reflect(Schematic)]
 pub struct BlockConfig {
     pub bbox : IVec3,

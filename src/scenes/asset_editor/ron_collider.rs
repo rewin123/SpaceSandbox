@@ -4,25 +4,25 @@ use crossbeam::epoch::Shared;
 use serde::*;
 use space_physics::prelude::{*, nalgebra::Vector3};
 
-#[derive(Component, Reflect, FromReflect, Schematic)]
+#[derive(Component, Reflect, Schematic)]
 #[reflect(Schematic)]
 pub struct RonColliderCompound {
     pub colliders : Vec<RonCollider>,
 }
 
-#[derive(Reflect, FromReflect)]
+#[derive(Reflect)]
 pub enum RonCollider {
     Sphere(RonSphereCollider),
     Box(RonBoxCollider),
 }
 
-#[derive(Reflect, FromReflect)]
+#[derive(Reflect)]
 pub struct RonSphereCollider {
     pub position : DVec3,
     pub radius : f64
 }
 
-#[derive(Reflect, FromReflect)]
+#[derive(Reflect)]
 pub struct RonBoxCollider {
     pub position : DVec3,
     pub rotation : DVec3,

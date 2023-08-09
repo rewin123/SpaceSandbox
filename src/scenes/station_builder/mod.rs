@@ -43,7 +43,6 @@ pub enum StationBuildState {
 pub struct StationBuilderPlugin {}
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
-#[system_set()]
 enum ShipBuildSet {
     Base
 }
@@ -53,13 +52,13 @@ impl Plugin for StationBuilderPlugin {
 
         app.insert_resource(ActiveWindows::default());
         app.add_state::<StationBuildState>();
-        app.add_system(setup_build_scene.in_schedule(OnEnter(SceneType::ShipBuilding)));
+        app.add_systems(OnEnter(SceneType::ShipBuilding), setup_build_scene);
 
-        app.configure_set(ShipBuildSet::Base
+        app.configure_set(Update, ShipBuildSet::Base
             .run_if(not(in_state(IsFPSMode::Yes)))
-            .in_set(OnUpdate(SceneType::ShipBuilding)));
+            .run_if(in_state(SceneType::ShipBuilding)));
 
-        app.add_systems(
+        app.add_systems(Update,
                 (
                     ship_build_menu,
                     pos_block,
@@ -75,7 +74,7 @@ impl Plugin for StationBuilderPlugin {
                     load_ship_ui.run_if(|windows : Res<ActiveWindows>| windows.load_ship)
                 ).in_set(ShipBuildSet::Base));
 
-        app.add_plugin(StationBuilderUI);
+        app.add_plugins(StationBuilderUI);
     }
 }
 
@@ -386,7 +385,7 @@ fn setup_build_scene(
     mut next_load_state : ResMut<NextState<StationBuildState>>,
     mut pawn_event : EventWriter<ChangePawn>
 ) {
-    if load_state.0 != StationBuildState::NotLoaded {
+    if *load_state.get() != StationBuildState::NotLoaded {
         return;
     }
     next_load_state.set(StationBuildState::Loaded);

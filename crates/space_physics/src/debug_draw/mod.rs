@@ -26,7 +26,7 @@ impl Plugin for SpacePhysicsDebugDrawPlugin {
 
         app.add_plugin(DebugLinesPlugin::with_depth_test(true));
 
-        app.add_system(systems::draw_colliders.in_set(OnUpdate(IsDebugDraw::On)).before(DebugLinesSet::DrawLines));
+        app.add_systems(Update, systems::draw_colliders.run_if(in_state(IsDebugDraw::On)).before(DebugLinesSet::DrawLines));
     }
 }
 

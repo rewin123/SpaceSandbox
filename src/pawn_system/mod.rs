@@ -23,7 +23,7 @@ pub struct Pawn {
     pub camera_id : Entity
 }
 
-#[derive(Debug)]
+#[derive(Debug, Event)]
 pub struct ChangePawn {
     pub new_pawn : Entity,
     pub save_stack : bool

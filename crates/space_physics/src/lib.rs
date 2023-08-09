@@ -35,33 +35,32 @@ impl Plugin for SpacePhysicsPlugin {
         app.insert_resource(RapierContext::default());
         app.insert_resource(GlobalGravity::default());
 
-        app.configure_set(SpacePhysicSystem::CaptureChanges.before(SpacePhysicSystem::RigidBodyUpdate).in_base_set(CoreSet::PostUpdate));
-        app.configure_set(SpacePhysicSystem::RigidBodyUpdate
+        app.configure_set(PostUpdate, SpacePhysicSystem::CaptureChanges.before(SpacePhysicSystem::RigidBodyUpdate));
+        app.configure_set(PostUpdate, SpacePhysicSystem::RigidBodyUpdate
             .before(DTransformSystem::TransformPropagate)
-            .before(SpacePhysicSystem::ColliderUpdate)
-            .in_base_set(CoreSet::PostUpdate));
-        app.configure_set(SpacePhysicSystem::ColliderUpdate.before(SpacePhysicSystem::ContextUpdate).in_base_set(CoreSet::PostUpdate));
-        app.configure_set(SpacePhysicSystem::ContextUpdate.before(SpacePhysicSystem::WriteToWorld).in_base_set(CoreSet::PostUpdate));
-        app.configure_set(SpacePhysicSystem::WriteToWorld.before(DTransformSystem::TransformPropagate).in_base_set(CoreSet::PostUpdate));
+            .before(SpacePhysicSystem::ColliderUpdate));
+        app.configure_set(PostUpdate, SpacePhysicSystem::ColliderUpdate.before(SpacePhysicSystem::ContextUpdate));
+        app.configure_set(PostUpdate, SpacePhysicSystem::ContextUpdate.before(SpacePhysicSystem::WriteToWorld));
+        app.configure_set(PostUpdate, SpacePhysicSystem::WriteToWorld.before(DTransformSystem::TransformPropagate));
 
 
-        app.add_systems((
+        app.add_systems(PostUpdate, (
             add_rigidbody, 
-            apply_system_buffers, 
+            apply_deferred, 
             delete_detection, 
             change_gravity_scale,
             change_velosity)
             .chain().in_set(SpacePhysicSystem::RigidBodyUpdate));
-        app.add_systems((
+        app.add_systems(PostUpdate, (
             collider_change_detection, 
             add_collider, 
-            apply_system_buffers).chain().in_set(SpacePhysicSystem::ColliderUpdate));
+            apply_deferred).chain().in_set(SpacePhysicSystem::ColliderUpdate));
         
         app.add_system(update_context.in_set(SpacePhysicSystem::ContextUpdate));
 
         app.add_system(from_physics_engine.in_set(SpacePhysicSystem::WriteToWorld));
 
-        app.add_systems((
+        app.add_systems(PostUpdate, (
             detect_position_change,
             change_external_impule,
             rigidbody_disabled_system,

@@ -57,7 +57,7 @@ impl From<SpaceLockedAxes> for RapierLockedAxes {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct ExternalImpulse {
     /// The linear force applied to the rigid-body.
@@ -65,18 +65,18 @@ pub struct ExternalImpulse {
     pub torque_impulse: DVec3,
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct RigidBodyDisabled;
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct ColliderDisabled;
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct GravityScale(pub f64);
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect, FromReflect)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Component, Reflect)]
 #[reflect(Component, PartialEq)]
 pub struct SpaceDominance(pub i8);

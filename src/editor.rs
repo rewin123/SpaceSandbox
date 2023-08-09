@@ -8,8 +8,8 @@ pub struct EditorPlugin;
 
 impl Plugin for EditorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(DefaultInspectorConfigPlugin);
-        app.add_plugin(WorldInspectorPlugin::new());
+        app.add_plugins(DefaultInspectorConfigPlugin);
+        app.add_plugins(WorldInspectorPlugin::new());
     }
 }
 

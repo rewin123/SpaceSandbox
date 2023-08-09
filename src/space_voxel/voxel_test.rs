@@ -102,7 +102,7 @@ mod chunk_map_tests {
 
         world.spawn(TestStruct { val : 1.0});
         
-        let mut dyn_scene = DynamicScene::from_world(&world, &type_registry);
+        let mut dyn_scene = DynamicScene::from_world(&world);
         let scene_ron = dyn_scene.serialize_ron(&type_registry).unwrap();
 
         let mut des = ron::Deserializer::from_bytes(scene_ron.as_bytes()).unwrap();

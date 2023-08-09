@@ -8,6 +8,7 @@ use SpaceSandbox::scenes::main_menu::MainMenuPlugin;
 use SpaceSandbox::scenes::settings::SettingsPlugin;
 use SpaceSandbox::scenes::station_builder::StationBuilderPlugin;
 use SpaceSandbox::ship::save_load::DiskShipBase64;
+use bevy::asset::ChangeWatcher;
 use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::{WgpuSettings, WgpuFeatures};
@@ -19,7 +20,7 @@ fn main() {
         .insert_resource(Msaa::default())
         .register_type::<DiskShipBase64>()
         .add_plugins(bevy::DefaultPlugins.set(AssetPlugin {
-            watch_for_changes: true,
+            watch_for_changes: ChangeWatcher::with_delay(std::time::Duration::from_secs(1)),
             ..default()
         }).set(RenderPlugin {
             wgpu_settings: WgpuSettings {
@@ -27,22 +28,22 @@ fn main() {
                 ..default()
             }
         }))
-        .add_plugin(bevy_proto::prelude::ProtoPlugin::default())
-        .add_plugin(bevy_egui::EguiPlugin)
-        .add_plugin(SpaceSandbox::ship::common::VoxelInstancePlugin)
-        .add_plugin(SpaceSandbox::ship::save_load::ShipPlugin)
-        .add_plugin(MainMenuPlugin {})
-        .add_plugin(StationBuilderPlugin {})
-        .add_plugin(NotificationPlugin)
-        .add_plugin(FPSPlugin)
-        .add_plugin(PawnPlugin)
-        .add_plugin(NetworkPlugin)
-        .add_plugin(SpaceControlPlugin)
-        .add_plugin(SpaceObjectsPlugin)
-        .add_plugin(SettingsPlugin)
-        .add_plugin(DTransformPlugin)
-        .add_plugin(SpacePhysicsPlugin)
-        .add_plugin(SpaceSandbox::editor::EditorPlugin)
-        .add_plugin(SpaceSandbox::scenes::asset_editor::AssetEditorPlugin)
+        .add_plugins(bevy_proto::prelude::ProtoPlugin::default())
+        .add_plugins(bevy_egui::EguiPlugin)
+        .add_plugins(SpaceSandbox::ship::common::VoxelInstancePlugin)
+        .add_plugins(SpaceSandbox::ship::save_load::ShipPlugin)
+        .add_plugins(MainMenuPlugin {})
+        .add_plugins(StationBuilderPlugin {})
+        .add_plugins(NotificationPlugin)
+        .add_plugins(FPSPlugin)
+        .add_plugins(PawnPlugin)
+        .add_plugins(NetworkPlugin)
+        .add_plugins(SpaceControlPlugin)
+        .add_plugins(SpaceObjectsPlugin)
+        .add_plugins(SettingsPlugin)
+        .add_plugins(DTransformPlugin)
+        .add_plugins(SpacePhysicsPlugin)
+        .add_plugins(SpaceSandbox::editor::EditorPlugin)
+        .add_plugins(SpaceSandbox::scenes::asset_editor::AssetEditorPlugin)
         .run();
 }

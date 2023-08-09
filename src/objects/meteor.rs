@@ -8,13 +8,13 @@ use crate::DSpatialBundle;
 
 use super::radar::RadarDetected;
 
-#[derive(Component, Reflect, FromReflect, Default, Schematic)]
+#[derive(Component, Reflect, Default, Schematic)]
 #[reflect(Schematic)]
 pub struct Meteor {
 
 }
 
-#[derive(Hash, PartialEq, Eq, Clone, Debug)]
+#[derive(Hash, PartialEq, Eq, Clone, Debug, Event)]
 pub enum MeteorFieldCommand {
     Spawn,
     Despawn,

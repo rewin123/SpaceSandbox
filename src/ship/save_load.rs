@@ -15,7 +15,7 @@ use crate::scenes::ToastHolder;
 use super::prelude::*;
 
 
-#[derive(Serialize, Deserialize, Clone, Reflect, FromReflect)]
+#[derive(Serialize, Deserialize, Clone, Reflect)]
 pub enum DiskShipVoxel {
     None, 
     Voxel(ShipBlock),
@@ -189,9 +189,12 @@ impl Default for SaveLoadCfg {
 #[derive(Resource, Default)]
 pub struct ShipSaveQueue(Vec<(Entity, String)>);
 
+#[derive(Event)]
 pub struct CmdShipSave(pub Entity, pub String);
+#[derive(Event)]
 pub struct CmdShipLoad(pub String);
 
+#[derive(Event)]
 pub struct ShipLoaded(pub Entity);
 
 pub struct ShipPlugin;
@@ -219,7 +222,7 @@ impl Plugin for ShipPlugin {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Event)]
 pub struct SpawnBlockCmd {
     pub replicate : bool
 }
@@ -276,7 +279,7 @@ fn saving_ship_system(
 
             {
                 let type_registry = world.resource::<AppTypeRegistry>().clone();
-                let dynamic_scene = DynamicScene::from_world(&sub_world, &type_registry);
+                let dynamic_scene = DynamicScene::from_world(&sub_world);
 
                 let ron_scene = dynamic_scene.serialize_ron(&type_registry).unwrap();
 

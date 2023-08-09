@@ -1,6 +1,6 @@
 use std::{fs::*, io::*};
 
-use bevy::{prelude::*, render::{RenderPlugin, settings::{WgpuSettings, WgpuFeatures}}, math::DVec3, core_pipeline::bloom::BloomSettings};
+use bevy::{prelude::*, render::{RenderPlugin, settings::{WgpuSettings, WgpuFeatures}}, math::DVec3, core_pipeline::bloom::BloomSettings, asset::ChangeWatcher};
 use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{main_menu::MainMenuPlugin, station_builder::StationBuilderPlugin, NotificationPlugin, fps_mode::{FPSPlugin, FPSController, self}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, Pawn, ChangePawn}, network::NetworkPlugin, control::SpaceControlPlugin, objects::SpaceObjectsPlugin};
 use bevy_egui::{EguiContext, egui::{self, Color32}};
 use space_physics::prelude::*;
@@ -11,7 +11,7 @@ fn main() {
         .insert_resource(Msaa::default())
         .register_type::<DiskShipBase64>()
         .add_plugins(bevy::DefaultPlugins.set(AssetPlugin {
-            watch_for_changes: true,
+            watch_for_changes: ChangeWatcher::with_delay(std::time::Duration::from_secs(1)),
             ..default()
         }).set(RenderPlugin {
             wgpu_settings: WgpuSettings {
@@ -19,16 +19,16 @@ fn main() {
                 ..default()
             }
         }))
-        .add_plugin(FPSPlugin)
-        .add_plugin(bevy_proto::prelude::ProtoPlugin::default())
-        .add_plugin(bevy_egui::EguiPlugin)
-        .add_plugin(SpaceSandbox::ship::common::VoxelInstancePlugin)
-        .add_plugin(NotificationPlugin)
-        .add_plugin(PawnPlugin)
-        .add_plugin(DTransformPlugin)
-        .add_plugin(SpacePhysicsPlugin)
-        .add_plugin(SpaceControlPlugin)
-        .add_plugin(SettingsPlugin)
+        .add_plugins(FPSPlugin)
+        .add_plugins(bevy_proto::prelude::ProtoPlugin::default())
+        .add_plugins(bevy_egui::EguiPlugin)
+        .add_plugins(SpaceSandbox::ship::common::VoxelInstancePlugin)
+        .add_plugins(NotificationPlugin)
+        .add_plugins(PawnPlugin)
+        .add_plugins(DTransformPlugin)
+        .add_plugins(SpacePhysicsPlugin)
+        .add_plugins(SpaceControlPlugin)
+        .add_plugins(SettingsPlugin)
 
         .add_startup_system(startup)
         .add_startup_system(startup_player)

@@ -38,11 +38,13 @@ pub struct NetworkClient {
     pub server_addr : SocketAddr
 }
 
+#[derive(Event)]
 pub enum ServerNetworkCmd {
     StartServer,
     ConnectToServer(String)
 }
 
+#[derive(Event)]
 pub enum NetworkEvent {
     NewClient(SocketAddr)
 }

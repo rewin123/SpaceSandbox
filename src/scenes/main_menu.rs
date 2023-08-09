@@ -61,7 +61,7 @@ impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<SceneType>();
 
-        app.add_system(main_menu.in_set(OnUpdate(SceneType::MainMenu)));
-        app.add_startup_system(setup_main_menu);
+        app.add_systems(Update, main_menu.run_if(in_state(SceneType::MainMenu)));
+        app.add_systems(Startup, setup_main_menu);
     }
 }

@@ -46,16 +46,16 @@ impl Plugin for FPSPlugin {
 
         app.add_state::<IsFPSMode>();
         app
-            .add_systems(
+            .add_systems(Update,
                 (fps_controller,
                 fps_focus_control,
-                fps_look_controller).after(control::remap_system).in_set(OnUpdate(IsFPSMode::Yes))
+                fps_look_controller).after(control::remap_system).run_if(in_state(IsFPSMode::Yes))
             );
         
-        app.add_system(fps_setup.in_schedule(OnEnter(IsFPSMode::Yes)));
+        app.add_systems(OnEnter(IsFPSMode::Yes), fps_setup);
 
-        app.add_system(fps_mod_control);
-        app.add_system(
+        app.add_systems(Update, fps_mod_control);
+        app.add_systems(Update, 
             gravity_process.before(fps_look_controller)
         );
     }

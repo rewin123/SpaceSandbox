@@ -16,7 +16,7 @@ struct PawnCache {
     pawn_transform : DTransform,
 }
 
-#[derive(Component, Default, Reflect, FromReflect, Schematic)]
+#[derive(Component, Default, Reflect, Schematic)]
 #[reflect(Component, Schematic)]
 pub struct PilotSeat {
     #[reflect(ignore)]
@@ -35,13 +35,13 @@ impl Plugin for PilotSeatPlugin {
     fn build(&self, app: &mut App) {
 
         app.add_system(
-            seat_in_pilot_seat.in_set(OnUpdate(IsFPSMode::Yes))
+            seat_in_pilot_seat.run_if(in_state(IsFPSMode::Yes))
         );
         app.add_system(
-            pilot_debug_ui.after(settings_system).in_set(OnUpdate(IsFPSMode::Yes))
+            pilot_debug_ui.after(settings_system).run_if(in_state(IsFPSMode::Yes))
         );
         app.add_system(
-            piloting.in_set(OnUpdate(IsFPSMode::Yes))
+            piloting.run_if(in_state(IsFPSMode::Yes))
         );
 
         app.register_type::<PilotSeat>();

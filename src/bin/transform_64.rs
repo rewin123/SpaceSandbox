@@ -4,14 +4,14 @@ use bevy_egui::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugin(DTransformPlugin)
-        .add_plugin(bevy_egui::EguiPlugin)
+        .add_plugins(DefaultPlugins.build().disable::<TransformPlugin>())
+        .add_plugins(DTransformPlugin)
+        .add_plugins(bevy_egui::EguiPlugin)
 
-        .add_startup_systems((setup, apply_system_buffers).chain())
-        .add_system(debug_gui)
-        .add_system(fly)
-        .add_system(camera_orbit)
+        .add_systems(Startup,(setup, apply_deferred).chain())
+        .add_systems(Update, debug_gui)
+        .add_systems(Update, fly)
+        .add_systems(Update, camera_orbit)
         .run();
 }
 

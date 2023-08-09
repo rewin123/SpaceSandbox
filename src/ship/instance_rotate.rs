@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_transform64::prelude::*;
 
 
-#[derive(Component, Clone, Reflect, FromReflect, Default)]
+#[derive(Component, Clone, Reflect, Default)]
 #[reflect(Component)]
 pub struct InstanceRotate {
     pub rot_steps : IVec3
