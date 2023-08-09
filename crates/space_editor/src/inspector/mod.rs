@@ -1,14 +1,18 @@
 pub mod ui_reflect;
 pub mod registration;
 pub mod refl_impl;
+pub mod gizmo;
 
 use std::any::TypeId;
 
-use bevy::{prelude::*, ecs::{component::ComponentId, change_detection::MutUntyped}, reflect::{ReflectFromPtr, TypeInfo, DynamicEnum, DynamicVariant, DynamicTuple, DynamicStruct}, ptr::PtrMut, app::AppLabel};
+use bevy::{prelude::*, ecs::{component::ComponentId, change_detection::MutUntyped}, reflect::{ReflectFromPtr, TypeInfo, DynamicEnum, DynamicVariant, DynamicTuple, DynamicStruct}, ptr::PtrMut, app::AppLabel, render::camera::CameraProjection};
 use bevy_egui::*;
 
+use bevy::prelude::*;
+use bevy_egui::*;
+use egui_gizmo::*;
 
-use crate::selected::{SelectedPlugin, SelectedEntities};
+use crate::{selected::{SelectedPlugin, SelectedEntities}, asset_insector::AssetDetectorPlugin};
 use ui_reflect::*;
 use registration::*;
 
@@ -31,6 +35,7 @@ impl Plugin for InspectorPlugin {
         app.editor_registry::<Name>();
 
         app.editor_custom_reflect(refl_impl::reflect_name);
+        app.editor_custom_reflect::<String, _>(refl_impl::reflect_string);
 
         app.add_systems(Update, (inspect, execute_inspect_command).chain());
     }
@@ -90,6 +95,14 @@ fn inspect(
     let mut components_id = vec![];
     let mut types_id = vec![];
 
+    let mut cam_query = world.query::<(&Projection, &GlobalTransform)>();
+    let cam_proj;
+    let cam_pos;
+    {
+        let (proj, pos) = cam_query.single(world);
+        cam_proj = proj.clone();
+        cam_pos = pos.clone();
+    }
 
     for reg in registry.iter() {
         if let Some(c_id) = world.components().get_id(reg.type_id()) {
@@ -164,6 +177,29 @@ fn inspect(
                     }
                 }
             });
+
+            let view_matrix = Mat4::from(cam_pos.affine().inverse());
+
+            for e in &selected.list {
+                let Some(ecell) = cell.get_entity(*e) else {
+                    continue;
+                };
+                let Some(mut transform) = ecell.get_mut::<Transform>() else {
+                    continue;
+                };
+                if let Some(result) = egui_gizmo::Gizmo::new("Selected gizmo")
+                    .projection_matrix(cam_proj.get_projection_matrix().to_cols_array_2d())
+                    .view_matrix(view_matrix.to_cols_array_2d())
+                    .model_matrix(transform.compute_matrix().to_cols_array_2d())
+                    .mode(egui_gizmo::GizmoMode::Translate)
+                    .interact(ui) {
+                    *transform = Transform {
+                        translation: Vec3::from(<[f32; 3]>::from(result.translation)),
+                        rotation: Quat::from_array(<[f32; 4]>::from(result.rotation)),
+                        scale: Vec3::from(<[f32; 3]>::from(result.scale)),
+                    };
+                }
+            }
         });
 
         state.commands = commands;

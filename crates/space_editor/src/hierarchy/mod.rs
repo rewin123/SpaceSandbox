@@ -28,27 +28,38 @@ impl Plugin for SpaceHierarchyPlugin {
 
 
 fn show_hierarchy(
+    mut commands : Commands,
     mut contexts : EguiContexts,
     query: Query<(Entity, Option<&Name>, Option<&Children>, Option<&Parent>)>,
     mut selected : ResMut<SelectedEntities>
 ) {
+    let mut all : Vec<_> = query.iter().collect();
+    all.sort_by_key(|a| a.0);
     egui::SidePanel::left("Scene hierarchy")
-        .show(contexts.ctx_mut(), |ui| {
-        for (entity, _, _, parent) in query.iter() {
+            .show(contexts.ctx_mut(), |ui| {
+        for (entity, _, _, parent) in all.iter() {
             if parent.is_none() {
-                draw_entity(ui, &query, entity, &mut selected);
+                draw_entity(&mut commands, ui, &query, *entity, &mut selected);
             }
         }
+        ui.vertical_centered(|ui| {
+            if ui.button("----- + -----").clicked() {
+                commands.spawn_empty();
+            }
+        });
     });
 }
 
 fn draw_entity(
+    commands : &mut Commands, 
     ui: &mut egui::Ui,
-    query: &                                                                       Query<(Entity, Option<&Name>, Option<&Children>, Option<&Parent>)>,
+    query: &Query<(Entity, Option<&Name>, Option<&Children>, Option<&Parent>)>,
     entity: Entity,
     selected : &mut SelectedEntities
 ) {
-    let (_, name, children, parent) = query.get(entity).unwrap();
+    let Ok((_, name, children, parent)) = query.get(entity) else {
+        return;
+    };
 
     let entity_name = name.map_or_else(
         || format!("Entity {:?}", entity),
@@ -58,16 +69,33 @@ fn draw_entity(
     ui.indent(entity_name.clone(), |ui| {
         let is_selected = selected.list.contains(&entity);
 
-        if ui.selectable_label(is_selected, entity_name).clicked() {
+        let label = ui.selectable_label(is_selected, entity_name)
+            .context_menu(|ui| {
+                if ui.button("Add child").clicked() {
+                    let new_id = commands.spawn_empty().id();
+                    commands.entity(entity).add_child(new_id);
+                }
+                if ui.button("Delete").clicked() {
+                    commands.entity(entity).despawn();
+                    selected.list.remove(&entity);
+                    ui.close_menu();
+                }
+            });
+
+        if label.clicked() {
             if !is_selected {
+                if !ui.input(|i| i.modifiers.shift) {
+                    selected.list.clear();
+                }
                 selected.list.insert(entity);
             } else {
                 selected.list.remove(&entity);
             }
         }
+        
         if let Some(children) = children {
             for child in children.iter() {
-                draw_entity(ui, query, *child, selected);
+                draw_entity(commands, ui, query, *child, selected);
             }
         }
     });

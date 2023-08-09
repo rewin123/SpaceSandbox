@@ -62,7 +62,7 @@ pub trait EditorRegistryExt {
     fn editor_registry<T : Component + Default + Send + 'static + GetTypeRegistration>(&mut self);
 
     fn editor_custom_reflect<T, F>(&mut self, reflect_fun : F)
-        where T : Component + 'static + Reflect + GetTypeRegistration, F : Fn(&mut egui::Ui,
+        where T : 'static + Reflect + GetTypeRegistration, F : Fn(&mut egui::Ui,
             &mut T,
             &str,
             &str,
@@ -76,7 +76,7 @@ impl EditorRegistryExt for App {
     }
 
     fn editor_custom_reflect<T, F>(&mut self, reflect_fun : F )
-    where T : Component + 'static + Reflect + GetTypeRegistration, F : Fn(&mut egui::Ui,
+    where T : 'static + Reflect + GetTypeRegistration, F : Fn(&mut egui::Ui,
         &mut T,
         &str,
         &str,
