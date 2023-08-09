@@ -40,9 +40,31 @@
                 "file": "bevy editor.md"
               }
             }
+          },
+          {
+            "id": "ba7c556a0b01f28c",
+            "type": "leaf",
+            "state": {
+              "type": "kanban",
+              "state": {
+                "file": "bevy editor.md"
+              }
+            }
+          },
+          {
+            "id": "c9a8f2ae119f22e9",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Миссия ДР.md",
+                "mode": "source",
+                "source": false
+              }
+            }
           }
         ],
-        "currentTab": 2
+        "currentTab": 4
       }
     ],
     "direction": "vertical"
@@ -108,7 +130,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "bevy editor.md",
+                "file": "Миссия ДР.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -125,7 +147,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "bevy editor.md",
+                "file": "Миссия ДР.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -148,7 +170,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "bevy editor.md"
+                "file": "Миссия ДР.md"
               }
             }
           }
@@ -170,21 +192,26 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "4648c97cb0545c53",
+  "active": "c9a8f2ae119f22e9",
   "lastOpenFiles": [
-    "Мобы - альфа версия.md",
     "bevy editor.md",
-    "Untitled",
+    "Plan DR.md",
+    "пистолет.md",
+    "Мобы - альфа версия.md",
+    "Миссия ДР.md",
+    "Лор.md",
+    "daily/2023-07-05.md",
     "Frontier Folly - альфа версия.md",
+    "Frontier Folly - альфа версия.pdf",
+    "Pasted image 20230616162825.png.md",
+    "Ship design.canvas",
     "daily_tamplate.md",
+    "Untitled",
     "daily/2023-07-07.md",
     "daily/2023-07-06.md",
-    "daily/2023-07-05.md",
     "imgs/Pasted image 20230705143344.png",
     "imgs/Pasted image 20230705143028.png",
-    "Лор.md",
     "Пилот.md",
-    "Ship design.canvas",
     "daily",
     "imgs/Pasted image 20230623141308.png",
     "imgs/Pasted image 20230620164915.png",
@@ -195,8 +222,6 @@
     "imgs/Pasted image 20230618115139.png",
     "imgs/Pasted image 20230618114446.png",
     "imgs/Pasted image 20230618114402.png",
-    "Pasted image 20230616162825.png.md",
-    "Frontier Folly - альфа версия.pdf",
     "Диздок Frontier Folly.pdf",
     "imgs"
   ]
