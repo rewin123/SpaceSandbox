@@ -7,7 +7,6 @@ fn main() {
     App::default()
         .add_plugins(SpaceSandbox::SpaceExamplePlguin)
         .add_plugins(FPSPlugin)
-        .add_plugins(bevy_proto::prelude::ProtoPlugin::default())
         .add_plugins(SpaceSandbox::ship::common::VoxelInstancePlugin)
         .add_plugins(NotificationPlugin)
         .add_plugins(PawnPlugin)
@@ -61,6 +60,8 @@ fn prepare_enviroment(mut meshes: ResMut<'_, Assets<Mesh>>, mut materials: ResMu
     ).insert(DTransformBundle::from_transform(
         DTransform::from_xyz(0.0, -0.5, 0.0)
     ))
+    .insert(Position(DVec3::new(0.0, -0.5, 0.0)))
+    .insert(RigidBody::Static)
     .insert(
         Collider::cuboid(100.0, 0.25, 100.0)
     );
@@ -83,6 +84,8 @@ fn prepare_enviroment(mut meshes: ResMut<'_, Assets<Mesh>>, mut materials: ResMu
             material : mat.clone(),
             ..default()
         }).insert(cube_transform)
+        .insert(RigidBody::Static)
+        .insert(Position(cube_transform.local.translation))
         .insert(Collider::cuboid(1.0, 1.0, 1.0));
     }
     

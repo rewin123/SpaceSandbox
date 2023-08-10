@@ -1,7 +1,7 @@
 
 use std::{fs::File, io::{Read, Write}};
 
-use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, CursorGrabMode}, math::DVec3, core_pipeline::bloom::BloomSettings};
+use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, CursorGrabMode}, math::DVec3, core_pipeline::{bloom::BloomSettings, experimental::taa::TemporalAntiAliasBundle}, pbr::ScreenSpaceAmbientOcclusionBundle};
 use bevy_egui::{EguiContext, egui};
 use serde::{Deserialize, Serialize};
 
@@ -300,10 +300,9 @@ pub fn startup_player(
     };
 
     let pos = DVec3::new(0.0, 3.0, 0.0);
-    let pawn = commands.spawn(
-        
-        Collider::capsule(1.5, 0.25))
+    let pawn = commands.spawn(Collider::capsule(1.5, 0.25))
     .insert(DSpatialBundle::from_transform(DTransform::from_xyz(pos.x, pos.y, pos.z)))
+    .insert(Position(pos))
     .insert(RigidBody::Dynamic)
     .insert(LockedAxes::default().lock_rotation_x().lock_rotation_z())
     .insert(GravityScale(0.0))
@@ -324,6 +323,8 @@ pub fn startup_player(
     .insert(DTransformBundle::from_transform(
         DTransform::from_xyz(0.0, 1.0, 0.0).looking_at(DVec3::new(0.0, 1.0, -1.0), DVec3::Y)
     ))
+    .insert(ScreenSpaceAmbientOcclusionBundle::default())
+    .insert(TemporalAntiAliasBundle::default())
     .insert(BloomSettings::default()).id();
 
     commands.entity(pawn).add_child(cam_pawn);

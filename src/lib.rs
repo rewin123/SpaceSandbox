@@ -75,6 +75,7 @@ impl Plugin for SpaceExamplePlguin {
             .add_plugins(DTransformPlugin)
             .add_plugins(bevy_egui::EguiPlugin)
             .add_plugins(bevy_xpbd_3d::prelude::PhysicsPlugins::default().build().disable::<bevy_xpbd_3d::prelude::SyncPlugin>().add(PhysicsSync))
+            .add_plugins(bevy_proto::prelude::ProtoPlugin::default())
             .insert_resource(Msaa::Off)
             .insert_resource(bevy::pbr::DirectionalLightShadowMap { size: 4096 })
             .add_plugins(bevy::core_pipeline::experimental::taa::TemporalAntiAliasPlugin);
