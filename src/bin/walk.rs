@@ -2,8 +2,7 @@ use std::{fs::*, io::*};
 
 use bevy::{prelude::*, render::{RenderPlugin, settings::{WgpuSettings, WgpuFeatures}}, math::DVec3, core_pipeline::bloom::BloomSettings, asset::ChangeWatcher};
 use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{main_menu::MainMenuPlugin, station_builder::StationBuilderPlugin, NotificationPlugin, fps_mode::{FPSPlugin, FPSController, self}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, Pawn, ChangePawn}, network::NetworkPlugin, control::SpaceControlPlugin, objects::SpaceObjectsPlugin};
-use bevy_egui::{EguiContext, egui::{self, Color32}};
-use space_physics::prelude::*;
+use bevy_egui::{egui::{self, Color32}};
 use bevy_transform64::prelude::*;
 
 fn main() {

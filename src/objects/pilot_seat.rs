@@ -60,14 +60,14 @@ fn camera_selection(
 
 fn piloting(
     mut pilot_seats : Query<(&DTransform, &mut PilotSeat), (Without<Pawn>)>,
-    mut ships : Query<(&DTransform, &mut LinearVelocity, &mut ExternalForce, &mut ExternalTorque), With<Ship>>,
+    mut ships : Query<(&DTransform, &mut LinearVelocity, &mut AngularVelocity, &mut ExternalForce, &mut ExternalTorque), With<Ship>>,
     input : Res<Input<Action>>,
     mut pawns : Query<(&mut DTransform, &Pawn), (Without<Ship>, Without<ShipCamera>)>,
     mut cameras : Query<&DTransform, (Without<Ship>, With<ShipCamera>)>
 ) {
     for (pilot_seat_transform, mut pilot_seat) in pilot_seats.iter_mut() {
         if pilot_seat.pawn.is_some() {
-            let (ship_transform, mut ship_velocity, mut ship_impulse, mut ship_torgue) = ships.iter_mut().next().unwrap();
+            let (ship_transform, mut ship_velocity, mut ship_angular, mut ship_impulse, mut ship_torgue) = ships.iter_mut().next().unwrap();
             let forward = ship_transform.forward();
             let right = ship_transform.right();
             let up = ship_transform.up();
@@ -79,9 +79,9 @@ fn piloting(
             if input.pressed(Action::Piloting(PilotingAction::MoveBackward)) {
                 target_linvel -= forward * speed;
             }
-            ship_impulse.impulse = target_linvel;
+            ship_impulse.apply_force(target_linvel);
 
-            let mut angvel = -ship_velocity.angvel * 0.9;
+            let mut angvel = -ship_angular.0 * 0.9;
             if input.pressed(Action::Piloting(PilotingAction::TurnUp)) {
                 angvel += right;
             }
@@ -100,7 +100,7 @@ fn piloting(
             if input.pressed(Action::Piloting(PilotingAction::RollRight)) {
                 angvel -= forward;
             }
-            ship_impulse = angvel;
+            ship_angular.0 += angvel;
 
             if let Ok((mut pawn_tranform, pawn)) = pawns.get_mut(pilot_seat.pawn.as_ref().unwrap().pawn) {
                 if pilot_seat.current_camera.is_none() {

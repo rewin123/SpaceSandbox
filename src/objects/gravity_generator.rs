@@ -1,7 +1,7 @@
 use bevy::{prelude::*, math::DVec3};
 use bevy_transform64::prelude::DGlobalTransform;
 use serde::{Serialize, Deserialize};
-use space_physics::prelude::*;
+
 
 pub struct GravityGeneratorPlugin;
 

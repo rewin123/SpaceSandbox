@@ -13,7 +13,6 @@ use bevy::prelude::*;
 use bevy::render::RenderPlugin;
 use bevy::render::settings::{WgpuSettings, WgpuFeatures};
 use bevy_transform64::DTransformPlugin;
-use space_physics::SpacePhysicsPlugin;
 
 fn main() {
     App::default()
@@ -42,7 +41,6 @@ fn main() {
         .add_plugins(SpaceObjectsPlugin)
         .add_plugins(SettingsPlugin)
         .add_plugins(DTransformPlugin)
-        .add_plugins(SpacePhysicsPlugin)
         .add_plugins(SpaceSandbox::editor::EditorPlugin)
         .add_plugins(SpaceSandbox::scenes::asset_editor::AssetEditorPlugin)
         .run();

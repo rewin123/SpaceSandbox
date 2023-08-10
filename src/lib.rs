@@ -18,6 +18,14 @@ use bevy_proto::prelude::{Schematic, ReflectSchematic};
 use bevy_transform64::prelude::*;
 // use winit::window::Window;
 
+pub mod ext {
+    pub use bevy::prelude::*;
+    pub use bevy_transform64::prelude::*;
+    pub use bevy_proto::prelude::*;
+    pub use bevy_egui::*;
+    pub use bevy_xpbd_3d::*;
+}
+
 pub mod prelude {
     pub use bevy::prelude::*;
     pub use crate::*;
