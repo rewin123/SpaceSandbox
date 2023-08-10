@@ -1,11 +1,11 @@
 use super::state::State;
-use super::atom::*;
+
 use super::operator::*;
 use bevy::prelude::*;
 use bevy::utils::Instant;
-use std::fmt::format;
+
 use std::hash::{Hash, Hasher};
-use std::rc::Rc;
+
 use std::time::Duration;
 use super::goal::Goal;
 use std::thread;
@@ -19,8 +19,8 @@ pub struct FindNode {
 
 impl FindNode {
     fn successors(&self) -> Vec<(FindNode, i32)> {
-        let mut res = self.state.clone().successors();
-        res
+        
+        self.state.clone().successors()
     }
 }
 
@@ -52,11 +52,11 @@ struct EmptyOp;
 
 impl Operator for EmptyOp {
     fn to_string(&self) -> String {
-        format!("EmptyOp")
+        "EmptyOp".to_string()
     }
 
-    fn to_pretty(&self, world : &World) -> String {
-        format!("Chilling")
+    fn to_pretty(&self, _world : &World) -> String {
+        "Chilling".to_string()
     }
 
     fn effect(&self, state : &mut State) -> State {
@@ -80,19 +80,19 @@ pub fn find_sequence(s0 : &State, goal : &Goal) -> Option<Vec<Box<dyn Operator +
     let goal = goal.clone();
     let find_thr = thread::spawn(move || {
         let start_node = find_node;
-        let res = pathfinding::prelude::fringe(
+        
+        pathfinding::prelude::fringe(
             &start_node, 
             |s| s.successors(), 
             |s| goal.heteruistic(&s.state),
-            |s| goal.precondition(&s.state));
-        res
+            |s| goal.precondition(&s.state))
     });
     while !find_thr.is_finished() && start_time.elapsed() < Duration::from_secs(10) {
         thread::sleep(Duration::from_millis(1));
     }
 
     if find_thr.is_finished() {
-        if let Some((res,cost)) = find_thr.join().unwrap() {
+        if let Some((res,_cost)) = find_thr.join().unwrap() {
             let mut op_vec = vec![];
             for node in res {
                 op_vec.push(node.op);

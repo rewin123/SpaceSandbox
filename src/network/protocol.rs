@@ -77,7 +77,7 @@ impl ConnectionServer {
         let mut req_heart_addr = vec![];
         for (addr, con) in &mut self.connections {
             if (time - con.last_recv) > Duration::from_millis(100) && (time - con.last_heartbit) > Duration::from_millis(100) {
-                req_heart_addr.push(addr.clone());
+                req_heart_addr.push(*addr);
                 con.last_heartbit = time;
             }
         }
@@ -96,7 +96,7 @@ impl ConnectionServer {
                     }
                 },
                 SocketEvent::Connect(addr) => {
-                    self.connections.insert(addr.clone(), Connection {
+                    self.connections.insert(*addr, Connection {
                         last_recv : self.time,
                         last_heartbit : self.time
                     });
@@ -154,14 +154,14 @@ impl ConnectionServer {
     }
 
     pub fn send_unrealiable_broadcast(&self, data : Vec<u8>) {
-        for (addr, con) in &self.connections {
-            self.send_unreliable(addr.clone(), ConnectionMsg::Data(data.clone()));
+        for (addr, _con) in &self.connections {
+            self.send_unreliable(*addr, ConnectionMsg::Data(data.clone()));
         }
     }
 
     pub fn send_realiable_broadcast(&self, data : Vec<u8>) {
-        for (addr, con) in &self.connections {
-            self.send_reliable_unordered(addr.clone(), ConnectionMsg::Data(data.clone()));
+        for (addr, _con) in &self.connections {
+            self.send_reliable_unordered(*addr, ConnectionMsg::Data(data.clone()));
         }
     }
 

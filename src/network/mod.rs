@@ -213,8 +213,8 @@ fn listen_server_cmds(
             ServerNetworkCmd::ConnectToServer(addr) => {
                 if let Ok(socket_addr) = SocketAddr::from_str(addr) {
                     
-                    let mut server = ConnectionServer::new(SocketAddr::from_str("127.0.0.1:1997").unwrap(), Instant::now());
-                    server.connect_to(socket_addr.clone());
+                    let server = ConnectionServer::new(SocketAddr::from_str("127.0.0.1:1997").unwrap(), Instant::now());
+                    server.connect_to(socket_addr);
                     cmds.insert_resource(NetworkClient {
                         server,
                         server_addr : socket_addr

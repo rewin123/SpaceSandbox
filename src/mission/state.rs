@@ -1,18 +1,18 @@
-use std::borrow::BorrowMut;
+
 use std::hash::Hasher;
-use std::marker::PhantomData;
+
 use std::sync::{Mutex, Arc};
 
 use bevy::prelude::*;
-use downcast_rs::Downcast;
+
 use super::FindNode;
 use super::atom::*;
 use super::operator::*;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-use std::any::{Any, TypeId};
-use std::collections::HashMap;
+
+
 
 #[derive(Default)]
 pub struct StateConext {
@@ -58,7 +58,7 @@ impl State {
 
     pub fn setup_hash(&mut self) {
         let mut query = self.world.query::<&AtLocation>();
-        let mut hash = 0;
+        let _hash = 0;
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         for at_loc in query.iter(&self.world) {
             at_loc.id.hash(&mut hasher);

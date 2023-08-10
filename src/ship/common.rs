@@ -5,7 +5,7 @@ use crate::{objects::{prelude::PilotSeat, radar::Radar, ship_camera::ShipCamera}
 
 use super::{VOXEL_SIZE, instance_rotate::InstanceRotate};
 
-pub const TELEPORN_NAME : &'static str = "Teleport spot";
+pub const TELEPORN_NAME : &str = "Teleport spot";
 
 pub trait BuildInstance {
     fn build(&self, cmds : &mut Commands, asset_server : &AssetServer) -> Entity;
@@ -65,9 +65,9 @@ fn spawn_static_instance<F>(
     let owned_path = path.to_string();
 
     let instance = VoxelInstance {
-        bbox : bbox.clone(),
+        bbox,
         common_id : *indexer,
-        origin : origin.clone()
+        origin
     };
     let cfg = VoxelInstanceConfig {
         name : name.to_string(),
@@ -81,7 +81,7 @@ fn spawn_static_instance<F>(
             .insert(instance.clone())
             .insert(InstanceRotate::default()).id();
 
-            let collider_pos = -instance.origin.clone() * bbox.as_dvec3() / 2.0 * VOXEL_SIZE;
+            let collider_pos = -instance.origin * bbox.as_dvec3() / 2.0 * VOXEL_SIZE;
 
             let collider = Collider::cuboid(
                 bbox.x as f64 * VOXEL_SIZE, 

@@ -61,7 +61,7 @@ fn setup(
 }
 
 fn fly(
-    mut transform : Query<&mut Transform, Without<Parent>>,
+    _transform : Query<&mut Transform, Without<Parent>>,
     mut dtransforms : Query<&mut DTransform, Without<Parent>>,
     time : Res<Time>
 ) {
@@ -75,7 +75,7 @@ fn fly(
 }
 
 fn camera_orbit(
-    mut transform : Query<&mut Transform, With<Camera>>,
+    _transform : Query<&mut Transform, With<Camera>>,
     mut dtransforms : Query<&mut DTransform, With<Camera>>,
     time : Res<Time>
 ) {
@@ -102,9 +102,9 @@ fn camera_orbit(
 
 fn debug_gui(
     mut egui_ctxs : Query<&mut EguiContext>,
-    mut world_origin : ResMut<WorldOrigin>,
-    mut dtransforms : Query<&DTransform>,
-    mut transforms : Query<&Transform>,
+    world_origin : ResMut<WorldOrigin>,
+    dtransforms : Query<&DTransform>,
+    _transforms : Query<&Transform>,
 ) {
     egui::SidePanel::left("debug").show(egui_ctxs.single_mut().get_mut(), |ui| {
         ui.label("World Origin");

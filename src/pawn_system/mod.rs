@@ -2,7 +2,7 @@ use bevy_transform64::WorldOrigin;
 
 use crate::prelude::*;
 
-pub const PAWN_CHANGE_SYSTEM : &'static str = "PAWN_CHANGE_SYSTEM";
+pub const PAWN_CHANGE_SYSTEM : &str = "PAWN_CHANGE_SYSTEM";
 
 pub struct PawnPlugin;
 

@@ -1,9 +1,9 @@
 use bevy::prelude::*;
-use bevy_egui::{*, egui::{TextureHandle, TextureId}};
+use bevy_egui::{*, egui::{TextureId}};
 use crate::*;
 
 fn main_menu(
-    mut cmds : Commands,
+    _cmds : Commands,
     mut egui_context: Query<&mut EguiContext>,
     mut next_scene : ResMut<NextState<SceneType>>,
     background : ResMut<BackgroundImage>,
@@ -18,9 +18,7 @@ fn main_menu(
         .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
         .show(egui_context.single_mut().get_mut(), |ui| {
             ui.vertical_centered(|ui| {
-                if ui.button("Play mission").clicked() {
-
-                }
+                ui.button("Play mission").clicked();
                 if ui.button("Station builder").clicked() {
                     next_scene.set(SceneType::ShipBuilding);
                 }

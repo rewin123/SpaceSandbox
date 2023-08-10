@@ -5,18 +5,16 @@ use bevy::{prelude::*};
 use super::{VoxelMap, solid_voxel_map::SolidVoxelMap};
 
 #[derive(PartialEq, Eq, Clone)]
+#[derive(Default)]
 pub enum VoxelVal<VoxelID> {
+    #[default]
     None,
     Voxel(VoxelID),
     Object(Entity),
 }
 
 
-impl<T> Default for VoxelVal<T> {
-    fn default() -> Self {
-        VoxelVal::None
-    }
-}
+
 
 pub trait ObjectedVoxelMap<T> : VoxelMap<VoxelVal<T>>
     where T : Clone
@@ -43,7 +41,7 @@ pub trait ObjectedVoxelMap<T> : VoxelMap<VoxelVal<T>>
                 }
             }
         }
-        return true;
+        true
     }
 
     fn erase_object(&mut self, pos : &IVec3, search_area : &IVec3) {
@@ -89,26 +87,26 @@ mod tests {
         let bbox = IVec3::new(10, 5,3);
         //test can place
         let res = map.can_place_object(&pos, &bbox);
-        assert_eq!(res, true);
+        assert!(res);
 
         //place object
         map.set_object_by_idx(e, &pos, &bbox);
 
         //test can place again
         let res = map.can_place_object(&pos, &bbox);
-        assert_eq!(res, false);
+        assert!(!res);
 
 
         //test can place half
         let res = map.can_place_object(&pos, &(bbox / 2));
-        assert_eq!(res, false);
+        assert!(!res);
 
         //remove object
         map.erase_object(&pos, &bbox);
 
         //test can place again
         let res = map.can_place_object(&pos, &bbox);
-        assert_eq!(res, true);
+        assert!(res);
         
     }
 

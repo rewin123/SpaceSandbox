@@ -1,9 +1,7 @@
-use std::{fs::*, io::*};
-
-use bevy::{prelude::*, render::{RenderPlugin, settings::{WgpuSettings, WgpuFeatures}}, math::DVec3, core_pipeline::bloom::BloomSettings, asset::ChangeWatcher};
-use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{main_menu::MainMenuPlugin, station_builder::StationBuilderPlugin, NotificationPlugin, fps_mode::{FPSPlugin, FPSController, self}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, Pawn, ChangePawn}, network::NetworkPlugin, control::SpaceControlPlugin, objects::SpaceObjectsPlugin};
-use bevy_egui::{egui::{self, Color32}};
+use bevy::{prelude::*, render::{RenderPlugin, settings::{WgpuSettings, WgpuFeatures}}, math::DVec3, asset::ChangeWatcher};
+use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{NotificationPlugin, fps_mode::{FPSPlugin, self}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, Pawn, ChangePawn},control::SpaceControlPlugin};
 use bevy_transform64::prelude::*;
+use crate::ext::*;
 
 fn main() {
     App::default()
@@ -17,7 +15,7 @@ fn main() {
                 features: WgpuFeatures::POLYGON_MODE_LINE,
                 ..default()
             }
-        }))
+        }).disable::<TransformPlugin>())
         .add_plugins(FPSPlugin)
         .add_plugins(bevy_proto::prelude::ProtoPlugin::default())
         .add_plugins(bevy_egui::EguiPlugin)
@@ -25,13 +23,12 @@ fn main() {
         .add_plugins(NotificationPlugin)
         .add_plugins(PawnPlugin)
         .add_plugins(DTransformPlugin)
-        .add_plugins(SpacePhysicsPlugin)
         .add_plugins(SpaceControlPlugin)
         .add_plugins(SettingsPlugin)
 
-        .add_startup_system(startup)
-        .add_startup_system(startup_player)
-        .add_system(fps_mode::show_controller_settings)
+        .add_systems(Startup, startup)
+        .add_systems(Startup, startup_player)
+        .add_systems(Update, fps_mode::show_controller_settings)
         .run();
 }
 
@@ -76,9 +73,9 @@ fn prepare_enviroment(mut meshes: ResMut<'_, Assets<Mesh>>, mut materials: ResMu
     ).insert(DTransformBundle::from_transform(
         DTransform::from_xyz(0.0, -0.5, 0.0)
     ))
-    .insert(SpaceCollider(
-        space_physics::prelude::ColliderBuilder::cuboid(50.0, 0.25, 50.0).build()
-    ));
+    .insert(
+        Collider::cuboid(100.0, 0.25, 100.0)
+    );
 
     let cube_poses = vec![
         DVec3::new(5.0, 0.0, 0.0),
@@ -98,9 +95,7 @@ fn prepare_enviroment(mut meshes: ResMut<'_, Assets<Mesh>>, mut materials: ResMu
             material : mat.clone(),
             ..default()
         }).insert(cube_transform)
-        .insert(SpaceCollider(
-            space_physics::prelude::ColliderBuilder::cuboid(0.5, 0.5, 0.5).build()
-        ));
+        .insert(Collider::cuboid(1.0, 1.0, 1.0));
     }
     
     // ambient light

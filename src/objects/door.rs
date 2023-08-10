@@ -18,13 +18,13 @@ impl Plugin for DoorPlugin {
 }
 
 fn init_door(
-    mut doors : Query<&mut Door, Added<Door>>
+    _doors : Query<&mut Door, Added<Door>>
 ) {
     
 }
 
 fn open_door__system(
-    mut doors : Query<&mut Door>,
+    _doors : Query<&mut Door>,
 ) {
 
 }

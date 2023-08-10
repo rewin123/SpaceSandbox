@@ -49,7 +49,7 @@ impl PacketSocket {
     }
 
     pub fn recv(&mut self) -> Option<RecvPacket> {
-        if self.from_net.len() > 0 {
+        if !self.from_net.is_empty() {
             return Some(self.from_net.remove(0));
         }
         None
@@ -92,11 +92,11 @@ mod tests {
         let server_addr = SocketAddr::from_str("127.0.0.1:1996").unwrap();
         let client_addr = SocketAddr::from_str("127.0.0.1:1997").unwrap();
 
-        let mut server = PacketSocket::new(server_addr.clone());
-        let mut client = PacketSocket::new(client_addr.clone());
+        let mut server = PacketSocket::new(server_addr);
+        let mut client = PacketSocket::new(client_addr);
 
         client.send(SendPacket {
-            dst: super::SendDestination::Target(server_addr.clone()),
+            dst: super::SendDestination::Target(server_addr),
             data: vec![0u8, 1u8, 2u8],
         });
         client.update();

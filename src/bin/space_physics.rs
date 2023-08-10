@@ -1,4 +1,4 @@
-use std::sync::Arc;
+
 
 use bevy::{prelude::*, math::{DVec3, DQuat}, pbr::{CascadeShadowConfigBuilder, ScreenSpaceAmbientOcclusionBundle, DirectionalLightShadowMap}, core_pipeline::experimental::taa::{TemporalAntiAliasBundle, TemporalAntiAliasPlugin}};
 use bevy_transform64::prelude::*;
@@ -53,8 +53,8 @@ fn position_to_transform(
                 // Compute the global transform of the parent using its Position and Rotation
                 let parent_transform = parent_transform.compute_transform();
                 let parent_pos =
-                    parent_pos.map_or(parent_transform.translation, |pos| pos.0.clone());
-                let parent_rot = parent_rot.map_or(parent_transform.rotation, |rot| rot.0.clone());
+                    parent_pos.map_or(parent_transform.translation, |pos| pos.0);
+                let parent_rot = parent_rot.map_or(parent_transform.rotation, |rot| rot.0);
                 let parent_scale = parent_transform.scale;
                 let parent_transform = DTransform::from_translation(parent_pos)
                     .with_rotation(parent_rot)
@@ -63,7 +63,7 @@ fn position_to_transform(
                 // The new local transform of the child body,
                 // computed from the its global transform and its parents global transform
                 let new_transform = DGlobalTransform::from(
-                    DTransform::from_translation(pos.0.clone()).with_rotation(rot.0.clone()),
+                    DTransform::from_translation(pos.0).with_rotation(rot.0),
                 )
                 .reparented_to(&DGlobalTransform::from(parent_transform));
 
@@ -71,8 +71,8 @@ fn position_to_transform(
                 transform.rotation = new_transform.rotation;
             }
         } else {
-            transform.translation = pos.0.clone();
-            transform.rotation = rot.0.clone();
+            transform.translation = pos.0;
+            transform.rotation = rot.0;
         }
     }
 }
@@ -103,7 +103,7 @@ fn setup(
     let cube_material = materials.add(Color::rgb(0.8, 0.7, 0.6).into());
     let sphere_mesh = meshes.add(Mesh::from(bevy::prelude::shape::UVSphere { radius: 0.5, sectors: 32, stacks : 32 }));
     let mut rng = rand::thread_rng();
-    for i in 0..10 {
+    for _i in 0..10 {
         let x = rng.gen_range(-5.0..5.0);
         let y = rng.gen_range(0.5..50.0);
         let z = rng.gen_range(-5.0..5.0);
@@ -119,7 +119,7 @@ fn setup(
         .insert(Position(cube_transform.translation));
     }
 
-    for i in 0..10 {
+    for _i in 0..10 {
         let x = rng.gen_range(-5.0..5.0);
         let y = rng.gen_range(0.5..50.0);
         let z = rng.gen_range(-5.0..5.0);
@@ -149,7 +149,7 @@ fn setup(
         }
     }
 
-    for i in 0..10 {
+    for _i in 0..10 {
         let x = rng.gen_range(-5.0..5.0);
         let y = rng.gen_range(0.5..5.0);
         let z = rng.gen_range(-5.0..5.0);

@@ -1,12 +1,12 @@
-use bevy::{prelude::*, utils::HashMap, math::DVec3};
-use bevy_transform64::{DTransformBundle, prelude::DTransform};
+use bevy::{prelude::*, math::DVec3};
+use bevy_transform64::{prelude::DTransform};
 use crate::{space_voxel::objected_voxel_map::*, DSpatialBundle};
 use crate::space_voxel::solid_voxel_map::SolidVoxelMap;
 use crate::space_voxel::*;
 use serde::{Deserialize, Serialize};
 use bevy_xpbd_3d::prelude::*;
 
-use self::common::{AllVoxelInstances, VoxelInstance};
+
 
 pub mod common;
 pub mod save_load;

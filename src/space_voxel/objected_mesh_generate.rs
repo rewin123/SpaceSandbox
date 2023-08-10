@@ -34,7 +34,7 @@ pub fn generate_mesh<T: PartialEq + Eq + Clone + Typed + FromReflect>(
 
     greedy_quads(
         &padded_data,
-        &block_mesh::ndshape::RuntimeShape::<u32, 3>::new(size.clone()),
+        &block_mesh::ndshape::RuntimeShape::<u32, 3>::new(size),
         [1; 3],
         [
             chunk.size.x as u32 + 1,

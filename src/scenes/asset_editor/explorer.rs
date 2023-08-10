@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use std::fs;
-use std::path::{Path, PathBuf};
-use bevy_egui::egui::{ScrollArea, SelectableLabel, Ui, Window, Button};
+
+use std::path::{PathBuf};
+use bevy_egui::egui::{Ui};
 use bevy::prelude::*;
 
 
@@ -25,7 +25,7 @@ impl AssetExplorer {
         format!("Asset Explorer - {:?}", self.current_dir)
     }
 
-    pub fn show(&mut self, ui: &mut Ui) {
+    pub fn show(&mut self, _ui: &mut Ui) {
         
     }
 }

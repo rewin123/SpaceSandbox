@@ -5,7 +5,7 @@ use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, Cur
 use bevy_egui::{EguiContext, egui};
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn, CurrentPawnMarker, ChangePawn}, control::{Action, FPSAction}, objects::prelude::{MeteorFieldCommand, GravitySenitive}};
+use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn, CurrentPawnMarker, ChangePawn}, control::{Action, FPSAction}, objects::prelude::{GravitySenitive}};
 use bevy_xpbd_3d::prelude::*;
 
 #[derive(Component, Default, Serialize, Deserialize, Clone, PartialEq)]
@@ -117,7 +117,7 @@ fn gravity_process(
     for (mut transform, mut controller, gravity, mut vel) in controllers.iter_mut() {
         if gravity.is_senitive {
             controller.current_up = -gravity.g;
-            vel.0 = vel.0 + gravity.g * time.delta_seconds_f64();
+            vel.0 += gravity.g * time.delta_seconds_f64();
         } else {
             // controller.current_up = controller.default_up;
         }
@@ -143,10 +143,10 @@ fn gravity_process(
 fn fps_look_controller(
     pawn : Res<CurrentPawn>,
     mut transform : Query<&mut DTransform>,
-    mut pawns : Query<(&Pawn, &FPSController)>,
+    pawns : Query<(&Pawn, &FPSController)>,
     mut mouse_move : EventReader<MouseMotion>
 ) {
-    let moves = mouse_move.iter().map(|m| m.clone()).collect::<Vec<_>>();
+    let moves = mouse_move.iter().copied().collect::<Vec<_>>();
     if let Some(e) = pawn.id {
         if let Ok((pawn, controller)) = pawns.get(e) {
             if controller.capture_control {
@@ -162,7 +162,7 @@ fn fps_look_controller(
                     for mv in &moves {
                         let frw = pawn_transform.forward();
                         let up = pawn_transform.up();
-                        let right = pawn_transform.right();
+                        let _right = pawn_transform.right();
                         let delta = mv.delta.as_dvec2() * 0.001;
                         let mut changed_frw = (frw - delta.y * up).normalize();
                         changed_frw.y = changed_frw.y.max(-0.95);
@@ -179,7 +179,7 @@ fn fps_look_controller(
                 };
                 for mv in &moves {
                     let frw = pawn_transform.forward();
-                    let up = pawn_transform.up();
+                    let _up = pawn_transform.up();
                     let right = pawn_transform.right();
                     let delta = mv.delta.as_dvec2() * 0.001;
                     let mut changed_frw = (frw + delta.x * right).normalize();
@@ -198,9 +198,9 @@ fn fps_look_controller(
 fn fps_controller(
     pawn : Res<CurrentPawn>,
     mut characters : Query<(&mut DTransform, &mut FPSController)>,
-    mut keys : Res<Input<Action>>,
-    mut time : Res<Time>,
-    mut bodies : Query<&mut LinearVelocity>
+    keys : Res<Input<Action>>,
+    time : Res<Time>,
+    _bodies : Query<&mut LinearVelocity>
 ) {
     if let Some(e) = pawn.id {
             if let Ok((mut pawn_transform, mut controller)) = characters.get_mut(e) {
@@ -242,7 +242,7 @@ fn fps_controller(
                 pawn_transform.translation += controller.current_move * time.delta_seconds_f64();
 
                 let up = pawn_transform.up();
-                let start_pos = pawn_transform.translation - up * 1.1;
+                let _start_pos = pawn_transform.translation - up * 1.1;
                 // let floor_ray = space_physics::prelude::Ray::new(point![start_pos.x, start_pos.y, start_pos.z],
                 //     vector![-up.x, -up.y, -up.z]);
 
@@ -269,9 +269,7 @@ fn fps_controller(
                 // }
 
                 
-            } else {
-
-            }
+            } 
     }
 }
 
@@ -282,8 +280,8 @@ pub struct FpsPlayerEntities {
 
 pub const PATH_TO_CONTROLLER : &str = "conroller.ron";
 pub fn startup_player(
-    mut commands : &mut Commands,
-    mut pawn_event : &mut EventWriter<ChangePawn>,
+    commands : &mut Commands,
+    pawn_event : &mut EventWriter<ChangePawn>,
 ) -> FpsPlayerEntities {
     let mut cam = Camera::default();
     cam.hdr = false;

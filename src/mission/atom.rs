@@ -23,11 +23,7 @@ fn auto_copy_fn<T: Atom + Component + Clone>() -> AtomCopy {
 
 fn auto_debug_fn<T: Atom + Component>() -> AtomDebug {
     Box::new(move |src| {
-        if let Some(data) = src.get::<T>() {
-            Some(format!("{:?}", data))
-        } else {
-            None
-        }
+        src.get::<T>().map(|data| format!("{:?}", data))
     })
 }
 
@@ -39,7 +35,7 @@ fn auto_eq_fn<T: Atom + Component + Eq>() -> AtomEq {
             } else {
                 false
             }
-        } else if let Some(data2) = dst.get::<T>() {
+        } else if let Some(_data2) = dst.get::<T>() {
             false
         } else {
             true

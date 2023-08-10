@@ -20,7 +20,7 @@ impl Plugin for SettingsPlugin {
 
 
 pub fn settings_system(
-    mut settings : ResMut<Settings>,
+    _settings : ResMut<Settings>,
     mut key_mapper : ResMut<KeyMapperWindow>,
     mut egui_ctxs : Query<&mut EguiContext>) {
     

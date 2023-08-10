@@ -5,15 +5,15 @@
 mod chunk_map_tests {
     use super::super::*;
     use super::super::solid_voxel_map::*;
-    use bevy::{reflect::serde::ReflectSerializer, scene::serde::SceneDeserializer};
+    use bevy::{scene::serde::SceneDeserializer};
     use test_case::test_case;
-    use serde::{Serialize, Deserialize, de::DeserializeSeed};
+    use serde::{Deserialize, de::DeserializeSeed};
 
     #[test_case(SolidVoxelMap::<i32>::test_default())]
     fn get_voxel_pos(map : impl VoxelMap<i32>) {
 
         let pos = Real::new(0.0, 0.0, 0.0);
-        let voxel_pos = map.get_grid_pos(&pos);
+        let _voxel_pos = map.get_grid_pos(&pos);
         assert_eq!(pos.x, 0.0);
         assert_eq!(pos.y, 0.0);
         assert_eq!(pos.z, 0.0);
@@ -97,12 +97,12 @@ mod chunk_map_tests {
     fn simple_scene_load() {
         let mut world = World::default();
 
-        let mut type_registry = AppTypeRegistry::default();
+        let type_registry = AppTypeRegistry::default();
         type_registry.internal.write().register::<TestStruct>();
 
         world.spawn(TestStruct { val : 1.0});
         
-        let mut dyn_scene = DynamicScene::from_world(&world);
+        let dyn_scene = DynamicScene::from_world(&world);
         let scene_ron = dyn_scene.serialize_ron(&type_registry).unwrap();
 
         let mut des = ron::Deserializer::from_bytes(scene_ron.as_bytes()).unwrap();
@@ -110,7 +110,7 @@ mod chunk_map_tests {
             type_registry : &type_registry.read()
         }.deserialize(&mut des).unwrap();
 
-        let mut new_world = Scene::from_dynamic_scene(&result, &type_registry).unwrap().world;
+        let new_world = Scene::from_dynamic_scene(&result, &type_registry).unwrap().world;
 
         assert_eq!(new_world.entities().len(), world.entities().len());
     }

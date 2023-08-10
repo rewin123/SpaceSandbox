@@ -31,7 +31,7 @@ fn gravity_sensetive_fill(
         s.is_senitive = false;
         s.g = DVec3::ZERO;
         // info!("Sensitive: {:?}", e_s);
-        for (e_g, t_g, mut g) in gravity_generators.iter_mut() {
+        for (e_g, t_g, g) in gravity_generators.iter_mut() {
             let dist = (t_g.translation() - t_s.translation()).length();
             let dir = (t_g.translation() - t_s.translation()).dot(t_g.up());
             

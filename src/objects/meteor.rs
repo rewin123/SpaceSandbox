@@ -31,18 +31,18 @@ impl Plugin for MetorFieldPlugin {
     }
 }
 
-fn proto_loading(mut prototypes : PrototypesMut, mut field : ResMut<MeteorFieldState>) {
+fn proto_loading(mut prototypes : PrototypesMut, _field : ResMut<MeteorFieldState>) {
     prototypes.load("space_objects/asteroid_1.prototype.ron");
 }
 
 fn meteor_field_spawn(
     mut commands: Commands,
     mut proto_commands : ProtoCommands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    _meshes: ResMut<Assets<Mesh>>,
+    _materials: ResMut<Assets<StandardMaterial>>,
     mut events : EventReader<MeteorFieldCommand>,
     query : Query<Entity, With<Meteor>>,
-    asset_server : Res<AssetServer>
+    _asset_server : Res<AssetServer>
 ) {
     for event in events.iter() {
         match event {
@@ -65,7 +65,7 @@ fn meteor_field_spawn(
                     if spawn_pos.length() < min_dist {
                         continue;
                     }
-                    let mut entity = proto_commands.spawn("Asteroid 1");
+                    let _entity = proto_commands.spawn("Asteroid 1");
                     // entity.entity_commands().insert(
                     //     DSpatialBundle::from_transform(DTransform::from_xyz(
                     //         spawn_pos.x as f64,

@@ -22,43 +22,43 @@ impl<T> VoxelMap<T> for ChunkedVoxelMap<T>
         )
     }
 
-    fn get_grid_idx(&self, pos: &Real) -> IVec3 {
+    fn get_grid_idx(&self, _pos: &Real) -> IVec3 {
         todo!()
     }
 
-    fn get_idx_pos(&self, pos : &IVec3) -> Real {
+    fn get_idx_pos(&self, _pos : &IVec3) -> Real {
         todo!()
     }
 
-    fn get_cloned(&self, pos: &Real) -> T {
+    fn get_cloned(&self, _pos: &Real) -> T {
         todo!()
     }
 
-    fn get(&self, pos: &Real) -> &T {
+    fn get(&self, _pos: &Real) -> &T {
         todo!()
     }
 
-    fn get_mut(&mut self, pos: &Real) -> Option<&mut T> {
+    fn get_mut(&mut self, _pos: &Real) -> Option<&mut T> {
         todo!()
     }
 
-    fn set_voxel(&mut self, pos : &Real, val : T) {
+    fn set_voxel(&mut self, _pos : &Real, _val : T) {
         todo!()
     }
 
-    fn get_cloned_by_idx(&self, pos : &IVec3) -> T {
+    fn get_cloned_by_idx(&self, _pos : &IVec3) -> T {
         todo!()
     }
 
-    fn get_by_idx(&self, pos : &IVec3) -> &T {
+    fn get_by_idx(&self, _pos : &IVec3) -> &T {
         todo!()
     }
 
-    fn get_mut_by_idx(&mut self, pos : &IVec3) -> Option<&mut T> {
+    fn get_mut_by_idx(&mut self, _pos : &IVec3) -> Option<&mut T> {
         todo!()
     }
 
-    fn set_voxel_by_idx(&mut self, pos : &IVec3, val : T) {
+    fn set_voxel_by_idx(&mut self, _pos : &IVec3, _val : T) {
         todo!()
     }
 
@@ -107,7 +107,7 @@ where
     }
 
     pub fn get_chunk_by_voxel(&self, pos: &IVec3) -> Option<&VoxelChunk<T>> {
-        let origin = self.get_origin(&pos);
+        let origin = self.get_origin(pos);
 
         if let Some(chunk) = self.map.get(&origin) {
             Some(chunk)
@@ -141,14 +141,14 @@ where
     pub fn get_mut(&mut self, pos: &Real) -> &mut T {
         let vp = self.get_voxel_pos(pos);
         let origin = self.get_origin(&vp);
-        let chunk_size = self.chunk_size.clone();
+        let chunk_size = self.chunk_size;
         self.dirty_set.insert(origin);
 
         if !self.map.contains_key(&origin) {
-            let mut chunk = VoxelChunk::<T>::new(origin.clone(), chunk_size.clone());
+            let chunk = VoxelChunk::<T>::new(origin, chunk_size);
 
-            let lp = vp - origin;
-            self.map.insert(origin.clone(), chunk);
+            let _lp = vp - origin;
+            self.map.insert(origin, chunk);
         }
 
         let chunk = self.map.get_mut(&origin).unwrap();
@@ -173,7 +173,7 @@ where
             *chunk.get_mut(lp.x, lp.y, lp.z) = val;
         } else {
             let origin = self.get_origin(&vp);
-            let mut chunk = VoxelChunk::<T>::new(origin.clone(), self.chunk_size.clone());
+            let mut chunk = VoxelChunk::<T>::new(origin, self.chunk_size);
 
             let lp = vp - origin;
             *chunk.get_mut(lp.x, lp.y, lp.z) = val;

@@ -1,14 +1,14 @@
 
-use std::sync::Arc;
+
 
 use bevy::{prelude::*, math::DVec3};
 use bevy_egui::*;
 use bevy_proto::prelude::{Schematic, ReflectSchematic};
 use bevy_transform64::prelude::DTransform;
-use bevy_xpbd_3d::prelude::{LinearVelocity, RigidBody, Collider};
+use bevy_xpbd_3d::prelude::{LinearVelocity};
 use bevy_xpbd_3d::prelude::*;
 
-use crate::{pawn_system::{ChangePawn, Pawn, CurrentPawn}, control::{Action, FPSAction, PilotingAction}, ship::Ship, scenes::{settings::settings_system, fps_mode::IsFPSMode}};
+use crate::{pawn_system::{ChangePawn, Pawn, CurrentPawn}, control::{Action, PilotingAction}, ship::Ship, scenes::{settings::settings_system, fps_mode::IsFPSMode}};
 
 use super::ship_camera::ShipCamera;
 
@@ -53,21 +53,21 @@ impl Plugin for PilotSeatPlugin {
 }
 
 fn camera_selection(
-    mut cameras : Query<&mut Transform, With<ShipCamera>>,
+    _cameras : Query<&mut Transform, With<ShipCamera>>,
 ) {
 
 }
 
 fn piloting(
-    mut pilot_seats : Query<(&DTransform, &mut PilotSeat), (Without<Pawn>)>,
+    mut pilot_seats : Query<(&DTransform, &mut PilotSeat), Without<Pawn>>,
     mut ships : Query<(&DTransform, &mut LinearVelocity, &mut AngularVelocity, &mut ExternalForce, &mut ExternalTorque), With<Ship>>,
     input : Res<Input<Action>>,
     mut pawns : Query<(&mut DTransform, &Pawn), (Without<Ship>, Without<ShipCamera>)>,
-    mut cameras : Query<&DTransform, (Without<Ship>, With<ShipCamera>)>
+    cameras : Query<&DTransform, (Without<Ship>, With<ShipCamera>)>
 ) {
     for (pilot_seat_transform, mut pilot_seat) in pilot_seats.iter_mut() {
         if pilot_seat.pawn.is_some() {
-            let (ship_transform, mut ship_velocity, mut ship_angular, mut ship_impulse, mut ship_torgue) = ships.iter_mut().next().unwrap();
+            let (ship_transform, _ship_velocity, mut ship_angular, mut ship_impulse, _ship_torgue) = ships.iter_mut().next().unwrap();
             let forward = ship_transform.forward();
             let right = ship_transform.right();
             let up = ship_transform.up();
@@ -102,7 +102,7 @@ fn piloting(
             }
             ship_angular.0 += angvel;
 
-            if let Ok((mut pawn_tranform, pawn)) = pawns.get_mut(pilot_seat.pawn.as_ref().unwrap().pawn) {
+            if let Ok((mut pawn_tranform, _pawn)) = pawns.get_mut(pilot_seat.pawn.as_ref().unwrap().pawn) {
                 if pilot_seat.current_camera.is_none() {
                     pawn_tranform.translation = PILOT_POSITION + pilot_seat_transform.translation;
                 } else {
@@ -127,16 +127,16 @@ fn piloting(
 }
 
 fn pilot_debug_ui(
-   mut pilot_seats : Query<(&mut PilotSeat), (Without<Pawn>)>,
+   mut pilot_seats : Query<&mut PilotSeat, Without<Pawn>>,
    mut egui_ctxs : Query<&mut EguiContext>,
-   mut ships : Query<(&DTransform, &LinearVelocity), With<Ship>>,
-   mut pawns : Query<(&DTransform, &Pawn)>,
+   ships : Query<(&DTransform, &LinearVelocity), With<Ship>>,
+   _pawns : Query<(&DTransform, &Pawn)>,
 ) {
 
     let mut ctx = egui_ctxs.single_mut();
     egui::SidePanel::left("pilot_debug_ui").show(ctx.get_mut(), |ui| {
-        for (mut pilot_seat) in pilot_seats.iter_mut() {
-            if let Some(pawn) = &mut pilot_seat.pawn {
+        for mut pilot_seat in pilot_seats.iter_mut() {
+            if let Some(_pawn) = &mut pilot_seat.pawn {
                 let (ship_transform, ship_vel) = ships.iter().next().unwrap();
                 ui.label(format!("Distance from world origin: {:.0}", ship_transform.translation.distance(DVec3::ZERO)));
                 ui.label(format!("Ship velocity {:.2}", ship_vel.length()));
@@ -150,14 +150,14 @@ fn pilot_debug_ui(
 }
 
 fn seat_in_pilot_seat(
-    mut commands : Commands,
-    mut change_pawn : EventWriter<ChangePawn>,
-    mut input : ResMut<Input<Action>>,
-    mut pawns : Query<(Entity, &mut DTransform), With<Pawn>>,
-    mut current_pawn : ResMut<CurrentPawn>,
-    mut pilot_seats : Query<(Entity, &DTransform, &mut PilotSeat), (Without<Pawn>)>,
-    mut cameras : Query<Entity, (Without<Ship>, With<ShipCamera>)>,
-    mut ships : Query<Entity, (With<Ship>, Without<Pawn>)>
+    _commands : Commands,
+    _change_pawn : EventWriter<ChangePawn>,
+    _input : ResMut<Input<Action>>,
+    _pawns : Query<(Entity, &mut DTransform), With<Pawn>>,
+    _current_pawn : ResMut<CurrentPawn>,
+    _pilot_seats : Query<(Entity, &DTransform, &mut PilotSeat), Without<Pawn>>,
+    _cameras : Query<Entity, (Without<Ship>, With<ShipCamera>)>,
+    _ships : Query<Entity, (With<Ship>, Without<Pawn>)>
 ) {
     // let Some(e) = current_pawn.id else {
     //     return;

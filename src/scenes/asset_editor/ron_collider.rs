@@ -1,8 +1,8 @@
 use bevy::{prelude::*, math::{DVec3, DQuat}};
 use bevy_proto::prelude::{Schematic, ReflectSchematic};
-use bevy_xpbd_3d::{parry::{shape::SharedShape, math::{Isometry, Real}, na::Vector3}, prelude::Collider};
-use crossbeam::epoch::Shared;
-use serde::*;
+use bevy_xpbd_3d::{parry::{shape::SharedShape}, prelude::Collider};
+
+
 
 #[derive(Component, Reflect, Schematic)]
 #[reflect(Schematic)]
@@ -31,7 +31,7 @@ pub struct RonBoxCollider {
 
 impl RonColliderCompound {
     pub fn into_collider(&self) -> Option<Collider> {
-        let mut cols = self.colliders.iter().map(|c| c.into_shape()).collect::<Vec<_>>();
+        let cols = self.colliders.iter().map(|c| c.into_shape()).collect::<Vec<_>>();
         if cols.is_empty() {
             None
         } else {
@@ -51,14 +51,14 @@ impl RonCollider {
 
 impl RonSphereCollider {
     pub fn into_shape(&self) -> (DVec3, DQuat, SharedShape) {
-        let mut ball = SharedShape::ball(self.radius);
+        let ball = SharedShape::ball(self.radius);
         (DVec3::new(self.position.x, self.position.y, self.position.z), DQuat::default(), ball)
     }
 }
 
 impl RonBoxCollider {
     pub fn into_shape(&self) -> (DVec3, DQuat, SharedShape) {
-        let shape = SharedShape::cuboid(self.size.x as f64, self.size.y as f64, self.size.z as f64);
+        let shape = SharedShape::cuboid(self.size.x, self.size.y, self.size.z);
         (self.position, DQuat::from_euler(EulerRot::XYZ, self.rotation.x, self.rotation.y, self.rotation.z), shape)
     }
 }

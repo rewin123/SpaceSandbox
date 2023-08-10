@@ -4,7 +4,7 @@ use std::str::FromStr;
 use std::sync::mpsc::*;
 use rand::Rng;
 
-use serde::*;
+
 
 pub trait ByteChannel {
     fn send(&mut self, data : &[u8]) -> std::io::Result<usize>;
@@ -75,7 +75,7 @@ impl ByteChannel for EmulatedByteChannel {
     }
 
     fn recv(&mut self, buf : &mut [u8]) -> std::io::Result<usize> {
-        if self.data.len() > 0 {
+        if !self.data.is_empty() {
             let data = self.data.remove(0);
             let size = data.len().min(buf.len());
             for i in 0..size {
@@ -87,7 +87,7 @@ impl ByteChannel for EmulatedByteChannel {
         }
     }
 
-    fn send_to<A : ToSocketAddrs>(&mut self, data : &[u8], a : A) -> std::io::Result<usize> {
+    fn send_to<A : ToSocketAddrs>(&mut self, data : &[u8], _a : A) -> std::io::Result<usize> {
         self.send(data)
     }
 
@@ -144,7 +144,7 @@ impl ByteChannel for EmulatedNetworkChannel {
         }
     }
 
-    fn send_to<A : ToSocketAddrs>(&mut self, data : &[u8], a : A) -> std::io::Result<usize> {
+    fn send_to<A : ToSocketAddrs>(&mut self, data : &[u8], _a : A) -> std::io::Result<usize> {
         self.send(data)
     }
 

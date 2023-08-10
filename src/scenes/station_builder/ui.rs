@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use bevy_egui::*;
-use laminar::Packet;
 
-use crate::{ship::common::AllVoxelInstances, network::{NetworkServer, NetworkClient, ServerNetworkCmd, packet_socket::{SendPacket, SendDestination}, protocol::{ConnectionEvent, ConnectionMsg}, MessageChannel, NetworkSplitter}, control::Action};
+
+use crate::{ship::common::AllVoxelInstances, network::{NetworkServer, NetworkClient, ServerNetworkCmd, packet_socket::{SendDestination}, MessageChannel, NetworkSplitter}, control::Action};
 
 use super::*;
 
@@ -54,11 +54,11 @@ pub fn ship_build_menu(
     mut cahed_saved_paths : ResMut<CachedSavedShips>,
     mut cmd_save : EventWriter<CmdShipSave>,
     mut state : ResMut<BuildMenuState>,
-    mut server_op : Option<ResMut<NetworkServer>>,
-    mut client_op : Option<ResMut<NetworkClient>>,
-    mut network_cmds : EventWriter<ServerNetworkCmd>,
-    mut chat_channel : ResMut<NetworkChat>,
-    mut input : ResMut<Input<Action>>
+    server_op : Option<ResMut<NetworkServer>>,
+    client_op : Option<ResMut<NetworkClient>>,
+    network_cmds : EventWriter<ServerNetworkCmd>,
+    chat_channel : ResMut<NetworkChat>,
+    input : ResMut<Input<Action>>
 ) {
     let mut ctx = ctx.single_mut();
     egui::SidePanel::left("Build panel").show(ctx.get_mut(), |ui| {
@@ -87,10 +87,8 @@ pub fn ship_build_menu(
             for entry in std::fs::read_dir("saves").unwrap() {
                 if let Ok(file) = entry {
                     if let Ok(file_tp) = file.file_type() {
-                        if file_tp.is_file() {
-                            if file.path().to_str().unwrap().contains("scn.ron") {
-                                paths.push(file.path().to_str().unwrap().to_string());
-                            }
+                        if file_tp.is_file() && file.path().to_str().unwrap().contains("scn.ron") {
+                            paths.push(file.path().to_str().unwrap().to_string());
                         }
                     }
                 }
@@ -126,14 +124,12 @@ pub fn ship_build_menu(
             if ui.button("Enable y slicing").clicked() {
                 block.z_slice = Some(10.0);
             }
-        } else {
-            if let Some(z_slice) = &mut block.z_slice {
-                ui.add(egui::DragValue::new(z_slice)
-                    .prefix("Build z slice:")
-                );
-                if ui.button("Disable y slicing").clicked() {
-                    block.z_slice = None;
-                }
+        } else if let Some(z_slice) = &mut block.z_slice {
+            ui.add(egui::DragValue::new(z_slice)
+                .prefix("Build z slice:")
+            );
+            if ui.button("Disable y slicing").clicked() {
+                block.z_slice = None;
             }
         }
 
@@ -175,10 +171,8 @@ fn network_chat(mut client_op: Option<ResMut<NetworkClient>>, mut server_op: Opt
                 // server.sender.send(Packet::reliable_unordered(, payload))
                 state.chat_msg = "".to_string();
             }
-        } else {
-            if ui.button("Start server").clicked() {
-                network_cmds.send(ServerNetworkCmd::StartServer);
-            }
+        } else if ui.button("Start server").clicked() {
+            network_cmds.send(ServerNetworkCmd::StartServer);
         }
     }
 

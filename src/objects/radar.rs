@@ -1,6 +1,6 @@
 use bevy::{prelude::*, math::DVec3};
 use bevy_proto::prelude::{Schematic, ReflectSchematic};
-use bevy_prototype_debug_lines::*;
+
 use bevy_transform64::prelude::{DTransform, DGlobalTransform};
 
 use crate::DSpatialBundle;
@@ -140,9 +140,9 @@ fn radar(
         let radar_forward = radar_transform.forward();
         let radar_right = radar_transform.right();
         let radar_up = radar_transform.up();
-        let radar_pos = radar_transform.translation();
+        let _radar_pos = radar_transform.translation();
 
-        for (object_transform, mut detected) in objects.iter_mut() {
+        for (object_transform, _detected) in objects.iter_mut() {
             let dp = object_transform.translation() - radar_transform.translation();
             let distance = dp.length();
             if distance < radar.radius {
@@ -160,10 +160,8 @@ fn radar(
 
                     radar.points.push(point);
                     commands.entity(radar_e).add_child(point);
-                } else {
-                    if let Ok(mut point) = radar_points.get_mut(radar.points[idx]) {
-                        point.translation = radar_pos;
-                    }
+                } else if let Ok(mut point) = radar_points.get_mut(radar.points[idx]) {
+                    point.translation = radar_pos;
                 }
                 idx += 1;
             }

@@ -24,7 +24,7 @@ fn gun_grab(
     mut transforms : Query<&mut DTransform, (Without<GunGrab>, Without<Camera>)>,
     mut cam_transforms : Query<&DTransform, (With<Camera>, Without<GunGrab>)>,
 ) {
-    for (transform, gun_grab) in query.iter_mut() {
+    for (_transform, gun_grab) in query.iter_mut() {
         if let Ok(mut gun_transform) = transforms.get_mut(gun_grab.gun_id) {
            if let Ok(cam_transform) = cam_transforms.get_mut(gun_grab.cam_id) {
                let frw = cam_transform.forward();

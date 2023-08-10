@@ -16,17 +16,15 @@ use super::prelude::*;
 
 
 #[derive(Serialize, Deserialize, Clone, Reflect)]
+#[derive(Default)]
 pub enum DiskShipVoxel {
+    #[default]
     None, 
     Voxel(ShipBlock),
     Instance(InstanceId)
 }
 
-impl Default for DiskShipVoxel {
-    fn default() -> Self {
-        DiskShipVoxel::None
-    }
-}
+
 
 
 #[derive(Reflect, Component, Default)]
@@ -104,8 +102,8 @@ impl DiskShip {
         let compressed_bytes = snap::raw::Encoder::new().compress_vec(&bytes).unwrap();
         let compressed_bytes = snap::raw::Encoder::new().compress_vec(&compressed_bytes).unwrap();
         let compressed_bytes = snap::raw::Encoder::new().compress_vec(&compressed_bytes).unwrap();
-        let base64 = base64::encode(compressed_bytes);
-        base64
+        
+        base64::encode(compressed_bytes)
     }
 
     pub fn from_base64(text : &String) -> DiskShip {
@@ -168,6 +166,7 @@ impl ComponentBuild {
     }
 }
 #[derive(Resource)]
+#[derive(Default)]
 pub struct SaveLoadCfg {
     pub save : CopyAlgorithm,
     pub load : BuildAlgorithm
@@ -180,11 +179,7 @@ impl SaveLoadCfg {
     }
 }
 
-impl Default for SaveLoadCfg {
-    fn default() -> Self {
-        Self { save: Default::default(), load: Default::default() }
-    }
-}
+
 
 #[derive(Resource, Default)]
 pub struct ShipSaveQueue(Vec<(Entity, String)>);
@@ -271,7 +266,7 @@ fn saving_ship_system(
             }
 
 
-            let disk_ship = DiskShip::from_ship(*ship, &world, &map);
+            let disk_ship = DiskShip::from_ship(*ship, world, &map);
 
             sub_world.spawn(DiskShipBase64 {
                 data: disk_ship.to_base64(),
@@ -283,7 +278,7 @@ fn saving_ship_system(
 
                 let ron_scene = dynamic_scene.serialize_ron(&type_registry).unwrap();
 
-                File::create(&path)
+                File::create(path)
                     .and_then(|mut file| file.write_all(ron_scene.as_bytes())).unwrap();
             }
         }
@@ -329,7 +324,7 @@ fn loading_ship_system(
             let data = sub_world.query::<&DiskShipBase64>().iter(&sub_world).next().unwrap();
             let disk_ship = DiskShip::from_base64(&data.data);
 
-            let mut ship = Ship::new_sized(disk_ship.map.size.clone());
+            let mut ship = Ship::new_sized(disk_ship.map.size);
             let mut spawned : HashMap<u32, Entity> = HashMap::new();
 
             let ship_id = new_default_ship(&mut cmds);

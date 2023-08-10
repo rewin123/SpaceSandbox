@@ -123,9 +123,9 @@ fn z_slicing(
 
 fn move_camera_build(
     mut pawn_query : Query<&mut DTransform, With<Pawn>>,
-    mut pawn : ResMut<CurrentPawn>,
-    mut input : Res<Input<Action>>,
-    mut time : ResMut<Time>,
+    pawn : ResMut<CurrentPawn>,
+    input : Res<Input<Action>>,
+    time : ResMut<Time>,
 ) {
     let Some(pawn_id) = pawn.id else {
         return;
@@ -208,7 +208,7 @@ fn clear_all_system(
 }
 
 fn rotate_block(
-    mut block : ResMut<StationBuildBlock>,
+    block : ResMut<StationBuildBlock>,
     mut query : Query<(&mut DTransform, &mut InstanceRotate), With<ActiveBlock>>,
     input : Res<Input<Action>>,
 ) {
@@ -249,7 +249,7 @@ fn spawn_block(
     let tr;
     let rot;
     if let Ok((ac_tr, ac_rot)) = active_blocks.get(block.e.unwrap()) {
-        tr = ac_tr.clone(); 
+        tr = *ac_tr; 
         rot = ac_rot.clone();
     } else {
         return;
@@ -263,7 +263,7 @@ fn spawn_block(
     }
 
     let inst = block.instance.as_ref().unwrap();
-    let mut bbox = inst.bbox.clone();
+    let mut bbox = inst.bbox;
     if rot.rot_steps.x % 2 == 1 {
         std::mem::swap(&mut bbox.x, &mut bbox.z);
     }
@@ -280,7 +280,7 @@ fn spawn_block(
                     ship.map.set_object_by_idx(e, &grid_idx, &bbox);
                     println!("{:#?}", &tr);
                     cmds.entity(e)
-                        .insert(tr.clone());
+                        .insert(tr);
                     cmds.entity(block.ship).add_child(e);
                 }
             }
@@ -351,7 +351,7 @@ fn pos_block(
     let mouse_ray = viewport_to_world(
         cam.projection_matrix().as_dmat4(),
         cam.logical_viewport_size().unwrap().as_dvec2(),
-        &tr,
+        tr,
         cursor_pos.as_dvec2()).unwrap();
 
     let e = block.e.unwrap();
@@ -367,8 +367,8 @@ fn pos_block(
             let ship = ships.get_mut(block.ship).unwrap();
 
             let t = (lvl - mouse_ray.origin.y) / mouse_ray.direction.y;
-            let pos = (mouse_ray.origin + t * mouse_ray.direction);
-            let bbox = block.instance.as_ref().unwrap().bbox.clone();
+            let pos = mouse_ray.origin + t * mouse_ray.direction;
+            let bbox = block.instance.as_ref().unwrap().bbox;
             let hs = bbox.as_dvec3() / 2.0 * ship.map.voxel_size;
             let corner_pos = pos - hs - hs * block.instance.as_ref().unwrap().origin;
             let grid_pos = ship.map.get_grid_pos(&corner_pos);
@@ -440,9 +440,9 @@ fn go_to_fps(
     mut cmds : Commands,
     mut pawn_event : EventWriter<ChangePawn>,
     mut block : ResMut<StationBuildBlock>,
-    mut query : Query<(Entity, &DGlobalTransform, &VoxelInstance)>,
-    mut ships : Query<Entity, With<Ship>>,
-    mut all_instances : Res<AllVoxelInstances>) {
+    query : Query<(Entity, &DGlobalTransform, &VoxelInstance)>,
+    ships : Query<Entity, With<Ship>>,
+    all_instances : Res<AllVoxelInstances>) {
 
     if block.cmd == StationBuildCmds::GoToFPS {
         block.cmd = StationBuildCmds::None;

@@ -14,7 +14,7 @@ pub mod mission;
 use std::default::Default;
 
 use bevy::prelude::*;
-use bevy_proto::prelude::{Schematic, ReflectSchematic};
+use bevy_proto::prelude::{Schematic};
 use bevy_transform64::prelude::*;
 // use winit::window::Window;
 
@@ -23,7 +23,7 @@ pub mod ext {
     pub use bevy_transform64::prelude::*;
     pub use bevy_proto::prelude::*;
     pub use bevy_egui::*;
-    pub use bevy_xpbd_3d::*;
+    pub use bevy_xpbd_3d::prelude::*;
 }
 
 pub mod prelude {
@@ -66,8 +66,3 @@ impl DSpatialBundle {
     }
 }
 
-// #[derive(Debug, Reflect, FromReflect, Schematic, Default)]
-// #[reflect(Schematic)]
-// pub struct ProroTransform {
-//     pub transform: DTransform
-// }

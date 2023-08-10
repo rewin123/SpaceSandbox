@@ -8,7 +8,7 @@ use bevy::prelude::*;
 
 pub struct NotificationPlugin;
 
-use bevy_egui::{EguiContext, EguiContexts};
+use bevy_egui::{EguiContexts};
 use egui_notify::*;
 
 #[derive(Resource, Default)]
@@ -25,8 +25,8 @@ impl Plugin for NotificationPlugin {
 }
 
 fn show_toasts(
-    mut ctx : EguiContexts,
-    mut toasts : ResMut<ToastHolder>,
+    _ctx : EguiContexts,
+    _toasts : ResMut<ToastHolder>,
 ) {
     // toasts.toast.show(ctx.ctx_mut());
 }

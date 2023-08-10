@@ -138,13 +138,13 @@ impl IAction for Action {
     fn all_actions() -> Vec<Self> {
         let mut res = vec![];
         res.extend(FPSAction::all_actions().iter().map(|a| {
-            Action::FPS(a.clone())
+            Action::FPS(*a)
         }));
         res.extend(BuildAction::all_actions().iter().map(|a| {
-            Action::Build(a.clone())
+            Action::Build(*a)
         }));
         res.extend(PilotingAction::all_actions().iter().map(|a| {
-            Action::Piloting(a.clone())
+            Action::Piloting(*a)
         }));
         res
     }
@@ -257,13 +257,13 @@ fn key_mapper_window(
     mut ctx : Query<&mut EguiContext>,
     mut window : ResMut<KeyMapperWindow>,
     mut key_mapper : ResMut<KeyMapper>,
-    mut key_input : ResMut<Input<KeyCode>>,
-    mut input : Res<Input<Action>>
+    key_input : ResMut<Input<KeyCode>>,
+    input : Res<Input<Action>>
 ) {
     let mut ctx = ctx.single_mut();
     if window.is_shown {
 
-        if let Some(action) = window.listen_action.clone() {
+        if let Some(action) = window.listen_action {
             for key in get_keys() {
                 if key_input.just_pressed(key) {
                     key_mapper.key_map.insert(action, Some(key));
@@ -293,10 +293,8 @@ fn key_mapper_window(
                                 if ui.add(egui::Button::new(selected_text).fill(egui::Color32::GREEN)).clicked() {
                                     window.listen_action = Some(*action);
                                 }
-                            } else {
-                                if ui.button(selected_text).clicked() {
-                                    window.listen_action = Some(*action);
-                                }
+                            } else if ui.button(selected_text).clicked() {
+                                window.listen_action = Some(*action);
                             }
                             
                         } else {
@@ -326,9 +324,9 @@ fn key_mapper_window(
 
 
 pub fn remap_system(
-    mut key_mapper : ResMut<KeyMapper>,
+    key_mapper : ResMut<KeyMapper>,
     mut input : ResMut<Input<Action>>,
-    mut key_input : ResMut<Input<KeyCode>>,
+    key_input : ResMut<Input<KeyCode>>,
     mut twice_click : ResMut<TwiceClick>,
     time : Res<Time>
 ) {

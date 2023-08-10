@@ -10,7 +10,7 @@ pub trait OperatorRule {
     fn name(&self) -> String;
     fn can_effect(&self, state : &mut State) -> Vec<Box<dyn Operator>>;
     fn batch_effect(&self, state : &mut State) -> Vec<(FindNode, i32)> {
-        let mut ops = self.can_effect(state);
+        let ops = self.can_effect(state);
         let mut res = vec![];
         for op in ops {
             let mut state = op.effect(state);
@@ -106,7 +106,7 @@ impl OperatorRule for TakeRule {
 
         let mut res : Vec<Box<dyn Operator>> = vec![];
         let mut player_query = state.world.query::<(Entity, &AtLocation, &Ship)>();
-        for (e, at_loc, ship) in player_query.iter(&state.world) {
+        for (e, at_loc, _ship) in player_query.iter(&state.world) {
             if let Some(item) = loc_item_map.get(&at_loc.id) {
                 res.push(Box::new(Take {
                     to : e,

@@ -1,6 +1,6 @@
 
 use super::*;
-use bevy::{reflect::Typed, math::DVec3};
+
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Component, Clone)]
@@ -134,7 +134,7 @@ impl<T> VoxelMap<T> for SolidVoxelMap<T>
 
     fn get_bounds(&self) -> MapBounds {
         MapBounds::Limited { 
-            from: self.first_voxel_pos.clone(), 
+            from: self.first_voxel_pos, 
             to: self.first_voxel_pos + self.get_voxel_size() * self.size.as_dvec3() 
         }
     }

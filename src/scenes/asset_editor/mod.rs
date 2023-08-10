@@ -1,8 +1,8 @@
-use std::path::PathBuf;
+
 
 use bevy::{prelude::*, math::DVec3, reflect::TypeUuid};
-use bevy_egui::{egui::{Ui, self}, EguiContext};
-use bevy_proto::{prelude::{PrototypesMut, ProtoAssetEvent, ProtoCommands, prototype_ready, Prototypical, ReflectSchematic, Schematic}, backend::schematics::FromSchematicInput};
+use bevy_egui::{egui::{Ui, self}};
+use bevy_proto::{prelude::{PrototypesMut, ProtoAssetEvent, ProtoCommands, Prototypical, ReflectSchematic, Schematic}};
 use bevy_prototype_debug_lines::DebugLines;
 use bevy_transform64::{DTransformBundle, prelude::{DTransform, DGlobalTransform}, SimpleWorldOrigin};
 use serde::{Serialize, Deserialize};
@@ -85,13 +85,13 @@ pub struct ProtoEditor {
 }
 
 impl ProtoEditor {
-    pub fn new(path: String) -> Self {
+    pub fn new(_path: String) -> Self {
         Self {
             selected_path: None,
         }
     }
 
-    fn show(&mut self, ui: &mut Ui, state : &mut AssetEditorState, mut events: &mut EventWriter<LabelClickedEvent>) {
+    fn show(&mut self, ui: &mut Ui, state : &mut AssetEditorState, events: &mut EventWriter<LabelClickedEvent>) {
         for path in state.paths.paths.iter() {
             let is_selected = match &self.selected_path {
                 Some(selected_path) => path == selected_path,
@@ -125,11 +125,11 @@ fn listen_load_event(
             AssetEvent::Modified { handle } => {
                 spawn_proto(&mut cur_state, handle, &assets, &mut commands, &keyboard_input, &mut proto_asset_events);
             },
-            AssetEvent::Removed { handle } => {},
+            AssetEvent::Removed { handle: _ } => {},
         }
     }
 
-    for ev in event_reader.iter() {
+    for _ev in event_reader.iter() {
         let handle = cur_state.proto_handle.clone();
         spawn_proto(&mut cur_state, &handle, &assets, &mut commands, &keyboard_input, &mut proto_asset_events);
     }
@@ -157,7 +157,7 @@ fn draw_bbox(mut query : Query<(&DGlobalTransform, &VoxelInstance)>, origin : Re
         //draw bbox
         let half_extents = Vec3::new(voxel.bbox.x as f32 / 2.0, voxel.bbox.y as f32 / 2.0, voxel.bbox.z as f32 / 2.0) * (VOXEL_SIZE as f32);
         
-        let mut d_translation = DVec3::new(transform.translation().x, transform.translation().y, transform.translation().z) - origin.origin;
+        let d_translation = DVec3::new(transform.translation().x, transform.translation().y, transform.translation().z) - origin.origin;
         let rot = transform.compute_transform().rotation;
         let rot = bevy::math::Quat::from_xyzw(
             rot.x as f32,
@@ -266,8 +266,8 @@ fn draw_bbox(mut query : Query<(&DGlobalTransform, &VoxelInstance)>, origin : Re
 fn show_proto_editor(
     mut proto : ResMut<ProtoEditor>, 
     mut ctx : Query<&mut bevy_egui::EguiContext>,
-    mut all_states : ResMut<Assets<ProtoPaths>>,
-    mut handle_state : Res<AssetEditorHandleState>,
+    all_states : ResMut<Assets<ProtoPaths>>,
+    handle_state : Res<AssetEditorHandleState>,
     mut event_writer : EventWriter<LabelClickedEvent>
     ) {
     let Some(mut ctx) = ctx.iter_mut().next() else {
@@ -296,15 +296,15 @@ fn load(mut prototypes: PrototypesMut, mut current_proto: ResMut<CurrentProto>, 
     }
 }
 
-fn load_state(mut state : ResMut<AssetEditorHandleState>, mut asset_server : ResMut<AssetServer>) {
+fn load_state(mut state : ResMut<AssetEditorHandleState>, asset_server : ResMut<AssetServer>) {
     state.paths = asset_server.load("all_proto.proto_list.ron");
 }
 
 fn spawn(
-    mut commands: &mut ProtoCommands,
+    commands: &mut ProtoCommands,
     keyboard_input: &Res<Input<KeyCode>>,
-    mut previous: &mut Option<Entity>,
-    mut proto_asset_events: &mut EventReader<ProtoAssetEvent>,
+    previous: &mut Option<Entity>,
+    proto_asset_events: &mut EventReader<ProtoAssetEvent>,
     prev_id : &String,
     cur_id : &String
 ) {
@@ -386,7 +386,7 @@ fn update_ron_collider(
     mut cmds : Commands,
     mut query : Query<(Entity, &RonColliderCompound, Option<&mut Collider>), Changed<BlockConfig>>
 ) {
-    for (entity, compound, col) in query.iter_mut() {
+    for (entity, compound, _col) in query.iter_mut() {
         if let Some(collider) = compound.into_collider() {
             cmds.entity(entity).insert(collider);
         } else {
@@ -395,12 +395,12 @@ fn update_ron_collider(
     }
 }
 
-fn setup_block(mut cmds : Commands, mut query : Query<(Entity, &BlockConfig, Option<&Children>), Changed<BlockConfig>>, mut colliders : Query<(Entity, &Collider)>) {
+fn setup_block(mut cmds : Commands, query : Query<(Entity, &BlockConfig, Option<&Children>), Changed<BlockConfig>>, colliders : Query<(Entity, &Collider)>) {
     for (entity, config, children) in query.iter() {
 
         if let Some(children) = children {
             for child in children {
-                if let Ok((col_e, col)) = colliders.get(*child) {
+                if let Ok((col_e, _col)) = colliders.get(*child) {
                     cmds.entity(col_e).despawn();
                 }
             }
@@ -409,11 +409,11 @@ fn setup_block(mut cmds : Commands, mut query : Query<(Entity, &BlockConfig, Opt
         cmds.entity(entity).insert(InstanceRotate::default());
 
         let instance = VoxelInstance {
-            bbox : config.bbox.clone(),
+            bbox : config.bbox,
             common_id : 0,
-            origin : config.origin.clone()
+            origin : config.origin
         };
-        let bbox = instance.bbox.clone();
+        let _bbox = instance.bbox;
 
         
         cmds.entity(entity)
