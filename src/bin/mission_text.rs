@@ -1,9 +1,9 @@
-use std::{sync::{Arc, RwLock}, ops::Deref, fmt::Debug, time::{Instant, Duration}, any::TypeId, hash::Hash, thread};
+use std::{sync::{Arc, RwLock}, time::{Instant}};
 
-use bevy::{prelude::*, utils::{HashMap, HashSet}, ecs::{entity::EntityMap, world::{EntityRef, EntityMut}}};
-use bevy_egui::egui::mutex::Mutex;
+use bevy::{prelude::*, utils::{HashSet}};
+
 use rand::prelude::Distribution;
-use rayon::{str, ThreadBuilder};
+
 use SpaceSandbox::mission::*;
 use SpaceSandbox::mission::State;
 
@@ -37,7 +37,7 @@ fn main() {
     {
         let time_start = Instant::now();
         for _ in 0..1000 {
-            let state_2 = state.clone();
+            let _state_2 = state.clone();
         }
         println!("Copy per second: {:?}", 1000.0 / time_start.elapsed().as_secs_f32());
     }
@@ -65,10 +65,10 @@ fn generate_state(state: &mut State) -> Goal {
         stars.push(id);
 
 
-        let enemy_ship = state.world.spawn(Ship)
+        let _enemy_ship = state.world.spawn(Ship)
             .insert(Enemy)
             .insert(Name::new(format!("Enemy Ship {i}")))
-            .insert(AtLocation {id : id})
+            .insert(AtLocation {id})
             .id();
 
     }
@@ -123,12 +123,12 @@ fn generate_state(state: &mut State) -> Goal {
         .insert(HasItem {items : HashSet::default()})
         .id();
 
-    let goal = Goal {
+    
+    Goal {
         pred : vec![Box::new(GoalLocation {target_loc : planets[planets.len() - 1], target_obj : ship_id}), 
             Box::new(GoalItem {target_owner : ship_id, target_obj : items[items.len() - 1]})],
         best_heter : RwLock::new(1000000)
-    };
-    goal
+    }
 
     // Goal {
     //     pred : vec![],

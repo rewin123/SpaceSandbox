@@ -5,24 +5,12 @@ use crate::ext::*;
 
 fn main() {
     App::default()
-        .insert_resource(Msaa::default())
-        .register_type::<DiskShipBase64>()
-        .add_plugins(bevy::DefaultPlugins.set(AssetPlugin {
-            watch_for_changes: ChangeWatcher::with_delay(std::time::Duration::from_secs(1)),
-            ..default()
-        }).set(RenderPlugin {
-            wgpu_settings: WgpuSettings {
-                features: WgpuFeatures::POLYGON_MODE_LINE,
-                ..default()
-            }
-        }).disable::<TransformPlugin>())
+        .add_plugins(SpaceSandbox::SpaceExamplePlguin)
         .add_plugins(FPSPlugin)
         .add_plugins(bevy_proto::prelude::ProtoPlugin::default())
-        .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins(SpaceSandbox::ship::common::VoxelInstancePlugin)
         .add_plugins(NotificationPlugin)
         .add_plugins(PawnPlugin)
-        .add_plugins(DTransformPlugin)
         .add_plugins(SpaceControlPlugin)
         .add_plugins(SettingsPlugin)
 
