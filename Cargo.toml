@@ -13,7 +13,7 @@ rayon = "*"
 pollster = "*"
 winit = "*"
 ron = "*"
-bevy_egui = "*"
+bevy_egui = "0.21.0"
 postcard = "*"
 block-mesh = "*"
 bincode = "*"
@@ -24,7 +24,6 @@ rand = "*"
 laminar = "*"
 bevy_prototype_debug_lines = "*"
 bevy_transform64 = {path = "crates/bevy_transform64"}
-space_physics = {path = "crates/space_physics"}
 crossbeam = "*"
 egui-gizmo = "*"
 bevy_common_assets = {version = "*", features = ["ron"]}
@@ -37,7 +36,6 @@ bevy_xpbd_3d = {version = "0.2.0", default-features = false, features = ["3d", "
 [workspace]
 members = [
     "crates/bevy_transform64",
-    "crates/space_physics",
     "crates/space_editor",
 ]
 resolver = "2"

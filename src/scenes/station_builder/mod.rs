@@ -3,7 +3,6 @@ mod ui;
 use std::f32::consts::PI;
 
 use bevy::core_pipeline::bloom::BloomSettings;
-use bevy::core_pipeline::tonemapping::Tonemapping;
 use bevy::math::DMat4;
 use bevy::math::DQuat;
 use bevy::math::DVec2;
@@ -12,7 +11,7 @@ use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContext;
 use bevy_transform64::prelude::DTransform;
 use instance_rotate::InstanceRotate;
-use space_physics::prelude::*;
+use bevy_xpbd_3d::prelude::*;
 use ui::*;
 
 use bevy::prelude::*;
@@ -471,14 +470,12 @@ fn go_to_fps(
 
         let pos = DVec3::new(pos.x, pos.y + 1.0, pos.z);
         let pawn = cmds.spawn(
-            SpaceCollider(
-            ColliderBuilder::capsule_y(0.75, 0.25).build()))
+            
+            Collider::capsule(1.5, 0.25))
         .insert(DSpatialBundle::from_transform(DTransform::from_xyz(pos.x, pos.y, pos.z)))
-        .insert(SpaceRigidBodyType::Dynamic)
-        .insert(SpaceLockedAxes::ROTATION_LOCKED)
+        .insert(RigidBody::Dynamic)
+        .insert(LockedAxes::new().lock_rotation_x().lock_rotation_y().lock_rotation_z())
         .insert(GravityScale(1.0)).id();
-
-        info!("Locked rotation {:?}", SpaceLockedAxes::ROTATION_LOCKED);
 
         let cam_pawn = cmds.spawn(Camera3dBundle {
             camera : cam,
@@ -500,7 +497,7 @@ fn go_to_fps(
         pawn_event.send(ChangePawn { new_pawn: pawn, save_stack: true });
 
         for ship_e in ships.iter() {
-            cmds.entity(ship_e).insert(SpaceLockedAxes::empty()).insert(SpaceRigidBodyType::Dynamic);
+            cmds.entity(ship_e).insert(LockedAxes::default()).insert(RigidBody::Dynamic);
         }
     }
 }

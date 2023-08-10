@@ -1,8 +1,5 @@
-use bevy::{prelude::*, asset::HandleId};
-use bevy_egui::egui::util::id_type_map::TypeId;
-use bevy_inspector_egui::{prelude::*, *, bevy_inspector::hierarchy::SelectedEntities, quick::WorldInspectorPlugin};
-use egui_dock::Tree;
-use egui_gizmo::GizmoMode;
+use bevy::prelude::*;
+use bevy_inspector_egui::{quick::WorldInspectorPlugin, DefaultInspectorConfigPlugin};
 pub struct EditorPlugin;
 
 

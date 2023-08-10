@@ -1,14 +1,12 @@
 
-use std::{default, fs::File, io::{Read, Write}, ops::Mul};
+use std::{fs::File, io::{Read, Write}};
 
 use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, CursorGrabMode}, math::DVec3, core_pipeline::bloom::BloomSettings};
 use bevy_egui::{EguiContext, egui};
 use serde::{Deserialize, Serialize};
-use space_physics::{resources::RapierContext, prelude::{Velocity, point, vector, QueryFilter, SpaceCollider, ColliderBuilder, SpaceRigidBodyType, SpaceLockedAxes, GravityScale}};
 
 use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn, CurrentPawnMarker, ChangePawn}, control::{Action, FPSAction}, objects::prelude::{MeteorFieldCommand, GravitySenitive}};
-
-use space_physics::prelude::nalgebra;
+use bevy_xpbd_3d::prelude::*;
 
 #[derive(Component, Default, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(default)]
@@ -112,14 +110,14 @@ fn fps_focus_control(
 }
 
 fn gravity_process(
-    mut controllers : Query<(&mut DTransform, &mut FPSController, &GravitySenitive, &mut Velocity)>,
+    mut controllers : Query<(&mut DTransform, &mut FPSController, &GravitySenitive, &mut LinearVelocity)>,
     time : Res<Time>
 ) {
     let speed = 500.0;
     for (mut transform, mut controller, gravity, mut vel) in controllers.iter_mut() {
         if gravity.is_senitive {
             controller.current_up = -gravity.g;
-            vel.linvel += gravity.g * time.delta_seconds_f64();
+            vel.0 = vel.0 + gravity.g * time.delta_seconds_f64();
         } else {
             // controller.current_up = controller.default_up;
         }
@@ -202,8 +200,7 @@ fn fps_controller(
     mut characters : Query<(&mut DTransform, &mut FPSController)>,
     mut keys : Res<Input<Action>>,
     mut time : Res<Time>,
-    mut physics : ResMut<RapierContext>,
-    mut bodies : Query<&mut Velocity>
+    mut bodies : Query<&mut LinearVelocity>
 ) {
     if let Some(e) = pawn.id {
             if let Ok((mut pawn_transform, mut controller)) = characters.get_mut(e) {
@@ -246,30 +243,30 @@ fn fps_controller(
 
                 let up = pawn_transform.up();
                 let start_pos = pawn_transform.translation - up * 1.1;
-                let floor_ray = space_physics::prelude::Ray::new(point![start_pos.x, start_pos.y, start_pos.z],
-                    vector![-up.x, -up.y, -up.z]);
+                // let floor_ray = space_physics::prelude::Ray::new(point![start_pos.x, start_pos.y, start_pos.z],
+                //     vector![-up.x, -up.y, -up.z]);
 
-                let physics = physics.as_mut();
+                // let physics = physics.as_mut();
 
-                if let Some((handle, toi)) = physics.query_pipeline.cast_ray(
-                    &physics.rigid_body_set,
-                    &physics.collider_set,
-                    &floor_ray,
-                    0.1,
-                    false,
-                    QueryFilter::default()
-                ) {
-                    let intersection_point = floor_ray.point_at(toi);
-                    // info!("toi: {:?} point: {:?}", toi, intersection_point);
+                // if let Some((handle, toi)) = physics.query_pipeline.cast_ray(
+                //     &physics.rigid_body_set,
+                //     &physics.collider_set,
+                //     &floor_ray,
+                //     0.1,
+                //     false,
+                //     QueryFilter::default()
+                // ) {
+                //     let intersection_point = floor_ray.point_at(toi);
+                //     // info!("toi: {:?} point: {:?}", toi, intersection_point);
 
-                    if keys.just_pressed(Action::FPS(FPSAction::Jump)) {
-                        // info!("jump");
-                        if let Ok(mut vel) = bodies.get_mut(e) {
-                            vel.linvel += controller.jump_force * pawn_transform.up();
-                            // info!("change vel to {:?}", vel.linvel);
-                        }
-                    }
-                }
+                //     if keys.just_pressed(Action::FPS(FPSAction::Jump)) {
+                //         // info!("jump");
+                //         if let Ok(mut vel) = bodies.get_mut(e) {
+                //             vel.linvel += controller.jump_force * pawn_transform.up();
+                //             // info!("change vel to {:?}", vel.linvel);
+                //         }
+                //     }
+                // }
 
                 
             } else {
@@ -306,18 +303,16 @@ pub fn startup_player(
 
     let pos = DVec3::new(0.0, 3.0, 0.0);
     let pawn = commands.spawn(
-        SpaceCollider(
-        ColliderBuilder::capsule_y(0.75, 0.25).build()))
+        
+        Collider::capsule(1.5, 0.25))
     .insert(DSpatialBundle::from_transform(DTransform::from_xyz(pos.x, pos.y, pos.z)))
-    .insert(SpaceRigidBodyType::Dynamic)
-    .insert(SpaceLockedAxes::ROTATION_LOCKED)
+    .insert(RigidBody::Dynamic)
+    .insert(LockedAxes::default().lock_rotation_x().lock_rotation_z())
     .insert(GravityScale(0.0))
-    .insert(Velocity::default())
     .insert(controller_setting)
     .insert(GravitySenitive::default())
     .id();
 
-    info!("Locked rotation {:?}", SpaceLockedAxes::ROTATION_LOCKED);
 
     let cam_pawn = commands.spawn(Camera3dBundle {
         camera : cam,

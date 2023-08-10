@@ -6,8 +6,7 @@ use bevy_proto::{prelude::{PrototypesMut, ProtoAssetEvent, ProtoCommands, protot
 use bevy_prototype_debug_lines::DebugLines;
 use bevy_transform64::{DTransformBundle, prelude::{DTransform, DGlobalTransform}, SimpleWorldOrigin};
 use serde::{Serialize, Deserialize};
-use space_physics::prelude::{ColliderBuilder, nalgebra, SpaceCollider};
-
+use bevy_xpbd_3d::prelude::*;
 use crate::{SceneType, pawn_system::Pawn, ship::{instance_rotate::InstanceRotate, prelude::VoxelInstance, VOXEL_SIZE}};
 use bevy_common_assets::ron::RonAssetPlugin;
 
@@ -385,18 +384,18 @@ pub struct BlockConfig {
 
 fn update_ron_collider(
     mut cmds : Commands,
-    mut query : Query<(Entity, &RonColliderCompound, Option<&mut SpaceCollider>), Changed<BlockConfig>>
+    mut query : Query<(Entity, &RonColliderCompound, Option<&mut Collider>), Changed<BlockConfig>>
 ) {
     for (entity, compound, col) in query.iter_mut() {
         if let Some(collider) = compound.into_collider() {
-            cmds.entity(entity).insert(SpaceCollider(collider));
+            cmds.entity(entity).insert(collider);
         } else {
             debug!("No collider");
         }
     }
 }
 
-fn setup_block(mut cmds : Commands, mut query : Query<(Entity, &BlockConfig, Option<&Children>), Changed<BlockConfig>>, mut colliders : Query<(Entity, &SpaceCollider)>) {
+fn setup_block(mut cmds : Commands, mut query : Query<(Entity, &BlockConfig, Option<&Children>), Changed<BlockConfig>>, mut colliders : Query<(Entity, &Collider)>) {
     for (entity, config, children) in query.iter() {
 
         if let Some(children) = children {

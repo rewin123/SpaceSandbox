@@ -1,7 +1,6 @@
-use bevy::{prelude::*, ecs::system::EntityCommands, math::DVec3};
+use bevy::{prelude::*, math::DVec3};
 use space_bundle::DSceneBundle;
-use space_physics::prelude::*;
-
+use bevy_xpbd_3d::prelude::*;
 use crate::{objects::{prelude::PilotSeat, radar::Radar, ship_camera::ShipCamera}, *};
 
 use super::{VOXEL_SIZE, instance_rotate::InstanceRotate};
@@ -84,15 +83,19 @@ fn spawn_static_instance<F>(
 
             let collider_pos = -instance.origin.clone() * bbox.as_dvec3() / 2.0 * VOXEL_SIZE;
 
-            let collider = ColliderBuilder::cuboid(
-                bbox.x as f64 * VOXEL_SIZE / 2.0, 
-                bbox.y as f64 * VOXEL_SIZE / 2.0, 
-                bbox.z as f64 * VOXEL_SIZE / 2.0
-            ).translation(nalgebra::Vector3::new(collider_pos.x, collider_pos.y, collider_pos.y)).build();
+            let collider = Collider::cuboid(
+                bbox.x as f64 * VOXEL_SIZE, 
+                bbox.y as f64 * VOXEL_SIZE, 
+                 bbox.z as f64 * VOXEL_SIZE);
+
+            let collider = Collider::compound(
+                vec![
+                    (DVec3::new(collider_pos.x, collider_pos.y, collider_pos.y), 
+                    bevy::math::DQuat::default(), 
+                    collider)]);
 
             cmds.entity(id)
-                .insert(SpaceCollider(collider));
-                // .insert(RigidBody::Fixed);
+                .insert(collider);
 
             after_build(cmds, id);
 
@@ -264,7 +267,7 @@ pub struct VoxelInstancePlugin;
 
 impl Plugin for VoxelInstancePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(init_all_voxel_instances);
+        app.add_systems(Startup, init_all_voxel_instances);
     }
 }
 
