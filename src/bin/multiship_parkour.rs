@@ -1,10 +1,7 @@
-use std::{fs::*, io::*, fmt::format};
+use SpaceSandbox::ext::*;
+use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{NotificationPlugin, fps_mode::{FPSPlugin, self}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, ChangePawn}, control::SpaceControlPlugin, objects::prelude::{GravityGenerator, GravityGeneratorPlugin}};
 
-use bevy::{prelude::*, render::{RenderPlugin, settings::{WgpuSettings, WgpuFeatures}}, math::DVec3, core_pipeline::bloom::BloomSettings, asset::ChangeWatcher};
-use SpaceSandbox::{prelude::*, ship::save_load::DiskShipBase64, scenes::{main_menu::MainMenuPlugin, station_builder::StationBuilderPlugin, NotificationPlugin, fps_mode::{FPSPlugin, FPSController, self}, settings::SettingsPlugin}, pawn_system::{PawnPlugin, Pawn, ChangePawn}, network::NetworkPlugin, control::SpaceControlPlugin, objects::{SpaceObjectsPlugin, prelude::{GravityGenerator, GravityGeneratorPlugin}}};
-use bevy_egui::{EguiContext, egui::{self, Color32}};
-use space_physics::prelude::*;
-use bevy_transform64::prelude::*;
+
 
 #[derive(Component)]
 struct RotateMe {
@@ -13,25 +10,12 @@ struct RotateMe {
 
 fn main() {
     App::default()
-        .insert_resource(Msaa::default())
+        .add_plugins(SpaceExamplePlguin)
         .register_type::<DiskShipBase64>()
-        .add_plugins(bevy::DefaultPlugins.set(AssetPlugin {
-            watch_for_changes: ChangeWatcher::with_delay(std::time::Duration::from_secs(1)),
-            ..default()
-        }).set(RenderPlugin {
-            wgpu_settings: WgpuSettings {
-                features: WgpuFeatures::POLYGON_MODE_LINE,
-                ..default()
-            }
-        }))
         .add_plugins(FPSPlugin)
-        .add_plugins(bevy_proto::prelude::ProtoPlugin::default())
-        .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins(SpaceSandbox::ship::common::VoxelInstancePlugin)
         .add_plugins(NotificationPlugin)
         .add_plugins(PawnPlugin)
-        .add_plugins(DTransformPlugin)
-        .add_plugins(SpacePhysicsPlugin)
         .add_plugins(SpaceControlPlugin)
         .add_plugins(SettingsPlugin)
         .add_plugins(GravityGeneratorPlugin)

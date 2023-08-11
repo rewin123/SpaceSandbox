@@ -14,13 +14,13 @@ pub mod mission;
 use std::default::Default;
 
 use bevy::prelude::*;
-use bevy_proto::prelude::{Schematic};
 use bevy_transform64::prelude::*;
 use bevy_xpbd_3d::prelude::*;
 // use winit::window::Window;
 
 pub mod ext {
     pub use bevy::prelude::*;
+    pub use bevy::math::{DVec3, DQuat};
     pub use bevy_transform64::prelude::*;
     pub use bevy_proto::prelude::*;
     pub use bevy_egui::*;
@@ -87,10 +87,21 @@ struct PhysicsSync;
 
 impl Plugin for PhysicsSync {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, position_to_transform.in_set(PhysicsSet::Sync));   
+        app.add_systems(PostUpdate, transform_to_position.before(PhysicsSet::Prepare));
+        app.add_systems(PostUpdate, position_to_transform.in_set(PhysicsSet::Sync));   
     }
 }
 
+
+fn transform_to_position(
+    mut query: Query<(&mut Position, &mut Rotation, &DGlobalTransform), Changed<DGlobalTransform>>
+) {
+    for (mut pos, mut rot, transform) in &mut query {
+        let transform = transform.compute_transform();
+        pos.0 = transform.translation;
+        rot.0 = transform.rotation;
+    }
+}
 
 type PosToTransformComponents = (
     &'static mut DTransform,
