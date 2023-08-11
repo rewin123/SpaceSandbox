@@ -197,13 +197,12 @@ fn fps_look_controller(
 
 fn fps_controller(
     pawn : Res<CurrentPawn>,
-    mut characters : Query<(&DTransform, &mut Position, &mut FPSController)>,
+    mut characters : Query<(&DTransform, &mut Position, &mut LinearVelocity, &mut FPSController, &RayCaster, &RayHits)>,
     keys : Res<Input<Action>>,
-    time : Res<Time>,
-    _bodies : Query<&mut LinearVelocity>
+    time : Res<Time>
 ) {
     if let Some(e) = pawn.id {
-            if let Ok((pawn_transform, mut pawn_pos, mut controller)) = characters.get_mut(e) {
+            if let Ok((pawn_transform, mut pawn_pos, mut pawn_linvel, mut controller, ground_caster, ground_hits)) = characters.get_mut(e) {
                 if keys.just_pressed(Action::FPS(FPSAction::Sprint)) {
                     controller.is_sprinting = !controller.is_sprinting;
                 }
@@ -241,34 +240,21 @@ fn fps_controller(
 
                 pawn_pos.0 += controller.current_move * time.delta_seconds_f64();
 
-                let up = pawn_transform.up();
-                let _start_pos = pawn_transform.translation - up * 1.1;
-                // let floor_ray = space_physics::prelude::Ray::new(point![start_pos.x, start_pos.y, start_pos.z],
-                //     vector![-up.x, -up.y, -up.z]);
+                let mut grounded = false;
+                for hit in ground_hits.iter_sorted() {
+                    if hit.time_of_impact < 0.1 {
+                        println!("hit with time: {}", hit.time_of_impact);
+                        grounded = true;
+                        break;
+                    }
+                }
 
-                // let physics = physics.as_mut();
-
-                // if let Some((handle, toi)) = physics.query_pipeline.cast_ray(
-                //     &physics.rigid_body_set,
-                //     &physics.collider_set,
-                //     &floor_ray,
-                //     0.1,
-                //     false,
-                //     QueryFilter::default()
-                // ) {
-                //     let intersection_point = floor_ray.point_at(toi);
-                //     // info!("toi: {:?} point: {:?}", toi, intersection_point);
-
-                //     if keys.just_pressed(Action::FPS(FPSAction::Jump)) {
-                //         // info!("jump");
-                //         if let Ok(mut vel) = bodies.get_mut(e) {
-                //             vel.linvel += controller.jump_force * pawn_transform.up();
-                //             // info!("change vel to {:?}", vel.linvel);
-                //         }
-                //     }
-                // }
-
-                
+                if grounded {
+                    if keys.just_pressed(Action::FPS(FPSAction::Jump)) {
+                        // info!("jump");
+                        pawn_linvel.0 += controller.jump_force * pawn_transform.up();
+                    }
+                }
             } 
     }
 }
@@ -308,6 +294,7 @@ pub fn startup_player(
     .insert(GravityScale(0.0))
     .insert(controller_setting)
     .insert(GravitySenitive::default())
+    .insert(RayCaster::new(1.1 * DVec3::NEG_Y, DVec3::NEG_Y ))
     .id();
 
 
