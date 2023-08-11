@@ -5,8 +5,10 @@ use bevy::{input::mouse::MouseMotion, window::{WindowFocused, PrimaryWindow, Cur
 use bevy_egui::{EguiContext, egui};
 use serde::{Deserialize, Serialize};
 
-use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn, CurrentPawnMarker, ChangePawn}, control::{Action, FPSAction}, objects::prelude::{GravitySenitive}};
+use crate::{prelude::*, pawn_system::{CurrentPawn, Pawn, CurrentPawnMarker, ChangePawn}, control::{Action, FPSAction}, objects::prelude::GravitySenitive};
 use bevy_xpbd_3d::prelude::*;
+
+const GROUND_IMPACT_DIST : f64 = 0.1;
 
 #[derive(Component, Default, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(default)]
@@ -142,7 +144,7 @@ fn gravity_process(
 
 fn fps_look_controller(
     pawn : Res<CurrentPawn>,
-    mut transform : Query<(&DTransform, &mut Rotation)>,
+    mut transform : Query<(&DTransform, &mut Rotation , &mut AngularVelocity)>,
     mut cam_transform : Query<&mut DTransform, Without<Rotation>>,
     pawns : Query<(&Pawn, &FPSController)>,
     mut mouse_move : EventReader<MouseMotion>
@@ -152,7 +154,7 @@ fn fps_look_controller(
         if let Ok((pawn, controller)) = pawns.get(e) {
             if controller.capture_control {
                 let cam_id = pawn.camera_id;
-                let pawn_up = if let Ok((pawn_transform, vel)) = transform.get(e) {
+                let pawn_up = if let Ok((pawn_transform, vel, ang_vel)) = transform.get(e) {
                     pawn_transform.up()
                 } else {
                     warn!("No pawn transform found for FPS controller");
@@ -174,10 +176,11 @@ fn fps_look_controller(
                 }
 
                 //body control
-                let Ok((pawn_transform, mut vel)) = transform.get_mut(e) else {
+                let Ok((pawn_transform, mut vel, mut ang_vel)) = transform.get_mut(e) else {
                     warn!("No pawn transform found for FPS controller");
                     return;
                 };
+                ang_vel.0 = DVec3::ZERO;
                 vel.0 = pawn_transform.rotation;
                 for mv in &moves {
                     let frw = pawn_transform.forward();
@@ -246,8 +249,7 @@ fn fps_controller(
 
                 let mut grounded = false;
                 for hit in ground_hits.iter_sorted() {
-                    if hit.time_of_impact < 0.1 {
-                        println!("hit with time: {}", hit.time_of_impact);
+                    if hit.time_of_impact < GROUND_IMPACT_DIST {
                         grounded = true;
                         break;
                     }

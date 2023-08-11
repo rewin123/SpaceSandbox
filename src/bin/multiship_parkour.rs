@@ -86,18 +86,17 @@ fn spawn_ship(
     ).insert(DTransformBundle::from_transform(
         DTransform::from_xyz(pos.x, pos.y, pos.z)
     ))
-    .insert(SpaceCollider(
-        space_physics::prelude::ColliderBuilder::cuboid(5.0, 0.25, 5.0).build()
-    ))
-    .insert(SpaceRigidBodyType::Dynamic)
+    .insert(Position(pos))
+    .insert(
+        Collider::cuboid(10.0, 0.25, 10.0)
+    )
+    .insert(RigidBody::Kinematic)
     .insert(GravityScale(0.0))
     .insert(
         RotateMe {
             ang_vel : DVec3::new(0.3, 0.0, 0.0)
         }
     )
-    .insert(SpaceDominance(1))
-    .insert(Velocity::default())
     .insert(GravityGenerator {
         gravity_force: DVec3::new(0.0, -9.81, 0.0),
         radius: 5.0,
@@ -105,18 +104,15 @@ fn spawn_ship(
 }
 
 fn rotate_my_system(
-    mut query : Query<(&RotateMe, &mut Velocity)>,
+    mut query : Query<(&RotateMe, &mut AngularVelocity)>,
 
 ) {
     for (me, mut vel) in query.iter_mut() {
-        vel.angvel = me.ang_vel;
+        vel.0 = me.ang_vel;
     }
 }
 
-fn prepare_enviroment(
-        mut meshes: &mut Assets<Mesh>, 
-        mut materials: &mut Assets<StandardMaterial>, 
-        mut commands: &mut Commands) {
+fn prepare_enviroment(mut meshes: &mut Assets<Mesh>, mut materials: &mut Assets<StandardMaterial>, commands: &mut Commands) {
     let plane_mesh = meshes.add(
         Mesh::from(bevy::prelude::shape::Box::new(10.0, 0.5, 10.0))
     );
@@ -139,13 +135,11 @@ fn prepare_enviroment(
     ).insert(DTransformBundle::from_transform(
         DTransform::from_xyz(0.0, -0.5, 0.0)
     ))
-    .insert(SpaceCollider(
-        space_physics::prelude::ColliderBuilder::cuboid(5.0, 0.25, 5.0).build()
-    ))
-    .insert(GravityGenerator {
-        gravity_force : DVec3::new(0.0, -9.81, 0.0),
-        radius : 5.0
-    });
+    .insert(Position(DVec3::new(0.0, -0.5, 0.0)))
+    .insert(RigidBody::Static)
+    .insert(
+        Collider::cuboid(10.0, 0.5, 10.0)
+    );
 
     let cube_poses = vec![
         DVec3::new(5.0, 0.0, 0.0),
@@ -165,9 +159,9 @@ fn prepare_enviroment(
             material : mat.clone(),
             ..default()
         }).insert(cube_transform)
-        .insert(SpaceCollider(
-            space_physics::prelude::ColliderBuilder::cuboid(0.5, 0.5, 0.5).build()
-        ));
+        .insert(RigidBody::Static)
+        .insert(Position(cube_transform.local.translation))
+        .insert(Collider::cuboid(1.0, 1.0, 1.0));
     }
     
     // ambient light

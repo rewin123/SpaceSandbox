@@ -17,49 +17,13 @@ impl Default for PhysicsSync {
 
 impl Plugin for PhysicsSync {
     fn build(&self, app: &mut App) {
-
-
-        
-        app.add_systems(
-            PhysicsSchedule.clone(),
-                ((
-                    bevy_transform64::systems::sync_simple_transforms,
-                    bevy_transform64::systems::propagate_transforms,
-                    init_previous_global_transform,
-                    transform_to_position,
-                    // Update `PreviousGlobalTransform` for the physics step's `GlobalTransform` change detection
-                    update_previous_global_transforms,
-                )
-                    .chain()
-                    .after(PhysicsSet::Prepare)
-                    .before(PhysicsSet::StepSimulation),)
-                    .chain()
+            app.add_systems(
+                PostUpdate,
+                (
+                    position_to_transform,
+                ).chain()
+                 .in_set(PhysicsSet::Sync)
             );
-    
-            // Apply `Transform`, `Position` and `Rotation` changes that happened during the physics frame.
-            // app.add_systems(
-            //     PhysicsSchedule.clone(),
-            //     (
-            //         (
-            //             // Apply `Transform` changes to `Position` and `Rotation`
-            //             bevy_transform64::systems::sync_simple_transforms,
-            //             bevy_transform64::systems::propagate_transforms,
-            //             transform_to_position,
-            //         )
-            //             .chain(),
-            //         // Apply `Position` and `Rotation` changes to `Transform`
-            //         position_to_transform,
-            //         (
-            //             // Update `PreviousGlobalTransform` for next frame's `GlobalTransform` change detection
-            //             bevy_transform64::systems::sync_simple_transforms,
-            //             bevy_transform64::systems::propagate_transforms,
-            //             update_previous_global_transforms,
-            //         )
-            //             .chain()
-            //     )
-            //         .chain()
-            //         .in_set(PhysicsSet::Sync)
-            // );
     }
 }
 
