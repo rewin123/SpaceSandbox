@@ -142,7 +142,8 @@ fn gravity_process(
 
 fn fps_look_controller(
     pawn : Res<CurrentPawn>,
-    mut transform : Query<&mut DTransform>,
+    mut transform : Query<(&DTransform, &mut Rotation)>,
+    mut cam_transform : Query<&mut DTransform, Without<Rotation>>,
     pawns : Query<(&Pawn, &FPSController)>,
     mut mouse_move : EventReader<MouseMotion>
 ) {
@@ -151,14 +152,14 @@ fn fps_look_controller(
         if let Ok((pawn, controller)) = pawns.get(e) {
             if controller.capture_control {
                 let cam_id = pawn.camera_id;
-                let pawn_up = if let Ok(pawn_transform) = transform.get(e) {
+                let pawn_up = if let Ok((pawn_transform, vel)) = transform.get(e) {
                     pawn_transform.up()
                 } else {
                     warn!("No pawn transform found for FPS controller");
                     return;
                 };
                 //head control
-                if let Ok(mut pawn_transform) = transform.get_mut(cam_id) {
+                if let Ok((mut pawn_transform)) = cam_transform.get_mut(cam_id) {
                     for mv in &moves {
                         let frw = pawn_transform.forward();
                         let up = pawn_transform.up();
@@ -173,20 +174,23 @@ fn fps_look_controller(
                 }
 
                 //body control
-                let Ok(mut pawn_transform) = transform.get_mut(e) else {
+                let Ok((pawn_transform, mut vel)) = transform.get_mut(e) else {
                     warn!("No pawn transform found for FPS controller");
                     return;
                 };
+                vel.0 = pawn_transform.rotation;
                 for mv in &moves {
                     let frw = pawn_transform.forward();
                     let _up = pawn_transform.up();
                     let right = pawn_transform.right();
-                    let delta = mv.delta.as_dvec2() * 0.001;
+                    let delta = mv.delta.as_dvec2() * 0.005;
                     let mut changed_frw = (frw + delta.x * right).normalize();
                     changed_frw.y = changed_frw.y.max(-0.95);
                     changed_frw.y = changed_frw.y.min(0.95);
                     let pos = pawn_transform.translation;
-                    pawn_transform.look_at(pos + changed_frw, pawn_up);
+                    let mut transform_clone = pawn_transform.clone();
+                    transform_clone.look_at(pos + changed_frw, pawn_up);
+                    vel.0 = transform_clone.rotation;
                 }
             }
         }
