@@ -197,13 +197,13 @@ fn fps_look_controller(
 
 fn fps_controller(
     pawn : Res<CurrentPawn>,
-    mut characters : Query<(&mut DTransform, &mut FPSController)>,
+    mut characters : Query<(&DTransform, &mut Position, &mut FPSController)>,
     keys : Res<Input<Action>>,
     time : Res<Time>,
     _bodies : Query<&mut LinearVelocity>
 ) {
     if let Some(e) = pawn.id {
-            if let Ok((mut pawn_transform, mut controller)) = characters.get_mut(e) {
+            if let Ok((pawn_transform, mut pawn_pos, mut controller)) = characters.get_mut(e) {
                 if keys.just_pressed(Action::FPS(FPSAction::Sprint)) {
                     controller.is_sprinting = !controller.is_sprinting;
                 }
@@ -239,7 +239,7 @@ fn fps_controller(
                 target_move  + 
                         (controller.current_move - target_move) * (-controller.speed_relax * time.delta_seconds_f64()).exp();
 
-                pawn_transform.translation += controller.current_move * time.delta_seconds_f64();
+                pawn_pos.0 += controller.current_move * time.delta_seconds_f64();
 
                 let up = pawn_transform.up();
                 let _start_pos = pawn_transform.translation - up * 1.1;
