@@ -4,3 +4,4 @@
 [submodule "crates/space_editor"]
 	path = crates/space_editor
 	url = https://github.com/rewin123/space_editor.git
+	branch = develop
