@@ -24,6 +24,7 @@ rand = "*"
 laminar = "*"
 bevy_prototype_debug_lines = "*"
 bevy_transform64 = {path = "crates/bevy_transform64"}
+space_editor = {path = "crates/space_editor"}
 crossbeam = "*"
 egui-gizmo = "*"
 bevy_common_assets = {version = "*", features = ["ron"]}
