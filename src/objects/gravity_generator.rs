@@ -1,23 +1,29 @@
 use bevy::{prelude::*, math::DVec3};
 use bevy_transform64::prelude::DGlobalTransform;
 use serde::{Serialize, Deserialize};
+use space_editor::{editor::EditorPlugin, prelude::EditorRegistryExt};
 
 
 pub struct GravityGeneratorPlugin;
 
 impl Plugin for GravityGeneratorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(gravity_sensetive_fill);
+        app.add_systems(Update, gravity_sensetive_fill);
+
+        if app.is_plugin_added::<EditorPlugin>() {
+            app.editor_registry::<GravityGenerator>();
+            app.editor_registry::<GravitySenitive>();
+        }
     }
 }
 
-#[derive(Component, Debug, Serialize, Deserialize, Default)]
+#[derive(Component, Debug, Serialize, Deserialize, Default, Reflect, Clone)]
 pub struct GravityGenerator {
     pub gravity_force : DVec3,
     pub radius : f64,
 }
 
-#[derive(Component, Debug, Serialize, Deserialize, Default)]
+#[derive(Component, Debug, Serialize, Deserialize, Default, Reflect, Clone)]
 pub struct GravitySenitive {
     pub is_senitive : bool,
     pub g : DVec3,

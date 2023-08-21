@@ -27,6 +27,7 @@ pub mod ext {
     pub use bevy_proto::prelude::*;
     pub use bevy_egui::*;
     pub use bevy_xpbd_3d::prelude::*;
+    pub use space_editor::prelude::*;
 }
 
 pub mod prelude {
